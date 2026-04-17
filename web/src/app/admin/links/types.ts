@@ -15,8 +15,13 @@ export interface FriendLink {
   link_url?: string
   url: string
   avatar: string
+  siteshot?: string      // 站点截图URL
+  rss?: string           // RSS订阅地址
+  nickname?: string      // 站长昵称
   color: string
   recommend: boolean
+  published?: boolean    // 是否已审核发布
+  applyText?: string     // 申请原始文本
   createTime?: string
   // 编辑状态字段
   inputVisible?: boolean
@@ -24,12 +29,18 @@ export interface FriendLink {
   editingName?: boolean
   editingDescription?: boolean
   editingAvatar?: boolean
+  editingSiteshot?: boolean
+  editingRss?: boolean
+  editingNickname?: boolean
   editingUrl?: boolean
   editingColor?: boolean
   // 临时字段
   tempName?: string
   tempDescription?: string
   tempAvatar?: string
+  tempSiteshot?: string
+  tempRss?: string
+  tempNickname?: string
   tempUrl?: string
   tempColor?: string
 }
@@ -41,12 +52,17 @@ export interface FormValues {
   url: string
   type: string
   color: string
+  avatar?: string
+  siteshot?: string
+  rss?: string
+  nickname?: string
 }
 
 // 筛选条件类型
 export interface FilterState {
   type: string
   searchQuery: string
+  published: '' | 'true' | 'false'  // 发布状态筛选
 }
 
 // 本地输入值类型
@@ -55,9 +71,24 @@ export interface LocalInputValues {
     name?: string
     description?: string
     avatar?: string
+    siteshot?: string
+    rss?: string
+    nickname?: string
     url?: string
     color?: string
   }
+}
+
+// 解析结果类型
+export interface ParsedApplyText {
+  name?: string
+  description?: string
+  url?: string
+  avatar?: string
+  siteshot?: string
+  rss?: string
+  nickname?: string
+  color?: string
 }
 
 // 友链类型选项
@@ -76,8 +107,12 @@ export const DEFAULT_FRIEND_LINK: Omit<FriendLink, 'id'> = {
   description: '',
   url: '',
   avatar: '',
+  siteshot: '',
+  rss: '',
+  nickname: '',
   color: '',
   recommend: false,
+  published: false,
   createTime: new Date().toISOString()
 }
 
@@ -87,11 +122,16 @@ export const DEFAULT_FORM_VALUES: FormValues = {
   description: '',
   url: '',
   type: '',
-  color: ''
+  color: '',
+  avatar: '',
+  siteshot: '',
+  rss: '',
+  nickname: ''
 }
 
 // 默认筛选条件
 export const DEFAULT_FILTERS: FilterState = {
   type: '',
-  searchQuery: ''
+  searchQuery: '',
+  published: ''
 }

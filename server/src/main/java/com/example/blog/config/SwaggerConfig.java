@@ -49,7 +49,7 @@ public class SwaggerConfig {
         return new ApiInfoBuilder()
                 .title("Hanphone Blog API 文档")
                 .description("基于 Spring Boot 的个人博客后端系统 API 文档")
-                .contact(new Contact("Hanphone", "https://github.com/HanphoneJan", "Janhizian@163.com"))
+                .contact(new Contact("Hanphone", "https://github.com/HanphoneJan", "janhizian@qq.com"))
                 .version("2.1.0")
                 .build();
     }
@@ -73,8 +73,7 @@ public class SwaggerConfig {
                         .securityReferences(defaultAuth())
                         // 对所有路径应用认证（需要排除的路径可以使用 PathSelectors 配置）
                         .forPaths(PathSelectors.any())
-                        .build()
-        );
+                        .build());
         return securityContexts;
     }
 

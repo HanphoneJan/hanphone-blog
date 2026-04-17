@@ -8,6 +8,7 @@ import { useLinks } from './hooks/useLinks'
 import { useLinkFilters } from './hooks/useLinkFilters'
 import { useInlineEdit } from './hooks/useInlineEdit'
 import { useAvatarUpload } from './hooks/useAvatarUpload'
+import type { FriendLink, ParsedApplyText } from './types'
 
 // 动画变体定义
 const pageVariants: Variants = {
@@ -52,6 +53,8 @@ export default function FriendLinkManagement() {
     friendLinkList,
     deleteConfirm,
     updateRecommendLoading,
+    updatePublishedLoading,
+    parsingLoading,
     setDeleteConfirm,
     getFriendLinkList,
     publishFriendLink,
@@ -59,10 +62,13 @@ export default function FriendLinkManagement() {
     deleteFriendLink,
     handleTypeChange,
     toggleRecommend,
+    togglePublished,
+    parseApplyText,
+    applyParsedData,
     updateLocalList
   } = useLinks()
 
-  const { filters, filteredList, handleFilterChange, resetFilters } = useLinkFilters(friendLinkList)
+  const { filters, filteredList, stats, handleFilterChange, resetFilters } = useLinkFilters(friendLinkList)
 
   const {
     localInputValues,
@@ -76,6 +82,15 @@ export default function FriendLinkManagement() {
     handleEditAvatar,
     handleSaveAvatar,
     handleCancelEditAvatar,
+    handleEditSiteshot,
+    handleSaveSiteshot,
+    handleCancelEditSiteshot,
+    handleEditRss,
+    handleSaveRss,
+    handleCancelEditRss,
+    handleEditNickname,
+    handleSaveNickname,
+    handleCancelEditNickname,
     handleEditUrl,
     handleSaveUrl,
     handleCancelEditUrl,
@@ -106,6 +121,17 @@ export default function FriendLinkManagement() {
       await deleteFriendLink(deleteConfirm)
     }
   }, [deleteConfirm, deleteFriendLink])
+
+  // 处理解析申请文本
+  const handleParseApplyText = useCallback(async (link: FriendLink) => {
+    const parsed = await parseApplyText(link)
+    if (parsed) {
+      // 询问是否应用解析结果
+      if (confirm('解析成功！是否应用解析结果到该友链？')) {
+        await applyParsedData(link, parsed)
+      }
+    }
+  }, [parseApplyText, applyParsedData])
 
   return (
     <motion.div
@@ -148,6 +174,11 @@ export default function FriendLinkManagement() {
               }`}
             >
               友链列表
+              {stats.pending > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                  {stats.pending}待审
+                </span>
+              )}
             </motion.button>
           </div>
 
@@ -162,14 +193,14 @@ export default function FriendLinkManagement() {
                 exit="hidden"
               >
                 <PublishTab
-              loading={loading}
-              setLoading={setLoading}
-              onPublish={publishFriendLink}
-              onSuccess={handlePublishSuccess}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  loading={loading}
+                  setLoading={setLoading}
+                  onPublish={publishFriendLink}
+                  onSuccess={handlePublishSuccess}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* 友链列表内容 */}
           <AnimatePresence mode="wait">
@@ -182,40 +213,54 @@ export default function FriendLinkManagement() {
                 exit="hidden"
               >
                 <ListTab
-              friendLinkList={friendLinkList}
-              filteredList={filteredList}
-              loading={loading}
-              filters={filters}
-              localInputValues={localInputValues}
-              updateRecommendLoading={updateRecommendLoading}
-              imageUploadRef={imageUploadRef}
-              onFilterChange={handleFilterChange}
-              onResetFilters={resetFilters}
-              onRefresh={getFriendLinkList}
-              onEditName={handleEditName}
-              onSaveName={handleSaveName}
-              onCancelEditName={handleCancelEditName}
-              onEditDescription={handleEditDescription}
-              onSaveDescription={handleSaveDescription}
-              onCancelEditDescription={handleCancelEditDescription}
-              onEditAvatar={handleEditAvatar}
-              onSaveAvatar={handleSaveAvatar}
-              onCancelEditAvatar={handleCancelEditAvatar}
-              onEditUrl={handleEditUrl}
-              onSaveUrl={handleSaveUrl}
-              onCancelEditUrl={handleCancelEditUrl}
-              onEditColor={handleEditColor}
-              onSaveColor={handleSaveColor}
-              onCancelEditColor={handleCancelEditColor}
-              onTypeChange={handleTypeChange}
-              onLocalInputChange={handleLocalInputChange}
-              onImageFileChange={handleImageFileChange}
-              onToggleRecommend={toggleRecommend}
-              onDelete={setDeleteConfirm}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  friendLinkList={friendLinkList}
+                  filteredList={filteredList}
+                  loading={loading}
+                  filters={filters}
+                  localInputValues={localInputValues}
+                  updateRecommendLoading={updateRecommendLoading}
+                  updatePublishedLoading={updatePublishedLoading}
+                  parsingLoading={parsingLoading}
+                  imageUploadRef={imageUploadRef}
+                  stats={stats}
+                  onFilterChange={handleFilterChange}
+                  onResetFilters={resetFilters}
+                  onRefresh={getFriendLinkList}
+                  onEditName={handleEditName}
+                  onSaveName={handleSaveName}
+                  onCancelEditName={handleCancelEditName}
+                  onEditDescription={handleEditDescription}
+                  onSaveDescription={handleSaveDescription}
+                  onCancelEditDescription={handleCancelEditDescription}
+                  onEditAvatar={handleEditAvatar}
+                  onSaveAvatar={handleSaveAvatar}
+                  onCancelEditAvatar={handleCancelEditAvatar}
+                  onEditSiteshot={handleEditSiteshot}
+                  onSaveSiteshot={handleSaveSiteshot}
+                  onCancelEditSiteshot={handleCancelEditSiteshot}
+                  onEditRss={handleEditRss}
+                  onSaveRss={handleSaveRss}
+                  onCancelEditRss={handleCancelEditRss}
+                  onEditNickname={handleEditNickname}
+                  onSaveNickname={handleSaveNickname}
+                  onCancelEditNickname={handleCancelEditNickname}
+                  onEditUrl={handleEditUrl}
+                  onSaveUrl={handleSaveUrl}
+                  onCancelEditUrl={handleCancelEditUrl}
+                  onEditColor={handleEditColor}
+                  onSaveColor={handleSaveColor}
+                  onCancelEditColor={handleCancelEditColor}
+                  onTypeChange={handleTypeChange}
+                  onLocalInputChange={handleLocalInputChange}
+                  onImageFileChange={handleImageFileChange}
+                  onToggleRecommend={toggleRecommend}
+                  onTogglePublished={togglePublished}
+                  onParseApplyText={handleParseApplyText}
+                  onDelete={setDeleteConfirm}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </main>
 

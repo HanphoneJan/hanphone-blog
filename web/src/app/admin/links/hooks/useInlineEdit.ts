@@ -122,6 +122,45 @@ export function useInlineEdit({
     cancelEdit(friendLinkId, 'editingAvatar')
   }, [cancelEdit])
 
+  // 编辑站点截图
+  const handleEditSiteshot = useCallback((friendLinkId: number | null) => {
+    startEdit(friendLinkId, 'editingSiteshot', 'siteshot')
+  }, [startEdit])
+
+  const handleSaveSiteshot = useCallback((friendLinkId: number | null) => {
+    saveEdit(friendLinkId, 'siteshot', 'siteshot', 'editingSiteshot')
+  }, [saveEdit])
+
+  const handleCancelEditSiteshot = useCallback((friendLinkId: number | null) => {
+    cancelEdit(friendLinkId, 'editingSiteshot')
+  }, [cancelEdit])
+
+  // 编辑RSS
+  const handleEditRss = useCallback((friendLinkId: number | null) => {
+    startEdit(friendLinkId, 'editingRss', 'rss')
+  }, [startEdit])
+
+  const handleSaveRss = useCallback((friendLinkId: number | null) => {
+    saveEdit(friendLinkId, 'rss', 'rss', 'editingRss')
+  }, [saveEdit])
+
+  const handleCancelEditRss = useCallback((friendLinkId: number | null) => {
+    cancelEdit(friendLinkId, 'editingRss')
+  }, [cancelEdit])
+
+  // 编辑昵称
+  const handleEditNickname = useCallback((friendLinkId: number | null) => {
+    startEdit(friendLinkId, 'editingNickname', 'nickname')
+  }, [startEdit])
+
+  const handleSaveNickname = useCallback((friendLinkId: number | null) => {
+    saveEdit(friendLinkId, 'nickname', 'nickname', 'editingNickname')
+  }, [saveEdit])
+
+  const handleCancelEditNickname = useCallback((friendLinkId: number | null) => {
+    cancelEdit(friendLinkId, 'editingNickname')
+  }, [cancelEdit])
+
   // 编辑链接
   const handleEditUrl = useCallback((friendLinkId: number | null) => {
     startEdit(friendLinkId, 'editingUrl', 'url')
@@ -160,6 +199,15 @@ export function useInlineEdit({
     handleEditAvatar,
     handleSaveAvatar,
     handleCancelEditAvatar,
+    handleEditSiteshot,
+    handleSaveSiteshot,
+    handleCancelEditSiteshot,
+    handleEditRss,
+    handleSaveRss,
+    handleCancelEditRss,
+    handleEditNickname,
+    handleSaveNickname,
+    handleCancelEditNickname,
     handleEditUrl,
     handleSaveUrl,
     handleCancelEditUrl,

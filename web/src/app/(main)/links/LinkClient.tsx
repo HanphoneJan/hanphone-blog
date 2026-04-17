@@ -5,12 +5,14 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import {
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Plus
 } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import { ASSETS } from '@/lib/constants'
 import { SITE_URL } from '@/lib/seo-config'
 import BgOverlay from '@/app/(main)/components/BgOverlay'
+import ApplyModal from './components/ApplyModal'
 
 // 野兽派几何形状
 const GEOMETRIC_SHAPES = ['□', '△', '○', '◇', '✦', '◆', '▲', '▼']
@@ -377,7 +379,7 @@ const BrutalistHelp = () => {
 }
 
 // 野兽派标题组件
-const BrutalistTitle = () => {
+const BrutalistTitle = ({ onApply }: { onApply: () => void }) => {
   return (
     <div className="relative py-8 px-4 mb-4">
       {/* 背景装饰块 */}
@@ -392,25 +394,59 @@ const BrutalistTitle = () => {
       
       {/* 主标题 */}
       <div className="relative">
-        <h1
-          className="text-5xl md:text-7xl font-black tracking-tighter mb-2"
-          style={{
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            lineHeight: 1,
-            color: 'rgb(var(--text))'
-          }}
-        >
-          LINKS
-        </h1>
-        <div className="flex items-center gap-4">
-          <div className="h-1 w-16 bg-[rgb(var(--primary))]" />
-          <span
-            className="text-sm font-bold tracking-widest opacity-70"
-            style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1
+              className="text-5xl md:text-7xl font-black tracking-tighter mb-2"
+              style={{
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                lineHeight: 1,
+                color: 'rgb(var(--text))'
+              }}
+            >
+              LINKS
+            </h1>
+            <div className="flex items-center gap-4">
+              <div className="h-1 w-16 bg-[rgb(var(--primary))]" />
+              <span
+                className="text-sm font-bold tracking-widest opacity-70"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                FRIEND CIRCLE
+              </span>
+            </div>
+          </div>
+          
+          {/* 申请友链按钮 */}
+          <button
+            onClick={onApply}
+            className="relative group hidden sm:block"
           >
-            FRIEND CIRCLE
-          </span>
+            <div 
+              className="absolute inset-0 bg-[rgb(var(--primary))]"
+              style={{ transform: 'translate(4px, 4px)' }}
+            />
+            <div className="relative flex items-center gap-2 px-4 py-3 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] font-bold hover:bg-[rgb(var(--primary))] transition-colors">
+              <Plus className="w-5 h-5" />
+              <span>申请友链</span>
+            </div>
+          </button>
         </div>
+        
+        {/* 移动端申请按钮 */}
+        <button
+          onClick={onApply}
+          className="relative group sm:hidden mt-4 w-full"
+        >
+          <div 
+            className="absolute inset-0 bg-[rgb(var(--primary))]"
+            style={{ transform: 'translate(3px, 3px)' }}
+          />
+          <div className="relative flex items-center justify-center gap-2 px-4 py-3 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] font-bold hover:bg-[rgb(var(--primary))] transition-colors">
+            <Plus className="w-5 h-5" />
+            <span>申请友链</span>
+          </div>
+        </button>
       </div>
       
       {/* 装饰线条 */}
@@ -699,6 +735,7 @@ export default function LinkClient() {
   const [loading, setLoading] = useState(true)
   const [fetchingUrls, setFetchingUrls] = useState<Set<number>>(new Set())
   const [apiError, setApiError] = useState<string | null>(null)
+  const [applyModalOpen, setApplyModalOpen] = useState(false)
 
   // 初始化时获取友链数据
   useEffect(() => {
@@ -803,7 +840,13 @@ export default function LinkClient() {
       <BgOverlay />
       <main className="relative z-10 w-full max-w-7xl mx-auto px-4 pb-16 page-transition">
         {/* 野兽派标题 */}
-        <BrutalistTitle />
+        <BrutalistTitle onApply={() => setApplyModalOpen(true)} />
+        
+        {/* 申请模态框 */}
+        <ApplyModal 
+          isOpen={applyModalOpen} 
+          onClose={() => setApplyModalOpen(false)} 
+        />
         
         {/* 错误提示 */}
         {apiError && (

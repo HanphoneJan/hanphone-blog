@@ -12,7 +12,10 @@ interface ListTabProps {
   filters: FilterState
   localInputValues: LocalInputValues
   updateRecommendLoading: number | null
+  updatePublishedLoading: number | null
+  parsingLoading: number | null
   imageUploadRef: React.RefObject<HTMLInputElement | null>
+  stats: { total: number; published: number; pending: number }
   onFilterChange: (name: keyof FilterState, value: string) => void
   onResetFilters: () => void
   onRefresh: () => void
@@ -25,6 +28,15 @@ interface ListTabProps {
   onEditAvatar: (id: number | null) => void
   onSaveAvatar: (id: number | null) => void
   onCancelEditAvatar: (id: number | null) => void
+  onEditSiteshot: (id: number | null) => void
+  onSaveSiteshot: (id: number | null) => void
+  onCancelEditSiteshot: (id: number | null) => void
+  onEditRss: (id: number | null) => void
+  onSaveRss: (id: number | null) => void
+  onCancelEditRss: (id: number | null) => void
+  onEditNickname: (id: number | null) => void
+  onSaveNickname: (id: number | null) => void
+  onCancelEditNickname: (id: number | null) => void
   onEditUrl: (id: number | null) => void
   onSaveUrl: (id: number | null) => void
   onCancelEditUrl: (id: number | null) => void
@@ -35,6 +47,8 @@ interface ListTabProps {
   onLocalInputChange: (id: number, field: string, value: string) => void
   onImageFileChange: (e: React.ChangeEvent<HTMLInputElement>, id: number | null) => void
   onToggleRecommend: (link: FriendLink) => void
+  onTogglePublished: (link: FriendLink) => void
+  onParseApplyText: (link: FriendLink) => void
   onDelete: (id: number | null) => void
 }
 
@@ -45,7 +59,10 @@ export function ListTab({
   filters,
   localInputValues,
   updateRecommendLoading,
+  updatePublishedLoading,
+  parsingLoading,
   imageUploadRef,
+  stats,
   onFilterChange,
   onResetFilters,
   onRefresh,
@@ -58,6 +75,15 @@ export function ListTab({
   onEditAvatar,
   onSaveAvatar,
   onCancelEditAvatar,
+  onEditSiteshot,
+  onSaveSiteshot,
+  onCancelEditSiteshot,
+  onEditRss,
+  onSaveRss,
+  onCancelEditRss,
+  onEditNickname,
+  onSaveNickname,
+  onCancelEditNickname,
   onEditUrl,
   onSaveUrl,
   onCancelEditUrl,
@@ -68,6 +94,8 @@ export function ListTab({
   onLocalInputChange,
   onImageFileChange,
   onToggleRecommend,
+  onTogglePublished,
+  onParseApplyText,
   onDelete
 }: ListTabProps) {
   // 组件挂载时刷新列表
@@ -80,8 +108,10 @@ export function ListTab({
       {/* 筛选区域 */}
       <LinkFilters
         filters={filters}
-        totalCount={friendLinkList.length}
+        totalCount={stats.total}
         filteredCount={filteredList.length}
+        publishedCount={stats.published}
+        pendingCount={stats.pending}
         onFilterChange={onFilterChange}
         onReset={onResetFilters}
       />
@@ -92,6 +122,8 @@ export function ListTab({
         loading={loading}
         localInputValues={localInputValues}
         updateRecommendLoading={updateRecommendLoading}
+        updatePublishedLoading={updatePublishedLoading}
+        parsingLoading={parsingLoading}
         imageUploadRef={imageUploadRef}
         onEditName={onEditName}
         onSaveName={onSaveName}
@@ -102,6 +134,15 @@ export function ListTab({
         onEditAvatar={onEditAvatar}
         onSaveAvatar={onSaveAvatar}
         onCancelEditAvatar={onCancelEditAvatar}
+        onEditSiteshot={onEditSiteshot}
+        onSaveSiteshot={onSaveSiteshot}
+        onCancelEditSiteshot={onCancelEditSiteshot}
+        onEditRss={onEditRss}
+        onSaveRss={onSaveRss}
+        onCancelEditRss={onCancelEditRss}
+        onEditNickname={onEditNickname}
+        onSaveNickname={onSaveNickname}
+        onCancelEditNickname={onCancelEditNickname}
         onEditUrl={onEditUrl}
         onSaveUrl={onSaveUrl}
         onCancelEditUrl={onCancelEditUrl}
@@ -112,6 +153,8 @@ export function ListTab({
         onLocalInputChange={onLocalInputChange}
         onImageFileChange={onImageFileChange}
         onToggleRecommend={onToggleRecommend}
+        onTogglePublished={onTogglePublished}
+        onParseApplyText={onParseApplyText}
         onDelete={onDelete}
       />
     </div>

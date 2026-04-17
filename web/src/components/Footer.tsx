@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGithub, faBilibili } from '@fortawesome/free-brands-svg-icons'
-import { Mail, Eye, TrendingUp } from 'lucide-react'
+import { Mail, Eye, TrendingUp, Rss } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
@@ -110,6 +110,14 @@ const Footer: React.FC = () => {
                     className="h-4 w-4 text-pink-400"
                   />
                 </a>
+                <Link
+                  href="/rss"
+                  className="p-2.5 rounded-full transition-all duration-300 transform hover:-translate-y-1 shadow-md flex items-center justify-center bg-[rgb(var(--card))] hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                  aria-label="RSS订阅"
+                  title="RSS订阅"
+                >
+                  <Rss className="h-4 w-4 text-orange-500" />
+                </Link>
               </div>
             </div>
           </div>

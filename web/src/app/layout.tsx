@@ -70,6 +70,9 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: SITE_URL,
+    types: {
+      'application/rss+xml': `${SITE_URL}/rss.xml`,
+    },
   },
   bookmarks: [SITE_URL],
   category: SITE_CONFIG.category,
@@ -98,6 +101,12 @@ export default async function RootLayout({
           rel="preload" 
           href={backgroundImageUrl} 
           as="image" 
+        />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={`${SITE_CONFIG.name} - RSS Feed`}
+          href={`${SITE_URL}/rss.xml`}
         />
       </head>
       <body className={`min-h-screen ${notoSerifSc.className}`}>

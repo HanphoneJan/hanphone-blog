@@ -6,7 +6,7 @@ import { ASSETS } from '@/lib/constants'
 import { ADMIN_LINK_LABELS } from '@/lib/labels'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
-import type { FriendLink } from '../types'
+import type { FriendLink, ParsedApplyText } from '../types'
 
 // API调用函数
 const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
@@ -29,6 +29,8 @@ export function useLinks() {
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
   const [updateRecommendLoading, setUpdateRecommendLoading] = useState<number | null>(null)
+  const [updatePublishedLoading, setUpdatePublishedLoading] = useState<number | null>(null)
+  const [parsingLoading, setParsingLoading] = useState<number | null>(null)
 
   // 处理友链数据，添加默认值和编辑状态
   const processFriendLinkData = (data: any[]): FriendLink[] => {
@@ -39,19 +41,30 @@ export function useLinks() {
       description: item.description || '暂无描述',
       url: item.url || '',
       avatar: item.avatar || ASSETS.DEFAULT_AVATAR,
+      siteshot: item.siteshot || '',
+      rss: item.rss || '',
+      nickname: item.nickname || '',
       color: item.color || '#1890ff',
       recommend: item.recommend || false,
+      published: item.published ?? false,
+      applyText: item.applyText || '',
       createTime: item.createTime || new Date().toISOString(),
       inputVisible: false,
       inputValue: '',
       editingName: false,
       editingDescription: false,
       editingAvatar: false,
+      editingSiteshot: false,
+      editingRss: false,
+      editingNickname: false,
       editingUrl: false,
       editingColor: false,
       tempName: item.name || '未命名友链',
       tempDescription: item.description || '暂无描述',
       tempAvatar: item.avatar || ASSETS.DEFAULT_AVATAR,
+      tempSiteshot: item.siteshot || '',
+      tempRss: item.rss || '',
+      tempNickname: item.nickname || '',
       tempUrl: item.url || '',
       tempColor: item.color || '#1890ff'
     }))
@@ -140,7 +153,7 @@ export function useLinks() {
   const deleteFriendLink = async (id: number) => {
     try {
       setLoading(true)
-      const res = await fetchData(`${ENDPOINTS.ADMIN.FRIENDLINK}/${id}/delete`, 'GET')
+      const res = await fetchData(`${ENDPOINTS.ADMIN.FRIENDLINK}/${id}`, 'DELETE')
 
       if (res.code === 200) {
         showAlert(ADMIN_LINK_LABELS.DELETE_SUCCESS)
@@ -206,6 +219,92 @@ export function useLinks() {
     }
   }
 
+  // 切换发布状态（审核）
+  const togglePublished = async (friendLink: FriendLink) => {
+    try {
+      setUpdatePublishedLoading(friendLink.id)
+
+      const response = await fetchData(ENDPOINTS.ADMIN.FRIENDLINK_PUBLISHED, 'POST', {
+        friendLinkId: friendLink.id,
+        published: !friendLink.published
+      })
+
+      if (response.code === 200) {
+        setFriendLinkList(prev =>
+          prev.map(item =>
+            item.id === friendLink.id ? { ...item, published: !friendLink.published } : item
+          )
+        )
+        showAlert(friendLink.published ? '已取消发布' : '已审核发布')
+        return true
+      } else {
+        showAlert('操作失败')
+        return false
+      }
+    } catch (error) {
+      console.error('发布状态更新失败:', error)
+      showAlert('操作失败')
+      return false
+    } finally {
+      setUpdatePublishedLoading(null)
+    }
+  }
+
+  // 解析applyText
+  const parseApplyText = async (friendLink: FriendLink): Promise<ParsedApplyText | null> => {
+    if (!friendLink.applyText) {
+      showAlert('没有可解析的申请文本')
+      return null
+    }
+
+    try {
+      setParsingLoading(friendLink.id)
+
+      const response = await fetchData(ENDPOINTS.ADMIN.FRIENDLINK_PARSE, 'POST', {
+        applyText: friendLink.applyText
+      })
+
+      if (response.code === 200 && response.data) {
+        showAlert('解析成功')
+        return response.data as ParsedApplyText
+      } else {
+        showAlert(response.message || '解析失败')
+        return null
+      }
+    } catch (error) {
+      console.error('解析失败:', error)
+      showAlert('解析失败')
+      return null
+    } finally {
+      setParsingLoading(null)
+    }
+  }
+
+  // 应用解析结果到友链
+  const applyParsedData = async (friendLink: FriendLink, parsedData: ParsedApplyText) => {
+    const updatedFriendLink: FriendLink = {
+      ...friendLink,
+      name: parsedData.name || friendLink.name,
+      description: parsedData.description || friendLink.description,
+      url: parsedData.url || friendLink.url,
+      avatar: parsedData.avatar || friendLink.avatar,
+      siteshot: parsedData.siteshot || friendLink.siteshot,
+      rss: parsedData.rss || friendLink.rss,
+      nickname: parsedData.nickname || friendLink.nickname,
+      color: parsedData.color || friendLink.color
+    }
+
+    const success = await updateFriendLink(updatedFriendLink)
+    if (success) {
+      setFriendLinkList(prev =>
+        prev.map(item =>
+          item.id === friendLink.id ? updatedFriendLink : item
+        )
+      )
+    }
+    return success
+  }
+
   // 更新本地友链列表状态
   const updateLocalList = (updater: (list: FriendLink[]) => FriendLink[]) => {
     setFriendLinkList(prev => updater(prev))
@@ -216,6 +315,8 @@ export function useLinks() {
     loading,
     deleteConfirm,
     updateRecommendLoading,
+    updatePublishedLoading,
+    parsingLoading,
     setDeleteConfirm,
     getFriendLinkList,
     publishFriendLink,
@@ -223,6 +324,9 @@ export function useLinks() {
     deleteFriendLink,
     handleTypeChange,
     toggleRecommend,
+    togglePublished,
+    parseApplyText,
+    applyParsedData,
     updateLocalList
   }
 }

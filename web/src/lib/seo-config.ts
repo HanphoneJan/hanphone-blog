@@ -19,7 +19,7 @@ export const SITE_CONFIG = {
   author: {
     name: '寒枫',
     alternateName: 'Hanphone',
-    email: 'janhizian@163.com', // 可选：填写邮箱
+    email: 'janhizian@qq.com', // 可选：填写邮箱
   },
   
   // 社交媒体链接

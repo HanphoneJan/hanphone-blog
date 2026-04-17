@@ -119,7 +119,7 @@ export default function PrivacyClient() {
       title: '联系我们',
       icon: Mail,
       content: '如果您对本隐私政策有任何疑问或建议，请通过以下方式联系我们：',
-      contact: 'Janhizian@163.com'
+      contact: 'janhizian@qq.com'
     }
   ]
 

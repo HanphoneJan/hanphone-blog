@@ -33,7 +33,7 @@ export const SOCIAL_LINKS = {
     displayName: 'HanphoneJan'
   },
   email: {
-    address: 'Janhizian@163.com'
+    address: 'janhizian@qq.com'
   }
 } as const
 

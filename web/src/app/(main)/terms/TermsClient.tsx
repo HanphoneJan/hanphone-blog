@@ -112,7 +112,7 @@ export default function TermsClient() {
       id: 9,
       title: '联系我们',
       content: '如果您对本用户协议有任何疑问或建议，请通过以下方式联系我们：',
-      contact: 'Janhizian@163.com'
+      contact: 'janhizian@qq.com'
     }
   ]
 
