@@ -1,0 +1,14 @@
+# env files (can opt-in for committing if needed)
+.env
+
+# build files
+target
+
+# Log files
+log*
+*.log
+
+# IDE files
+.vscode
+.trae
+.idea
