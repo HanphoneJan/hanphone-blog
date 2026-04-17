@@ -8,12 +8,17 @@ import type { Essay, ApiEssay, UserInfo } from '../types'
 
 const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
-export function useEssays(userInfo: UserInfo | null) {
+interface UseEssaysOptions {
+  initialEssays?: Essay[]
+}
+
+export function useEssays(userInfo: UserInfo | null, options: UseEssaysOptions = {}) {
+  const { initialEssays } = options
   const cacheRef = useRef<Map<string, { data: any; timestamp: number }>>(new Map())
 
   const [state, dispatch] = useReducer(essayReducer, {
-    essays: [],
-    loading: true,
+    essays: initialEssays || [],
+    loading: !initialEssays || initialEssays.length === 0,
     commentInputs: {},
     replyInputs: {},
     showReplyBox: {}

@@ -204,7 +204,7 @@ type AppAction =
 const initialState: AppState = {
   allProjects: [],
   filteredProjects: [],
-  loading: true,
+  loading: false,
   filterLoading: false,
   activeFilter: 'all',
   searchQuery: '',
@@ -212,6 +212,11 @@ const initialState: AppState = {
   isMobile: false,
   initialLoadComplete: false,
   userInitiatedFilter: false
+}
+
+// 组件 Props
+interface ProjectClientProps {
+  initialProjects: Project[]
 }
 
 // Reducer 函数
@@ -291,7 +296,7 @@ const setCachedData = (data: Project[]) => {
   }
 }
 
-export default function ProjectClient() {
+export default function ProjectClient({ initialProjects }: ProjectClientProps) {
   const [state, dispatch] = useReducer(appReducer, initialState)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -341,15 +346,12 @@ export default function ProjectClient() {
     }
   }
 
-  // 获取项目数据 - 优先使用缓存
+  // 获取项目数据 - 优先使用服务端传入的初始数据
   useEffect(() => {
     const getProjects = async () => {
-      // 先尝试从缓存获取数据
-      const cachedProjects = getCachedData()
-      if (cachedProjects) {
-        // 过滤掉类型为0（不展示）的项目
-        const displayProjects = cachedProjects.filter((project: Project) => project.type !== 0)
-        // 按推荐状态排序，推荐项目在前
+      // 优先使用服务端传入的初始数据
+      if (initialProjects && initialProjects.length > 0) {
+        const displayProjects = initialProjects.filter((project: Project) => project.type !== 0)
         displayProjects.sort((a: Project, b: Project) => {
           if (a.recommend && !b.recommend) return -1
           if (!a.recommend && b.recommend) return 1
@@ -358,14 +360,26 @@ export default function ProjectClient() {
         dispatch({ type: 'SET_ALL_PROJECTS', payload: displayProjects })
         dispatch({ type: 'SET_FILTERED_PROJECTS', payload: displayProjects })
         dispatch({ type: 'SET_INITIAL_LOAD_COMPLETE', payload: true })
+      } else {
+        // 尝试从缓存获取数据
+        const cachedProjects = getCachedData()
+        if (cachedProjects) {
+          const displayProjects = cachedProjects.filter((project: Project) => project.type !== 0)
+          displayProjects.sort((a: Project, b: Project) => {
+            if (a.recommend && !b.recommend) return -1
+            if (!a.recommend && b.recommend) return 1
+            return 0
+          })
+          dispatch({ type: 'SET_ALL_PROJECTS', payload: displayProjects })
+          dispatch({ type: 'SET_FILTERED_PROJECTS', payload: displayProjects })
+          dispatch({ type: 'SET_INITIAL_LOAD_COMPLETE', payload: true })
+        }
       }
 
       // 然后从API获取最新数据
       const res = await fetchData(ENDPOINTS.PROJECTS)
       if (res.code === 200) {
-        // 过滤掉类型为0（不展示）的项目
         const displayProjects = res.data.filter((project: Project) => project.type !== 0)
-        // 按推荐状态排序，推荐项目在前
         displayProjects.sort((a: Project, b: Project) => {
           if (a.recommend && !b.recommend) return -1
           if (!a.recommend && b.recommend) return 1
@@ -374,14 +388,12 @@ export default function ProjectClient() {
         dispatch({ type: 'SET_ALL_PROJECTS', payload: displayProjects })
         dispatch({ type: 'SET_FILTERED_PROJECTS', payload: displayProjects })
         dispatch({ type: 'SET_INITIAL_LOAD_COMPLETE', payload: true })
-
-        // 更新缓存
         setCachedData(displayProjects)
       }
     }
 
     getProjects()
-  }, [token])
+  }, [token, initialProjects])
 
   // 防抖处理搜索
   const debouncedSearch = useCallback(

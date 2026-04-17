@@ -6,12 +6,17 @@ import BgOverlay from '@/app/(main)/components/BgOverlay'
 import { useUser } from '@/contexts/UserContext'
 import { useEssays, useInfiniteScroll, useEssayActions, useFileGallery } from './hooks'
 import { EssayCard, EssaySkeleton, EssayEmpty, ImageZoomModal, LoadMore } from './components'
+import type { Essay } from './types'
 import { staggerContainerVariants, skeletonVariants, cardVariants } from '@/components/shared/PageTransition'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 
-export default function EssayClient() {
+interface EssayClientProps {
+  initialEssays?: Essay[]
+}
+
+export default function EssayClient({ initialEssays }: EssayClientProps) {
   const { userInfo, administrator, onShowLogin } = useUser()
-  const { state, dispatch, fetchData, formatEssays } = useEssays(userInfo)
+  const { state, dispatch, fetchData, formatEssays } = useEssays(userInfo, { initialEssays })
   const { hasMore, isLoadingMore, loadMoreRef, getEssayList } = useInfiniteScroll({
     userInfo,
     fetchData,

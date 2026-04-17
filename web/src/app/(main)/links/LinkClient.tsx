@@ -30,6 +30,10 @@ interface FriendLink {
   createTime: string
 }
 
+interface LinkClientProps {
+  initialLinks: FriendLink[]
+}
+
 // 获取网站元数据的函数
 async function fetchWebsiteMetadata(url: string) {
   try {
@@ -727,24 +731,25 @@ const SectionTitle = ({ title, count, icon }: { title: string; count: number; ic
   </div>
 )
 
-export default function LinkClient() {
+export default function LinkClient({ initialLinks }: LinkClientProps) {
   const [friendLinks, setFriendLinks] = useState<FriendLink[]>([])
   const [toolLinks, setToolLinks] = useState<FriendLink[]>([])
   const [blogLinks, setBlogLinks] = useState<FriendLink[]>([])
   const [resourceLinks, setResourceLinks] = useState<FriendLink[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [fetchingUrls, setFetchingUrls] = useState<Set<number>>(new Set())
   const [apiError, setApiError] = useState<string | null>(null)
   const [applyModalOpen, setApplyModalOpen] = useState(false)
 
-  // 初始化时获取友链数据
+  // 初始化时使用服务端传入的数据
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true)
       setApiError(null)
 
       try {
-        const links = await fetchFriendLinks()
+        // 使用服务端传入的初始数据
+        const links = initialLinks || []
 
         if (links.length === 0) {
           setLoading(false)
