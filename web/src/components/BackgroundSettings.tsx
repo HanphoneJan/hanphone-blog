@@ -7,7 +7,7 @@ import ModalOverlay from './shared/ModalOverlay'
 import Compressor from 'compressorjs'
 import { STORAGE_KEYS, BACKGROUND_CONFIG } from '@/lib/constants'
 import { BACKGROUND_LABELS } from '@/lib/labels'
-import { alertSuccess } from '@/lib/Alert'
+import { alertSuccess, alertWarning } from '@/lib/Alert'
 
 interface BackgroundSettingsProps {
   open: boolean
@@ -60,7 +60,7 @@ export default function BackgroundSettings({ open, onClose }: BackgroundSettings
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > BACKGROUND_CONFIG.MAX_INPUT_BYTES) {
-      alert(BACKGROUND_LABELS.FILE_TOO_LARGE)
+      alertWarning(BACKGROUND_LABELS.FILE_TOO_LARGE)
       e.target.value = ''
       return
     }
@@ -78,7 +78,7 @@ export default function BackgroundSettings({ open, onClose }: BackgroundSettings
           done()
           const data = reader.result as string
           if (data.length > BACKGROUND_CONFIG.MAX_STORED_BYTES) {
-            alert(BACKGROUND_LABELS.FILE_TOO_LARGE)
+            alertWarning(BACKGROUND_LABELS.FILE_TOO_LARGE)
             return
           }
           localStorage.setItem(STORAGE_KEYS.BACKGROUND_CUSTOM, data)
@@ -87,13 +87,13 @@ export default function BackgroundSettings({ open, onClose }: BackgroundSettings
         }
         reader.onerror = () => {
           done()
-          alert(BACKGROUND_LABELS.COMPRESS_FAIL)
+          alertWarning(BACKGROUND_LABELS.COMPRESS_FAIL)
         }
         reader.readAsDataURL(result)
       },
       error: () => {
         done()
-        alert(BACKGROUND_LABELS.COMPRESS_FAIL)
+        alertWarning(BACKGROUND_LABELS.COMPRESS_FAIL)
       }
     })
     e.target.value = ''

@@ -1,6 +1,6 @@
 import { defaultCache } from '@serwist/next/worker'
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from 'serwist'
-import { ExpirationPlugin, NetworkFirst, Serwist } from 'serwist'
+import { ExpirationPlugin, NetworkFirst, NetworkOnly, Serwist } from 'serwist'
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -29,12 +29,28 @@ const navigationRuntimeCache: RuntimeCaching = {
   })
 }
 
+/**
+ * PWA 缓存策略：只缓存核心资源（HTML/JS/CSS/字体），不缓存图片/视频/大文件
+ * 从 defaultCache 中过滤掉图片、音频、视频、Next.js 图片优化等资源
+ */
+const coreCache: RuntimeCaching[] = defaultCache.filter(entry => {
+  // 排除图片资源 (jpg, jpeg, gif, png, svg, ico, webp)
+  if (entry.matcher && typeof entry.matcher === 'object' && 'test' in entry.matcher) {
+    const regex = entry.matcher as RegExp
+    if (/\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i.test(regex.source)) return false
+    if (/\/_next\/image\?url=.+$/i.test(regex.source)) return false
+    if (/\.(?:mp3|wav|ogg)$/i.test(regex.source)) return false
+    if (/\.(?:mp4|webm)$/i.test(regex.source)) return false
+  }
+  return true
+})
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: [navigationRuntimeCache, ...defaultCache],
+  runtimeCaching: [navigationRuntimeCache, ...coreCache],
   fallbacks: {
     entries: [
       {

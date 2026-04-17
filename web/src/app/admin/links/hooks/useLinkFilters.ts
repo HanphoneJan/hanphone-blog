@@ -7,10 +7,11 @@ export function useLinkFilters(friendLinkList: FriendLink[]) {
   const [filters, setFilters] = useState<FilterState>({
     type: '',
     searchQuery: '',
-    published: ''
+    published: '',
+    sortOrder: 'newest'
   })
 
-  // 筛选逻辑
+  // 筛选+排序逻辑
   const filteredList = useMemo(() => {
     let result = [...friendLinkList]
 
@@ -36,6 +37,13 @@ export function useLinkFilters(friendLinkList: FriendLink[]) {
       )
     }
 
+    // 按时间排序
+    result.sort((a, b) => {
+      const timeA = a.createTime ? new Date(a.createTime).getTime() : 0
+      const timeB = b.createTime ? new Date(b.createTime).getTime() : 0
+      return filters.sortOrder === 'newest' ? timeB - timeA : timeA - timeB
+    })
+
     return result
   }, [friendLinkList, filters])
 
@@ -49,7 +57,8 @@ export function useLinkFilters(friendLinkList: FriendLink[]) {
     setFilters({
       type: '',
       searchQuery: '',
-      published: ''
+      published: '',
+      sortOrder: 'newest'
     })
   }
 

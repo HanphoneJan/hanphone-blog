@@ -50,6 +50,7 @@ interface ListTabProps {
   onTogglePublished: (link: FriendLink) => void
   onParseApplyText: (link: FriendLink) => void
   onDelete: (id: number | null) => void
+  onAddLink: () => void
 }
 
 export function ListTab({
@@ -96,7 +97,8 @@ export function ListTab({
   onToggleRecommend,
   onTogglePublished,
   onParseApplyText,
-  onDelete
+  onDelete,
+  onAddLink
 }: ListTabProps) {
   // 组件挂载时刷新列表
   useEffect(() => {
@@ -109,11 +111,11 @@ export function ListTab({
       <LinkFilters
         filters={filters}
         totalCount={stats.total}
-        filteredCount={filteredList.length}
         publishedCount={stats.published}
         pendingCount={stats.pending}
         onFilterChange={onFilterChange}
         onReset={onResetFilters}
+        onAddLink={onAddLink}
       />
 
       {/* 友链列表 */}

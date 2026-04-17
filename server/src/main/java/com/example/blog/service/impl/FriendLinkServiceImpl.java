@@ -145,6 +145,9 @@ public class FriendLinkServiceImpl implements FriendLinkService {
                 if ((friendLink.getUrl() == null || friendLink.getUrl().isEmpty()) && parsed.get("url") != null) {
                     friendLink.setUrl(parsed.get("url"));
                 }
+                if ((friendLink.getLinkUrl() == null || friendLink.getLinkUrl().isEmpty()) && parsed.get("link_url") != null) {
+                    friendLink.setLinkUrl(parsed.get("link_url"));
+                }
                 if ((friendLink.getAvatar() == null || friendLink.getAvatar().isEmpty()) && parsed.get("avatar") != null) {
                     friendLink.setAvatar(parsed.get("avatar"));
                 }
@@ -176,34 +179,50 @@ public class FriendLinkServiceImpl implements FriendLinkService {
             return result;
         }
         
-        // 定义正则表达式模式
-        Map<String, Pattern> patterns = new HashMap<>();
-        patterns.put("name", Pattern.compile("[" + "名称" + "](?:名称|站点|标题)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
-        patterns.put("description", Pattern.compile("[" + "描述" + "](?:描述|简介|说明|介绍)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
-        patterns.put("url", Pattern.compile("[" + "链接" + "](?:链接|网址|URL|地址|网站)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
-        patterns.put("avatar", Pattern.compile("[" + "头像" + "](?:头像|图标|logo|头像地址|图标地址)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
-        patterns.put("siteshot", Pattern.compile("[" + "截图" + "](?:截图|预览|站点截图|网站截图|预览图)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
-        patterns.put("rss", Pattern.compile("[" + "RSS" + "](?:RSS|rss|订阅|feed)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
-        patterns.put("nickname", Pattern.compile("[" + "昵称" + "](?:昵称|站长|作者|昵称|名字)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
-        patterns.put("color", Pattern.compile("[" + "颜色" + "](?:颜色|主题色|装饰色|配色|color)?\\s*[:：]\\s*[\"']?([^\"'\\n,，]+)[\"']?", Pattern.CASE_INSENSITIVE));
+        // 定义正则表达式模式 —— 使用精确的关键词匹配，避免字段混淆
+        // 每个模式只匹配对应的关键词前缀，如"名称:"、"链接:"、"回访链接:"等
+        Map<String, Pattern> patterns = new LinkedHashMap<>();
+        // 回访地址优先匹配，避免被 url 的"链接"模式抢先匹配
+        patterns.put("link_url", Pattern.compile("回访(?:链接|地址|网址|url)\\s*[:：]\\s*[\"']?(https?://[^\"'\\n,，\\s]+)[\"']?", Pattern.CASE_INSENSITIVE));
+        patterns.put("name", Pattern.compile("(?:名称|站点名?|标题|网站名?)\\s*[:：]\\s*[\"']?([^\"'\\n,，]+?)[\"']?\\s*$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE));
+        patterns.put("description", Pattern.compile("(?:描述|简介|说明|介绍|签名)\\s*[:：]\\s*[\"']?([^\"'\\n]+?)[\"']?\\s*$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE));
+        patterns.put("url", Pattern.compile("(?:链接|网址|地址|网站|url|site)\\s*[:：]\\s*[\"']?(https?://[^\"'\\n,，\\s]+)[\"']?", Pattern.CASE_INSENSITIVE));
+        patterns.put("avatar", Pattern.compile("(?:头像|图标|logo|头像地址|图标地址)\\s*[:：]\\s*[\"']?(https?://[^\"'\\n,，\\s]+)[\"']?", Pattern.CASE_INSENSITIVE));
+        patterns.put("siteshot", Pattern.compile("(?:截图|预览(?:图)?|站点截图|网站截图|封面图)\\s*[:：]\\s*[\"']?(https?://[^\"'\\n,，\\s]+)[\"']?", Pattern.CASE_INSENSITIVE));
+        patterns.put("rss", Pattern.compile("(?:RSS|rss|订阅|feed)\\s*[:：]\\s*[\"']?(https?://[^\"'\\n,，\\s]+)[\"']?", Pattern.CASE_INSENSITIVE));
+        patterns.put("nickname", Pattern.compile("(?:昵称|站长|作者|名字|网名)\\s*[:：]\\s*[\"']?([^\"'\\n,，]+?)[\"']?\\s*$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE));
+        patterns.put("color", Pattern.compile("(?:颜色|主题色|装饰色|配色|color)\\s*[:：]\\s*[\"']?(#[0-9a-fA-F]{3,8})[\"']?", Pattern.CASE_INSENSITIVE));
         
         // 执行匹配
         for (Map.Entry<String, Pattern> entry : patterns.entrySet()) {
             Matcher matcher = entry.getValue().matcher(applyText);
             if (matcher.find()) {
                 String value = matcher.group(1).trim();
-                // 移除末尾的逗号、分号等
+                // 移除末尾的标点符号
                 value = value.replaceAll("[,，;；\\s]+$", "");
-                result.put(entry.getKey(), value);
+                if (!value.isEmpty()) {
+                    result.put(entry.getKey(), value);
+                }
             }
         }
         
-        // 备用：尝试从纯URL提取
+        // 备用：如果 url 仍未匹配，尝试从纯URL行提取（取第一个非头像/截图/RSS的URL）
         if (!result.containsKey("url")) {
             Pattern urlPattern = Pattern.compile("(https?://[^\\s\"'<>\\n]+)");
             Matcher urlMatcher = urlPattern.matcher(applyText);
-            if (urlMatcher.find()) {
-                result.put("url", urlMatcher.group(1));
+            // 跳过已识别为其他用途的URL
+            Set<String> usedUrls = new HashSet<>();
+            for (String key : Arrays.asList("avatar", "siteshot", "rss", "link_url")) {
+                if (result.containsKey(key)) {
+                    usedUrls.add(result.get(key));
+                }
+            }
+            while (urlMatcher.find()) {
+                String foundUrl = urlMatcher.group(1).trim();
+                if (!usedUrls.contains(foundUrl)) {
+                    result.put("url", foundUrl);
+                    break;
+                }
             }
         }
         

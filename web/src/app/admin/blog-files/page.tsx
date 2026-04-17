@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
+import ModalOverlay from '@/components/shared/ModalOverlay'
 import { ADMIN_FILE_LABELS } from '@/lib/labels'
 import {
   Folder,
@@ -731,8 +732,9 @@ export default function FileManagementPage() {
       {showCreateDirModal &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 animate-fadeIn" style={{ backgroundColor: 'rgba(var(--overlay), 0.5)' }}>
-            <div className="bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full max-w-md transform transition-transform duration-300 scale-100 animate-scaleIn" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <ModalOverlay onClick={() => setShowCreateDirModal(false)} />
+            <div className="relative z-10 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full max-w-md transform transition-transform duration-300 scale-100 animate-scaleIn" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
               <div className="p-4 border-b border-slate-200/50 flex justify-between items-center bg-white/60 rounded-t-xl" style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--muted))' }}>
                 <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
                   <Folder className="h-4.5 w-4.5 text-yellow-500" />
@@ -798,8 +800,9 @@ export default function FileManagementPage() {
       {deleteModalVisible &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 animate-fadeIn" style={{ backgroundColor: 'rgba(var(--overlay), 0.5)' }}>
-            <div className="bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full max-w-md transform transition-transform duration-300 scale-100 animate-scaleIn" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <ModalOverlay onClick={closeDeleteModal} />
+            <div className="relative z-10 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full max-w-md transform transition-transform duration-300 scale-100 animate-scaleIn" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
               <div className="p-4 border-b border-slate-200/50 flex justify-between items-center bg-white/60 rounded-t-xl" style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--muted))' }}>
                 <h3 className="text-base font-semibold text-red-600 flex items-center gap-2">
                   <AlertCircle className="h-4.5 w-4.5" />
@@ -857,8 +860,9 @@ export default function FileManagementPage() {
       {previewModalVisible &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 animate-fadeIn" style={{ backgroundColor: 'rgba(var(--overlay), 0.5)' }}>
-            <div className="bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full h-full max-w-5xl max-h-[90vh] transform transition-transform duration-300 scale-100 animate-scaleIn flex flex-col" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <ModalOverlay onClick={closePreviewModal} />
+            <div className="relative z-10 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full h-full max-w-5xl max-h-[90vh] transform transition-transform duration-300 scale-100 animate-scaleIn flex flex-col" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
               <div className="p-4 border-b border-slate-200/50 flex justify-between items-center bg-white/60 rounded-t-xl" style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--muted))' }}>
                 <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
                   <Eye className="h-4.5 w-4.5 text-blue-500" />
@@ -898,8 +902,9 @@ export default function FileManagementPage() {
       {uploading &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 animate-fadeIn" style={{ backgroundColor: 'rgba(var(--overlay), 0.5)' }}>
-            <div className="bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full max-w-md transform transition-transform duration-300 scale-100 animate-scaleIn p-4 text-center" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <ModalOverlay />
+            <div className="relative z-10 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 w-full max-w-md transform transition-transform duration-300 scale-100 animate-scaleIn p-4 text-center" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
               <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600 mx-auto mb-3" style={{ borderColor: 'rgb(var(--primary))' }}></div>
               <p className="text-slate-700 text-sm">文件上传中，请稍候...</p>
             </div>

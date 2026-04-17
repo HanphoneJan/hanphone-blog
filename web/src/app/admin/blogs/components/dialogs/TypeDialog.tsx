@@ -1,6 +1,7 @@
 'use client'
 
 import { createPortal } from 'react-dom'
+import ModalOverlay from '@/components/shared/ModalOverlay'
 import type { Type, Blog } from '../../types'
 
 interface TypeDialogProps {
@@ -24,8 +25,9 @@ export function TypeDialog({
   if (!visible) return null
 
   return createPortal(
-    <div className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[rgb(var(--card)/0.9)] border-[rgb(var(--border))] backdrop-blur-lg rounded-xl border w-full max-w-md p-6 shadow-2xl dark:bg-[rgb(var(--card)/0.9)] dark:border-[rgb(var(--border))]">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+      <ModalOverlay onClick={onClose} />
+      <div className="relative z-10 bg-[rgb(var(--card)/0.9)] border-[rgb(var(--border))] backdrop-blur-lg rounded-xl border w-full max-w-md p-6 shadow-2xl dark:bg-[rgb(var(--card)/0.9)] dark:border-[rgb(var(--border))]">
         <h3 className="text-xl font-semibold mb-4 text-[rgb(var(--text))] dark:text-[rgb(var(--text))]">修改分类</h3>
         <div className="space-y-4">
           <div>

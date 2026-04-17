@@ -322,10 +322,10 @@ export function LinkTable({
             </div>
           </div>
 
-          {/* 第二行：URL、描述 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2 text-xs">
-            <div>
-              <span className="text-[rgb(var(--muted))]">URL: </span>
+          {/* 第二行：URL + 描述 同一行 */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-1 text-xs">
+            <div className="flex items-center min-w-0 flex-1" style={{ minWidth: '120px' }}>
+              <span className="text-[rgb(var(--muted))] shrink-0">URL: </span>
               {renderEditableField(
                 link,
                 'url',
@@ -337,8 +337,8 @@ export function LinkTable({
                 '网站地址'
               )}
             </div>
-            <div>
-              <span className="text-[rgb(var(--muted))]">描述: </span>
+            <div className="flex items-center min-w-0 flex-1" style={{ minWidth: '120px' }}>
+              <span className="text-[rgb(var(--muted))] shrink-0">描述: </span>
               {renderEditableField(
                 link,
                 'description',
@@ -352,7 +352,7 @@ export function LinkTable({
             </div>
           </div>
 
-          {/* 第三行：昵称、RSS、图片 */}
+          {/* 第三行：昵称、RSS、截图、颜色、创建时间 */}
           <div className="flex flex-wrap items-center gap-3 text-xs">
             {/* 昵称 */}
             <div className="flex items-center gap-1">
@@ -390,7 +390,7 @@ export function LinkTable({
             )}
 
             {/* 主题色 */}
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-1">
               <span className="text-[rgb(var(--muted))]">颜色:</span>
               <div
                 className="w-4 h-4 rounded border border-[rgb(var(--border))]"
@@ -398,6 +398,13 @@ export function LinkTable({
                 title={link.color}
               />
             </div>
+
+            {/* 创建时间 */}
+            {link.createTime && (
+              <div className="text-[rgb(var(--muted))] ml-auto">
+                {new Date(link.createTime).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+              </div>
+            )}
           </div>
 
           {/* 展开的申请文本（如果有） */}

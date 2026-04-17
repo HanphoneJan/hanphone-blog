@@ -14,6 +14,7 @@ import { ADMIN_BLOG_INPUT_LABELS } from '@/lib/labels'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { STORAGE_KEYS } from '@/lib/constants'
+import ModalOverlay from '@/components/shared/ModalOverlay'
 // 引入 lucide 图标
 import {
   FileText,
@@ -569,8 +570,9 @@ export default function BlogEditorPage() {
         {publishModalVisible &&
           typeof document !== 'undefined' &&
           createPortal(
-            <div className="fixed inset-0 bg-[rgb(var(--overlay))]/0.6 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(var(--overlay), 0.6)' }}>
-              <div className="bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[85vh] flex flex-col" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
+            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+              <ModalOverlay onClick={() => setPublishModalVisible(false)} />
+              <div className="relative z-10 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[85vh] flex flex-col" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
                 <div className="px-5 py-3 border-b border-[rgb(var(--border))] flex justify-between items-center shrink-0" style={{ backgroundColor: 'rgb(var(--muted))' }}>
                   <h3 className="text-lg font-semibold text-[rgb(var(--primary))] flex items-center gap-2">
                     <FileText className="h-5 w-5" />
@@ -829,8 +831,9 @@ export default function BlogEditorPage() {
           dialogImageUrl &&
           typeof document !== 'undefined' &&
           createPortal(
-            <div className="fixed inset-0 bg-[rgb(var(--overlay))]/0.6 backdrop-blur-sm flex items-center justify-center z-52 p-4" style={{ backgroundColor: 'rgba(var(--overlay), 0.6)' }}>
-              <div className="relative max-w-4xl w-full animate-in fade-in zoom-in duration-200">
+            <div className="fixed inset-0 flex items-center justify-center z-52 p-4">
+              <ModalOverlay onClick={() => setPreviewModalVisible(false)} />
+              <div className="relative z-10 max-w-4xl w-full animate-in fade-in zoom-in duration-200">
                 <button
                   onClick={() => setPreviewModalVisible(false)}
                   className="absolute -top-12 right-0 text-white hover:text-[rgb(var(--text-muted))] transition-colors bg-black/50 p-2 rounded-full hover:bg-black/70"

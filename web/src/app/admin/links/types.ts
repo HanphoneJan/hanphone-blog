@@ -50,6 +50,7 @@ export interface FormValues {
   name: string
   description: string
   url: string
+  link_url?: string
   type: string
   color: string
   avatar?: string
@@ -63,6 +64,7 @@ export interface FilterState {
   type: string
   searchQuery: string
   published: '' | 'true' | 'false'  // 发布状态筛选
+  sortOrder: 'newest' | 'oldest'     // 时间排序
 }
 
 // 本地输入值类型
@@ -84,6 +86,7 @@ export interface ParsedApplyText {
   name?: string
   description?: string
   url?: string
+  link_url?: string
   avatar?: string
   siteshot?: string
   rss?: string
@@ -133,5 +136,6 @@ export const DEFAULT_FORM_VALUES: FormValues = {
 export const DEFAULT_FILTERS: FilterState = {
   type: '',
   searchQuery: '',
-  published: ''
+  published: '',
+  sortOrder: 'newest'
 }

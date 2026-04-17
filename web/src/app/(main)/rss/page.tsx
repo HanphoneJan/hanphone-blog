@@ -1,6 +1,7 @@
 import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import { Rss, Copy, ExternalLink, BookOpen, FileText, StickyNote, Briefcase, FolderOpen } from 'lucide-react'
 import Link from 'next/link'
+import { alertSuccess } from '@/lib/Alert'
 
 export const metadata = {
   title: 'RSS 订阅',
@@ -65,7 +66,7 @@ export default function RssPage() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(rssUrl)
-                alert('RSS 链接已复制到剪贴板！')
+                alertSuccess('RSS 链接已复制到剪贴板！')
               }}
               className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors whitespace-nowrap"
             >

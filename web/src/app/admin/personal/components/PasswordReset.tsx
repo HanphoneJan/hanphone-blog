@@ -6,6 +6,7 @@ import md5 from 'md5'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
+import ModalOverlay from '@/components/shared/ModalOverlay'
 import { ADMIN_PERSONAL_LABELS } from '@/lib/labels'
 
 interface PasswordResetProps {
@@ -83,8 +84,9 @@ export function PasswordReset({ userId, loading, setLoading, onClose }: Password
   }
 
   return (
-    <div className="fixed inset-0 bg-[rgb(var(--overlay))]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] w-full max-w-md overflow-hidden">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+      <ModalOverlay onClick={onClose} />
+      <div className="relative z-10 bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] w-full max-w-md overflow-hidden">
         <div className="p-5 border-b border-[rgb(var(--border))] flex justify-between items-center">
           <h3 className="text-lg font-semibold text-[rgb(var(--primary))]">重置密码</h3>
           <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { showAlert } from "@/lib/Alert";
 
 interface InlineEditState<T> {
   editingId: string | number | null;
@@ -63,7 +64,7 @@ export function useInlineEdit<T extends { id: string | number }>(
       const validation = onValidate(value, field);
       if (validation !== true) {
         if (typeof validation === "string") {
-          alert(validation);
+          showAlert(validation, { type: 'warning' });
         }
         return false;
       }

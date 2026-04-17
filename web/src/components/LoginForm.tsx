@@ -7,6 +7,7 @@ import { ENDPOINTS } from '@/lib/api'
 import { useUser } from '@/contexts/UserContext'
 import { useTheme } from '@/contexts/ThemeProvider'
 import { alertSuccess, alertError } from '@/lib/Alert'
+import ModalOverlay from '@/components/shared/ModalOverlay'
 import md5 from 'md5'
 import { getLocationInfo } from '@/lib/location' // 导入server action
 import { TIME, VALIDATION, STORAGE_KEYS, DEFAULT_LOCATION, API_CODE, Z_INDEX, ASSETS } from '@/lib/constants'
@@ -315,9 +316,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
   if (!visible) return null
 
   const modalContent = (
-    <div className="fixed inset-0 flex items-center justify-center p-4 backdrop-blur-sm bg-[rgb(var(--overlay)/0.6)]" style={{ zIndex: Z_INDEX.MODAL }}>
-        
-      <div className="bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
+    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.MODAL }}>
+      <ModalOverlay onClick={onClose} />
+
+      <div className="relative z-10 bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
         
         <div className="flex justify-between items-center px-6 py-4 border-b border-[rgb(var(--border))]">
           <h2 className="text-lg font-semibold text-[rgb(var(--primary))]">
