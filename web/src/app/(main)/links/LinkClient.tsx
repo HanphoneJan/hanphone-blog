@@ -302,12 +302,17 @@ const BrutalistHelp = () => {
   
   useEffect(() => { setMounted(true) }, [])
 
-  const linkData = `以下是一个示例，也是本网站的友链信息：
+  const linkData = `申请友链前请添加本站为友链，要求网站无违法违规内容、无强制广告和恶意信息，推荐使用HTTPS。
+  有问题欢迎在我的留言板留言！以下是本站信息：
   {
     名称: "云林有风",
+    昵称："寒枫"
     描述: "不骛于虚声",
     链接: "${SITE_URL}",
+    回访地址："${SITE_URL}/links",
+    RSS："${SITE_URL}/rss.xml",
     头像: "${SITE_URL}/avatar.png",
+    截图："${SITE_URL}/og-image.png",
     装饰色: "#1890ff"  /* 用于卡片边框、标题颜色等 */
   }`
 
@@ -343,15 +348,9 @@ const BrutalistHelp = () => {
             className="text-xl font-black"
             style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
           >
-            添加友链
+            添加友链须知
           </h3>
         </div>
-
-        {/* 内容 */}
-        <p className="text-sm font-bold mb-4 tracking-wide">
-          联系我添加你的网站
-        </p>
-        
         <div 
           className="border-2 border-[rgb(var(--text))] p-4 bg-[rgb(var(--muted))] overflow-x-auto"
         >
