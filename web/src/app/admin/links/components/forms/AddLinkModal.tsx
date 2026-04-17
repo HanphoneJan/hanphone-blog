@@ -180,7 +180,7 @@ export function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) 
 
   const modal = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <ModalOverlay onClick={onClose} zIndex={9999} />
+      <ModalOverlay onClick={onClose} />
       <div
         className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] shadow-xl"
         onClick={e => e.stopPropagation()}
