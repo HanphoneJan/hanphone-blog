@@ -77,7 +77,7 @@ async function fetchWebsiteMetadata(url: string) {
 }
 
 // 获取友链数据的函数
-async function fetchFriendLinks() {
+async function fetchFriendLinks(): Promise<FriendLink[]> {
   try {
     const response = await fetch(ENDPOINTS.FRIENDLINKS, {
       cache: 'no-store'
@@ -398,7 +398,7 @@ const BrutalistTitle = ({ onApply }: { onApply: () => void }) => {
       
       {/* 主标题 */}
       <div className="relative">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h1
               className="text-5xl md:text-7xl font-black tracking-tighter mb-2"
@@ -421,7 +421,7 @@ const BrutalistTitle = ({ onApply }: { onApply: () => void }) => {
             </div>
           </div>
           
-          {/* 申请友链按钮 */}
+          {/* 申请友链按钮 - 桌面端 */}
           <button
             onClick={onApply}
             className="relative group hidden sm:block"
@@ -435,22 +435,22 @@ const BrutalistTitle = ({ onApply }: { onApply: () => void }) => {
               <span>申请友链</span>
             </div>
           </button>
+          
+          {/* 申请友链按钮 - 移动端（与标题同一行） */}
+          <button
+            onClick={onApply}
+            className="relative group sm:hidden flex-shrink-0"
+          >
+            <div 
+              className="absolute inset-0 bg-[rgb(var(--primary))]"
+              style={{ transform: 'translate(3px, 3px)' }}
+            />
+            <div className="relative flex items-center justify-center gap-1 px-3 py-2 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] font-bold hover:bg-[rgb(var(--primary))] transition-colors">
+              <Plus className="w-4 h-4" />
+              <span className="text-sm">申请</span>
+            </div>
+          </button>
         </div>
-        
-        {/* 移动端申请按钮 */}
-        <button
-          onClick={onApply}
-          className="relative group sm:hidden mt-4 w-full"
-        >
-          <div 
-            className="absolute inset-0 bg-[rgb(var(--primary))]"
-            style={{ transform: 'translate(3px, 3px)' }}
-          />
-          <div className="relative flex items-center justify-center gap-2 px-4 py-3 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] font-bold hover:bg-[rgb(var(--primary))] transition-colors">
-            <Plus className="w-5 h-5" />
-            <span>申请友链</span>
-          </div>
-        </button>
       </div>
       
       {/* 装饰线条 */}
@@ -748,8 +748,15 @@ export default function LinkClient({ initialLinks }: LinkClientProps) {
       setApiError(null)
 
       try {
-        // 使用服务端传入的初始数据
-        const links = initialLinks || []
+        // 优先使用服务端传入的初始数据，如果为空则客户端重新请求
+        let links = initialLinks || []
+
+        if (links.length === 0) {
+          console.log('[Client] initialLinks is empty, fetching from client...')
+          links = await fetchFriendLinks()
+        }
+
+        console.log('[Client] links to display:', links.length)
 
         if (links.length === 0) {
           setLoading(false)
@@ -757,10 +764,17 @@ export default function LinkClient({ initialLinks }: LinkClientProps) {
         }
 
         // 分类存储所有类型的链接
-        setFriendLinks(links.filter((link: FriendLink) => link.type === 'friend'))
-        setToolLinks(links.filter((link: FriendLink) => link.type === 'tool'))
-        setBlogLinks(links.filter((link: FriendLink) => link.type === 'blog'))
-        setResourceLinks(links.filter((link: FriendLink) => link.type === 'resource'))
+        const friendLinksFiltered = links.filter((link: FriendLink) => link.type === 'friend')
+        const toolLinksFiltered = links.filter((link: FriendLink) => link.type === 'tool')
+        const blogLinksFiltered = links.filter((link: FriendLink) => link.type === 'blog')
+        const resourceLinksFiltered = links.filter((link: FriendLink) => link.type === 'resource')
+        
+        console.log('[Client] Filtered counts - friend:', friendLinksFiltered.length, 'tool:', toolLinksFiltered.length, 'blog:', blogLinksFiltered.length, 'resource:', resourceLinksFiltered.length)
+        
+        setFriendLinks(friendLinksFiltered)
+        setToolLinks(toolLinksFiltered)
+        setBlogLinks(blogLinksFiltered)
+        setResourceLinks(resourceLinksFiltered)
 
         // 更新所有需要补充数据的链接
         const linksToUpdate = links.filter((link: FriendLink) => {

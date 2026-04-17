@@ -14,6 +14,7 @@ interface ApplyModalProps {
 interface FormData {
   name: string
   url: string
+  link_url: string
   description: string
   nickname: string
   avatar: string
@@ -26,6 +27,7 @@ interface FormData {
 const initialFormData: FormData = {
   name: '',
   url: '',
+  link_url: '',
   description: '',
   nickname: '',
   avatar: '',
@@ -61,6 +63,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
       const payload: Record<string, unknown> = {
         name: formData.name,
         url: formData.url,
+        link_url: formData.link_url,
         description: formData.description,
         type: 'friend',
         color: formData.color,
@@ -196,6 +199,22 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                   value={formData.url}
                   onChange={e => handleChange('url', e.target.value)}
                   placeholder="https://example.com"
+                  className="w-full px-3 py-2 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] focus:outline-none focus:border-[rgb(var(--primary))]"
+                />
+              </div>
+
+              {/* 回访地址（本站在你站的链接） */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold mb-2">
+                  <Link2 className="w-4 h-4" />
+                  回访地址
+                  <span className="text-xs opacity-50 font-normal">（本站在你站中的链接）</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.link_url}
+                  onChange={e => handleChange('link_url', e.target.value)}
+                  placeholder="https://example.com/links"
                   className="w-full px-3 py-2 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] focus:outline-none focus:border-[rgb(var(--primary))]"
                 />
               </div>
