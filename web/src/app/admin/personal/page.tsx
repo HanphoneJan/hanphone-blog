@@ -287,8 +287,7 @@ export default function ProfilePage() {
       initial="hidden"
       animate="visible"
     >
-      {/* 背景效果 */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(50,100,200,0.1)_0%,transparent_40%),radial-gradient(circle_at_80%_80%,rgba(80,120,250,0.1)_0%,transparent_40%)] opacity-0 dark:opacity-100"></div>
+      {/* 背景效果 - 已移除 */}
 
       <main className="flex-1 w-full max-w-7xl mx-auto lg:px-2 lg:py-2 relative z-10">
         {/* 顶部标签式导航 */}

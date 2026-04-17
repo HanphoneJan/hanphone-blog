@@ -200,8 +200,7 @@ export default function TagsManagementPage() {
       className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 via-white to-blue-50 text-slate-800 relative overflow-hidden"
       style={{ background: 'linear-gradient(to bottom, rgb(var(--bg)))', color: 'rgb(var(--text))' }}
     >
-      {/* 背景装饰 */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(50,100,200,0.1)_0%,transparent_40%),radial-gradient(circle_at_80%_80%,rgba(80,120,250,0.1)_0%,transparent_40%)] opacity-100"></div>
+      {/* 背景装饰 - 已移除 */}
 
       <main className="flex-1 w-full max-w-7xl mx-auto lg:px-2 lg:py-2 relative z-10">
         {/* 主内容区卡片 */}
@@ -348,7 +347,7 @@ export default function TagsManagementPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -406,7 +405,7 @@ export default function TagsManagementPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}

@@ -265,7 +265,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
     }
 
   return (
-    <div className="flex w-full h-screen bg-[rgb(var(--card))] overflow-hidden">
+    <div className="flex w-full h-screen bg-[rgb(var(--bg))] overflow-hidden">
       <aside
         className={`z-50 bg-[rgb(var(--bg))] backdrop-blur-sm text-[rgb(var(--text))] transition-all duration-300 shrink-0 border-r border-[rgb(var(--border))] ${
           isMobileView
