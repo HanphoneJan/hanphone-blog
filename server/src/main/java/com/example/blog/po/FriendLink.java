@@ -19,7 +19,8 @@ public class FriendLink {
     private String type;
     private String name;
     private String description;
-    private String link_url;
+    @Column(name = "link_url")
+    private String linkUrl;
     private String url;
     private String avatar;
     private String color;
