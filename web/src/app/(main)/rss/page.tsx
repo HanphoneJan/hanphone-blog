@@ -130,43 +130,6 @@ export default function RssPage() {
           </div>
         </div>
 
-        {/* 推荐的阅读器 */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-            推荐的 RSS 阅读器
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { name: 'Follow', desc: '新一代 RSS 阅读器', url: 'https://follow.is/' },
-              { name: 'Inoreader', desc: '功能强大的云端阅读器', url: 'https://www.inoreader.com/' },
-              { name: 'Feedly', desc: '流行的 RSS 聚合服务', url: 'https://feedly.com/' },
-              { name: 'Reeder', desc: 'Apple 生态优秀阅读器', url: 'https://reederapp.com/' },
-            ].map((reader) => (
-              <a
-                key={reader.name}
-                href={reader.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white font-bold text-sm">
-                  {reader.name[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                    {reader.name}
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {reader.desc}
-                  </p>
-                </div>
-                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors flex-shrink-0" />
-              </a>
-            ))}
-          </div>
-        </div>
-
         {/* 返回首页 */}
         <div className="text-center mt-12">
           <Link
