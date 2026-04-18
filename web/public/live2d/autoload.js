@@ -3,7 +3,7 @@
 // 支持从 window.LIVE2D_CONFIG 配置对象读取，未配置则使用默认值
 const live2d_path = (typeof window !== 'undefined' && window.LIVE2D_CONFIG?.path)
   ? window.LIVE2D_CONFIG.path
-  : 'https://hanphone.top/live2d/'
+  : '/live2d/'
 // const live2d_path = '/dist/';
 
 // 资源加载状态管理

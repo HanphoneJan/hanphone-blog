@@ -366,22 +366,12 @@
   "models": [
     {
       "name": "迷迷",
-      "paths": ["https://hanphone.top/live2d/models/mimi/迷迷挂件.model3.json"],
+      "paths": ["/live2d/models/mimi/迷迷挂件.model3.json"],
       "message": "迷迷，迷迷迷迷！（伙伴，见到你很开心 ~）"
     },
     {
-      "name": "三月七",
-      "paths": ["https://hanphone.top/live2d/models/37/37.model3.json"],
-      "message": "我是三月七，很高兴见到你！"
-    },
-    {
-      "name": "haruto",
-      "paths": ["https://hanphone.top/live2d/models/haruto/haruto.model.json"],
-      "message": "你好，我是haruto"
-    },
-    {
       "name": "ariu",
-      "paths": ["https://hanphone.top/live2d/models/ariu/ariu.model3.json"],
+      "paths": ["/live2d/models/ariu/ariu.model3.json"],
       "message": "你好，我是ariu"
     }
   ]
