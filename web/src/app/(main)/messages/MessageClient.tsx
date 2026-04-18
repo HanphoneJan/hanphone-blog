@@ -11,6 +11,98 @@ import BgOverlay from '@/app/(main)/components/BgOverlay'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import './message.css'
 
+// ============================================
+// 右侧滚动导航条组件
+// ============================================
+interface ScrollNavBarProps {
+  messages: Message[]
+  activeId: number | null
+  onNavigate: (id: number) => void
+  isVisible: boolean
+}
+
+const ScrollNavBar = ({ messages, activeId, onNavigate, isVisible }: ScrollNavBarProps) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  
+  if (!isVisible || messages.length === 0) return null
+
+  const handleClick = (messageId: number, index: number) => {
+    onNavigate(messageId)
+    const element = document.getElementById(messageId.toString())
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  return (
+    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col items-center">
+      {/* 细长的轨道 */}
+      <div className="relative flex flex-col items-center py-2">
+        {/* 背景线 */}
+        <div 
+          className="absolute w-px bg-[rgb(var(--msg-border))] rounded-full"
+          style={{ 
+            top: '12px', 
+            bottom: '12px',
+            opacity: 0.5 
+          }} 
+        />
+        
+        {/* 指示点 */}
+        <div className="relative flex flex-col gap-1.5">
+          {messages.map((message, index) => {
+            const isActive = activeId === message.id
+            const isHovered = hoveredIndex === index
+            
+            return (
+              <button
+                key={message.id}
+                onClick={() => handleClick(message.id, index)}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                className="relative w-6 h-5 flex items-center justify-center group"
+                title={`${message.nickname} 的留言`}
+              >
+                {/* 点 */}
+                <span 
+                  className={`
+                    block rounded-full transition-all duration-200
+                    ${isActive 
+                      ? 'w-2 h-2 bg-[rgb(var(--msg-accent))]' 
+                      : isHovered
+                        ? 'w-1.5 h-1.5 bg-[rgb(var(--msg-text))]'
+                        : 'w-1 h-1 bg-[rgb(var(--msg-muted))]'
+                    }
+                  `}
+                  style={{
+                    opacity: isActive ? 1 : isHovered ? 0.8 : 0.5
+                  }}
+                />
+                
+                {/* 悬停提示 */}
+                <AnimatePresence>
+                  {isHovered && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 5 }}
+                      className="absolute right-7 top-1/2 -translate-y-1/2 whitespace-nowrap"
+                    >
+                      <div className="bg-[rgb(var(--msg-surface))] border border-[rgb(var(--msg-border))] rounded px-2 py-1 text-xs text-[rgb(var(--msg-text))] shadow-lg">
+                        {message.nickname}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // 留言项入场动画
 const messageItemVariants: Variants = {
   initial: { opacity: 0, y: 10 },
@@ -520,6 +612,15 @@ export default function MessageClient() {
   return (
     <div className="min-h-screen msg-container relative">
       <BgOverlay />
+      
+      {/* 右侧滚动导航条 - 桌面端 */}
+      <ScrollNavBar 
+        messages={messages}
+        activeId={visibleMessageId}
+        onNavigate={(id) => setVisibleMessageId(id)}
+        isVisible={!isMobile && messages.length > 0}
+      />
+      
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title="删除留言"
