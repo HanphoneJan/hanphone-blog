@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client' // 从react-dom/client导入createRoot
 import { X, Check, AlertCircle, Info } from 'lucide-react'
