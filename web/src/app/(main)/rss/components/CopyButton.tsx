@@ -27,8 +27,10 @@ export default function CopyButton({ text }: CopyButtonProps) {
   return (
     <button
       onClick={handleCopy}
-      className={`inline-flex items-center justify-center gap-2 px-4 py-3 text-white rounded-lg transition-colors whitespace-nowrap ${
-        copied ? 'bg-green-500 hover:bg-green-600' : 'bg-orange-500 hover:bg-orange-600'
+      className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all whitespace-nowrap font-medium ${
+        copied 
+          ? 'bg-[rgb(var(--success))] text-white hover:opacity-90' 
+          : 'bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))]'
       }`}
     >
       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
