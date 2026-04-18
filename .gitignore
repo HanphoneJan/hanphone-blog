@@ -1,6 +1,8 @@
 # IDE
 .idea/
 .vscode/
+.claude
+.codebuddy
 *.iml
 *.ipr
 *.iws
