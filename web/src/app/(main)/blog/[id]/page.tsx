@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { ENDPOINTS } from '@/lib/api'
+import { createMetadata } from '@/lib/seo-config'
 import BlogDetailClient from './components/BlogDetailClient'
 import type { Blog, RelatedBlog } from './types'
 
@@ -56,25 +57,27 @@ export async function generateMetadata({ params }: BlogDetailPageProps) {
   const blog = await fetchBlogData(id)
 
   if (!blog) {
-    return {
-      title: '文章未找到',
-      description: '抱歉，您访问的文章不存在或已被删除。'
-    }
+    return createMetadata(
+      '文章未找到',
+      '抱歉，您访问的文章不存在或已被删除。',
+      { noIndex: true }
+    )
   }
 
-  return {
-    title: `${blog.title} | 寒枫的博客`,
-    description: blog.description || blog.content.slice(0, 150),
-    keywords: blog.tags?.map(tag => tag.name).join(', ') || '博客,技术',
-    openGraph: {
-      title: blog.title,
-      description: blog.description || blog.content.slice(0, 150),
+  const keywords = blog.tags?.map(tag => tag.name) || []
+
+  return createMetadata(
+    blog.title,
+    blog.description || blog.content.slice(0, 150),
+    {
+      path: `/blog/${id}`,
+      keywords,
       type: 'article',
       publishedTime: blog.createTime,
       authors: [blog.user?.nickname || '寒枫'],
-      images: blog.firstPicture ? [blog.firstPicture] : []
+      ogImage: blog.firstPicture || undefined
     }
-  }
+  )
 }
 
 // 服务端组件

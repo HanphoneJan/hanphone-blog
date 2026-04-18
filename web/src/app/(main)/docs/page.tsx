@@ -4,11 +4,6 @@ import BgOverlay from '@/app/(main)/components/BgOverlay'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata = {
-  title: '文档中心 | 寒枫的博客',
-  description: '值得保存分享的文档，包括作品、教程和参考资料',
-}
-
 export default async function DocsPage() {
   const { docs } = await getDocMeta()
 

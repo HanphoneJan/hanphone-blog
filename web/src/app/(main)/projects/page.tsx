@@ -1,5 +1,4 @@
 import { ENDPOINTS } from '@/lib/api'
-import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import ProjectClient from './ProjectClient'
 
 interface Project {
@@ -37,21 +36,6 @@ async function fetchProjects(): Promise<Project[]> {
   } catch (error) {
     console.error('Failed to fetch projects:', error)
     return []
-  }
-}
-
-// 生成元数据
-export async function generateMetadata() {
-  return {
-    title: '项目展示 | ' + SITE_CONFIG.name,
-    description: '探索个人项目作品集，包括完整项目、实用工具、小游戏和编程练习。',
-    keywords: '项目,作品集,工具,小游戏,编程练习,React,Next.js,前端开发',
-    openGraph: {
-      title: '项目展示 | ' + SITE_CONFIG.name,
-      description: '探索个人项目作品集，包括完整项目、实用工具、小游戏和编程练习。',
-      url: `${SITE_URL}/projects`,
-      type: 'website',
-    },
   }
 }
 

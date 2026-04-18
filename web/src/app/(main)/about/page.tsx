@@ -33,14 +33,6 @@ async function fetchPersonalData(): Promise<Item[]> {
   }
 }
 
-// 生成静态元数据
-export async function generateMetadata() {
-  return {
-    title: '关于我 | 寒枫的博客',
-    description: '了解更多关于寒枫的信息，包括技能、作品、爱好和个人评价。'
-  }
-}
-
 // 服务端组件
 export default async function PersonalPage() {
   const data = await fetchPersonalData()

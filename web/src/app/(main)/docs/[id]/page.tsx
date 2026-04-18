@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { createMetadata } from '@/lib/seo-config'
 import { getDocMeta, getDocById } from '../lib/docLoader'
 import DocDetailClient from './components/DocDetailClient'
 import BgOverlay from '@/app/(main)/components/BgOverlay'
@@ -21,25 +22,22 @@ export async function generateMetadata({ params }: DocPageProps) {
   })
 
   if (!docMeta) {
-    return {
-      title: '文档未找到',
-      robots: { index: false, follow: false },
-    }
+    return createMetadata(
+      '文档未找到',
+      '抱歉，您访问的文档不存在或已被删除。',
+      { noIndex: true }
+    )
   }
 
-  return {
-    title: `${docMeta.title} | 文档中心`,
-    description: docMeta.description,
-    openGraph: {
-      title: docMeta.title,
-      description: docMeta.description,
+  return createMetadata(
+    docMeta.title,
+    docMeta.description,
+    {
+      path: `/docs/${id}`,
       type: 'article',
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
-  }
+      publishedTime: docMeta.createTime
+    }
+  )
 }
 
 export default async function DocPage({ params }: DocPageProps) {

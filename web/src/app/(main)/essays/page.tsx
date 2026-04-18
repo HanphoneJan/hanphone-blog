@@ -1,5 +1,4 @@
 import { ENDPOINTS } from '@/lib/api'
-import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import EssayClient from './EssayClient'
 
 interface Essay {
@@ -60,21 +59,6 @@ async function fetchEssays(): Promise<Essay[]> {
   } catch (error) {
     console.error('Failed to fetch essays:', error)
     return []
-  }
-}
-
-// 生成元数据
-export async function generateMetadata() {
-  return {
-    title: '随笔 | ' + SITE_CONFIG.name,
-    description: '阅读生活随笔、技术心得和日常分享，记录生活中的点滴感悟。',
-    keywords: '随笔,生活,技术心得,日常分享,博客',
-    openGraph: {
-      title: '随笔 | ' + SITE_CONFIG.name,
-      description: '阅读生活随笔、技术心得和日常分享，记录生活中的点滴感悟。',
-      url: `${SITE_URL}/essays`,
-      type: 'website',
-    },
   }
 }
 

@@ -1,9 +1,17 @@
 import { ENDPOINTS } from '@/lib/api'
 import { PAGINATION } from '@/lib/constants'
+import { createMetadata } from '@/lib/seo-config'
 import HomeClient from './HomeClient'
 import type { Blog, Type, Tag } from './types'
 
 export const dynamic = 'force-dynamic'
+
+// 生成元数据
+export const metadata = createMetadata(
+  '首页',
+  '寒枫的个人博客 | Hanphone\'s Blog | 分享Agent开发、前端开发、全栈开发、机器学习等技术文章，记录项目经验、生活经历，探究AI应用，探索自我发展。',
+  { path: '/' }
+)
 
 // 获取博客列表（服务端）
 async function fetchBlogs(): Promise<{ blogs: Blog[]; total: number }> {
@@ -66,15 +74,6 @@ async function fetchRecommendBlogs(): Promise<Blog[]> {
   } catch (error) {
     console.error('Failed to fetch recommend blogs:', error)
     return []
-  }
-}
-
-// 生成元数据
-export async function generateMetadata() {
-  return {
-    title: '寒枫的博客 | 分享技术与生活',
-    keywords: '寒枫,云林有风，博客,技术博客,前端开发,后端开发,全栈开发,React,Node.js',
-    description: '寒枫的个人博客 | Hanphone\'s Blog | 分享Agent开发、前端开发、全栈开发、机器学习等技术文章，记录项目经验、生活经历，探究AI应用，探索自我发展。'
   }
 }
 

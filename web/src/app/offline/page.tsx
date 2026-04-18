@@ -1,7 +1,12 @@
-'use client'
-
 import Link from 'next/link'
 import { WifiOff } from 'lucide-react'
+import { createMetadata } from '@/lib/seo-config'
+
+export const metadata = createMetadata(
+  '离线状态',
+  '您正处于离线状态，请检查网络连接后重试。',
+  { noIndex: true }
+)
 
 export default function OfflinePage() {
   return (

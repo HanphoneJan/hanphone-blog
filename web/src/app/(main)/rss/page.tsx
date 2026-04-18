@@ -1,12 +1,13 @@
-import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
-import { Rss, Copy, ExternalLink, BookOpen, FileText, StickyNote, Briefcase, FolderOpen } from 'lucide-react'
+import { SITE_CONFIG, SITE_URL, createMetadata } from '@/lib/seo-config'
+import { Rss, ExternalLink, BookOpen, FileText, StickyNote, Briefcase, FolderOpen } from 'lucide-react'
 import Link from 'next/link'
-import { alertSuccess } from '@/lib/Alert'
+import CopyButton from './components/CopyButton'
 
-export const metadata = {
-  title: 'RSS 订阅',
-  description: `订阅 ${SITE_CONFIG.name} 的 RSS 源，及时获取博客、随笔、项目、文档等最新内容`,
-}
+export const metadata = createMetadata(
+  'RSS 订阅',
+  `订阅 ${SITE_CONFIG.name} 的 RSS 源，及时获取博客、随笔、项目、文档等最新内容`,
+  { path: '/rss', keywords: ['RSS', '订阅', 'Feed'] }
+)
 
 const CONTENT_TYPES = [
   { icon: FileText, name: '博客文章', desc: '技术文章、学习笔记、经验分享', color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20' },
@@ -63,16 +64,7 @@ export default function RssPage() {
             <code className="flex-1 bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg text-sm text-gray-800 dark:text-gray-200 break-all font-mono">
               {rssUrl}
             </code>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(rssUrl)
-                alertSuccess('RSS 链接已复制到剪贴板！')
-              }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors whitespace-nowrap"
-            >
-              <Copy className="w-4 h-4" />
-              复制链接
-            </button>
+            <CopyButton text={rssUrl} />
           </div>
 
           <a

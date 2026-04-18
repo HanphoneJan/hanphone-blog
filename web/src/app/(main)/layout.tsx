@@ -8,15 +8,11 @@ import { PageTransition } from '@/components/shared/PageTransition'
 import { LoadingBar } from '@/components/shared/LoadingBar'
 
 export const metadata: Metadata = {
-  title: {
-    default: `首页 - ${SITE_CONFIG.name}`,
-    template: `%s | ${SITE_CONFIG.name}`,
-  },
   description: SITE_CONFIG.description,
   keywords: [...SITE_CONFIG.keywords],
   authors: [{ name: SITE_CONFIG.author.name }],
   openGraph: {
-    title: `首页 - ${SITE_CONFIG.name}`,
+    title: `云林有风 | 寒枫的博客`,
     description: SITE_CONFIG.description,
     type: 'website',
     url: SITE_URL,
@@ -25,7 +21,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `首页 - ${SITE_CONFIG.name}`,
+    title: `云林有风 | 寒枫的博客`,
     description: SITE_CONFIG.description,
   },
   robots: {

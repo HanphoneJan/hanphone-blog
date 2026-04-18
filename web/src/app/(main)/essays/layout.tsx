@@ -1,29 +1,10 @@
-import { Metadata } from 'next'
-import { SITE_URL } from '@/lib/seo-config'
+import { createMetadata } from '@/lib/seo-config'
 
-export const metadata: Metadata = {
-  title: '随笔',
-  description: '记录生活中的点滴，分享学习过程中的感悟和思考。',
-  keywords: '随笔,生活记录,学习感悟,思考,Hanphone',
-  authors: [{ name: 'Hanphone' }],
-  openGraph: {
-    title: '随笔',
-    description: '沿途的风景很美，我想记录下来。',
-    type: 'website',
-    url: `${SITE_URL}/essay`,
-    siteName: 'Hanphone\'s Blog',
-    locale: 'zh_CN',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: '随笔',
-    description: '记录生活中的点滴，分享感悟和思考。',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-}
+export const metadata = createMetadata(
+  '随想',
+  '记录生活中的点滴，分享学习过程中的感悟和思考。沿途的风景很美，我想记录下来。',
+  { path: '/essays', keywords: ['随笔', '随想', '生活记录', '学习感悟', '思考'] }
+)
 
 export default function EssayLayout({
   children,

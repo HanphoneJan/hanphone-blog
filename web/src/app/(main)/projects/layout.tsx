@@ -1,29 +1,10 @@
-import { Metadata } from 'next'
-import { SITE_URL } from '@/lib/seo-config'
+import { createMetadata } from '@/lib/seo-config'
 
-export const metadata: Metadata = {
-  title: '项目',
-  description: '展示我的个人项目，包括完整项目、工具箱、小游戏和小练习。',
-  keywords: '项目展示,个人项目,工具箱,小游戏,代码练习,Hanphone',
-  authors: [{ name: 'Hanphone' }],
-  openGraph: {
-    title: '项目',
-    description: '展示我的个人项目，包括完整项目、工具箱、小游戏和小练习。',
-    type: 'website',
-    url: `${SITE_URL}/project`,
-    siteName: 'Hanphone\'s Blog',
-    locale: 'zh_CN',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: '项目',
-    description: '展示我的个人项目，包括完整项目、工具箱、小游戏和小练习。',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-}
+export const metadata = createMetadata(
+  '项目',
+  '探索个人项目作品集，包括完整项目、实用工具、小游戏和编程练习。',
+  { path: '/projects', keywords: ['项目', '作品集', '工具', '小游戏', '编程练习'] }
+)
 
 export default function ProjectLayout({
   children,

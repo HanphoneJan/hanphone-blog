@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     title: SITE_CONFIG.name
   },
   title: {
-    default: `${SITE_CONFIG.name} - Hanphone's Blog`,
-    template: `%s | ${SITE_CONFIG.name}`,
+    default: `云林有风 | 寒枫的博客`,
+    template: `%s`,
   },
   description: SITE_CONFIG.description,
   keywords: [...SITE_CONFIG.keywords],

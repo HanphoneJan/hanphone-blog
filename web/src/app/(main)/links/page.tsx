@@ -1,5 +1,4 @@
 import { ENDPOINTS } from '@/lib/api'
-import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import LinkClient from './LinkClient'
 
 interface FriendLink {
@@ -37,21 +36,6 @@ async function fetchFriendLinks(): Promise<FriendLink[]> {
   } catch (error) {
     console.error('Failed to fetch friend links:', error)
     return []
-  }
-}
-
-// 生成元数据
-export async function generateMetadata() {
-  return {
-    title: '友情链接 | ' + SITE_CONFIG.name,
-    description: '友情链接页面，包含技术博客、实用工具、学习资源等精选链接。欢迎交换友链！',
-    keywords: '友情链接,友链,技术博客,工具推荐,资源分享',
-    openGraph: {
-      title: '友情链接 | ' + SITE_CONFIG.name,
-      description: '友情链接页面，包含技术博客、实用工具、学习资源等精选链接。',
-      url: `${SITE_URL}/links`,
-      type: 'website',
-    },
   }
 }
 

@@ -47,6 +47,7 @@ interface RssItem {
   guid: string
   pubDate: string
   description: string
+  contentEncoded?: string
   category: string
   author: string
   enclosure?: { url: string; type: string }
@@ -127,6 +128,10 @@ function generateRssItem(item: RssItem): string {
     ? `<enclosure url="${item.enclosure.url}" type="${item.enclosure.type}" />`
     : ''
 
+  const contentEncodedXml = item.contentEncoded
+    ? `<content:encoded><![CDATA[${item.contentEncoded}]]></content:encoded>`
+    : ''
+
   return `
     <item>
       <title>${escapeXml(item.title)}</title>
@@ -134,6 +139,7 @@ function generateRssItem(item: RssItem): string {
       <guid isPermaLink="true">${item.guid}</guid>
       <pubDate>${item.pubDate}</pubDate>
       <description>${escapeXml(item.description)}</description>
+      ${contentEncodedXml}
       <category>${escapeXml(item.category)}</category>
       ${enclosureXml}
       <author>${escapeXml(item.author)}</author>
@@ -153,6 +159,7 @@ function blogToRssItem(blog: Blog): RssItem {
     guid: `${SITE_URL}/blog/${blog.id}`,
     pubDate: new Date(blog.createTime).toUTCString(),
     description: description,
+    contentEncoded: content || undefined,
     category: blog.type?.name || '博客',
     author: blog.user?.nickname || SITE_CONFIG.author.name,
     enclosure: blog.firstPicture
@@ -172,6 +179,7 @@ function essayToRssItem(essay: Essay): RssItem {
     guid: `${SITE_URL}/essay/${essay.id}`,
     pubDate: new Date(essay.createTime).toUTCString(),
     description: description,
+    contentEncoded: content || undefined,
     category: '随笔',
     author: SITE_CONFIG.author.name,
   }
@@ -250,7 +258,7 @@ function generateRssXml(items: RssItem[]): string {
      xmlns:content="http://purl.org/rss/1.0/modules/content/"
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>${escapeXml(SITE_CONFIG.name)}</title>
+    <title>${escapeXml('寒枫的博客')}</title>
     <link>${SITE_URL}</link>
     <description>${escapeXml(SITE_CONFIG.description)}</description>
     <language>${SITE_CONFIG.language}</language>
@@ -259,7 +267,7 @@ function generateRssXml(items: RssItem[]): string {
     <atom:link href="${SITE_URL}/rss.xml" rel="self" type="application/rss+xml" />
     <image>
       <url>${SITE_URL}${SITE_CONFIG.images.favicon}</url>
-      <title>${escapeXml(SITE_CONFIG.name)}</title>
+      <title>${escapeXml('寒枫的博客')}</title>
       <link>${SITE_URL}</link>
     </image>
     <copyright>Copyright ${new Date().getFullYear()} ${escapeXml(SITE_CONFIG.author.name)}</copyright>

@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '@/lib/api'
-import { PAGINATION, BLOG_LIST_CONFIG } from '@/lib/constants'
+import { PAGINATION } from '@/lib/constants'
 import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import BlogListClient from './BlogListClient'
 
@@ -97,15 +97,6 @@ async function fetchTags(): Promise<Tag[]> {
   } catch (error) {
     console.error('Failed to fetch tags:', error)
     return []
-  }
-}
-
-// 生成元数据
-export async function generateMetadata() {
-  return {
-    title: '博客文章 | 寒枫的博客',
-    description: '浏览寒枫的个人博客文章，涵盖技术、生活、思考等多个领域的原创内容。',
-    keywords: '博客,技术博客,个人博客,编程,前端,后端,全栈开发'
   }
 }
 
