@@ -279,11 +279,13 @@ export default function MessageClient() {
     }
   }, [messages])
 
-  // 更新URL哈希 - 如果没有检测到可见留言，使用第一条留言的id作为默认哈希
+  // 更新URL哈希 - 只有用户主动滚动导致 visibleMessageId 变化时才更新
   useEffect(() => {
     if (typeof window !== 'undefined' && messages.length > 0) {
-      const targetId = visibleMessageId ?? messages[0].id
-      window.history.replaceState({}, '', `#${targetId}`)
+      // 只有用户滚动导致 visibleMessageId 变化时才更新 URL，不设置默认值
+      if (visibleMessageId !== null) {
+        window.history.replaceState({}, '', `#${visibleMessageId}`)
+      }
     }
   }, [visibleMessageId, messages])
 
