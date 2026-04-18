@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { useUser } from '@/contexts/UserContext'
@@ -203,6 +203,11 @@ export default function MessageClient() {
     messageId: null,
   })
 
+  // 哈希路由状态
+  const [visibleMessageId, setVisibleMessageId] = useState<number | null>(null)
+  const hasScrolledToHash = useRef(false)
+  const visibleObserverRef = useRef<IntersectionObserver | null>(null)
+
   // 响应式检测
   useEffect(() => {
     const handleResize = () => setScreenWidth(window.innerWidth)
@@ -212,6 +217,75 @@ export default function MessageClient() {
   }, [])
 
   const isMobile = useMemo(() => screenWidth < 768, [screenWidth])
+
+  // 处理哈希跳转 - 只在初始加载时执行一次
+  useEffect(() => {
+    if (typeof window !== 'undefined' && messages.length > 0 && !hasScrolledToHash.current) {
+      const hash = window.location.hash
+      if (hash) {
+        const messageId = parseInt(hash.slice(1))
+        if (!isNaN(messageId)) {
+          const element = document.getElementById(messageId.toString())
+          if (element) {
+            hasScrolledToHash.current = true
+            setTimeout(() => {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }, 100)
+          }
+        }
+      }
+    }
+  }, [messages])
+
+  // 可见性观察器 - 选择最靠近视口顶部的可见留言
+  useEffect(() => {
+    if (visibleObserverRef.current) {
+      visibleObserverRef.current.disconnect()
+    }
+
+    visibleObserverRef.current = new IntersectionObserver(
+      entries => {
+        // 找到所有可见的元素，选择最靠近视口顶部的
+        const visibleEntries = entries.filter(entry => entry.isIntersecting)
+        
+        if (visibleEntries.length > 0) {
+          // 按距离视口顶部的距离排序，选择最靠近顶部的
+          const topMostEntry = visibleEntries.reduce((top, current) => {
+            return current.boundingClientRect.top < top.boundingClientRect.top ? current : top
+          })
+          const messageId = parseInt(topMostEntry.target.id)
+          if (!isNaN(messageId)) {
+            setVisibleMessageId(messageId)
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -50% 0px', threshold: 0 }
+    )
+
+    if (typeof window !== 'undefined') {
+      // 只观察根留言，不观察回复
+      messages.forEach(message => {
+        const element = document.getElementById(message.id.toString())
+        if (element) {
+          visibleObserverRef.current?.observe(element)
+        }
+      })
+    }
+
+    return () => {
+      if (visibleObserverRef.current) {
+        visibleObserverRef.current.disconnect()
+      }
+    }
+  }, [messages])
+
+  // 更新URL哈希 - 如果没有检测到可见留言，使用第一条留言的id作为默认哈希
+  useEffect(() => {
+    if (typeof window !== 'undefined' && messages.length > 0) {
+      const targetId = visibleMessageId ?? messages[0].id
+      window.history.replaceState({}, '', `#${targetId}`)
+    }
+  }, [visibleMessageId, messages])
 
   // 处理输入变化
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -321,7 +395,8 @@ export default function MessageClient() {
     return (
       <motion.li
         key={message.id}
-        className={isRootMessage ? 'msg-root' : 'msg-reply msg-reply-indent'}
+        id={isRootMessage ? message.id.toString() : undefined}
+        className={`${isRootMessage ? 'msg-root scroll-mt-24' : 'msg-reply msg-reply-indent'}`}
         variants={messageItemVariants}
         initial="initial"
         animate="animate"
