@@ -59,13 +59,9 @@ export default function WorksSection({ works }: WorksSectionProps) {
                   <div className="w-full h-full bg-linear-to-br from-[rgb(var(--primary)/0.2)] to-[rgb(var(--primary)/0.05)]" />
                 )}
                 {work.url && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    whileHover={{ opacity: 1 }}
-                    className="absolute inset-0 bg-[rgb(var(--primary)/0.3)] flex items-center justify-center"
-                  >
+                  <div className="absolute inset-0 bg-[rgb(var(--primary)/0.3)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <ExternalLink className="w-6 h-6 text-white" />
-                  </motion.div>
+                  </div>
                 )}
               </motion.div>
 

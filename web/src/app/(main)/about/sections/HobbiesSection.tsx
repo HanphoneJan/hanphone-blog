@@ -83,34 +83,21 @@ export default function HobbiesSection({ hobbies }: HobbiesSectionProps) {
                   </div>
                 </motion.div>
                 {/* 悬浮状态：显示 description */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute inset-0 bg-[rgb(var(--bg)/0.8)] backdrop-blur-sm flex flex-col justify-center items-center p-3 text-center"
+                <div 
+                  className="absolute inset-0 bg-[rgb(var(--bg)/0.8)] backdrop-blur-sm flex flex-col justify-center items-center p-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 >
-                  <motion.span 
-                    initial={{ scale: 0, rotate: -180 }}
-                    whileInView={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", stiffness: 200 }}
-                    className="text-[rgb(var(--primary))] mb-1.5"
-                  >
+                  <span className="text-[rgb(var(--primary))] mb-1.5">
                     {iconMap[hobby.icon_src || ''] || <Heart className="w-5 h-5" />}
-                  </motion.span>
+                  </span>
                   <span className="text-xs font-medium text-[rgb(var(--card-foreground))] mb-1">
                     {hobby.name}
                   </span>
                   {hobby.description && (
-                    <motion.span 
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      className="text-[10px] leading-relaxed text-[rgb(var(--muted-foreground))] line-clamp-4"
-                    >
+                    <span className="text-[10px] leading-relaxed text-[rgb(var(--muted-foreground))] line-clamp-4">
                       {hobby.description}
-                    </motion.span>
+                    </span>
                   )}
-                </motion.div>
+                </div>
               </Wrapper>
             )
           })}
