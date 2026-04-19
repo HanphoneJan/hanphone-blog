@@ -50,7 +50,7 @@
     "next": "^15.5.7",
     "pg": "^8.16.3",
     "pixi-live2d-display": "^0.4.0",
-    "pixi.js": "^8.13.2",
+    "pixi.js": "^7.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
