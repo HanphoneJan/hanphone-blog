@@ -37,6 +37,7 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
   // 拖拽功能
   const {
     position,
+    setPosition,
     isDragging,
     elementRef,
     handleMouseDown,
@@ -45,6 +46,14 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
     enabled: config.drag ?? true,
     initialPosition: { x: 0, y: 0 },
   });
+  
+  // 在客户端计算右下角位置
+  useEffect(() => {
+    setPosition({
+      x: Math.max(0, window.innerWidth - 260),
+      y: Math.max(0, window.innerHeight - 380),
+    });
+  }, [setPosition]);
 
   // Live2D 模型加载
   const {
@@ -379,16 +388,10 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
           style={{ width: 220, height: 320 }}
         />
         
-        {/* 加载指示器 */}
-        {modelLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-400" />
-          </div>
-        )}
       </div>
 
-      {/* 工具栏 - 移到模型外部右侧 */}
-      <div className="absolute -right-10 top-0 flex flex-col gap-1 opacity-0 hover:opacity-100 transition-opacity duration-300">
+      {/* 工具栏 - 移到模型外部右侧偏下 */}
+      <div className="absolute -right-10 bottom-16 flex flex-col gap-1 opacity-0 hover:opacity-100 transition-opacity duration-300">
         {tools.map((tool) => (
           <button
             key={tool.id}
