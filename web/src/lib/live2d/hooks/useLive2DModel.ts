@@ -159,7 +159,10 @@ export function useLive2DModel(options: UseLive2DModelOptions) {
           antialias: true,
           resolution: window.devicePixelRatio || 1,
           autoDensity: true,
+          preserveDrawingBuffer: true, // 启用以支持拍照功能
         });
+        // 挂载到 canvas 以便外部访问
+        (canvas as any).__pixi = appRef.current;
         logger.info(`PIXI App created: ${appRef.current.view.width}x${appRef.current.view.height}`);
       }
 

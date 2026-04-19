@@ -10,7 +10,7 @@ import { useDrag, useLive2DModel } from '../hooks';
 import { showMessage, setMessageHandler, clearMessageTimer, welcomeMessage } from '../message';
 import { getLocalStorage, setLocalStorage, randomSelection } from '../utils';
 import logger from '../logger';
-import { MessageCircle, User, Shirt, X, Camera, Info } from 'lucide-react';
+import { MessageCircle, User, Shirt, X, Camera } from 'lucide-react';
 
 interface Live2DContainerProps {
   config: Live2DConfig;
@@ -259,19 +259,32 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
     }
   }, [tips]);
 
-  // 拍照功能
-  const takePhoto = useCallback(() => {
+  // 拍照功能 - 使用 PIXI extract 正确捕获图像
+  const takePhoto = useCallback(async () => {
     if (!canvasRef.current || isPhotoLoading) return;
     
     setIsPhotoLoading(true);
     showMessage(tips?.message.photo || '拍照中...', 6000, 9);
     
     try {
-      const dataUrl = canvasRef.current.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = 'live2d-photo.png';
-      link.click();
+      // 获取 PIXI 应用实例
+      const app = (canvasRef.current as any).__pixi;
+      if (app && app.renderer) {
+        // 使用 PIXI 的 extract 插件捕获图像
+        const image = await app.renderer.extract.image(app.stage);
+        const dataUrl = (image as HTMLImageElement).src;
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `live2d-photo-${Date.now()}.png`;
+        link.click();
+      } else {
+        // 降级方案：直接捕获 canvas
+        const dataUrl = canvasRef.current.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `live2d-photo-${Date.now()}.png`;
+        link.click();
+      }
     } catch (error) {
       logger.error('Failed to take photo:', error);
     } finally {
@@ -319,12 +332,6 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
       icon: <Camera size={18} />,
       onClick: takePhoto,
       title: '拍照',
-    },
-    {
-      id: 'info',
-      icon: <Info size={18} />,
-      onClick: () => window.open('https://github.com/stevenjoezhang/live2d-widget'),
-      title: '关于',
     },
     {
       id: 'quit',
@@ -380,8 +387,8 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
         )}
       </div>
 
-      {/* 工具栏 */}
-      <div className="absolute right-0 top-16 flex flex-col gap-1 opacity-0 hover:opacity-100 transition-opacity duration-300">
+      {/* 工具栏 - 移到模型外部右侧 */}
+      <div className="absolute -right-10 top-0 flex flex-col gap-1 opacity-0 hover:opacity-100 transition-opacity duration-300">
         {tools.map((tool) => (
           <button
             key={tool.id}
