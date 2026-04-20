@@ -57,7 +57,7 @@ public class PersonInfoServiceImpl implements PersonInfoService {
         Objects.requireNonNull(id, "person info id must not be null");
         Objects.requireNonNull(personInfo, "personInfo must not be null");
         try {
-            PersonInfo p = personInfoRepository.getOne(id);
+            PersonInfo p = personInfoRepository.getReferenceById(id);
             // 校验查询结果非空
             Objects.requireNonNull(p, "person info with id: " + id + " not found");
 

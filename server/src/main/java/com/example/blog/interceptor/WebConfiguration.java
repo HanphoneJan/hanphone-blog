@@ -39,13 +39,12 @@ public class WebConfiguration implements WebMvcConfigurer {
         excludePath.add("/static/**");  //静态资源
         excludePath.add("/assets/**");  //静态资源
 
-        // 排除 Swagger 相关路径
-        excludePath.add("/swagger-ui.html");
-        excludePath.add("/swagger-resources/**");
-        excludePath.add("/v2/api-docs");
-        excludePath.add("/webjars/**");
+        // 排除 Swagger 相关路径 (SpringDoc OpenAPI)
         excludePath.add("/swagger-ui/**");
-        excludePath.add("/csrf");
+        excludePath.add("/swagger-ui.html");
+        excludePath.add("/v3/api-docs/**");
+        excludePath.add("/v3/api-docs");
+        excludePath.add("/webjars/**");
 
         registry.addInterceptor(tokenInterceptor)
                 .addPathPatterns("/admin/**")

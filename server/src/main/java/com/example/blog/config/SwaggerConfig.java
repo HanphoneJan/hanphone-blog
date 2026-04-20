@@ -1,89 +1,48 @@
 package com.example.blog.config;
 
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.*;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spi.service.contexts.SecurityContext;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * Swagger API 文档配置
+ * SpringDoc OpenAPI 文档配置
  */
 @Configuration
-@EnableSwagger2
 public class SwaggerConfig {
 
-    /**
-     * 创建 Swagger Docket
-     */
+    private static final String SECURITY_SCHEME_NAME = "Authorization";
+
     @Bean
-    public Docket createRestApi() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                // API 信息
-                .apiInfo(apiInfo())
-                // 选择哪些接口生成文档
-                .select()
-                // 扫描的包路径
-                .apis(RequestHandlerSelectors.basePackage("com.example.blog.web"))
-                // 扫描所有路径
-                .paths(PathSelectors.any())
-                .build()
-                // 安全上下文配置（JWT）
-                .securitySchemes(securitySchemes())
-                .securityContexts(securityContexts());
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(apiInfo())
+                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
+                .components(new Components()
+                        .addSecuritySchemes(SECURITY_SCHEME_NAME, securityScheme()));
     }
 
-    /**
-     * API 基本信息
-     */
-    private ApiInfo apiInfo() {
-        return new ApiInfoBuilder()
+    private Info apiInfo() {
+        return new Info()
                 .title("Hanphone Blog API 文档")
                 .description("基于 Spring Boot 的个人博客后端系统 API 文档")
-                .contact(new Contact("Hanphone", "https://github.com/HanphoneJan", "janhizian@qq.com"))
-                .version("2.1.0")
-                .build();
+                .contact(new Contact()
+                        .name("Hanphone")
+                        .url("https://github.com/HanphoneJan")
+                        .email("janhizian@qq.com"))
+                .version("3.0.0");
     }
 
-    /**
-     * 安全方案配置
-     */
-    private List<ApiKey> securitySchemes() {
-        List<ApiKey> apiKeyList = new ArrayList<>();
-        apiKeyList.add(new ApiKey("Authorization", "Authorization", "header"));
-        return apiKeyList;
-    }
-
-    /**
-     * 安全上下文配置
-     */
-    private List<SecurityContext> securityContexts() {
-        List<SecurityContext> securityContexts = new ArrayList<>();
-        securityContexts.add(
-                SecurityContext.builder()
-                        .securityReferences(defaultAuth())
-                        // 对所有路径应用认证（需要排除的路径可以使用 PathSelectors 配置）
-                        .forPaths(PathSelectors.any())
-                        .build());
-        return securityContexts;
-    }
-
-    /**
-     * 默认的安全引用
-     */
-    private List<SecurityReference> defaultAuth() {
-        AuthorizationScope authorizationScope = new AuthorizationScope("global", "accessEverything");
-        AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
-        authorizationScopes[0] = authorizationScope;
-        return Collections.singletonList(new SecurityReference("Authorization", authorizationScopes));
+    private SecurityScheme securityScheme() {
+        return new SecurityScheme()
+                .name(SECURITY_SCHEME_NAME)
+                .type(SecurityScheme.Type.APIKEY)
+                .in(SecurityScheme.In.HEADER)
+                .scheme("bearer")
+                .bearerFormat("JWT");
     }
 }

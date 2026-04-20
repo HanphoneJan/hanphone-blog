@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.List;
 
 @Service
@@ -34,7 +34,7 @@ public class TypeServiceImpl implements TypeService {
     @Override
     public Type getType(Long id) {
         //springboot2.0将findone改成了getone
-        return typeRepository.getOne(id);
+        return typeRepository.getReferenceById(id);
     }
 
     @Transactional
@@ -84,7 +84,7 @@ public class TypeServiceImpl implements TypeService {
     @Transactional
     @Override
     public Type updateType(Long id, Type type) {
-        Type t = typeRepository.getOne(id);
+        Type t = typeRepository.getReferenceById(id);
         BeanUtils.copyProperties(type,t, MyBeanUtils.getNullPropertyNames(type));
         return typeRepository.save(t);
     }

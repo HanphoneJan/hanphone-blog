@@ -56,7 +56,7 @@ public class MessageServiceImpl implements MessageService {
         Objects.requireNonNull(id, "message id must not be null");
         Objects.requireNonNull(message, "message must not be null");
         try {
-            Message m = messageRepository.getOne(id);
+            Message m = messageRepository.getReferenceById(id);
             Objects.requireNonNull(m, "message with id: " + id + " not found");
 
             BeanUtils.copyProperties(message, m, MyBeanUtils.getNullPropertyNames(message));
@@ -81,7 +81,7 @@ public class MessageServiceImpl implements MessageService {
     public Message getMessageById(Long id) {
         Objects.requireNonNull(id, "message id must not be null");
         try {
-            Message message = messageRepository.getOne(id);
+            Message message = messageRepository.getReferenceById(id);
             Objects.requireNonNull(message, "message with id: " + id + " not found");
             return message;
         } catch (Exception e) {

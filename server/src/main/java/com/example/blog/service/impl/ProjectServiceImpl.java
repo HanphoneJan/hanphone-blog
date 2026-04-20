@@ -7,7 +7,7 @@ import com.example.blog.util.MyBeanUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Objects;
 
@@ -61,7 +61,7 @@ public class ProjectServiceImpl implements ProjectService {
         Objects.requireNonNull(project, "project must not be null");
 
         try {
-            Project p = projectRepository.getOne(id);
+            Project p = projectRepository.getReferenceById(id);
             // 校验查询结果非空
             Objects.requireNonNull(p, "Project not found with id: " + id);
 

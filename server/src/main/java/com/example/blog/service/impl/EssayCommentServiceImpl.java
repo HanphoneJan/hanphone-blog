@@ -7,7 +7,7 @@ import com.example.blog.service.EssayCommentService;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -113,7 +113,7 @@ public class EssayCommentServiceImpl implements EssayCommentService {
             // 校验输入参数非空
             Objects.requireNonNull(id, "essayComment id must not be null");
 
-            EssayComment essayComment = essayCommentRepository.getOne(id);
+            EssayComment essayComment = essayCommentRepository.getReferenceById(id);
             // 校验查询结果非空
             Objects.requireNonNull(essayComment, "Essay comment not found with id: " + id);
             return essayComment;

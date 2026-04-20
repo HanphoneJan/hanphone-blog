@@ -7,7 +7,7 @@ import com.example.blog.util.MyBeanUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -82,7 +82,7 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         Objects.requireNonNull(id, "friend link id must not be null");
         Objects.requireNonNull(friendLink, "friendLink must not be null");
         try {
-            FriendLink p = friendLinkRepository.getOne(id);
+            FriendLink p = friendLinkRepository.getReferenceById(id);
             Objects.requireNonNull(p, "friend link with id: " + id + " not found");
 
             BeanUtils.copyProperties(friendLink, p, MyBeanUtils.getNullPropertyNames(friendLink));
@@ -111,7 +111,7 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         requireNonNull(id, "friendLink id must not be null");
         requireNonNull(published, "published flag must not be null");
         try {
-            FriendLink friendLink = friendLinkRepository.getOne(id);
+            FriendLink friendLink = friendLinkRepository.getReferenceById(id);
             if (friendLink == null) {
                 return false;
             }

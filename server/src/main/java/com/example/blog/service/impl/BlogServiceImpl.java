@@ -22,9 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.criteria.*;
-import javax.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.*;
+import jakarta.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +49,7 @@ public class BlogServiceImpl implements BlogService {
     public Blog getBlog(Long id) {
         requireNonNull(id, "blog id must not be null");
         try {
-            return blogRepository.getOne(id);
+            return blogRepository.getReferenceById(id);
         } catch (EntityNotFoundException e) {
             throw new IllegalArgumentException("Blog not found with id: " + id, e);
         } catch (Exception e) {
@@ -239,7 +239,7 @@ public class BlogServiceImpl implements BlogService {
         requireNonNull(blog, "blog must not be null");
 
         try {
-            Blog b = blogRepository.getOne(id);
+            Blog b = blogRepository.getReferenceById(id);
 
             BeanUtils.copyProperties(blog, b, MyBeanUtils.getNullPropertyNames(blog));
 
@@ -271,7 +271,7 @@ public class BlogServiceImpl implements BlogService {
     public Blog getAndConvert(Long userId, Long id) {
         requireNonNull(id, "blog id must not be null");
         try {
-            Blog blog = blogRepository.getOne(id);
+            Blog blog = blogRepository.getReferenceById(id);
             // 累加访问量
             blog.setViews(blog.getViews() + 1);
             blog = blogRepository.save(blog);
