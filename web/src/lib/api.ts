@@ -41,6 +41,7 @@ export const ENDPOINTS = {
   GET_VISIT_COUNT: `${API_BASE_URL}/visit-count`,
   FILE: {
     UPLOAD: `${PICTURE_BASE_URL}/upload/`,
+    UPLOAD_BATCH: `${PICTURE_BASE_URL}/upload/batch`,
     DELETE: `${PICTURE_BASE_URL}/delete/`,
     GET_FILE: `${PICTURE_BASE_URL}/file/`,
     GET_FILES: `${PICTURE_BASE_URL}/files/`,

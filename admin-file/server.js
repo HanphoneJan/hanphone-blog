@@ -760,6 +760,147 @@ app.post("/upload", authenticateToken, upload.single("file"), async (req, res) =
 
 /**
  * @swagger
+ * /upload/batch:
+ *   post:
+ *     summary: 批量上传文件（需要认证）
+ *     description: 一次上传多个文件，最多20个，每个最大1GB
+ *     tags: [File]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [files]
+ *             properties:
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: 要上传的多个文件（字段名必须是 files）
+ *               category:
+ *                 type: string
+ *                 enum: [images, videos, audios, codes, documents, archives, fonts]
+ *                 description: 文件分类（可选，自动识别）
+ *               namespace:
+ *                 type: string
+ *                 description: 命名空间（可选，用于组织文件）
+ *     responses:
+ *       200:
+ *         description: 批量上传完成
+ *         content:
+ *           application/json:
+ *             example: { "code": 200, "message": "批量上传完成", "total": 3, "success": 2, "failed": 1, "results": [{ "success": true, "filename": "xxx.jpg", "url": "https://hanphone.top/..." }, { "success": false, "filename": "yyy.zip", "error": "文件处理失败" }] }
+ *       400:
+ *         description: 没有文件被上传
+ *       401:
+ *         description: 缺少或无效的访问令牌
+ *       413:
+ *         description: 单个文件大小超过1GB限制
+ *       500:
+ *         description: 批量处理时发生错误
+ */
+// 批量上传文件接口
+app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: "没有文件被上传" });
+  }
+
+  const category = req.body.category || req.query.category;
+  const namespace = req.body.namespace || req.query.namespace;
+
+  const results = [];
+  let successCount = 0;
+  let failedCount = 0;
+
+  for (const file of req.files) {
+    try {
+      const fixedName = fixFileNameEncoding(file.originalname);
+
+      // 1. 决定最终的存储目录
+      const finalDir = getFullStoragePath(
+        category,
+        namespace,
+        file.mimetype,
+        fixedName
+      );
+      await ensureDirectoryExists(finalDir);
+
+      // 2. 构建最终的文件路径
+      const finalPath = path.join(finalDir, file.filename);
+
+      // 3. 如果最终路径和初始路径不同，则移动文件
+      if (file.path !== finalPath) {
+        logger.info(`批量上传：文件从临时目录移动到最终目录`, {
+          from: file.path,
+          to: finalPath,
+          filename: file.filename
+        });
+        await fs.rename(file.path, finalPath);
+        file.path = finalPath;
+      }
+
+      // 4. 构建返回的URL
+      let urlDir;
+      let finalCategoryForResponse = null;
+
+      if (category) {
+        urlDir = category;
+        finalCategoryForResponse = category;
+      } else if (namespace) {
+        urlDir = namespace;
+        finalCategoryForResponse = null;
+      } else {
+        finalCategoryForResponse = getFileCategory(file.mimetype, fixedName);
+        urlDir = finalCategoryForResponse;
+      }
+
+      const encodedUrlDir = encodeURIComponent(urlDir);
+      const encodedFilename = encodeURIComponent(file.filename);
+      const urlPath = `${encodedUrlDir}/${encodedFilename}`;
+
+      results.push({
+        success: true,
+        filename: file.filename,
+        originalName: fixedName,
+        url: `https://hanphone.top/${urlPath}`,
+        category: finalCategoryForResponse,
+        namespace: namespace || null,
+        mimetype: file.mimetype,
+        size: file.size,
+      });
+      successCount++;
+    } catch (err) {
+      logger.error("批量上传处理单个文件失败:", { error: err.message, filename: file.originalname });
+      // 尝试清理临时文件
+      if (file.path) {
+        await fs.unlink(file.path).catch((e) => logger.error("删除临时文件失败:", { error: e.message }));
+      }
+      results.push({
+        success: false,
+        filename: file.filename,
+        originalName: fixFileNameEncoding(file.originalname),
+        error: err.message || "文件处理失败",
+      });
+      failedCount++;
+    }
+  }
+
+  res.json({
+    code: 200,
+    message: `批量上传完成，成功 ${successCount} 个，失败 ${failedCount} 个`,
+    total: req.files.length,
+    success: successCount,
+    failed: failedCount,
+    results,
+  });
+});
+
+/**
+ * @swagger
  * /delete:
  *   delete:
  *     summary: 删除文件或目录（需要认证）

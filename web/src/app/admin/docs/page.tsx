@@ -20,7 +20,11 @@ import {
   AlertCircle,
   BookOpen,
   Search,
-  ArrowUpDown
+  ArrowUpDown,
+  CheckCircle,
+  File,
+  XCircle,
+  Clock
 } from 'lucide-react'
 
 interface DocItem {
@@ -62,7 +66,6 @@ const fetchData = async (url: string, method: string = 'GET', data?: unknown): P
 export default function DocManagementPage() {
   const [docs, setDocs] = useState<DocItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'createTime' | 'viewCount'>('createTime')
@@ -78,6 +81,19 @@ export default function DocManagementPage() {
   const [formDescription, setFormDescription] = useState('')
   const [editingDoc, setEditingDoc] = useState<DocItem | null>(null)
   const uploadRef = useRef<HTMLInputElement>(null)
+
+  // 批量上传状态
+  type UploadStatus = 'pending' | 'uploading' | 'saving' | 'success' | 'failed'
+  interface UploadFile {
+    id: string
+    file: File
+    title: string
+    description: string
+    status: UploadStatus
+    error?: string
+  }
+  const [uploadQueue, setUploadQueue] = useState<UploadFile[]>([])
+  const [batchUploading, setBatchUploading] = useState(false)
 
   // 获取文档列表
   const fetchDocs = async () => {
@@ -115,65 +131,142 @@ export default function DocManagementPage() {
       return new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
     })
 
-  // 上传文件到 admin-file
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  // 文件选择处理：构建上传队列
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
     const validTypes = ['.docx', '.md', '.html', '.pdf']
-    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
-    if (!validTypes.includes(ext)) {
+    const newQueue: UploadFile[] = []
+
+    for (const file of Array.from(files)) {
+      const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+      if (!validTypes.includes(ext)) continue
+
+      newQueue.push({
+        id: `uf-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        file,
+        title: file.name.replace(/\.[^.]+$/, ''),
+        description: '',
+        status: 'pending',
+      })
+    }
+
+    if (newQueue.length === 0) {
       showAlert('仅支持上传 .docx, .md, .html, .pdf 格式的文档')
       return
     }
 
-    try {
-      setUploading(true)
+    setUploadQueue(newQueue)
+  }
 
+  // 更新队列中某个文件的状态
+  const updateFileStatus = (id: string, status: UploadStatus, error?: string) => {
+    setUploadQueue(prev => prev.map(item =>
+      item.id === id ? { ...item, status, error } : item
+    ))
+  }
+
+  // 批量上传
+  const handleBatchUpload = async () => {
+    if (uploadQueue.length === 0) return
+
+    const pendingFiles = uploadQueue.filter(f => f.status === 'pending')
+    if (pendingFiles.length === 0) return
+
+    setBatchUploading(true)
+
+    try {
+      // 1. 批量上传到 admin-file
       const formData = new FormData()
       formData.append('namespace', 'blog/docs')
-      formData.append('file', file)
+      for (const item of pendingFiles) {
+        formData.append('files', item.file)
+      }
+
+      setUploadQueue(prev => prev.map(item =>
+        item.status === 'pending' ? { ...item, status: 'uploading' } : item
+      ))
 
       const res = await apiClient({
-        url: ENDPOINTS.FILE.UPLOAD,
+        url: ENDPOINTS.FILE.UPLOAD_BATCH,
         method: 'POST',
         data: formData
       })
 
-      if (res.data.code === 200) {
-        const uploadedFilename = res.data.filename as string
-        const docId = `doc-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+      if (res.data.code !== 200) {
+        throw new Error(res.data.error || '批量上传失败')
+      }
 
-        // 保存到主后端
+      const results = res.data.results as Array<{
+        success: boolean
+        filename: string
+        originalName: string
+        error?: string
+      }>
+
+      // 2. 逐条保存到主后端
+      let successCount = 0
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
+        const queueItem = pendingFiles[i]
+
+        if (!result.success) {
+          updateFileStatus(queueItem.id, 'failed', result.error || '上传失败')
+          continue
+        }
+
+        updateFileStatus(queueItem.id, 'saving')
+
+        const docId = `doc-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+        const ext = queueItem.file.name.slice(queueItem.file.name.lastIndexOf('.')).toLowerCase()
+
         const saveResult = await fetchData(ENDPOINTS.ADMIN.DOC, 'POST', {
           doc: {
             docId,
-            title: formTitle || file.name.replace(/\.[^.]+$/, ''),
-            description: formDescription || '',
-            filename: uploadedFilename,
+            title: queueItem.title || queueItem.file.name.replace(/\.[^.]+$/, ''),
+            description: queueItem.description || '',
+            filename: result.filename,
             fileType: ext,
             docNamespace: 'blog/docs'
           }
         })
 
         if (saveResult.flag) {
-          showAlert('文档上传成功')
-          setShowAddModal(false)
-          setFormTitle('')
-          setFormDescription('')
-          fetchDocs()
+          updateFileStatus(queueItem.id, 'success')
+          successCount++
         } else {
-          showAlert(saveResult.message || '保存文档信息失败')
+          updateFileStatus(queueItem.id, 'failed', saveResult.message || '保存文档信息失败')
         }
-      } else {
-        throw new Error(res.data.error || '文件上传失败')
+      }
+
+      if (successCount > 0) {
+        showAlert(`成功上传 ${successCount} 个文档`)
+        fetchDocs()
       }
     } catch (err) {
-      showAlert(err instanceof Error ? err.message : '文件上传失败')
+      showAlert(err instanceof Error ? err.message : '批量上传失败')
+      // 标记所有 pending/uploading 为失败
+      setUploadQueue(prev => prev.map(item =>
+        item.status === 'pending' || item.status === 'uploading' || item.status === 'saving'
+          ? { ...item, status: 'failed', error: '批量上传失败' }
+          : item
+      ))
     } finally {
-      setUploading(false)
-      if (e.target) e.target.value = ''
+      setBatchUploading(false)
     }
+  }
+
+  // 从队列中移除某个文件
+  const removeFromQueue = (id: string) => {
+    setUploadQueue(prev => prev.filter(item => item.id !== id))
+  }
+
+  // 更新队列中文件的标题
+  const updateFileTitle = (id: string, title: string) => {
+    setUploadQueue(prev => prev.map(item =>
+      item.id === id ? { ...item, title } : item
+    ))
   }
 
   // 编辑文档
@@ -281,6 +374,40 @@ export default function DocManagementPage() {
     }
   }
 
+  // 上传状态图标
+  const StatusIcon = ({ status }: { status: UploadStatus }) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+      case 'uploading':
+      case 'saving':
+        return <Loader2 className="w-4 h-4 text-[rgb(var(--primary))] animate-spin shrink-0" />
+      default:
+        return <Clock className="w-4 h-4 text-[rgb(var(--text-muted))] shrink-0" />
+    }
+  }
+
+  const getStatusText = (status: UploadStatus) => {
+    switch (status) {
+      case 'pending': return '等待上传'
+      case 'uploading': return '上传中...'
+      case 'saving': return '保存中...'
+      case 'success': return '上传成功'
+      case 'failed': return '上传失败'
+    }
+  }
+
+  // 关闭新增模态框时清理状态
+  const closeAddModal = () => {
+    setShowAddModal(false)
+    setFormTitle('')
+    setFormDescription('')
+    setUploadQueue([])
+    if (uploadRef.current) uploadRef.current.value = ''
+  }
+
   return (
     <div className="font-sans min-h-screen flex flex-col bg-[rgb(var(--bg))] text-[rgb(var(--text))] relative overflow-hidden">
       <main className="flex-1 w-full max-w-7xl mx-auto lg:px-2 lg:py-2 relative z-10">
@@ -314,7 +441,7 @@ export default function DocManagementPage() {
                 </button>
                 {/* 新增 */}
                 <button
-                  onClick={() => setShowAddModal(true)}
+                  onClick={() => { setShowAddModal(true); setUploadQueue([]); }}
                   className="inline-flex items-center px-3 py-1.5 bg-[rgb(var(--primary))] hover:opacity-90 text-white rounded-lg shadow transition-opacity text-sm"
                 >
                   <Plus className="h-4 w-4 mr-1" />
@@ -416,67 +543,130 @@ export default function DocManagementPage() {
         </div>
       </main>
 
-      {/* 新增文档模态框 */}
+      {/* 新增文档模态框（批量上传） */}
       {showAddModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <ModalOverlay onClick={() => setShowAddModal(false)} />
-          <div className="relative z-10 bg-[rgb(var(--card))] rounded-xl shadow-2xl border border-[rgb(var(--border))] w-full max-w-md">
-            <div className="p-4 border-b border-[rgb(var(--border))] flex justify-between items-center">
+          <ModalOverlay onClick={closeAddModal} />
+          <div className="relative z-10 bg-[rgb(var(--card))] rounded-xl shadow-2xl border border-[rgb(var(--border))] w-full max-w-lg max-h-[85vh] flex flex-col">
+            <div className="p-4 border-b border-[rgb(var(--border))] flex justify-between items-center shrink-0">
               <h3 className="text-base font-semibold flex items-center gap-2">
                 <Upload className="w-4 h-4 text-[rgb(var(--primary))]" />
                 新增文档
+                {uploadQueue.length > 0 && (
+                  <span className="text-xs font-normal text-[rgb(var(--text-muted))]">
+                    ({uploadQueue.filter(f => f.status === 'success').length}/{uploadQueue.length})
+                  </span>
+                )}
               </h3>
-              <button onClick={() => { setShowAddModal(false); setFormTitle(''); setFormDescription(''); }}>
+              <button onClick={closeAddModal}>
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="p-4 space-y-3">
+
+            <div className="p-4 space-y-3 overflow-y-auto">
+              {/* 文件选择区 */}
               <div>
-                <label className="block text-xs font-medium mb-1">文档标题</label>
-                <input
-                  type="text"
-                  value={formTitle}
-                  onChange={e => setFormTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-[rgb(var(--border))] bg-[rgb(var(--bg))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))] text-sm"
-                  placeholder="请输入文档标题"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1">描述</label>
-                <textarea
-                  value={formDescription}
-                  onChange={e => setFormDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-[rgb(var(--border))] bg-[rgb(var(--bg))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))] text-sm resize-none"
-                  rows={3}
-                  placeholder="请输入文档描述"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1">上传文件</label>
-                <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-[rgb(var(--border))] rounded-lg cursor-pointer hover:border-[rgb(var(--primary))] transition-colors">
+                <label className="block text-xs font-medium mb-1.5">选择文件（可多选）</label>
+                <label className={`flex items-center justify-center w-full px-4 py-5 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                  batchUploading ? 'opacity-50 pointer-events-none' : 'hover:border-[rgb(var(--primary))]'
+                }`}
+                  style={{ borderColor: 'rgb(var(--border))' }}
+                >
                   <div className="text-center">
-                    <Upload className="w-6 h-6 mx-auto mb-2 text-[rgb(var(--text-muted))]" />
-                    <p className="text-sm text-[rgb(var(--text-muted))]">点击上传文档</p>
-                    <p className="text-xs text-[rgb(var(--text-muted))]">支持 .docx, .md, .html, .pdf</p>
+                    <Upload className="w-5 h-5 mx-auto mb-1.5 text-[rgb(var(--text-muted))]" />
+                    <p className="text-sm text-[rgb(var(--text-muted))]">点击选择文档，支持多选</p>
+                    <p className="text-xs text-[rgb(var(--text-muted))/0.7]">支持 .docx, .md, .html, .pdf，最多 20 个</p>
                   </div>
                   <input
                     ref={uploadRef}
                     type="file"
                     accept=".docx,.md,.html,.pdf"
-                    onChange={handleFileUpload}
+                    multiple
+                    onChange={handleFileSelect}
                     className="hidden"
-                    disabled={uploading}
+                    disabled={batchUploading}
                   />
                 </label>
               </div>
+
+              {/* 文件队列 */}
+              {uploadQueue.length > 0 && (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {uploadQueue.map(item => {
+                    const ext = item.file.name.slice(item.file.name.lastIndexOf('.')).toLowerCase()
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${
+                          item.status === 'success' ? 'border-emerald-200/50 bg-emerald-50/30' :
+                          item.status === 'failed' ? 'border-red-200/50 bg-red-50/30' :
+                          'border-[rgb(var(--border))] bg-[rgb(var(--hover))]'
+                        }`}
+                      >
+                        <File className={`w-4 h-4 shrink-0 ${getTypeColor(ext)}`} />
+                        <div className="flex-1 min-w-0">
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={e => updateFileTitle(item.id, e.target.value)}
+                            disabled={batchUploading || item.status !== 'pending'}
+                            className="w-full bg-transparent text-sm truncate focus:outline-none focus:ring-0 border-none p-0"
+                            title={item.file.name}
+                          />
+                          <p className="text-[10px] text-[rgb(var(--text-muted))]">
+                            {item.file.name} · {(item.file.size / 1024).toFixed(1)} KB
+                          </p>
+                          {item.error && (
+                            <p className="text-[10px] text-red-500">{item.error}</p>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-[rgb(var(--text-muted))] whitespace-nowrap">
+                          {getStatusText(item.status)}
+                        </span>
+                        <StatusIcon status={item.status} />
+                        {item.status === 'pending' && !batchUploading && (
+                          <button
+                            onClick={() => removeFromQueue(item.id)}
+                            className="p-0.5 rounded hover:bg-[rgb(var(--hover))] text-[rgb(var(--text-muted))]"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-            <div className="p-3 border-t border-[rgb(var(--border))] flex justify-end gap-2">
-              <button
-                onClick={() => { setShowAddModal(false); setFormTitle(''); setFormDescription(''); }}
-                className="px-3 py-1.5 rounded-lg bg-slate-200/60 hover:bg-slate-200 text-sm"
-              >
-                取消
-              </button>
+
+            <div className="p-3 border-t border-[rgb(var(--border))] flex justify-between items-center shrink-0">
+              <span className="text-xs text-[rgb(var(--text-muted))]">
+                {uploadQueue.length > 0 ? `已选择 ${uploadQueue.length} 个文件` : '未选择文件'}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={closeAddModal}
+                  className="px-3 py-1.5 rounded-lg bg-slate-200/60 hover:bg-slate-200 text-sm"
+                >
+                  {uploadQueue.some(f => f.status === 'success') ? '完成' : '取消'}
+                </button>
+                {uploadQueue.some(f => f.status === 'pending') && (
+                  <button
+                    onClick={handleBatchUpload}
+                    disabled={batchUploading}
+                    className="px-3 py-1.5 rounded-lg bg-[rgb(var(--primary))] hover:opacity-90 text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {batchUploading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        上传中...
+                      </>
+                    ) : (
+                      <>上传</>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>,
@@ -578,17 +768,6 @@ export default function DocManagementPage() {
         document.body
       )}
 
-      {/* 上传中 */}
-      {uploading && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <ModalOverlay />
-          <div className="relative z-10 bg-[rgb(var(--card))] rounded-xl shadow-2xl border border-[rgb(var(--border))] w-full max-w-md p-4 text-center">
-            <Loader2 className="animate-spin h-8 w-8 mx-auto mb-2 text-[rgb(var(--primary))]" />
-            <p className="text-sm">文件上传中，请稍候...</p>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   )
 }
