@@ -25,4 +25,8 @@ public interface EssayService {
      */
     Essay updateLikes(Long userId,Long essayId, boolean isLike);
     Boolean changeRecommend(Long essayId, Boolean recommend);
+
+    Essay getEssayDetail(Long userId, Long id);
+
+    List<Essay> listRecommendEssayTop(Integer size);
 }

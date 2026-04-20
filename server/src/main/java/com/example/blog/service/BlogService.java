@@ -55,4 +55,8 @@ public interface BlogService {
     Boolean updateLikes(Long userId, Long blogId, boolean isLike);
 
     Boolean changeRecommend(Long blogId, Boolean recommend);
+
+    Blog getPreviousBlog(Long id);
+
+    Blog getNextBlog(Long id);
 }

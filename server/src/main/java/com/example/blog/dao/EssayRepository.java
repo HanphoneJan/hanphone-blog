@@ -3,6 +3,7 @@ package com.example.blog.dao;
 import com.example.blog.po.Essay;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,5 +24,8 @@ public interface EssayRepository extends JpaRepository<Essay,Long>, JpaSpecifica
     @Modifying
     @Query("UPDATE Essay e SET e.recommend = :recommend WHERE e.id = :id")
     int updateRecommend(@Param("id") Long id, @Param("recommend") boolean recommend);
+
+    @Query("select e from Essay e where e.recommend = true")
+    List<Essay> findTop(Pageable pageable);
 
 }

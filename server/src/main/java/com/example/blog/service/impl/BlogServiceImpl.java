@@ -452,4 +452,40 @@ public class BlogServiceImpl implements BlogService {
             throw new RuntimeException("Error changing recommend status for blog: " + blogId, e);
         }
     }
+
+    @Override
+    public Blog getPreviousBlog(Long id) {
+        requireNonNull(id, "blog id must not be null");
+        try {
+            Pageable pageable = PageRequest.of(0, 1);
+            List<Blog> blogs = blogRepository.findPreviousBlog(id, pageable);
+            if (blogs.isEmpty()) {
+                return null;
+            }
+            Blog blog = blogs.get(0);
+            blog.setContent("");
+            blog.setComments(null);
+            return blog;
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting previous blog for id: " + id, e);
+        }
+    }
+
+    @Override
+    public Blog getNextBlog(Long id) {
+        requireNonNull(id, "blog id must not be null");
+        try {
+            Pageable pageable = PageRequest.of(0, 1);
+            List<Blog> blogs = blogRepository.findNextBlog(id, pageable);
+            if (blogs.isEmpty()) {
+                return null;
+            }
+            Blog blog = blogs.get(0);
+            blog.setContent("");
+            blog.setComments(null);
+            return blog;
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting next blog for id: " + id, e);
+        }
+    }
 }

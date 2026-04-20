@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -40,6 +41,21 @@ public class EssayShowController {
             return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listEssay(userId, pageable));
         }
         return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listEssay(userId));
+    }
+
+    @GetMapping("/getRecommendEssayList")
+    public Result<List<Essay>> getRecommendEssayList() {
+        return new Result<>(true, StatusCode.OK, "获取推荐随笔成功", essayService.listRecommendEssayTop(5));
+    }
+
+    @GetMapping("/essays/{id}")
+    public Result<Essay> getEssayById(@PathVariable Long id, @RequestParam(required = false) Long userId) {
+        return new Result<>(true, StatusCode.OK, "获取随笔成功", essayService.getEssayDetail(userId, id));
+    }
+
+    @GetMapping("/essays/{id}/comments")
+    public Result<List<EssayComment>> getEssayComments(@PathVariable Long id) {
+        return new Result<>(true, StatusCode.OK, "获取随笔评论成功", essayCommentService.listEssayCommentByEssayId(id));
     }
 
     /**

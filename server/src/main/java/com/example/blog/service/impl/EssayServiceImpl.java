@@ -234,6 +234,48 @@ public class EssayServiceImpl implements EssayService {
         }
     }
 
+    @Override
+    public Essay getEssayDetail(Long userId, Long id) {
+        Objects.requireNonNull(id, "essay id must not be null");
+        try {
+            Essay essay = essayRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("文章不存在，ID: " + id));
+            List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(id);
+            Optional<UserEssayLike> existingLike = userId != null
+                    ? userEssayLikeRepository.findByUserIdAndEssayId(userId, id)
+                    : Optional.empty();
+            essay.setEssayFileUrls(fileUrls);
+            essay.setLiked(existingLike.isPresent());
+            fillParentCommentId(essay);
+            return essay;
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("获取文章详情失败，ID: " + id, e);
+        }
+    }
+
+    @Override
+    public List<Essay> listRecommendEssayTop(Integer size) {
+        Objects.requireNonNull(size, "size must not be null");
+        if (size <= 0) {
+            throw new IllegalArgumentException("size must be greater than 0");
+        }
+        try {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, size);
+            List<Essay> essays = essayRepository.findTop(pageable);
+            essays.forEach(essay -> {
+                Objects.requireNonNull(essay, "essay must not be null");
+                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
+                essay.setEssayFileUrls(fileUrls);
+                fillParentCommentId(essay);
+            });
+            return essays;
+        } catch (Exception e) {
+            throw new RuntimeException("获取推荐文章列表失败", e);
+        }
+    }
+
     /**
      * 填充评论的 parentCommentId，使前端能够识别评论的父子关系
      */
