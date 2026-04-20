@@ -26,7 +26,7 @@ public class DocShowController {
     @GetMapping("/docs")
     public Result<Page<Doc>> listDocs(
             @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {"createTime"}, direction = Sort.Direction.DESC) Pageable pageable) {
-        return new Result<>(true, StatusCode.OK, "获取文档列表成功", docService.listDoc(pageable));
+        return new Result<>(true, StatusCode.OK, "获取文档列表成功", docService.listPublishedDoc(pageable));
     }
 
     @GetMapping("/docs/hot")

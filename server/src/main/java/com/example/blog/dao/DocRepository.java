@@ -21,6 +21,10 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     List<Doc> findByRecommendTrue(Pageable pageable);
 
+    List<Doc> findByPublishedTrue();
+
+    Page<Doc> findByPublishedTrue(Pageable pageable);
+
     Page<Doc> findByOrderByViewCountDesc(Pageable pageable);
 
     Page<Doc> findByOrderByCreateTimeDesc(Pageable pageable);
@@ -32,4 +36,8 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
     @Modifying
     @Query("UPDATE Doc d SET d.recommend = :recommend WHERE d.id = :id")
     int updateRecommend(@Param("id") Long id, @Param("recommend") boolean recommend);
+
+    @Modifying
+    @Query("UPDATE Doc d SET d.published = :published WHERE d.id = :id")
+    int updatePublished(@Param("id") Long id, @Param("published") boolean published);
 }

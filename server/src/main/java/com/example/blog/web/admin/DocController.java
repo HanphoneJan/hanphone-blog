@@ -73,4 +73,25 @@ public class DocController {
             return new Result<>(false, StatusCode.ERROR, "操作失败");
         }
     }
+
+    @PostMapping("/docs/published")
+    public Result<Void> published(@RequestBody Map<String, Object> para) {
+        Object docIdObj = para.get("docId");
+        if (docIdObj == null) {
+            return new Result<>(false, StatusCode.ERROR, "docId 不能为空");
+        }
+        if (!(docIdObj instanceof Number)) {
+            return new Result<>(false, StatusCode.ERROR, "docId 必须是数字类型");
+        }
+        Long docId = ((Number) docIdObj).longValue();
+        Boolean published = (Boolean) para.get("published");
+        try {
+            if (docService.changePublished(docId, published)) {
+                return new Result<>(true, StatusCode.OK, "操作成功");
+            }
+            return new Result<>(false, StatusCode.ERROR, "操作失败");
+        } catch (Exception e) {
+            return new Result<>(false, StatusCode.ERROR, "操作失败");
+        }
+    }
 }

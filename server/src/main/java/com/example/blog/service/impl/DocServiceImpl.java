@@ -48,6 +48,16 @@ public class DocServiceImpl implements DocService {
     }
 
     @Override
+    public Page<Doc> listPublishedDoc(Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            return docRepository.findByPublishedTrue(pageable);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list published docs with pageable", e);
+        }
+    }
+
+    @Override
     public Page<Doc> listHotDoc(Pageable pageable) {
         requireNonNull(pageable, "pageable must not be null");
         try {
@@ -158,6 +168,19 @@ public class DocServiceImpl implements DocService {
             return affectedRows > 0;
         } catch (Exception e) {
             throw new RuntimeException("Failed to change recommend status for doc: " + id, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public Boolean changePublished(Long id, Boolean published) {
+        requireNonNull(id, "id must not be null");
+        requireNonNull(published, "published flag must not be null");
+        try {
+            int affectedRows = docRepository.updatePublished(id, published);
+            return affectedRows > 0;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to change published status for doc: " + id, e);
         }
     }
 }

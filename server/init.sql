@@ -5,7 +5,7 @@
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.5
 
--- Started on 2026-04-18 15:49:40
+-- Started on 2026-04-21 01:24:05
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -20,26 +20,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- TOC entry 5 (class 2615 OID 2200)
--- Name: public; Type: SCHEMA; Schema: -; Owner: pg_database_owner
---
-
-CREATE SCHEMA public;
-
-
-ALTER SCHEMA public OWNER TO pg_database_owner;
-
---
--- TOC entry 3628 (class 0 OID 0)
--- Dependencies: 5
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
---
-
-COMMENT ON SCHEMA public IS 'standard public schema';
-
-
---
--- TOC entry 257 (class 1255 OID 16391)
+-- TOC entry 265 (class 1255 OID 16391)
 -- Name: update_modified_column(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -137,7 +118,7 @@ CREATE SEQUENCE public.atlas_tag_id_seq
 ALTER SEQUENCE public.atlas_tag_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3630 (class 0 OID 0)
+-- TOC entry 3652 (class 0 OID 0)
 -- Dependencies: 221
 -- Name: atlas_tag_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -189,7 +170,7 @@ CREATE SEQUENCE public.atlas_visitcounts_id_seq
 ALTER SEQUENCE public.atlas_visitcounts_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3631 (class 0 OID 0)
+-- TOC entry 3653 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: atlas_visitcounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -203,8 +184,8 @@ ALTER SEQUENCE public.atlas_visitcounts_id_seq OWNED BY public.atlas_visitcounts
 --
 
 CREATE TABLE public.blog_monthly_visits (
-    id integer NOT NULL,
-    year_month character(6) NOT NULL,
+    id bigint NOT NULL,
+    year_month character varying(6) NOT NULL,
     total_visits bigint DEFAULT 0 NOT NULL,
     record_update_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -213,7 +194,7 @@ CREATE TABLE public.blog_monthly_visits (
 ALTER TABLE public.blog_monthly_visits OWNER TO postgres;
 
 --
--- TOC entry 3632 (class 0 OID 0)
+-- TOC entry 3654 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: TABLE blog_monthly_visits; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -222,7 +203,7 @@ COMMENT ON TABLE public.blog_monthly_visits IS '存储博客网站的月度访�
 
 
 --
--- TOC entry 3633 (class 0 OID 0)
+-- TOC entry 3655 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: COLUMN blog_monthly_visits.id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -231,7 +212,7 @@ COMMENT ON COLUMN public.blog_monthly_visits.id IS '记录唯一标识';
 
 
 --
--- TOC entry 3634 (class 0 OID 0)
+-- TOC entry 3656 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: COLUMN blog_monthly_visits.year_month; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -240,7 +221,7 @@ COMMENT ON COLUMN public.blog_monthly_visits.year_month IS '年月标识（格�
 
 
 --
--- TOC entry 3635 (class 0 OID 0)
+-- TOC entry 3657 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: COLUMN blog_monthly_visits.total_visits; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -249,7 +230,7 @@ COMMENT ON COLUMN public.blog_monthly_visits.total_visits IS '当月网站总访
 
 
 --
--- TOC entry 3636 (class 0 OID 0)
+-- TOC entry 3658 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: COLUMN blog_monthly_visits.record_update_time; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -274,7 +255,7 @@ CREATE SEQUENCE public.blog_monthly_visits_id_seq
 ALTER SEQUENCE public.blog_monthly_visits_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3637 (class 0 OID 0)
+-- TOC entry 3659 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: blog_monthly_visits_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -309,7 +290,7 @@ CREATE TABLE public.friend_links (
 ALTER TABLE public.friend_links OWNER TO postgres;
 
 --
--- TOC entry 3638 (class 0 OID 0)
+-- TOC entry 3660 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: TABLE friend_links; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -318,7 +299,7 @@ COMMENT ON TABLE public.friend_links IS '友情链接表';
 
 
 --
--- TOC entry 3639 (class 0 OID 0)
+-- TOC entry 3661 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.name; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -327,7 +308,7 @@ COMMENT ON COLUMN public.friend_links.name IS '友链名称';
 
 
 --
--- TOC entry 3640 (class 0 OID 0)
+-- TOC entry 3662 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.url; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -336,7 +317,7 @@ COMMENT ON COLUMN public.friend_links.url IS '友链URL';
 
 
 --
--- TOC entry 3641 (class 0 OID 0)
+-- TOC entry 3663 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.link_url; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -345,7 +326,7 @@ COMMENT ON COLUMN public.friend_links.link_url IS '链接URL';
 
 
 --
--- TOC entry 3642 (class 0 OID 0)
+-- TOC entry 3664 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.avatar; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -354,7 +335,7 @@ COMMENT ON COLUMN public.friend_links.avatar IS '头像图片URL';
 
 
 --
--- TOC entry 3643 (class 0 OID 0)
+-- TOC entry 3665 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.recommend; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -363,7 +344,7 @@ COMMENT ON COLUMN public.friend_links.recommend IS '是否推荐';
 
 
 --
--- TOC entry 3644 (class 0 OID 0)
+-- TOC entry 3666 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.create_time; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -372,7 +353,7 @@ COMMENT ON COLUMN public.friend_links.create_time IS '创建时间';
 
 
 --
--- TOC entry 3645 (class 0 OID 0)
+-- TOC entry 3667 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.description; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -381,7 +362,7 @@ COMMENT ON COLUMN public.friend_links.description IS '友链描述';
 
 
 --
--- TOC entry 3646 (class 0 OID 0)
+-- TOC entry 3668 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: COLUMN friend_links.color; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -406,13 +387,28 @@ CREATE SEQUENCE public.friend_links_id_seq
 ALTER SEQUENCE public.friend_links_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3647 (class 0 OID 0)
+-- TOC entry 3669 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: friend_links_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.friend_links_id_seq OWNED BY public.friend_links.id;
 
+
+--
+-- TOC entry 259 (class 1259 OID 42793)
+-- Name: friend_links_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.friend_links_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.friend_links_seq OWNER TO postgres;
 
 --
 -- TOC entry 229 (class 1259 OID 16431)
@@ -468,13 +464,28 @@ CREATE SEQUENCE public.personal_info_id_seq
 ALTER SEQUENCE public.personal_info_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3648 (class 0 OID 0)
+-- TOC entry 3670 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: personal_info_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.personal_info_id_seq OWNED BY public.personal_info.id;
 
+
+--
+-- TOC entry 260 (class 1259 OID 42794)
+-- Name: personal_info_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.personal_info_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.personal_info_seq OWNER TO postgres;
 
 --
 -- TOC entry 232 (class 1259 OID 16441)
@@ -517,7 +528,7 @@ ALTER TABLE public.private_message ALTER COLUMN id ADD GENERATED ALWAYS AS IDENT
 
 CREATE TABLE public.t_blog (
     id bigint NOT NULL,
-    appreciation bigint,
+    appreciation integer,
     commentabled boolean NOT NULL,
     content text,
     create_time timestamp(6) without time zone DEFAULT NULL::timestamp without time zone,
@@ -532,11 +543,26 @@ CREATE TABLE public.t_blog (
     views integer,
     type_id bigint,
     user_id bigint,
-    likes bigint DEFAULT 0 NOT NULL
+    likes integer DEFAULT 0 NOT NULL
 );
 
 
 ALTER TABLE public.t_blog OWNER TO postgres;
+
+--
+-- TOC entry 261 (class 1259 OID 42795)
+-- Name: t_blog_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.t_blog_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.t_blog_seq OWNER TO postgres;
 
 --
 -- TOC entry 235 (class 1259 OID 16463)
@@ -555,77 +581,6 @@ ALTER TABLE public.t_blog_tags OWNER TO postgres;
 -- TOC entry 236 (class 1259 OID 16466)
 -- Name: t_comment; Type: TABLE; Schema: public; Owner: postgres
 --
-
-CREATE TABLE public.t_doc (
-    id bigint NOT NULL,
-    doc_id character varying(64) NOT NULL,
-    title character varying(255) NOT NULL,
-    description character varying(512),
-    filename character varying(512) NOT NULL,
-    file_type character varying(20) NOT NULL,
-    doc_namespace character varying(64) DEFAULT 'blog/docs'::character varying,
-    view_count bigint DEFAULT 0,
-    recommend boolean DEFAULT false,
-    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-
-ALTER TABLE public.t_doc OWNER TO postgres;
-
---
--- TOC entry 2365 (class 1259 OID 0)
--- Name: t_doc_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.t_doc_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.t_doc_id_seq OWNER TO postgres;
-
---
--- TOC entry 2366 (class 0 OID 0)
--- Dependencies: 2365
--- Name: t_doc_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.t_doc_id_seq OWNED BY public.t_doc.id;
-
---
--- TOC entry 2367 (class 2606 OID 0)
--- Name: t_doc t_doc_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.t_doc
-    ADD CONSTRAINT t_doc_pkey PRIMARY KEY (id);
-
---
--- TOC entry 2368 (class 2606 OID 0)
--- Name: t_doc t_doc_doc_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.t_doc
-    ADD CONSTRAINT t_doc_doc_id_key UNIQUE (doc_id);
-
---
--- TOC entry 2369 (class 1259 OID 0)
--- Name: idx_t_doc_recommend; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_t_doc_recommend ON public.t_doc USING btree (recommend);
-
---
--- TOC entry 2370 (class 1259 OID 0)
--- Name: idx_t_doc_view_count; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_t_doc_view_count ON public.t_doc USING btree (view_count DESC);
-
 
 CREATE TABLE public.t_comment (
     user_id bigint,
@@ -656,6 +611,53 @@ ALTER TABLE public.t_comment ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );
+
+
+--
+-- TOC entry 257 (class 1259 OID 42647)
+-- Name: t_doc; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.t_doc (
+    id bigint NOT NULL,
+    doc_id character varying(64) NOT NULL,
+    title character varying(255) NOT NULL,
+    description character varying(512),
+    filename character varying(512) NOT NULL,
+    file_type character varying(20) NOT NULL,
+    doc_namespace character varying(64) DEFAULT 'blog/docs'::character varying,
+    view_count bigint DEFAULT 0,
+    recommend boolean DEFAULT false,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    published boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE public.t_doc OWNER TO postgres;
+
+--
+-- TOC entry 258 (class 1259 OID 42657)
+-- Name: t_doc_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.t_doc_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.t_doc_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 3671 (class 0 OID 0)
+-- Dependencies: 258
+-- Name: t_doc_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.t_doc_id_seq OWNED BY public.t_doc.id;
 
 
 --
@@ -694,7 +696,7 @@ CREATE TABLE public.t_essay (
 ALTER TABLE public.t_essay OWNER TO postgres;
 
 --
--- TOC entry 3649 (class 0 OID 0)
+-- TOC entry 3672 (class 0 OID 0)
 -- Dependencies: 239
 -- Name: COLUMN t_essay.user_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -795,7 +797,7 @@ CREATE TABLE public.t_message (
     avatar character varying(255) DEFAULT NULL::character varying,
     content character varying(255) DEFAULT NULL::character varying,
     create_time timestamp without time zone,
-    parent_message_id integer,
+    parent_message_id bigint,
     admin_message boolean DEFAULT false NOT NULL
 );
 
@@ -837,6 +839,21 @@ CREATE TABLE public.t_project (
 ALTER TABLE public.t_project OWNER TO postgres;
 
 --
+-- TOC entry 262 (class 1259 OID 42796)
+-- Name: t_project_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.t_project_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.t_project_seq OWNER TO postgres;
+
+--
 -- TOC entry 248 (class 1259 OID 16531)
 -- Name: t_tag; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -848,6 +865,21 @@ CREATE TABLE public.t_tag (
 
 
 ALTER TABLE public.t_tag OWNER TO postgres;
+
+--
+-- TOC entry 263 (class 1259 OID 42797)
+-- Name: t_tag_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.t_tag_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.t_tag_seq OWNER TO postgres;
 
 --
 -- TOC entry 249 (class 1259 OID 16535)
@@ -937,7 +969,7 @@ CREATE SEQUENCE public.t_user_blog_like_id_seq
 ALTER SEQUENCE public.t_user_blog_like_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3650 (class 0 OID 0)
+-- TOC entry 3673 (class 0 OID 0)
 -- Dependencies: 253
 -- Name: t_user_blog_like_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -977,7 +1009,7 @@ CREATE SEQUENCE public.t_user_essay_like_id_seq
 ALTER SEQUENCE public.t_user_essay_like_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3651 (class 0 OID 0)
+-- TOC entry 3674 (class 0 OID 0)
 -- Dependencies: 255
 -- Name: t_user_essay_like_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1001,7 +1033,22 @@ ALTER TABLE public.t_user ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
 
 
 --
--- TOC entry 3295 (class 2604 OID 16573)
+-- TOC entry 264 (class 1259 OID 42798)
+-- Name: t_user_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.t_user_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.t_user_seq OWNER TO postgres;
+
+--
+-- TOC entry 3306 (class 2604 OID 16573)
 -- Name: atlas_tag id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1009,7 +1056,7 @@ ALTER TABLE ONLY public.atlas_tag ALTER COLUMN id SET DEFAULT nextval('public.at
 
 
 --
--- TOC entry 3296 (class 2604 OID 16574)
+-- TOC entry 3307 (class 2604 OID 16574)
 -- Name: atlas_visitcounts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1017,7 +1064,7 @@ ALTER TABLE ONLY public.atlas_visitcounts ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3299 (class 2604 OID 16575)
+-- TOC entry 3310 (class 2604 OID 42664)
 -- Name: blog_monthly_visits id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1025,7 +1072,7 @@ ALTER TABLE ONLY public.blog_monthly_visits ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
--- TOC entry 3302 (class 2604 OID 16576)
+-- TOC entry 3313 (class 2604 OID 16576)
 -- Name: friend_links id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1033,7 +1080,7 @@ ALTER TABLE ONLY public.friend_links ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3307 (class 2604 OID 16577)
+-- TOC entry 3318 (class 2604 OID 16577)
 -- Name: personal_info id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1041,7 +1088,7 @@ ALTER TABLE ONLY public.personal_info ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3367 (class 2604 OID 16578)
+-- TOC entry 3378 (class 2604 OID 16578)
 -- Name: t_user_blog_like id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1049,7 +1096,7 @@ ALTER TABLE ONLY public.t_user_blog_like ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3370 (class 2604 OID 16579)
+-- TOC entry 3381 (class 2604 OID 16579)
 -- Name: t_user_essay_like id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1057,7 +1104,7 @@ ALTER TABLE ONLY public.t_user_essay_like ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3375 (class 2606 OID 16597)
+-- TOC entry 3392 (class 2606 OID 16597)
 -- Name: atlas_files atlas_files_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1066,7 +1113,7 @@ ALTER TABLE ONLY public.atlas_files
 
 
 --
--- TOC entry 3378 (class 2606 OID 16599)
+-- TOC entry 3395 (class 2606 OID 16599)
 -- Name: atlas_files_tag atlas_files_tag_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1075,7 +1122,7 @@ ALTER TABLE ONLY public.atlas_files_tag
 
 
 --
--- TOC entry 3383 (class 2606 OID 16601)
+-- TOC entry 3400 (class 2606 OID 16601)
 -- Name: atlas_tag atlas_tag_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1084,7 +1131,7 @@ ALTER TABLE ONLY public.atlas_tag
 
 
 --
--- TOC entry 3385 (class 2606 OID 16603)
+-- TOC entry 3402 (class 2606 OID 16603)
 -- Name: atlas_tag atlas_tag_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1093,7 +1140,7 @@ ALTER TABLE ONLY public.atlas_tag
 
 
 --
--- TOC entry 3387 (class 2606 OID 16605)
+-- TOC entry 3404 (class 2606 OID 16605)
 -- Name: atlas_type atlas_type_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1102,7 +1149,7 @@ ALTER TABLE ONLY public.atlas_type
 
 
 --
--- TOC entry 3389 (class 2606 OID 16607)
+-- TOC entry 3406 (class 2606 OID 16607)
 -- Name: atlas_type atlas_type_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1111,7 +1158,7 @@ ALTER TABLE ONLY public.atlas_type
 
 
 --
--- TOC entry 3391 (class 2606 OID 16609)
+-- TOC entry 3408 (class 2606 OID 16609)
 -- Name: atlas_visitcounts atlas_visitcounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1120,7 +1167,7 @@ ALTER TABLE ONLY public.atlas_visitcounts
 
 
 --
--- TOC entry 3393 (class 2606 OID 16611)
+-- TOC entry 3410 (class 2606 OID 42666)
 -- Name: blog_monthly_visits blog_monthly_visits_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1129,7 +1176,7 @@ ALTER TABLE ONLY public.blog_monthly_visits
 
 
 --
--- TOC entry 3395 (class 2606 OID 16613)
+-- TOC entry 3412 (class 2606 OID 42673)
 -- Name: blog_monthly_visits blog_monthly_visits_year_month_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1138,7 +1185,7 @@ ALTER TABLE ONLY public.blog_monthly_visits
 
 
 --
--- TOC entry 3397 (class 2606 OID 16615)
+-- TOC entry 3414 (class 2606 OID 16615)
 -- Name: friend_links friend_links_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1147,7 +1194,7 @@ ALTER TABLE ONLY public.friend_links
 
 
 --
--- TOC entry 3399 (class 2606 OID 16617)
+-- TOC entry 3416 (class 2606 OID 16617)
 -- Name: personal_info personal_info_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1156,7 +1203,7 @@ ALTER TABLE ONLY public.personal_info
 
 
 --
--- TOC entry 3401 (class 2606 OID 16619)
+-- TOC entry 3418 (class 2606 OID 16619)
 -- Name: private_message private_message_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1165,7 +1212,7 @@ ALTER TABLE ONLY public.private_message
 
 
 --
--- TOC entry 3405 (class 2606 OID 16621)
+-- TOC entry 3422 (class 2606 OID 16621)
 -- Name: t_blog t_blog_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1174,7 +1221,7 @@ ALTER TABLE ONLY public.t_blog
 
 
 --
--- TOC entry 3412 (class 2606 OID 16623)
+-- TOC entry 3429 (class 2606 OID 16623)
 -- Name: t_comment t_comment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1183,7 +1230,25 @@ ALTER TABLE ONLY public.t_comment
 
 
 --
--- TOC entry 3419 (class 2606 OID 16625)
+-- TOC entry 3474 (class 2606 OID 42661)
+-- Name: t_doc t_doc_doc_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.t_doc
+    ADD CONSTRAINT t_doc_doc_id_key UNIQUE (doc_id);
+
+
+--
+-- TOC entry 3476 (class 2606 OID 42659)
+-- Name: t_doc t_doc_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.t_doc
+    ADD CONSTRAINT t_doc_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3436 (class 2606 OID 16625)
 -- Name: t_essay_comment t_essay_comment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1192,7 +1257,7 @@ ALTER TABLE ONLY public.t_essay_comment
 
 
 --
--- TOC entry 3414 (class 2606 OID 16627)
+-- TOC entry 3431 (class 2606 OID 16627)
 -- Name: t_essay t_essay_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1201,7 +1266,7 @@ ALTER TABLE ONLY public.t_essay
 
 
 --
--- TOC entry 3424 (class 2606 OID 16629)
+-- TOC entry 3441 (class 2606 OID 16629)
 -- Name: t_essay_url t_essay_url_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1210,7 +1275,7 @@ ALTER TABLE ONLY public.t_essay_url
 
 
 --
--- TOC entry 3427 (class 2606 OID 16631)
+-- TOC entry 3444 (class 2606 OID 16631)
 -- Name: t_message t_message_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1219,7 +1284,7 @@ ALTER TABLE ONLY public.t_message
 
 
 --
--- TOC entry 3429 (class 2606 OID 16633)
+-- TOC entry 3446 (class 2606 OID 16633)
 -- Name: t_project t_project_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1228,7 +1293,7 @@ ALTER TABLE ONLY public.t_project
 
 
 --
--- TOC entry 3431 (class 2606 OID 16635)
+-- TOC entry 3448 (class 2606 OID 16635)
 -- Name: t_tag t_tag_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1237,7 +1302,7 @@ ALTER TABLE ONLY public.t_tag
 
 
 --
--- TOC entry 3433 (class 2606 OID 16637)
+-- TOC entry 3450 (class 2606 OID 16637)
 -- Name: t_type t_type_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1246,7 +1311,7 @@ ALTER TABLE ONLY public.t_type
 
 
 --
--- TOC entry 3441 (class 2606 OID 16639)
+-- TOC entry 3458 (class 2606 OID 16639)
 -- Name: t_user_blog_like t_user_blog_like_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1255,7 +1320,7 @@ ALTER TABLE ONLY public.t_user_blog_like
 
 
 --
--- TOC entry 3449 (class 2606 OID 16641)
+-- TOC entry 3466 (class 2606 OID 16641)
 -- Name: t_user_essay_like t_user_essay_like_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1264,7 +1329,7 @@ ALTER TABLE ONLY public.t_user_essay_like
 
 
 --
--- TOC entry 3435 (class 2606 OID 16643)
+-- TOC entry 3452 (class 2606 OID 16643)
 -- Name: t_user t_user_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1273,7 +1338,7 @@ ALTER TABLE ONLY public.t_user
 
 
 --
--- TOC entry 3443 (class 2606 OID 16645)
+-- TOC entry 3460 (class 2606 OID 16645)
 -- Name: t_user_blog_like uk170aqkbuh81fgl0xm3fe8pbum; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1282,7 +1347,7 @@ ALTER TABLE ONLY public.t_user_blog_like
 
 
 --
--- TOC entry 3445 (class 2606 OID 16647)
+-- TOC entry 3462 (class 2606 OID 16647)
 -- Name: t_user_blog_like uk_user_blog; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1291,7 +1356,7 @@ ALTER TABLE ONLY public.t_user_blog_like
 
 
 --
--- TOC entry 3451 (class 2606 OID 16649)
+-- TOC entry 3468 (class 2606 OID 16649)
 -- Name: t_user_essay_like uk_user_essay; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1300,7 +1365,7 @@ ALTER TABLE ONLY public.t_user_essay_like
 
 
 --
--- TOC entry 3437 (class 2606 OID 16651)
+-- TOC entry 3454 (class 2606 OID 16651)
 -- Name: t_user uk_username; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1309,7 +1374,7 @@ ALTER TABLE ONLY public.t_user
 
 
 --
--- TOC entry 3453 (class 2606 OID 16653)
+-- TOC entry 3470 (class 2606 OID 16653)
 -- Name: t_user_essay_like uktcrjho5x2dox7msggyep58fb6; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1318,8 +1383,8 @@ ALTER TABLE ONLY public.t_user_essay_like
 
 
 --
--- TOC entry 3652 (class 0 OID 0)
--- Dependencies: 3395
+-- TOC entry 3675 (class 0 OID 0)
+-- Dependencies: 3412
 -- Name: INDEX blog_monthly_visits_year_month_key; Type: COMMENT; Schema: public; Owner: postgres
 --
 
@@ -1327,7 +1392,7 @@ COMMENT ON INDEX public.blog_monthly_visits_year_month_key IS '加速按年月�
 
 
 --
--- TOC entry 3379 (class 1259 OID 16654)
+-- TOC entry 3396 (class 1259 OID 16654)
 -- Name: files_id_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1335,7 +1400,7 @@ CREATE INDEX files_id_idx ON public.atlas_files_tag USING btree (files_id);
 
 
 --
--- TOC entry 3380 (class 1259 OID 16655)
+-- TOC entry 3397 (class 1259 OID 16655)
 -- Name: fki_文件; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1343,7 +1408,7 @@ CREATE INDEX "fki_文件" ON public.atlas_files_tag USING btree (files_id);
 
 
 --
--- TOC entry 3406 (class 1259 OID 16656)
+-- TOC entry 3423 (class 1259 OID 16656)
 -- Name: idx_t_blog_tags_blogs_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1351,7 +1416,7 @@ CREATE INDEX idx_t_blog_tags_blogs_id ON public.t_blog_tags USING btree (blogs_i
 
 
 --
--- TOC entry 3407 (class 1259 OID 16657)
+-- TOC entry 3424 (class 1259 OID 16657)
 -- Name: idx_t_blog_tags_tags_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1359,7 +1424,7 @@ CREATE INDEX idx_t_blog_tags_tags_id ON public.t_blog_tags USING btree (tags_id)
 
 
 --
--- TOC entry 3402 (class 1259 OID 16658)
+-- TOC entry 3419 (class 1259 OID 16658)
 -- Name: idx_t_blog_type_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1367,7 +1432,7 @@ CREATE INDEX idx_t_blog_type_id ON public.t_blog USING btree (type_id);
 
 
 --
--- TOC entry 3403 (class 1259 OID 16659)
+-- TOC entry 3420 (class 1259 OID 16659)
 -- Name: idx_t_blog_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1375,7 +1440,7 @@ CREATE INDEX idx_t_blog_user_id ON public.t_blog USING btree (user_id);
 
 
 --
--- TOC entry 3408 (class 1259 OID 16660)
+-- TOC entry 3425 (class 1259 OID 16660)
 -- Name: idx_t_comment_blog_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1383,7 +1448,7 @@ CREATE INDEX idx_t_comment_blog_id ON public.t_comment USING btree (blog_id);
 
 
 --
--- TOC entry 3409 (class 1259 OID 16661)
+-- TOC entry 3426 (class 1259 OID 16661)
 -- Name: idx_t_comment_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1391,7 +1456,7 @@ CREATE INDEX idx_t_comment_id ON public.t_comment USING btree (id);
 
 
 --
--- TOC entry 3410 (class 1259 OID 16662)
+-- TOC entry 3427 (class 1259 OID 16662)
 -- Name: idx_t_comment_parent_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1399,7 +1464,23 @@ CREATE INDEX idx_t_comment_parent_id ON public.t_comment USING btree (parent_com
 
 
 --
--- TOC entry 3415 (class 1259 OID 16663)
+-- TOC entry 3471 (class 1259 OID 42662)
+-- Name: idx_t_doc_recommend; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_t_doc_recommend ON public.t_doc USING btree (recommend);
+
+
+--
+-- TOC entry 3472 (class 1259 OID 42663)
+-- Name: idx_t_doc_view_count; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_t_doc_view_count ON public.t_doc USING btree (view_count DESC);
+
+
+--
+-- TOC entry 3432 (class 1259 OID 16663)
 -- Name: idx_t_essay_comment_essay_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1407,7 +1488,7 @@ CREATE INDEX idx_t_essay_comment_essay_id ON public.t_essay_comment USING btree 
 
 
 --
--- TOC entry 3416 (class 1259 OID 16664)
+-- TOC entry 3433 (class 1259 OID 16664)
 -- Name: idx_t_essay_comment_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1415,7 +1496,7 @@ CREATE INDEX idx_t_essay_comment_id ON public.t_essay_comment USING btree (id);
 
 
 --
--- TOC entry 3417 (class 1259 OID 16665)
+-- TOC entry 3434 (class 1259 OID 16665)
 -- Name: idx_t_essay_comment_parent_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1423,7 +1504,7 @@ CREATE INDEX idx_t_essay_comment_parent_id ON public.t_essay_comment USING btree
 
 
 --
--- TOC entry 3420 (class 1259 OID 16666)
+-- TOC entry 3437 (class 1259 OID 16666)
 -- Name: idx_t_essay_url_essay_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1431,7 +1512,7 @@ CREATE INDEX idx_t_essay_url_essay_id ON public.t_essay_url USING btree (essay_i
 
 
 --
--- TOC entry 3421 (class 1259 OID 16667)
+-- TOC entry 3438 (class 1259 OID 16667)
 -- Name: idx_t_essay_url_is_valid; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1439,7 +1520,7 @@ CREATE INDEX idx_t_essay_url_is_valid ON public.t_essay_url USING btree (is_vali
 
 
 --
--- TOC entry 3422 (class 1259 OID 16668)
+-- TOC entry 3439 (class 1259 OID 16668)
 -- Name: idx_t_essay_url_url_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1447,7 +1528,7 @@ CREATE INDEX idx_t_essay_url_url_type ON public.t_essay_url USING btree (url_typ
 
 
 --
--- TOC entry 3425 (class 1259 OID 16669)
+-- TOC entry 3442 (class 1259 OID 42780)
 -- Name: idx_t_message_parent_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1455,7 +1536,7 @@ CREATE INDEX idx_t_message_parent_id ON public.t_message USING btree (parent_mes
 
 
 --
--- TOC entry 3438 (class 1259 OID 16670)
+-- TOC entry 3455 (class 1259 OID 16670)
 -- Name: idx_user_blog_like_blog_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1463,7 +1544,7 @@ CREATE INDEX idx_user_blog_like_blog_id ON public.t_user_blog_like USING btree (
 
 
 --
--- TOC entry 3439 (class 1259 OID 16671)
+-- TOC entry 3456 (class 1259 OID 16671)
 -- Name: idx_user_blog_like_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1471,7 +1552,7 @@ CREATE INDEX idx_user_blog_like_user_id ON public.t_user_blog_like USING btree (
 
 
 --
--- TOC entry 3446 (class 1259 OID 16672)
+-- TOC entry 3463 (class 1259 OID 16672)
 -- Name: idx_user_essay_like_essay_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1479,7 +1560,7 @@ CREATE INDEX idx_user_essay_like_essay_id ON public.t_user_essay_like USING btre
 
 
 --
--- TOC entry 3447 (class 1259 OID 16673)
+-- TOC entry 3464 (class 1259 OID 16673)
 -- Name: idx_user_essay_like_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1487,7 +1568,7 @@ CREATE INDEX idx_user_essay_like_user_id ON public.t_user_essay_like USING btree
 
 
 --
--- TOC entry 3381 (class 1259 OID 16674)
+-- TOC entry 3398 (class 1259 OID 16674)
 -- Name: tag_id_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1495,7 +1576,7 @@ CREATE INDEX tag_id_idx ON public.atlas_files_tag USING btree (tag_id);
 
 
 --
--- TOC entry 3376 (class 1259 OID 16675)
+-- TOC entry 3393 (class 1259 OID 16675)
 -- Name: type_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1503,7 +1584,7 @@ CREATE INDEX type_idx ON public.atlas_files USING btree (type);
 
 
 --
--- TOC entry 3477 (class 2620 OID 16676)
+-- TOC entry 3500 (class 2620 OID 16676)
 -- Name: personal_info update_personal_info_modtime; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -1511,7 +1592,7 @@ CREATE TRIGGER update_personal_info_modtime BEFORE UPDATE ON public.personal_inf
 
 
 --
--- TOC entry 3460 (class 2606 OID 16677)
+-- TOC entry 3483 (class 2606 OID 16677)
 -- Name: t_blog fk292449gwg5yf7ocdlmswv9w4j; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1520,7 +1601,7 @@ ALTER TABLE ONLY public.t_blog
 
 
 --
--- TOC entry 3464 (class 2606 OID 16682)
+-- TOC entry 3487 (class 2606 OID 16682)
 -- Name: t_comment fk4jj284r3pb7japogvo6h72q95; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1529,7 +1610,7 @@ ALTER TABLE ONLY public.t_comment
 
 
 --
--- TOC entry 3462 (class 2606 OID 16687)
+-- TOC entry 3485 (class 2606 OID 16687)
 -- Name: t_blog_tags fk5feau0gb4lq47fdb03uboswm8; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1538,7 +1619,7 @@ ALTER TABLE ONLY public.t_blog_tags
 
 
 --
--- TOC entry 3461 (class 2606 OID 16692)
+-- TOC entry 3484 (class 2606 OID 16692)
 -- Name: t_blog fk8ky5rrsxh01nkhctmo7d48p82; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1547,7 +1628,7 @@ ALTER TABLE ONLY public.t_blog
 
 
 --
--- TOC entry 3466 (class 2606 OID 16697)
+-- TOC entry 3489 (class 2606 OID 16697)
 -- Name: t_essay fk_essay_user; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1556,7 +1637,7 @@ ALTER TABLE ONLY public.t_essay
 
 
 --
--- TOC entry 3467 (class 2606 OID 16702)
+-- TOC entry 3490 (class 2606 OID 16702)
 -- Name: t_essay_comment fk_t_essay_comment_essay_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1565,7 +1646,7 @@ ALTER TABLE ONLY public.t_essay_comment
 
 
 --
--- TOC entry 3468 (class 2606 OID 16707)
+-- TOC entry 3491 (class 2606 OID 16707)
 -- Name: t_essay_comment fk_t_essay_comment_parent_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1574,7 +1655,7 @@ ALTER TABLE ONLY public.t_essay_comment
 
 
 --
--- TOC entry 3469 (class 2606 OID 16712)
+-- TOC entry 3492 (class 2606 OID 16712)
 -- Name: t_essay_comment fk_t_essay_comment_user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1583,7 +1664,7 @@ ALTER TABLE ONLY public.t_essay_comment
 
 
 --
--- TOC entry 3470 (class 2606 OID 16717)
+-- TOC entry 3493 (class 2606 OID 16717)
 -- Name: t_essay_url fk_t_essay_url_create_user; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1592,7 +1673,7 @@ ALTER TABLE ONLY public.t_essay_url
 
 
 --
--- TOC entry 3471 (class 2606 OID 16722)
+-- TOC entry 3494 (class 2606 OID 16722)
 -- Name: t_essay_url fk_t_essay_url_essay_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1601,7 +1682,7 @@ ALTER TABLE ONLY public.t_essay_url
 
 
 --
--- TOC entry 3472 (class 2606 OID 16727)
+-- TOC entry 3495 (class 2606 OID 42781)
 -- Name: t_message fk_t_message_parent_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1610,7 +1691,7 @@ ALTER TABLE ONLY public.t_message
 
 
 --
--- TOC entry 3473 (class 2606 OID 16732)
+-- TOC entry 3496 (class 2606 OID 16732)
 -- Name: t_user_blog_like fk_user_blog_like_blog; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1619,7 +1700,7 @@ ALTER TABLE ONLY public.t_user_blog_like
 
 
 --
--- TOC entry 3474 (class 2606 OID 16737)
+-- TOC entry 3497 (class 2606 OID 16737)
 -- Name: t_user_blog_like fk_user_blog_like_user; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1628,7 +1709,7 @@ ALTER TABLE ONLY public.t_user_blog_like
 
 
 --
--- TOC entry 3475 (class 2606 OID 16742)
+-- TOC entry 3498 (class 2606 OID 16742)
 -- Name: t_user_essay_like fk_user_essay_like_essay; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1637,7 +1718,7 @@ ALTER TABLE ONLY public.t_user_essay_like
 
 
 --
--- TOC entry 3476 (class 2606 OID 16747)
+-- TOC entry 3499 (class 2606 OID 16747)
 -- Name: t_user_essay_like fk_user_essay_like_user; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1646,7 +1727,7 @@ ALTER TABLE ONLY public.t_user_essay_like
 
 
 --
--- TOC entry 3463 (class 2606 OID 16752)
+-- TOC entry 3486 (class 2606 OID 16752)
 -- Name: t_blog_tags fkh4pacwjwofrugxa9hpwaxg6mr; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1655,7 +1736,7 @@ ALTER TABLE ONLY public.t_blog_tags
 
 
 --
--- TOC entry 3465 (class 2606 OID 16757)
+-- TOC entry 3488 (class 2606 OID 16757)
 -- Name: t_comment fkke3uogd04j4jx316m1p51e05u; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1664,7 +1745,7 @@ ALTER TABLE ONLY public.t_comment
 
 
 --
--- TOC entry 3458 (class 2606 OID 16762)
+-- TOC entry 3481 (class 2606 OID 16762)
 -- Name: private_message private_message_receiver_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1673,7 +1754,7 @@ ALTER TABLE ONLY public.private_message
 
 
 --
--- TOC entry 3459 (class 2606 OID 16767)
+-- TOC entry 3482 (class 2606 OID 16767)
 -- Name: private_message private_message_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1682,7 +1763,7 @@ ALTER TABLE ONLY public.private_message
 
 
 --
--- TOC entry 3454 (class 2606 OID 16772)
+-- TOC entry 3477 (class 2606 OID 16772)
 -- Name: atlas_files 分类唯一; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1691,7 +1772,7 @@ ALTER TABLE ONLY public.atlas_files
 
 
 --
--- TOC entry 3456 (class 2606 OID 16777)
+-- TOC entry 3479 (class 2606 OID 16777)
 -- Name: atlas_files_tag 文件; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1700,7 +1781,7 @@ ALTER TABLE ONLY public.atlas_files_tag
 
 
 --
--- TOC entry 3457 (class 2606 OID 16782)
+-- TOC entry 3480 (class 2606 OID 16782)
 -- Name: atlas_files_tag 标签; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1709,7 +1790,7 @@ ALTER TABLE ONLY public.atlas_files_tag
 
 
 --
--- TOC entry 3455 (class 2606 OID 16787)
+-- TOC entry 3478 (class 2606 OID 16787)
 -- Name: atlas_files 用户关联; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1718,7 +1799,7 @@ ALTER TABLE ONLY public.atlas_files
 
 
 --
--- TOC entry 3629 (class 0 OID 0)
+-- TOC entry 3651 (class 0 OID 0)
 -- Dependencies: 5
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
 --
@@ -1726,7 +1807,7 @@ ALTER TABLE ONLY public.atlas_files
 GRANT ALL ON SCHEMA public TO blog;
 
 
--- Completed on 2026-04-18 15:49:42
+-- Completed on 2026-04-21 01:24:07
 
 --
 -- PostgreSQL database dump complete

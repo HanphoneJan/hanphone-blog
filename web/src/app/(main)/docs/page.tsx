@@ -13,6 +13,7 @@ interface BackendDoc {
   description: string
   filename: string
   fileType: string
+  docNamespace: string
   recommend: boolean
   viewCount: number
   createTime: string
@@ -25,18 +26,26 @@ async function getDocsFromBackend(): Promise<DocMeta[]> {
     })
     if (!res.ok) return []
     const result = await res.json()
-    if (result.flag && Array.isArray(result.data)) {
-      return (result.data as BackendDoc[]).map((d) => ({
-        id: d.docId || String(d.id),
-        docId: d.docId,
-        title: d.title,
-        description: d.description || '',
-        filename: d.filename,
-        type: d.fileType || '',
-        recommend: d.recommend,
-        viewCount: d.viewCount,
-        createTime: d.createTime ? d.createTime.split('T')[0] : '',
-      }))
+    if (result.flag && Array.isArray(result.data?.content || result.data)) {
+      // 支持分页和非分页两种返回格式
+      const docs = result.data?.content || result.data
+      return (docs as BackendDoc[]).map((d) => {
+        // 从 docNamespace 提取文件夹路径，如 "blog/docs/folder1" -> "folder1"
+        const folderPath = d.docNamespace?.replace('blog/docs/', '').replace('blog/docs', '') || ''
+        // 构建完整的相对路径：folderPath/filename
+        const fullFilename = folderPath ? `${folderPath}/${d.filename}` : d.filename
+        return {
+          id: d.docId || String(d.id),
+          docId: d.docId,
+          title: d.title,
+          description: d.description || '',
+          filename: fullFilename,
+          type: d.fileType || '',
+          recommend: d.recommend,
+          viewCount: d.viewCount,
+          createTime: d.createTime ? d.createTime.split('T')[0] : '',
+        }
+      })
     }
     return []
   } catch {

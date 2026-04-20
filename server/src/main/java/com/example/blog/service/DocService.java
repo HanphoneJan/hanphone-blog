@@ -12,6 +12,8 @@ public interface DocService {
 
     Page<Doc> listDoc(Pageable pageable);
 
+    Page<Doc> listPublishedDoc(Pageable pageable);
+
     Page<Doc> listHotDoc(Pageable pageable);
 
     List<Doc> listRecommendDocTop(Integer size);
@@ -29,4 +31,6 @@ public interface DocService {
     Boolean incrementViewCount(String docId);
 
     Boolean changeRecommend(Long id, Boolean recommend);
+
+    Boolean changePublished(Long id, Boolean published);
 }

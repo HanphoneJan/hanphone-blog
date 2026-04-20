@@ -95,6 +95,7 @@ export const ENDPOINTS = {
     DOCS: `${API_BASE_URL}/admin/docs`,
     DOC: `${API_BASE_URL}/admin/doc`,
     DOC_RECOMMEND: `${API_BASE_URL}/admin/docs/recommend`,
+    DOC_PUBLISHED: `${API_BASE_URL}/admin/docs/published`,
     BLOG_LIST: `${API_BASE_URL}/admin/getBlogList`,
     BLOGS: `${API_BASE_URL}/admin/blogs`,
     USER: `${API_BASE_URL}/admin/user`,

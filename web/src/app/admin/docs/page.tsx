@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
@@ -24,7 +24,13 @@ import {
   CheckCircle,
   File,
   XCircle,
-  Clock
+  Clock,
+  Globe,
+  GlobeLock,
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react'
 
 interface DocItem {
@@ -37,6 +43,7 @@ interface DocItem {
   docNamespace: string
   viewCount: number
   recommend: boolean
+  published: boolean
   createTime: string
   updateTime: string
 }
@@ -94,6 +101,11 @@ export default function DocManagementPage() {
   }
   const [uploadQueue, setUploadQueue] = useState<UploadFile[]>([])
   const [batchUploading, setBatchUploading] = useState(false)
+
+  // 文件夹路径状态
+  const [currentDir, setCurrentDir] = useState('')
+  const [showCreateDirModal, setShowCreateDirModal] = useState(false)
+  const [newDirName, setNewDirName] = useState('')
 
   // 获取文档列表
   const fetchDocs = async () => {
@@ -179,7 +191,8 @@ export default function DocManagementPage() {
     try {
       // 1. 批量上传到 admin-file
       const formData = new FormData()
-      formData.append('namespace', 'blog/docs')
+      const uploadNamespace = currentDir ? `blog/docs/${currentDir}` : 'blog/docs'
+      formData.append('namespace', uploadNamespace)
       for (const item of pendingFiles) {
         formData.append('files', item.file)
       }
@@ -228,7 +241,7 @@ export default function DocManagementPage() {
             description: queueItem.description || '',
             filename: result.filename,
             fileType: ext,
-            docNamespace: 'blog/docs'
+            docNamespace: uploadNamespace
           }
         })
 
@@ -355,6 +368,24 @@ export default function DocManagementPage() {
     }
   }
 
+  // 切换发布状态
+  const togglePublished = async (doc: DocItem) => {
+    try {
+      const result = await fetchData(ENDPOINTS.ADMIN.DOC_PUBLISHED, 'POST', {
+        docId: doc.id,
+        published: !doc.published
+      })
+      if (result.flag) {
+        showAlert(doc.published ? '已取消发布' : '已发布')
+        fetchDocs()
+      } else {
+        showAlert('操作失败')
+      }
+    } catch (err) {
+      showAlert('操作失败')
+    }
+  }
+
   // 打开编辑
   const openEditModal = (doc: DocItem) => {
     setEditingDoc(doc)
@@ -405,8 +436,61 @@ export default function DocManagementPage() {
     setFormTitle('')
     setFormDescription('')
     setUploadQueue([])
+    setCurrentDir('')
     if (uploadRef.current) uploadRef.current.value = ''
   }
+
+  // 从 docs 中提取所有文件夹路径
+  const allFolders = useMemo(() => {
+    const folders = new Set<string>()
+    docs.forEach(doc => {
+      const ns = doc.docNamespace || 'blog/docs'
+      if (ns.startsWith('blog/docs/')) {
+        const folderPath = ns.replace('blog/docs/', '')
+        if (folderPath) {
+          // 提取所有层级
+          const parts = folderPath.split('/')
+          let accum = ''
+          parts.forEach(part => {
+            accum = accum ? `${accum}/${part}` : part
+            folders.add(accum)
+          })
+        }
+      }
+    })
+    return Array.from(folders).sort()
+  }, [docs])
+
+  // 根据当前文件夹过滤文档
+  const docsInCurrentFolder = filteredDocs.filter(doc => {
+    const ns = doc.docNamespace || 'blog/docs'
+    const expectedNs = currentDir ? `blog/docs/${currentDir}` : 'blog/docs'
+    return ns === expectedNs
+  })
+
+  // 当前文件夹下的子文件夹
+  const subFolders = useMemo(() => {
+    if (!currentDir) {
+      return allFolders.filter(f => !f.includes('/'))
+    }
+    return allFolders.filter(f => f.startsWith(currentDir + '/') && f.split('/').length === currentDir.split('/').length + 1)
+  }, [allFolders, currentDir])
+
+  // 进入文件夹
+  const handleEnterFolder = (folder: string) => {
+    setCurrentDir(currentDir ? `${currentDir}/${folder}` : folder)
+  }
+
+  // 返回上级文件夹
+  const handleGoBackFolder = () => {
+    if (!currentDir) return
+    const parts = currentDir.split('/')
+    parts.pop()
+    setCurrentDir(parts.join('/'))
+  }
+
+  // 面包屑导航
+  const folderBreadcrumbs = currentDir ? currentDir.split('/') : []
 
   return (
     <div className="font-sans min-h-screen flex flex-col bg-[rgb(var(--bg))] text-[rgb(var(--text))] relative overflow-hidden">
@@ -462,6 +546,39 @@ export default function DocManagementPage() {
             </div>
           )}
 
+          {/* 文件夹导航 */}
+          {!searchQuery && (
+            <div className="px-4 py-2 border-b border-[rgb(var(--border))] flex items-center gap-2 text-sm">
+              {currentDir && (
+                <button
+                  onClick={handleGoBackFolder}
+                  className="flex items-center gap-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  返回
+                </button>
+              )}
+              <button
+                onClick={() => setCurrentDir('')}
+                className={`flex items-center gap-1 ${!currentDir ? 'text-[rgb(var(--primary))] font-medium' : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]'}`}
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                全部文档
+              </button>
+              {folderBreadcrumbs.map((folder, idx) => (
+                <span key={idx} className="flex items-center gap-1">
+                  <ChevronRight className="w-3 h-3 text-[rgb(var(--text-muted))]" />
+                  <button
+                    onClick={() => setCurrentDir(folderBreadcrumbs.slice(0, idx + 1).join('/'))}
+                    className={`hover:text-[rgb(var(--text))] ${idx === folderBreadcrumbs.length - 1 ? 'text-[rgb(var(--text))] font-medium' : 'text-[rgb(var(--text-muted))]'}`}
+                  >
+                    {folder}
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* 文档列表 */}
           <div className="px-4 pb-4">
             {loading && docs.length === 0 ? (
@@ -469,10 +586,99 @@ export default function DocManagementPage() {
                 <Loader2 className="animate-spin h-6 w-6 mx-auto mb-2" />
                 加载中...
               </div>
-            ) : filteredDocs.length === 0 ? (
+            ) : searchQuery ? (
+              filteredDocs.length === 0 ? (
+                <div className="text-center py-12 text-[rgb(var(--text-muted))]">
+                  <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>未找到匹配的文档</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200/50" style={{ borderColor: 'rgb(var(--border))' }}>
+                    <thead className="bg-slate-100/60" style={{ backgroundColor: 'rgb(var(--muted))' }}>
+                      <tr>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider">文档</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider hidden sm:table-cell">类型</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">访问量</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">推荐</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">发布</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/50" style={{ borderColor: 'rgb(var(--border))' }}>
+                      {filteredDocs.map(item => (
+                        <tr key={item.id} className="hover:bg-[rgb(var(--hover))] transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <FileText className={`w-4 h-4 shrink-0 ${getTypeColor(item.fileType)}`} />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{item.title}</p>
+                                <p className="text-xs text-[rgb(var(--text-muted))] truncate hidden md:block">{item.description || '无描述'}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 hidden sm:table-cell">
+                            <span className={`text-xs font-mono ${getTypeColor(item.fileType)}`}>{item.fileType}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-xs text-[rgb(var(--text-muted))]">{item.viewCount || 0}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => toggleRecommend(item)}
+                              className="p-1 rounded-full transition-colors"
+                              title={item.recommend ? '取消推荐' : '设为推荐'}
+                            >
+                              {item.recommend ? (
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                              ) : (
+                                <StarOff className="w-4 h-4 text-[rgb(var(--text-muted))]" />
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => togglePublished(item)}
+                              className="p-1 rounded-full transition-colors"
+                              title={item.published ? '取消发布' : '发布'}
+                            >
+                              {item.published ? (
+                                <Globe className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <GlobeLock className="w-4 h-4 text-[rgb(var(--text-muted))]" />
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(item)}
+                              className="p-1.5 rounded-full bg-blue-100/60 text-blue-600 hover:bg-blue-100/80 transition-colors mr-1"
+                              title="编辑"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(item)}
+                              className="p-1.5 rounded-full bg-red-100/60 text-red-600 hover:bg-red-100/80 transition-colors"
+                              title="删除"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : subFolders.length === 0 && docsInCurrentFolder.length === 0 ? (
               <div className="text-center py-12 text-[rgb(var(--text-muted))]">
                 <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>{searchQuery ? '未找到匹配的文档' : '暂无文档'}</p>
+                <p>当前目录暂无文档</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -483,11 +689,43 @@ export default function DocManagementPage() {
                       <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider hidden sm:table-cell">类型</th>
                       <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">访问量</th>
                       <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">推荐</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">发布</th>
                       <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200/50" style={{ borderColor: 'rgb(var(--border))' }}>
-                    {filteredDocs.map(item => (
+                    {/* 子文件夹 */}
+                    {subFolders.map(folder => (
+                      <tr key={`folder-${folder}`} className="hover:bg-[rgb(var(--hover))] transition-colors">
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => handleEnterFolder(folder.split('/').pop() || folder)}
+                            className="flex items-center gap-2 text-blue-600 hover:text-blue-500"
+                          >
+                            <Folder className="w-4 h-4 text-yellow-500" />
+                            <span className="text-sm font-medium truncate">{folder.split('/').pop() || folder}</span>
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <span className="text-xs text-[rgb(var(--text-muted))]">目录</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-xs text-[rgb(var(--text-muted))]">-</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-xs text-[rgb(var(--text-muted))]">-</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-xs text-[rgb(var(--text-muted))]">-</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-xs text-[rgb(var(--text-muted))]">-</span>
+                        </td>
+                      </tr>
+                    ))}
+                    {/* 当前目录下的文档 */}
+                    {docsInCurrentFolder.map(item => (
                       <tr key={item.id} className="hover:bg-[rgb(var(--hover))] transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -506,6 +744,7 @@ export default function DocManagementPage() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button
+                            type="button"
                             onClick={() => toggleRecommend(item)}
                             className="p-1 rounded-full transition-colors"
                             title={item.recommend ? '取消推荐' : '设为推荐'}
@@ -517,8 +756,23 @@ export default function DocManagementPage() {
                             )}
                           </button>
                         </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => togglePublished(item)}
+                            className="p-1 rounded-full transition-colors"
+                            title={item.published ? '取消发布' : '发布'}
+                          >
+                            {item.published ? (
+                              <Globe className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <GlobeLock className="w-4 h-4 text-[rgb(var(--text-muted))]" />
+                            )}
+                          </button>
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <button
+                            type="button"
                             onClick={() => openEditModal(item)}
                             className="p-1.5 rounded-full bg-blue-100/60 text-blue-600 hover:bg-blue-100/80 transition-colors mr-1"
                             title="编辑"
@@ -526,6 +780,7 @@ export default function DocManagementPage() {
                             <Eye className="h-3.5 w-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => openDeleteModal(item)}
                             className="p-1.5 rounded-full bg-red-100/60 text-red-600 hover:bg-red-100/80 transition-colors"
                             title="删除"
@@ -564,6 +819,37 @@ export default function DocManagementPage() {
             </div>
 
             <div className="p-4 space-y-3 overflow-y-auto">
+              {/* 目标文件夹选择 */}
+              <div>
+                <label className="block text-xs font-medium mb-1.5">目标文件夹</label>
+                <div className="flex gap-2">
+                  <select
+                    value={currentDir}
+                    onChange={e => setCurrentDir(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-[rgb(var(--border))] bg-[rgb(var(--bg))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))] text-sm"
+                    disabled={batchUploading}
+                  >
+                    <option value="">根目录 (blog/docs)</option>
+                    {allFolders.map(folder => (
+                      <option key={folder} value={folder}>{folder}</option>
+                    ))}
+                  </select>
+                  {currentDir && (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentDir('')}
+                      className="px-2 py-2 text-xs border border-[rgb(var(--border))] rounded-lg hover:bg-[rgb(var(--hover))] text-[rgb(var(--text-muted))]"
+                      title="返回根目录"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-[rgb(var(--text-muted))] mt-1">
+                  文件将上传到: {currentDir ? `blog/docs/${currentDir}` : 'blog/docs'}
+                </p>
+              </div>
+
               {/* 文件选择区 */}
               <div>
                 <label className="block text-xs font-medium mb-1.5">选择文件（可多选）</label>

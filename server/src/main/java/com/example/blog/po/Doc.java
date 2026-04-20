@@ -40,6 +40,8 @@ public class Doc {
 
     private Boolean recommend = false;
 
+    private Boolean published = false;
+
     @Column(name = "create_time")
     private LocalDateTime createTime;
 
@@ -55,6 +57,9 @@ public class Doc {
         }
         if (recommend == null) {
             recommend = false;
+        }
+        if (published == null) {
+            published = false;
         }
         if (docNamespace == null) {
             docNamespace = "blog/docs";
