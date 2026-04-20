@@ -14,9 +14,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.criteria.Predicate;
-import javax.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -231,6 +231,78 @@ public class EssayServiceImpl implements EssayService {
             return affectedRows > 0;
         } catch (Exception e) {
             throw new RuntimeException("Error changing recommend status for essay: " + Id, e);
+        }
+    }
+
+    @Override
+    public Essay getEssayDetail(Long userId, Long id) {
+        Objects.requireNonNull(id, "essay id must not be null");
+        try {
+            Essay essay = essayRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("文章不存在，ID: " + id));
+            List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(id);
+            Optional<UserEssayLike> existingLike = userId != null
+                    ? userEssayLikeRepository.findByUserIdAndEssayId(userId, id)
+                    : Optional.empty();
+            essay.setEssayFileUrls(fileUrls);
+            essay.setLiked(existingLike.isPresent());
+            fillParentCommentId(essay);
+            return essay;
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("获取文章详情失败，ID: " + id, e);
+        }
+    }
+
+    @Override
+    public Page<Essay> listEssay(String query, Pageable pageable) {
+        requireNonNull(query, "query must not be null");
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            String searchKeyword = query.trim();
+            Page<Essay> essays = essayRepository.findAll(
+                    (Specification<Essay>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        // 按标题、内容搜索
+                        Predicate titlePredicate = cb.like(root.get("title"), "%" + searchKeyword + "%");
+                        Predicate contentPredicate = cb.like(root.get("content"), "%" + searchKeyword + "%");
+                        Predicate searchPredicate = cb.or(titlePredicate, contentPredicate);
+                        predicates.add(searchPredicate);
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+
+            return essays.map(essay -> {
+                Objects.requireNonNull(essay, "essay must not be null");
+                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
+                essay.setEssayFileUrls(fileUrls);
+                fillParentCommentId(essay);
+                return essay;
+            });
+        } catch (Exception e) {
+            throw new RuntimeException("搜索随笔失败，关键字: " + query, e);
+        }
+    }
+
+    @Override
+    public List<Essay> listRecommendEssayTop(Integer size) {
+        Objects.requireNonNull(size, "size must not be null");
+        if (size <= 0) {
+            throw new IllegalArgumentException("size must be greater than 0");
+        }
+        try {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, size);
+            List<Essay> essays = essayRepository.findTop(pageable);
+            essays.forEach(essay -> {
+                Objects.requireNonNull(essay, "essay must not be null");
+                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
+                essay.setEssayFileUrls(fileUrls);
+                fillParentCommentId(essay);
+            });
+            return essays;
+        } catch (Exception e) {
+            throw new RuntimeException("获取推荐文章列表失败", e);
         }
     }
 

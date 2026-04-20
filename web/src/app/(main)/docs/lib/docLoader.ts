@@ -31,10 +31,13 @@ const SUPPORTED_EXTENSIONS = new Set(['.docx', '.pdf', '.md', '.html'])
 
 export interface DocMeta {
   id: string
+  docId?: string      // 后端文档ID
   title: string
   description: string
   filename: string    // 相对路径，如 "subdir/file.md"
-  type: 'docx' | 'pdf' | 'md' | 'html'
+  type: string        // 完整后缀名，如 ".docx", ".md", ".html", ".pdf"
+  recommend?: boolean
+  viewCount?: number
   createTime: string
 }
 
@@ -270,6 +273,7 @@ export async function getDocById(id: string): Promise<DocData | null> {
   const meta = await getDocMeta()
   const docMeta = meta.docs.find(d => {
     if (d.id === id) return true
+    if (d.docId === id) return true
     // 支持用相对路径（不含扩展名）匹配
     const nameWithoutExt = d.filename.replace(/\.[^.]+$/, '')
     const decodedId = decodeURIComponent(id)
@@ -279,8 +283,9 @@ export async function getDocById(id: string): Promise<DocData | null> {
   if (!docMeta) return null
 
   const filepath = join(DOCS_DIR, docMeta.filename)
+  const type = docMeta.type.startsWith('.') ? docMeta.type.slice(1) : docMeta.type
 
-  switch (docMeta.type) {
+  switch (type) {
     case 'docx':
       return await loadDocx(docMeta, filepath)
     case 'md':

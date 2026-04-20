@@ -4,6 +4,10 @@ import com.example.blog.po.FriendLink;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.service.FriendLinkService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,8 +22,15 @@ public class FriendLinkShowController {
     }
 
     @GetMapping("/friendLinks")
-    public Result<List<FriendLink>> friendLinks() {
+    public Result<?> friendLinks(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize) {
         // 前台只返回已发布的友链
+        if (page != null && pageSize != null) {
+            Sort sort = Sort.by(Sort.Direction.DESC, "id");
+            Pageable pageable = PageRequest.of(page - 1, pageSize, sort);
+            return new Result<>(true, StatusCode.OK, "获取友链列表成功", friendLinkService.listFriendLink(pageable));
+        }
         return new Result<>(true, StatusCode.OK, "获取友链列表成功", friendLinkService.listFriendLink());
     }
     

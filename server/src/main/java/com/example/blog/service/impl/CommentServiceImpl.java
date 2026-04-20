@@ -7,7 +7,7 @@ import com.example.blog.service.CommentService;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -113,7 +113,7 @@ public class CommentServiceImpl implements CommentService {
             // 校验输入参数
             Objects.requireNonNull(id, "评论ID不能为null");
 
-            Comment comment = commentRepository.getOne(id);
+            Comment comment = commentRepository.getReferenceById(id);
             // 校验查询结果
             Objects.requireNonNull(comment, "未找到ID为" + id + "的评论");
             return comment;

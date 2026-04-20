@@ -30,6 +30,16 @@ public class PersonInfoServiceImpl implements PersonInfoService {
     }
 
     @Override
+    public List<PersonInfo> listPersonInfoByCategory(String category) {
+        Objects.requireNonNull(category, "category must not be null");
+        try {
+            return personInfoRepository.findByCategory(category);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get person info list by category: " + category, e);
+        }
+    }
+
+    @Override
     public void deletePersonInfo(Long id) {
         // 校验入参非空
         Objects.requireNonNull(id, "person info id must not be null");
@@ -57,7 +67,7 @@ public class PersonInfoServiceImpl implements PersonInfoService {
         Objects.requireNonNull(id, "person info id must not be null");
         Objects.requireNonNull(personInfo, "personInfo must not be null");
         try {
-            PersonInfo p = personInfoRepository.getOne(id);
+            PersonInfo p = personInfoRepository.getReferenceById(id);
             // 校验查询结果非空
             Objects.requireNonNull(p, "person info with id: " + id + " not found");
 

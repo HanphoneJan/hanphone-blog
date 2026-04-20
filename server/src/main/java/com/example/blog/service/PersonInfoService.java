@@ -7,6 +7,8 @@ import java.util.List;
 public interface PersonInfoService {
     List<PersonInfo> listPersonInfo();
 
+    List<PersonInfo> listPersonInfoByCategory(String category);
+
     void deletePersonInfo(Long id);
 
     PersonInfo savePersonInfo(PersonInfo PersonInfo);

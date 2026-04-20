@@ -14,7 +14,8 @@
 ## 技术栈
 
 - **前端**: Next.js 15 + React 18 + TypeScript + Tailwind CSS + Tauri
-- **后端**: Spring Boot 2.4 + JPA + PostgreSQL + Redis
+- **后端**: Spring Boot 3.2 + JPA + PostgreSQL + Redis
+- **文件服务**: Express.js 5 + Multer + JWT（独立文件存储服务）
 
 ---
 
@@ -22,7 +23,7 @@
 
 ### 环境要求
 
-- Node.js >= 18, Java JDK >= 1.8, Maven >= 3.6
+- Node.js >= 18, Java JDK >= 17, Maven >= 3.6
 - PostgreSQL >= 12, Redis >= 5.0
 
 ### 启动后端
@@ -35,6 +36,17 @@ mvn spring-boot:run
 ```
 
 后端运行在 http://localhost:8090
+
+### 启动文件服务
+
+```bash
+cd admin-file/
+pnpm install
+cp env.example .env   # 编辑 .env 配置 JWT_SECRET
+pnpm start
+```
+
+文件服务运行在 http://localhost:4000，Swagger 文档地址 http://localhost:4000/api-docs
 
 ### 启动前端
 
@@ -92,7 +104,8 @@ cd web && pnpm test:e2e
 | [测试指南](TESTING.md) | 单元测试、E2E 测试、CI 配置 |
 | [Docker 部署](server/DOCKER_DEPLOYMENT.md) | 生产环境 Docker 部署 |
 | [API 文档使用](server/SWAGGER_USAGE.md) | Swagger 注解说明 |
-| [日志管理](server/LOG_MANAGEMENT.md) | 日志配置与清理 |
+| [文件服务](admin-file/README.md) | admin-file 功能、API、配置 |
+| [Agent 的设计](web/public/docs/Agent的设计.md) | 智能体原理与开发框架 |
 
 ---
 
@@ -108,9 +121,22 @@ hanphone-blog/
 ├── web/                    # 前端 (Next.js)
 │   ├── e2e/                # E2E 测试
 │   └── src/test/           # 单元测试
+├── admin-file/             # 文件服务 (Express.js)
+│   ├── uploads/            # 文件存储目录
+│   └── server.js           # 服务入口
 ├── TESTING.md              # 测试文档
 └── README.md               # 本文件
 ```
+
+---
+
+## 鸣谢
+
+本项目 live2d 看板娘实现参考以下开源项目与资源：
+
+- **live2d-widget** — 看板娘核心代码参考自 [stevenjoezhang/live2d-widget](https://github.com/stevenjoezhang/live2d-widget)
+- **迷迷模型** — 来自 bilibili [夜半钟声m](https://space.bilibili.com/) up 主团队：[【免费桌宠/VTS挂件】迷迷](https://www.bilibili.com/video/BV1xrwBejEKd/?share_source=copy_web)
+- **airu 模型** — 来自 bilibili [Yuri幽里_official](https://space.bilibili.com/) up 主：[【免费L2D模型】可盐可甜的机能风少女！无料模型大公开~点击领取](https://www.bilibili.com/video/BV1S8411H7zf/?share_source=copy_web)
 
 ---
 
@@ -123,3 +149,4 @@ hanphone-blog/
   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=HanphoneJan/hanphone-blog&type=date&legend=top-left" />
  </picture>
 </a>
+

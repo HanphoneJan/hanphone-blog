@@ -5,9 +5,13 @@ import com.example.blog.po.FriendLink;
 import com.example.blog.service.FriendLinkService;
 import com.example.blog.util.MyBeanUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +38,23 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         }
     }
     
+    @Override
+    public Page<FriendLink> listFriendLink(Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            // 前台只返回已发布的友链
+            return friendLinkRepository.findAll(
+                    (Specification<FriendLink>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("published"), true));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get friend link list with pageable", e);
+        }
+    }
+
     @Override
     public List<FriendLink> listAllFriendLinks() {
         try {
@@ -82,7 +103,7 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         Objects.requireNonNull(id, "friend link id must not be null");
         Objects.requireNonNull(friendLink, "friendLink must not be null");
         try {
-            FriendLink p = friendLinkRepository.getOne(id);
+            FriendLink p = friendLinkRepository.getReferenceById(id);
             Objects.requireNonNull(p, "friend link with id: " + id + " not found");
 
             BeanUtils.copyProperties(friendLink, p, MyBeanUtils.getNullPropertyNames(friendLink));
@@ -111,7 +132,7 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         requireNonNull(id, "friendLink id must not be null");
         requireNonNull(published, "published flag must not be null");
         try {
-            FriendLink friendLink = friendLinkRepository.getOne(id);
+            FriendLink friendLink = friendLinkRepository.getReferenceById(id);
             if (friendLink == null) {
                 return false;
             }

@@ -6,7 +6,7 @@ import com.example.blog.service.BlogMonthlyVisitsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionException;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;

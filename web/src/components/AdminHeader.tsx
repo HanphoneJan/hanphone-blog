@@ -15,6 +15,7 @@ import {
   Briefcase,
   UserCircle,
   Image as ImageIcon,
+  BookOpen,
   Menu,
   X,
   Link,
@@ -70,9 +71,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
     { id: 6, path: ROUTES.ADMIN_COMMENTS, authName: ADMIN_NAV_LABELS.COMMENT_MANAGE, icon: <MessageSquare size={20} /> },
     { id: 7, path: ROUTES.ADMIN_PROJECTS, authName: ADMIN_NAV_LABELS.PROJECT_MANAGE, icon: <Briefcase size={20} /> },
     { id: 8, path: ROUTES.ADMIN_BLOG_FILES, authName: ADMIN_NAV_LABELS.FILE_MANAGE, icon: <ImageIcon size={20} /> },
-    { id: 9, path: ROUTES.ADMIN_USERS, authName: ADMIN_NAV_LABELS.USER_MANAGE, icon: <User size={20} /> },
-    { id: 10, path: ROUTES.ADMIN_LINKS, authName: ADMIN_NAV_LABELS.LINK_MANAGE, icon: <Link size={20} /> },
-    { id: 11, path: ROUTES.ADMIN_PERSONAL, authName: ADMIN_NAV_LABELS.PERSONAL_CENTER, icon: <UserCircle size={20} /> }
+    { id: 9, path: ROUTES.ADMIN_DOCS, authName: ADMIN_NAV_LABELS.DOC_MANAGE, icon: <BookOpen size={20} /> },
+    { id: 10, path: ROUTES.ADMIN_USERS, authName: ADMIN_NAV_LABELS.USER_MANAGE, icon: <User size={20} /> },
+    { id: 11, path: ROUTES.ADMIN_LINKS, authName: ADMIN_NAV_LABELS.LINK_MANAGE, icon: <Link size={20} /> },
+    { id: 12, path: ROUTES.ADMIN_PERSONAL, authName: ADMIN_NAV_LABELS.PERSONAL_CENTER, icon: <UserCircle size={20} /> }
   ]
 
   // 计算下拉框位置

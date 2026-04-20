@@ -1,10 +1,49 @@
 import { notFound } from 'next/navigation'
 import { createMetadata } from '@/lib/seo-config'
-import { getDocMeta, getDocById } from '../lib/docLoader'
+import { getDocById } from '../lib/docLoader'
+import type { DocMeta } from '../lib/docLoader'
 import DocDetailClient from './components/DocDetailClient'
 import BgOverlay from '@/app/(main)/components/BgOverlay'
 
 export const dynamic = 'force-dynamic'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8090/api'
+
+interface BackendDoc {
+  id: number
+  docId: string
+  title: string
+  description: string
+  filename: string
+  fileType: string
+  recommend: boolean
+  createTime: string
+}
+
+async function getDocsFromBackend(): Promise<DocMeta[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/docs`, {
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) return []
+    const result = await res.json()
+    if (result.flag && Array.isArray(result.data)) {
+      return (result.data as BackendDoc[]).map((d) => ({
+        id: d.docId || String(d.id),
+        docId: d.docId,
+        title: d.title,
+        description: d.description || '',
+        filename: d.filename,
+        type: d.fileType || '',
+        recommend: d.recommend,
+        createTime: d.createTime ? d.createTime.split('T')[0] : '',
+      }))
+    }
+    return []
+  } catch {
+    return []
+  }
+}
 
 interface DocPageProps {
   params: Promise<{ id: string }>
@@ -12,10 +51,10 @@ interface DocPageProps {
 
 export async function generateMetadata({ params }: DocPageProps) {
   const { id } = await params
-  const meta = await getDocMeta()
+  const docs = await getDocsFromBackend()
 
-  const docMeta = meta.docs.find(d => {
-    if (d.id === id) return true
+  const docMeta = docs.find(d => {
+    if (d.id === id || d.docId === id) return true
     const nameWithoutExt = d.filename.replace(/\.[^.]+$/, '')
     const decodedId = decodeURIComponent(id)
     return nameWithoutExt === id || nameWithoutExt === decodedId
@@ -43,7 +82,7 @@ export async function generateMetadata({ params }: DocPageProps) {
 export default async function DocPage({ params }: DocPageProps) {
   const { id } = await params
 
-  const meta = await getDocMeta()
+  const docList = await getDocsFromBackend()
   const docData = await getDocById(id)
 
   if (!docData) {
@@ -71,7 +110,7 @@ export default async function DocPage({ params }: DocPageProps) {
       <div className="flex flex-col min-h-0 bg-[rgb(var(--bg))] h-[calc(100dvh-53px)]">
         {/* 背景 */}
         <BgOverlay opacity={0.5} />
-        <DocDetailClient docId={id} docList={meta.docs} initialDoc={docData} />
+        <DocDetailClient docId={id} docList={docList} initialDoc={docData} />
       </div>
     </>
   )

@@ -8,7 +8,7 @@ import com.example.blog.util.MyBeanUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -95,7 +95,7 @@ public class UserServiceImpl implements UserService {
         Objects.requireNonNull(id, "id must not be null");
 
         try {
-            return userRepository.getOne(id);
+            return userRepository.getReferenceById(id);
         } catch (Exception e) {
             throw new RuntimeException("Failed to find user by id: " + id, e);
         }
@@ -134,7 +134,7 @@ public class UserServiceImpl implements UserService {
         Objects.requireNonNull(admin, "admin must not be null");
 
         try {
-            User u = userRepository.getOne(id);
+            User u = userRepository.getReferenceById(id);
             Objects.requireNonNull(u, "User not found with id: " + id);
 
             BeanUtils.copyProperties(admin, u, MyBeanUtils.getNullPropertyNames(admin));
@@ -208,7 +208,7 @@ public class UserServiceImpl implements UserService {
         Objects.requireNonNull(userId, "userId must not be null");
 
         try {
-            User user = userRepository.getOne(userId);
+            User user = userRepository.getReferenceById(userId);
             return clearSensitiveFields(user);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get current user with id: " + userId, e);
@@ -222,7 +222,7 @@ public class UserServiceImpl implements UserService {
         Objects.requireNonNull(user, "user must not be null");
 
         try {
-            User existingUser = userRepository.getOne(userId);
+            User existingUser = userRepository.getReferenceById(userId);
             Objects.requireNonNull(existingUser, "User not found with id: " + userId);
 
             // 如果邮箱被修改，需要检查新邮箱是否被其他用户占用

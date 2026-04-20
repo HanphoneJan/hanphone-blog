@@ -59,6 +59,24 @@ public class IndexController {
         return new Result<>(true, StatusCode.OK, "获取博客成功", blogService.getAndConvert(userId, id));
     }
 
+    @GetMapping("/blog/{id}/prev")
+    public Result<Blog> getPreviousBlog(@PathVariable Long id) {
+        Blog blog = blogService.getPreviousBlog(id);
+        if (blog == null) {
+            return new Result<>(true, StatusCode.OK, "没有上一篇博客", null);
+        }
+        return new Result<>(true, StatusCode.OK, "获取上一篇博客成功", blog);
+    }
+
+    @GetMapping("/blog/{id}/next")
+    public Result<Blog> getNextBlog(@PathVariable Long id) {
+        Blog blog = blogService.getNextBlog(id);
+        if (blog == null) {
+            return new Result<>(true, StatusCode.OK, "没有下一篇博客", null);
+        }
+        return new Result<>(true, StatusCode.OK, "获取下一篇博客成功", blog);
+    }
+
     @GetMapping("/types/{id}")
     public Result<Page<Blog>> types(@PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {"updateTime"}, direction = Sort.Direction.DESC) Pageable pageable,
                                     @PathVariable Long id) {
@@ -82,7 +100,7 @@ public class IndexController {
         return new Result<>(true, StatusCode.OK, "获取标签博客列表成功", blogService.listBlog(id, pageable));
     }
 
-    @GetMapping("/getVisitCount")
+    @GetMapping("/visit-count")
     public Result<Long> getVisitCount() {
         // 递增访问量并获取更新后的总访问量
         Long totalVisits = blogMonthlyVisitsService.incrementAndGetTotalVisits();

@@ -22,9 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.criteria.*;
-import javax.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.*;
+import jakarta.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +49,7 @@ public class BlogServiceImpl implements BlogService {
     public Blog getBlog(Long id) {
         requireNonNull(id, "blog id must not be null");
         try {
-            return blogRepository.getOne(id);
+            return blogRepository.getReferenceById(id);
         } catch (EntityNotFoundException e) {
             throw new IllegalArgumentException("Blog not found with id: " + id, e);
         } catch (Exception e) {
@@ -239,7 +239,7 @@ public class BlogServiceImpl implements BlogService {
         requireNonNull(blog, "blog must not be null");
 
         try {
-            Blog b = blogRepository.getOne(id);
+            Blog b = blogRepository.getReferenceById(id);
 
             BeanUtils.copyProperties(blog, b, MyBeanUtils.getNullPropertyNames(blog));
 
@@ -271,7 +271,7 @@ public class BlogServiceImpl implements BlogService {
     public Blog getAndConvert(Long userId, Long id) {
         requireNonNull(id, "blog id must not be null");
         try {
-            Blog blog = blogRepository.getOne(id);
+            Blog blog = blogRepository.getReferenceById(id);
             // 累加访问量
             blog.setViews(blog.getViews() + 1);
             blog = blogRepository.save(blog);
@@ -450,6 +450,42 @@ public class BlogServiceImpl implements BlogService {
             return affectedRows > 0;
         } catch (Exception e) {
             throw new RuntimeException("Error changing recommend status for blog: " + blogId, e);
+        }
+    }
+
+    @Override
+    public Blog getPreviousBlog(Long id) {
+        requireNonNull(id, "blog id must not be null");
+        try {
+            Pageable pageable = PageRequest.of(0, 1);
+            List<Blog> blogs = blogRepository.findPreviousBlog(id, pageable);
+            if (blogs.isEmpty()) {
+                return null;
+            }
+            Blog blog = blogs.get(0);
+            blog.setContent("");
+            blog.setComments(null);
+            return blog;
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting previous blog for id: " + id, e);
+        }
+    }
+
+    @Override
+    public Blog getNextBlog(Long id) {
+        requireNonNull(id, "blog id must not be null");
+        try {
+            Pageable pageable = PageRequest.of(0, 1);
+            List<Blog> blogs = blogRepository.findNextBlog(id, pageable);
+            if (blogs.isEmpty()) {
+                return null;
+            }
+            Blog blog = blogs.get(0);
+            blog.setContent("");
+            blog.setComments(null);
+            return blog;
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting next blog for id: " + id, e);
         }
     }
 }

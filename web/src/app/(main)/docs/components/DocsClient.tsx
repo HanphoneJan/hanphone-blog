@@ -17,6 +17,7 @@ import {
   PanelLeftOpen,
   Menu,
   Search,
+  Star,
 } from 'lucide-react'
 import type { DocMeta } from '../lib/docLoader'
 import DocsFilter from './DocsFilter'
@@ -145,6 +146,10 @@ interface TreeNode {
 // ============ 配置 ============
 
 const typeIcons: Record<string, React.ElementType> = {
+  '.docx': FileText,
+  '.pdf': File,
+  '.md': FileCode,
+  '.html': FileJson,
   docx: FileText,
   pdf: File,
   md: FileCode,
@@ -152,6 +157,10 @@ const typeIcons: Record<string, React.ElementType> = {
 }
 
 const typeColors: Record<string, string> = {
+  '.docx': 'text-blue-500',
+  '.pdf': 'text-rose-500',
+  '.md': 'text-emerald-500',
+  '.html': 'text-amber-500',
   docx: 'text-blue-500',
   pdf: 'text-rose-500',
   md: 'text-emerald-500',
@@ -818,7 +827,7 @@ function FileRow({ node }: { node: TreeNode }) {
   const doc = node.doc!
   const Icon = typeIcons[doc.type] || FileText
   const name = doc.filename.split('/').pop()!.replace(/\.[^.]+$/, '')
-  const ext = '.' + doc.type
+  const ext = doc.type.startsWith('.') ? doc.type : '.' + doc.type
   const color = typeColors[doc.type] || 'text-gray-400'
 
   return (
@@ -837,8 +846,11 @@ function FileRow({ node }: { node: TreeNode }) {
           className={`w-4 h-4 ${color} shrink-0 opacity-60 group-hover:opacity-100 transition-opacity`}
         />
       </motion.div>
-      <span className="flex-1 min-w-0 text-sm text-[rgb(var(--text))] truncate group-hover:text-[rgb(var(--primary))] transition-colors">
+      <span className="flex-1 min-w-0 text-sm text-[rgb(var(--text))] truncate group-hover:text-[rgb(var(--primary))] transition-colors flex items-center gap-1.5">
         {name}
+        {doc.recommend && (
+          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" title="推荐文档" />
+        )}
       </span>
       <span
         className={`hidden sm:inline text-xs font-mono ${color} opacity-40 w-14 text-center shrink-0`}
@@ -905,7 +917,7 @@ function FolderRow({
 
 function DocAction({ doc }: { doc: DocMeta }) {
   const fileUrl = `/docs/${doc.filename}`
-  const isHtml = doc.type === 'html'
+  const isHtml = doc.type === 'html' || doc.type === '.html'
 
   return (
     <motion.button

@@ -59,7 +59,7 @@ public class TagServiceImpl implements TagService {
     public Tag getTag(Long id) {
         try {
             Objects.requireNonNull(id, "Tag id must not be null");
-            Tag tag = tagRepository.getOne(id);
+            Tag tag = tagRepository.getReferenceById(id);
             Objects.requireNonNull(tag, "Tag not found with id: " + id);
             return tag;
         } catch (IllegalArgumentException e) {

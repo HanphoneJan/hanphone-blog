@@ -2,8 +2,8 @@ package com.example.blog.filter;
 
 import org.apache.commons.text.StringEscapeUtils;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 
 /**
  * XSS 请求包装器：对请求参数和请求体中的 HTML 进行转义

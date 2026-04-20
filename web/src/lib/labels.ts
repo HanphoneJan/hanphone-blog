@@ -136,6 +136,7 @@ export const ADMIN_NAV_LABELS = {
   COMMENT_MANAGE: '评论管理',
   PROJECT_MANAGE: '项目管理',
   FILE_MANAGE: '文件管理',
+  DOC_MANAGE: '文档管理',
   USER_MANAGE: '用户管理',
   LINK_MANAGE: '友链管理',
   PERSONAL_CENTER: '个人中心'

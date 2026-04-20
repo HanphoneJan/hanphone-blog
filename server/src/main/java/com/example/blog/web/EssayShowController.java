@@ -1,6 +1,7 @@
 package com.example.blog.web;
 
 import com.example.blog.constants.CommonConstants;
+import com.example.blog.constants.PaginationConstants;
 import com.example.blog.enums.UserType;
 import com.example.blog.po.Essay;
 import com.example.blog.po.EssayComment;
@@ -10,11 +11,14 @@ import com.example.blog.po.User;
 import com.example.blog.service.EssayCommentService;
 import com.example.blog.service.EssayService;
 import com.example.blog.service.UserService;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -40,6 +44,28 @@ public class EssayShowController {
             return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listEssay(userId, pageable));
         }
         return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listEssay(userId));
+    }
+
+    @GetMapping("/getRecommendEssayList")
+    public Result<List<Essay>> getRecommendEssayList() {
+        return new Result<>(true, StatusCode.OK, "获取推荐随笔成功", essayService.listRecommendEssayTop(5));
+    }
+
+    @GetMapping("/essays/{id}")
+    public Result<Essay> getEssayById(@PathVariable Long id, @RequestParam(required = false) Long userId) {
+        return new Result<>(true, StatusCode.OK, "获取随笔成功", essayService.getEssayDetail(userId, id));
+    }
+
+    @GetMapping("/essays/{id}/comments")
+    public Result<List<EssayComment>> getEssayComments(@PathVariable Long id) {
+        return new Result<>(true, StatusCode.OK, "获取随笔评论成功", essayCommentService.listEssayCommentByEssayId(id));
+    }
+
+    @GetMapping("/essays/search")
+    public Result<Page<Essay>> search(
+            @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {"createTime"}, direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam String query) {
+        return new Result<>(true, StatusCode.OK, "搜索随笔成功", essayService.listEssay(query, pageable));
     }
 
     /**

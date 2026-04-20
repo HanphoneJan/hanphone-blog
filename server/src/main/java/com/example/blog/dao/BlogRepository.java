@@ -18,6 +18,12 @@ public interface BlogRepository extends JpaRepository<Blog, Long>, JpaSpecificat
     @Query("select b from Blog b where b.recommend = true")
     List<Blog> findTop(Pageable pageable);
 
+    @Query("select b from Blog b where b.id < ?1 and b.published = true order by b.id desc")
+    List<Blog> findPreviousBlog(Long id, Pageable pageable);
+
+    @Query("select b from Blog b where b.id > ?1 and b.published = true order by b.id asc")
+    List<Blog> findNextBlog(Long id, Pageable pageable);
+
     // 修复分组排序：用完整表达式替代别名
     @Query("select function('to_char', b.createTime, 'YYYY') as year " +
             "from Blog b " +
