@@ -5,6 +5,9 @@ import com.example.blog.po.Message;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.service.MessageService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,10 +21,17 @@ public class MessageShowController {
         this.messageService = messageService;
     }
 
-    // 获取留言列表：返回数据为 List<Message>，指定 Result<List<Message>>
+    // 获取留言列表：支持可选分页
     @GetMapping("/messages")
-    public Result<List<Message>> messages() {
+    public Result<?> messages(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize) {
         try {
+            if (page != null && pageSize != null) {
+                Sort sort = Sort.by(Sort.Direction.DESC, "createTime");
+                Pageable pageable = PageRequest.of(page - 1, pageSize, sort);
+                return new Result<>(true, StatusCode.OK, "获取留言列表成功", messageService.listMessage(pageable));
+            }
             return new Result<>(true, StatusCode.OK, "获取留言列表成功", messageService.listMessage());
         } catch (Exception e) {
             return new Result<>(false, StatusCode.ERROR, "获取留言列表失败: " + e.getMessage(), null);

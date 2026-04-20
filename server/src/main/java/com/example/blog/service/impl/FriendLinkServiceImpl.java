@@ -5,8 +5,12 @@ import com.example.blog.po.FriendLink;
 import com.example.blog.service.FriendLinkService;
 import com.example.blog.util.MyBeanUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,6 +38,23 @@ public class FriendLinkServiceImpl implements FriendLinkService {
         }
     }
     
+    @Override
+    public Page<FriendLink> listFriendLink(Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            // 前台只返回已发布的友链
+            return friendLinkRepository.findAll(
+                    (Specification<FriendLink>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("published"), true));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get friend link list with pageable", e);
+        }
+    }
+
     @Override
     public List<FriendLink> listAllFriendLinks() {
         try {

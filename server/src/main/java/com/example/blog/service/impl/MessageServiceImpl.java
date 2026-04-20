@@ -5,12 +5,16 @@ import com.example.blog.po.Message;
 import com.example.blog.service.MessageService;
 import com.example.blog.util.MyBeanUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 @Service
 public class MessageServiceImpl implements MessageService {
@@ -27,6 +31,16 @@ public class MessageServiceImpl implements MessageService {
             return messageRepository.findAll();
         } catch (Exception e) {
             throw new RuntimeException("Failed to get message list", e);
+        }
+    }
+
+    @Override
+    public Page<Message> listMessage(Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            return messageRepository.findAll(pageable);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get message list with pageable", e);
         }
     }
 

@@ -28,5 +28,7 @@ public interface EssayService {
 
     Essay getEssayDetail(Long userId, Long id);
 
+    Page<Essay> listEssay(String query, Pageable pageable);
+
     List<Essay> listRecommendEssayTop(Integer size);
 }

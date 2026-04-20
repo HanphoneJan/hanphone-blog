@@ -256,6 +256,36 @@ public class EssayServiceImpl implements EssayService {
     }
 
     @Override
+    public Page<Essay> listEssay(String query, Pageable pageable) {
+        requireNonNull(query, "query must not be null");
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            String searchKeyword = query.trim();
+            Page<Essay> essays = essayRepository.findAll(
+                    (Specification<Essay>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        // 按标题、内容搜索
+                        Predicate titlePredicate = cb.like(root.get("title"), "%" + searchKeyword + "%");
+                        Predicate contentPredicate = cb.like(root.get("content"), "%" + searchKeyword + "%");
+                        Predicate searchPredicate = cb.or(titlePredicate, contentPredicate);
+                        predicates.add(searchPredicate);
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+
+            return essays.map(essay -> {
+                Objects.requireNonNull(essay, "essay must not be null");
+                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
+                essay.setEssayFileUrls(fileUrls);
+                fillParentCommentId(essay);
+                return essay;
+            });
+        } catch (Exception e) {
+            throw new RuntimeException("搜索随笔失败，关键字: " + query, e);
+        }
+    }
+
+    @Override
     public List<Essay> listRecommendEssayTop(Integer size) {
         Objects.requireNonNull(size, "size must not be null");
         if (size <= 0) {
