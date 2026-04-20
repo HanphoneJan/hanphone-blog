@@ -92,7 +92,7 @@ cd web && pnpm test:e2e
 | [测试指南](TESTING.md) | 单元测试、E2E 测试、CI 配置 |
 | [Docker 部署](server/DOCKER_DEPLOYMENT.md) | 生产环境 Docker 部署 |
 | [API 文档使用](server/SWAGGER_USAGE.md) | Swagger 注解说明 |
-| [日志管理](server/LOG_MANAGEMENT.md) | 日志配置与清理 |
+| [Agent 的设计](web/public/docs/Agent的设计.md) | 智能体原理与开发框架 |
 
 ---
 
@@ -114,6 +114,16 @@ hanphone-blog/
 
 ---
 
+## 鸣谢
+
+本项目 live2d 看板娘实现参考以下开源项目与资源：
+
+- **live2d-widget** — 看板娘核心代码参考自 [stevenjoezhang/live2d-widget](https://github.com/stevenjoezhang/live2d-widget)
+- **迷迷模型** — 来自 bilibili [夜半钟声m](https://space.bilibili.com/) up 主团队：[【免费桌宠/VTS挂件】迷迷](https://www.bilibili.com/video/BV1xrwBejEKd/?share_source=copy_web)
+- **airu 模型** — 来自 bilibili [Yuri幽里_official](https://space.bilibili.com/) up 主：[【免费L2D模型】可盐可甜的机能风少女！无料模型大公开~点击领取](https://www.bilibili.com/video/BV1S8411H7zf/?share_source=copy_web)
+
+---
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=HanphoneJan%2Fhanphone-blog&type=date&legend=top-left">
@@ -123,3 +133,4 @@ hanphone-blog/
   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=HanphoneJan/hanphone-blog&type=date&legend=top-left" />
  </picture>
 </a>
+
