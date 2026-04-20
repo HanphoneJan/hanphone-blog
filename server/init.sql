@@ -556,6 +556,77 @@ ALTER TABLE public.t_blog_tags OWNER TO postgres;
 -- Name: t_comment; Type: TABLE; Schema: public; Owner: postgres
 --
 
+CREATE TABLE public.t_doc (
+    id bigint NOT NULL,
+    doc_id character varying(64) NOT NULL,
+    title character varying(255) NOT NULL,
+    description character varying(512),
+    filename character varying(512) NOT NULL,
+    file_type character varying(20) NOT NULL,
+    doc_namespace character varying(64) DEFAULT 'blog/docs'::character varying,
+    view_count bigint DEFAULT 0,
+    recommend boolean DEFAULT false,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.t_doc OWNER TO postgres;
+
+--
+-- TOC entry 2365 (class 1259 OID 0)
+-- Name: t_doc_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.t_doc_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.t_doc_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 2366 (class 0 OID 0)
+-- Dependencies: 2365
+-- Name: t_doc_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.t_doc_id_seq OWNED BY public.t_doc.id;
+
+--
+-- TOC entry 2367 (class 2606 OID 0)
+-- Name: t_doc t_doc_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.t_doc
+    ADD CONSTRAINT t_doc_pkey PRIMARY KEY (id);
+
+--
+-- TOC entry 2368 (class 2606 OID 0)
+-- Name: t_doc t_doc_doc_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.t_doc
+    ADD CONSTRAINT t_doc_doc_id_key UNIQUE (doc_id);
+
+--
+-- TOC entry 2369 (class 1259 OID 0)
+-- Name: idx_t_doc_recommend; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_t_doc_recommend ON public.t_doc USING btree (recommend);
+
+--
+-- TOC entry 2370 (class 1259 OID 0)
+-- Name: idx_t_doc_view_count; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_t_doc_view_count ON public.t_doc USING btree (view_count DESC);
+
+
 CREATE TABLE public.t_comment (
     user_id bigint,
     id bigint NOT NULL,

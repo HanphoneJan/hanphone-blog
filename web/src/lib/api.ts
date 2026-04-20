@@ -52,6 +52,11 @@ export const ENDPOINTS = {
     GET_PRIVATE_MESSAGES: `${NEXT_API_BASE_URL}/getPrivateMessages`,
     GETUSER: `${NEXT_API_BASE_URL}/user`
   },
+  DOCS: `${API_BASE_URL}/docs`,
+  DOC_DETAIL: (docId: string) => `${API_BASE_URL}/docs/${docId}`,
+  DOC_VIEW: (docId: string) => `${API_BASE_URL}/docs/${docId}/view`,
+  DOCS_HOT: `${API_BASE_URL}/docs/hot`,
+  DOCS_RECOMMENDED: `${API_BASE_URL}/docs/recommended`,
   USER: {
     PERSONINFOS: `${API_BASE_URL}/personInfos`,
     SET_AVATAR: `${API_BASE_URL}/admin/setAvatar`,
@@ -86,6 +91,9 @@ export const ENDPOINTS = {
     FULL_TYPE_LIST: `${API_BASE_URL}/admin/getFullTypeList`,
     USER_AREA_LIST: `${API_BASE_URL}/admin/getUserAreaList`,
     COMMMENT_LIST: `${API_BASE_URL}/admin/getCommentList`,
+    DOCS: `${API_BASE_URL}/admin/docs`,
+    DOC: `${API_BASE_URL}/admin/doc`,
+    DOC_RECOMMEND: `${API_BASE_URL}/admin/docs/recommend`,
     BLOG_LIST: `${API_BASE_URL}/admin/getBlogList`,
     BLOGS: `${API_BASE_URL}/admin/blogs`,
     USER: `${API_BASE_URL}/admin/user`,

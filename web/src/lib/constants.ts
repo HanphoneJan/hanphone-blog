@@ -369,6 +369,7 @@ export const ROUTES = {
   ADMIN_COMMENTS: '/admin/comments',
   ADMIN_PROJECTS: '/admin/projects',
   ADMIN_BLOG_FILES: '/admin/blog-files',
+  ADMIN_DOCS: '/admin/docs',
   ADMIN_USERS: '/admin/users',
   ADMIN_LINKS: '/admin/links',
   ADMIN_PERSONAL: '/admin/personal',

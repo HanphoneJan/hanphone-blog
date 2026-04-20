@@ -28,10 +28,6 @@ Node.js 实现的轻量级文件管理接口服务，提供完整的文件和目
 ### 安装步骤
 
 ```bash
-# 克隆仓库
-git clone https://github.com/HanphoneJan/admin-file.git
-cd admin-file
-
 # 安装依赖（推荐pnpm）
 pnpm install
 # 或 npm install
@@ -94,18 +90,3 @@ admin-file/
 ├── package.json           # 项目配置
 └── .env                   # 环境变量配置
 ```
-
-## 🔗 相关项目
-
-- [博客前端仓库](https://github.com/HanphoneJan/hanphone-blog-frontend)
-- [博客后端仓库](https://github.com/HanphoneJan/hanphone-blog-backend)
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=HanphoneJan%2Fadmin-file&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=HanphoneJan/admin-file&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=HanphoneJan/admin-file&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=HanphoneJan/admin-file&type=date&legend=top-left" />
- </picture>
-</a>

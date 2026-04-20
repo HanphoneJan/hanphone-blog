@@ -13,10 +13,10 @@ interface DocsFilterProps {
 
 const typePills = [
   { value: 'all', label: '全部' },
-  { value: 'docx', label: 'Word' },
-  { value: 'pdf', label: 'PDF' },
-  { value: 'md', label: 'MD' },
-  { value: 'html', label: 'HTML' },
+  { value: '.docx', label: 'Word' },
+  { value: '.pdf', label: 'PDF' },
+  { value: '.md', label: 'MD' },
+  { value: '.html', label: 'HTML' },
 ]
 
 export default function DocsFilter({

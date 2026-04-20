@@ -99,9 +99,11 @@ const treeItemVariants = {
 
 // ============ 类型定义 ============
 
-type DocType = 'docx' | 'pdf' | 'md' | 'html'
-
-const typeIcons: Record<DocType, React.ElementType> = {
+const typeIcons: Record<string, React.ElementType> = {
+  '.docx': FileText,
+  '.pdf': File,
+  '.md': FileCode,
+  '.html': FileJson,
   docx: FileText,
   pdf: File,
   md: FileCode,
@@ -425,7 +427,7 @@ function SidebarTree({
 
         // 文件节点
         const doc = child.doc!
-        const isActive = doc.id === currentMeta?.id
+        const isActive = doc.id === currentMeta?.id || doc.docId === currentMeta?.docId
         const DIcon = typeIcons[doc.type] || FileText
         const nameWithoutExt = doc.filename.split('/').pop()?.replace(/\.[^.]+$/, '') || doc.title
 
@@ -470,6 +472,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
   // 获取当前文档的 meta
   const currentMeta = useMemo(() => docList.find(d => {
     if (d.id === docId) return true
+    if (d.docId === docId) return true
     const nameWithoutExt = d.filename.replace(/\.[^.]+$/, '')
     const decodedId = decodeURIComponent(docId)
     return nameWithoutExt === docId || nameWithoutExt === decodedId

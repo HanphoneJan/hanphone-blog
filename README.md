@@ -14,7 +14,8 @@
 ## 技术栈
 
 - **前端**: Next.js 15 + React 18 + TypeScript + Tailwind CSS + Tauri
-- **后端**: Spring Boot 2.4 + JPA + PostgreSQL + Redis
+- **后端**: Spring Boot 3.2 + JPA + PostgreSQL + Redis
+- **文件服务**: Express.js 5 + Multer + JWT（独立文件存储服务）
 
 ---
 
@@ -22,7 +23,7 @@
 
 ### 环境要求
 
-- Node.js >= 18, Java JDK >= 1.8, Maven >= 3.6
+- Node.js >= 18, Java JDK >= 17, Maven >= 3.6
 - PostgreSQL >= 12, Redis >= 5.0
 
 ### 启动后端
@@ -35,6 +36,17 @@ mvn spring-boot:run
 ```
 
 后端运行在 http://localhost:8090
+
+### 启动文件服务
+
+```bash
+cd admin-file/
+pnpm install
+cp env.example .env   # 编辑 .env 配置 JWT_SECRET
+pnpm start
+```
+
+文件服务运行在 http://localhost:4000，Swagger 文档地址 http://localhost:4000/api-docs
 
 ### 启动前端
 
@@ -92,6 +104,7 @@ cd web && pnpm test:e2e
 | [测试指南](TESTING.md) | 单元测试、E2E 测试、CI 配置 |
 | [Docker 部署](server/DOCKER_DEPLOYMENT.md) | 生产环境 Docker 部署 |
 | [API 文档使用](server/SWAGGER_USAGE.md) | Swagger 注解说明 |
+| [文件服务](admin-file/README.md) | admin-file 功能、API、配置 |
 | [Agent 的设计](web/public/docs/Agent的设计.md) | 智能体原理与开发框架 |
 
 ---
@@ -108,6 +121,9 @@ hanphone-blog/
 ├── web/                    # 前端 (Next.js)
 │   ├── e2e/                # E2E 测试
 │   └── src/test/           # 单元测试
+├── admin-file/             # 文件服务 (Express.js)
+│   ├── uploads/            # 文件存储目录
+│   └── server.js           # 服务入口
 ├── TESTING.md              # 测试文档
 └── README.md               # 本文件
 ```
