@@ -7,6 +7,9 @@
 
 个人博客系统，采用前后端分离架构：Next.js + Spring Boot。
 
+博客内还集成了三个纯前端子项目（工具集合、有趣网页、小游戏），部署在同一域名下。
+[工具](https://hanphone.cn/tools) · [有趣网页](https://hanphone.cn/play) · [小游戏](https://hanphone.cn/games)
+
 [在线演示](https://hanphone.cn) · [快速开始](#快速开始) · [文档索引](#文档) · [测试指南](#测试)
 
 ---
@@ -120,6 +123,11 @@ hanphone-blog/
 │   └── src/test/           # 单元测试
 ├── web/                    # 前端 (Next.js)
 │   ├── e2e/                # E2E 测试
+│   ├── public/             # 静态资源
+│   │   ├── tools/          # 工具集合 (hanphone-tool)
+│   │   ├── play/           # 有趣网页 (hanphone-play)
+│   │   ├── games/          # 小游戏 (hanphone-game)
+│   │   └── shared/         # 共享资源（font-awesome 等）
 │   └── src/test/           # 单元测试
 ├── admin-file/             # 文件服务 (Express.js)
 │   ├── uploads/            # 文件存储目录

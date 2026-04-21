@@ -24,6 +24,46 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
   // 子项目：照片墙（不定期更新照片）
   { url: `${SITE_URL}/atlas`, priority: 0.5, changeFrequency: 'monthly' },
 
+  // ===== 工具集合 (hanphone-tool) =====
+  { url: `${SITE_URL}/tools`, priority: 0.6, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/tools/calculator`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/tools/markdown-converter`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/tools/photo-compressor`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/tools/rgb-color-picker`, priority: 0.5, changeFrequency: 'yearly' },
+
+  // ===== 有趣网页 (hanphone-play) =====
+  { url: `${SITE_URL}/play`, priority: 0.6, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/canvas-particle-universe`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/congratulation`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/hanphonechat/browser`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/happy-birthday`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/lottery`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/love-chiikawa`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/love-guess-moss`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/love-memory`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/read/replicant`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/resume`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/simple-piano`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/todo`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/torus-knot-geometry`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/visual-player`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/letter/browser2`, priority: 0.5, changeFrequency: 'yearly' },
+
+  // ===== 小游戏 (hanphone-game) =====
+  { url: `${SITE_URL}/games`, priority: 0.6, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/2048`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/blackblocks`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/breakout-bricks`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/crossy-road`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/gomoku`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/minesweeper`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/ping-pong`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/shudu`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/snake`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/tetris`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/tower-blocks`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/games/toy-claw`, priority: 0.5, changeFrequency: 'yearly' },
+
   // 法律/固定页面（低优先级，极少变动）
   { url: `${SITE_URL}/privacy`, priority: 0.2, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/terms`, priority: 0.2, changeFrequency: 'yearly' },

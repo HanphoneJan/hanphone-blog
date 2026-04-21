@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<script id="allow-copy_script">(function agent() {
+    let unlock = false
+    document.addEventListener('allow_copy', (event) => {
+      unlock = event.detail.unlock
+    })
+
+    const copyEvents = [
+      'copy',
+      'cut',
+      'contextmenu',
+      'selectstart',
+      'mousedown',
+      'mouseup',
+      'mousemove',
+      'keydown',
+      'keypress',
+      'keyup',
+    ]
+    const rejectOtherHandlers = (e) => {
+      if (unlock) {
+        e.stopPropagation()
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation()
+      }
+    }
+    copyEvents.forEach((evt) => {
+      document.documentElement.addEventListener(evt, rejectOtherHandlers, {
+        capture: true,
+      })
+    })
+  })()</script>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="description" content="This is Hanphone's personal blog.You can know and communicate with him here.">
+  <meta name="keywords" content="Hanphone blog personal picture article">
+  <link rel="shortcut icon" href="../../main/images/logo.ico" type="img/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title></title>
+  <style type="text/css">
+    #_copy {
+      align-items: center;
+      background: #4494d5;
+      border-radius: 3px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      font-size: 13px;
+      height: 30px;
+      justify-content: center;
+      position: absolute;
+      width: 60px;
+      z-index: 1000
+    }
+
+    #select-tooltip,
+    #sfModal,
+    .modal-backdrop,
+    div[id^=reader-helper] {
+      display: none !important
+    }
+
+    .modal-open {
+      overflow: auto !important
+    }
+
+    ._sf_adjust_body {
+      padding-right: 0 !important
+    }
+
+    .enable_copy_btns_div {
+      position: fixed;
+      width: 154px;
+      left: 10px;
+      top: 45%;
+      background: #e7f1ff;
+      border: 2px solid #4595d5;
+      font-weight: 600;
+      border-radius: 2px;
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Helvetica Neue, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+      z-index: 5000
+    }
+
+    .enable_copy_btns_logo {
+      width: 100%;
+      background: #4595d5;
+      text-align: center;
+      font-size: 12px;
+      color: #e7f1ff;
+      line-height: 30px;
+      height: 30px
+    }
+
+    .enable_copy_btns_btn {
+      display: block;
+      width: 128px;
+      height: 28px;
+      background: #7f5711;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+      border: 0;
+      outline: 0;
+      margin: 8px auto;
+      font-weight: 700;
+      cursor: pointer;
+      opacity: .9
+    }
+
+    .enable_copy_btns_btn:hover {
+      opacity: .8
+    }
+
+    .enable_copy_btns_btn:active {
+      opacity: 1
+    }
+  </style>
+</head>
+
+<body inmaintabuse="1">
+  <div>
+    <p style="margin-top:0pt; margin-bottom:14pt; font-size:18pt"><span
+        style="font-family:&#39;宋体&#39;; font-weight:bold; color:#333333">第一章</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">汗滴从发尖掉落下来，赫尔微微抬起头扫视了一圈，恍惚的感觉依旧那么强烈。赫尔上一秒的记忆还是在实验室的时候，心心念念的她，终于重现在他眼前，一模一样，无数美好的回忆，一刹那间全涌上来，他靠在实验室的墙壁上，细细品味，以往回忆这些都带着无比的苦涩与伤——斯人已逝，但这次回忆却使他感到一丝甜味——那些美好的经历，终于可以再去体验一次。赫尔想起来了，正沉浸于回忆中的他被破门声拉回到现实世界，纪律检查队带走了他，也许还带走了刚刚诞生于培养室的她。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“赫尔教授，根据我们掌握的信息，你想要用智械细胞技术复活你的妻子杨雪——是吧？”对面的人在问话。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“不是复活，</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">只</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">是复现。她与我的亡妻极其相似，但她只是她自己，而不是我妻子。”赫尔纠正道。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“无所谓，我们并不想和你讨论这些，你是个带着光环的科学家，公认的</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">智械细胞技术奠基人杨尔斯</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">的接班人，我们想要告诉你的只是，从很久以前开始，人们就拒绝你正在研究的这种会威胁到人类的复制人，无论是通过全克隆技术还是智械细胞技术或是别的什么技术实现。所以，我们请你立即停止这方面的研究。”这次对面换了一个人说话，声音听起来更稳重。“全克隆技术，智械细胞技术，记忆翻译技术，这些都是可以造福全人类的技术，将人们从疾病与痛苦中拯救。我能理解你的情感，但还请你深思。”</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333"> </span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">赫尔静静地听着。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“我们会放你回家去，但你的研究暂时不能进行，你也不能回到你的实验室，你的行动也将有所受限，直到我们给予你明确的通知。”见赫尔没说话，对面的人继续说了下去。</span>
+    </p>
+    <p style="margin-top:14pt; margin-bottom:14pt; font-size:18pt"><span
+        style="font-family:&#39;宋体&#39;; font-weight:bold; color:#333333">第二章</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">落日归山，照彻长空。两个身影从实验室里相伴而出。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“杨先生，我们为什么要如此谨慎？将生物细胞的记忆因子引入智械细胞中，从而诱导智械细胞的演化出原生物细胞的样子，这个过程以我们现有的理论与技术，我相信我们很快就可以成功。”赫尔问道。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“是的，我知道你在想什么，这项技术可以为人类带来巨大的福祉。可是啊，赫尔，问题不是这么简单的，我活了这么多年，却依旧有疑问——依旧</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">不</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">明白人的本质，何以为人——你能想象吗？人的记忆被窃取，一个怪物的诞生，以及更多</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">更多</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">……”杨尔斯闭上了眼睛，火红的光照亮了他满是皱纹的脸，紧皱的眉头尤为明显。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“杨雪，我的女儿，她的死，我怎么会不难过啊。”杨尔斯震颤着。“可是你要记得，身在人类科技力量最前沿的人，内心要想得更多。法律，道德，公众，你的内心，你都想好怎么面对了吗？”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">随之是长久的沉默，渐渐地陷入黑暗之中。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">赫尔睁开眼睛，在家里，一个人。又是那些记忆吗？总是在意识沉睡时一次次袭击他，这种影响的频次与程度都颇不寻常。也许是受记忆翻译研究的影响？那些奇怪的物质，偶然的实验产物——忆质，混入了火星上特有的元素，现在已经能够初步使用它来承载信息并转化到生物细胞中，至于负面影响，也许是有的，却也不甚清楚——对它的深层结构研究依旧不够。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“砰！砰！砰！”，听到一阵敲门声，赫尔中断了思绪。他走过去，打开门。又是纪律检查队的吗？</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“好久不见，赫尔教授。”一瞬间，赫尔愣住了，竟然是皮林西——一位火星基地的科学家，现在也是火星科学协会的会长，身后跟着几位穿着各类制服的人。赫尔让出空间，等几个人都在沙发上做好，皮林西开始说话了。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“我们火星科学协会听闻了你的研究，已经向纪律检查队</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">作出</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">担保申请解除了对你的行动限制。”</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333"> </span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“为什么？”</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“开诚布公地讲，我们——火星基地认为你的研究很有价值。复制人，或者说，人造人，我想这是能够开启人类新纪元的东西——何况，你所研究的智械细胞技术的精确性、可控性与发育效率，都是全克隆技术无法比拟的。此外，学术界里众所周知的是，火星基地一向对科学技术的创新特别宽容，相反地，地球则显得保守，我们想邀请你到火星继续这项事业。”皮林西把握十足地说出这些话。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“纪律检查队呢？地球社会呢？他们会答应吗？而我，又为什么要答应你们，据我所知，火星开发目前还处于拓荒阶段。”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“你实验室里的研究资料与那个复制人，通过正当程序是拿不出来的，不过既然我们向你发出了邀请，我们也就有手段帮你拿回他们。至于其他的，你都尽管放心，火星基地已经有足够的实力。”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">赫尔沉默了片刻，“什么时候走？”</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“现在，立刻收拾东西。”皮林西不容置疑地说。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">临行前，赫尔最后看了一遍这个家——曾经和杨雪一起生活过的家。要是能在这里进行后续实验就好了，他心想。最后，他带着杨雪的日记本、冲洗过的照片与她亲手作的画——那些优质的记忆，踏上了去往火星的道路。</span>
+    </p>
+    <p style="margin-top:14pt; margin-bottom:14pt; font-size:18pt"><span
+        style="font-family:&#39;宋体&#39;; font-weight:bold; color:#333333">第三章</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">地球对火星封锁的第七天。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“也许封锁明天就会解除了吧。”，赫尔独自念叨着。“事情正是你所期望的那样，赫尔教授。”研究室的门被推开，走进来的是火星基地次席委员高凯。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“目前，地球方面的反应已经平静许多，前来封锁的舰队也已经释放出了一些信号。”高凯说道，“我们只不过是在行星开发、宇宙探索、科技发展这些小小的方面比地球人有一些在他们眼里看来更为激进的主张，但这并没有威胁到地球乃至人类的利益。人们对复制人并非是不可接受的，何况我们的主张在地球也得到了很好的宣传。”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“也就是说，这些研究，都将正常进行？那我呢？”赫尔问道，“当我踏上火星时，我一下子便明白了火星基地是个注重技术效率的地方，那么，复制人对火星基地的真正用处在哪里呢？”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“不愧是你啊，赫尔教授。”高凯不由得发出赞许，“火星基地的确是注重效率的地方，毕竟我们处在人类探索宇宙的最前沿，火星社会也才在不久前才勉强能实现自给自足，而我来正是想告诉你，我们希望你能够带领开发人造人工厂，他们将在行星开发中大有用处——那些必须依靠人类才能做到的事，而你的智械细胞——多么神奇的技术啊，竟然能以如此快的速度演化成人，还能借助记忆翻译技术将几乎任何我们想要注入的信息放到复制人中从而省去了机械人所需的许多设备——这正是智械细胞技术相比全克隆技术的优越之处。”讲到这里，高凯停顿了一下。“当然，火星基地同样也是包容创新的地方，我们也会允许你原本的研究继续进行下去。”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">赫尔静静地听着，他还没有听到他想要的。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">你也许想听听我们对复制人的看法罢。他们是工具人，做一些目前机器也难以实现的危险工作，仅此罢了。我们不会像地球人那样纠结，我们既不担心复制人的反叛，也不会困惑于人到底是什么这类无聊的问题。也许你做出来的复制人是有思想情感的，用细胞层面的“记忆”去复刻人类，正是这点使地球人害怕——无比的恐惧。然而实际上复制人有没有思想情感都无所谓，他们不会是奴隶，但他们会在我们的控制之下。所谓的人格，是需要他人参与的，我们的身份，我们的尊严，我们对自己自由意志的确认，不仅需要自己，更需要他人。复制人也许可以和人类平起平坐，但那只能由他们自己争取而来，而人类永远不会承认复制人。”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">对话不久后结束了，赫尔走出研究室。外面，地球舰队还在徘徊。赫尔还忘不了封锁第一天时的情形。一艘艘从地球而来的货运飞船，在一刹那间都化作了军舰——也许二者本就没有区别，还有那些部署在太空中防范小行星的武器，此刻都在对准火星基地。地球对于火星基地的进展就这么不放心吗？然而火星基地的独立却是不可阻挡的，第一代火星人已经成长起来了——火星人，在基因上自然与地球人没什么差异，但在文化上，也许能算得上一个新物种？也许地球人对火星人的担忧就如地球人对复制人的担忧一般。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">眼前，看得见璀璨的星空背景——没有地球上厚厚的大气阻隔。远处的星际武器已经解除了锁定，地球舰队正在缓缓掉转发动机，发出了比星星更为灿烂的光辉，映照着下方鳞次栉比的火星基地建筑。“嘭！”，一颗高速飞向基</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">地的小行星被击碎了，散落成无数燃烧中的小石片——一场盛大的烟火，在此刻为火星人的新篇章拉开序幕，赫尔心想。</span></p>
+    <p style="margin-top:14pt; margin-bottom:14pt; font-size:18pt"><span
+        style="font-family:&#39;宋体&#39;; font-weight:bold; color:#333333">第四章</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">时隔二十三天，却仿佛过了一年，赫尔终于见到了她——雪儿，该这么称呼她吗，还是叫她一号复制人或十六号实验品，赫尔</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">呢喃着</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“赫尔，为什么我在这里？”她睁开了眼睛，如懵懂无知的婴儿。“我记得，在被病毒感染后，我在病床躺了很久。噢，赫尔，我是个复制人是吗？”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">赫尔的头低了下来，双手紧紧攥着她的手，不断转动。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; font-size:12pt"><span
+        style="width:21pt; display:inline-block">&nbsp;</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“你说过的，我要是不幸死了，你会为我制作复制人。我们都知道这是件不太可能的事，但当时我们感觉到，多么浪漫啊。”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“雪儿，别说了。”赫尔哽咽着，把头埋进了她的怀里。不知道过了多久，她轻轻地说道，“赫尔，给我讲讲现在发生了什么，好吗？”赫尔立即擦干了眼泪，简单概括了目前的状况，技术的进展、地球与火星、人类与复制人等等。</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“这么说，我只能作为一个复制人存在，是吗？”她问道。</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“是的，”赫尔平静了下来，“你不是杨雪，你是一个——一个新的人，一个独立的个体，你懂我意思吗？”</span></p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“我理解。我知道我和杨雪很像，可是我依旧能感觉到我有和她不一样的地方，智械细胞形成的我，并不完全与生物细胞构成的杨雪一样，我感觉到我的脑子有新的想法与感觉，并不是她的那些，与过去的杨雪所不同的那些。可是，我到底算一个人吗？”</span>
+    </p>
+    <p style="margin-top:9.6pt; margin-bottom:9.6pt; text-indent:21pt; font-size:12pt"><span
+        style="font-family:&#39;宋体&#39;; color:#333333">“答案无关紧要。我会承认你，我们也可以相爱。”赫尔紧紧抱住她，轻轻说出</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">那句人与</span><span
+        style="font-family:&#39;宋体&#39;; color:#333333">人之间的最深的羁绊——我爱你。</span></p>
+    <p style="margin-top:0pt; margin-bottom:0pt; text-align:justify; widows:0; orphans:0; font-size:10.5pt"><span
+        style="font-family:&#39;等线&#39;">&nbsp;</span></p>
+  </div>
+  <script src="chrome-extension://cdnlggbebabeoneeglhadpagegmflmbc/aiscripts/scriptBus.js"></script><span
+    id="cnki_grabber" data-id="1716701724000" style="visibility: hidden;"></span>
+  <div id="fatkun-drop-panel">
+    <div id="fatkun-drop-panel-close-btn">
+      <div id="error"></div>
+    </div>
+
+  </div><deepl-input-controller><template shadowrootmode="open">
+      <link rel="stylesheet" href="chrome-extension://fancfknaplihpclbhbpclnmmjcjanbaf/build/content.css">
+      <div dir="ltr">
+        <div class="dl-input-translation-container svelte-95aucy">
+          <div></div>
+        </div>
+      </div>
+    </template></deepl-input-controller>
+  <script src="chrome-extension://nhiheekdcnmfbapkmpbhmplfddenhjic/sm.bundle.js" data-pname="supercopy-v3"
+    data-asset-path="https://spc3.s3.ap-east-1.amazonaws.com"></script>
+  <script></script>
+</body>
+
+</html>

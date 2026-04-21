@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频可视化播放器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-purple': '#9D4EDD',
+                        'neon-pink': '#FF006E',
+                        'neon-cyan': '#00F5FF',
+                        'dark-bg': '#0A0E27',
+                        'dark-secondary': '#151933',
+                        'dark-tertiary': '#1E2140',
+                        'dark-text': '#E0E6ED',
+                        'dark-text-secondary': '#8892B0',
+                    },
+                    fontFamily: {
+                        'tech': ['Orbitron', 'Noto Sans SC', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-glow': 'pulse-glow 2s infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'rotate-slow': 'rotate-slow 20s linear infinite',
+                    },
+                    keyframes: {
+                        'pulse-glow': {
+                            '0%, 100%': { boxShadow: '0 0 20px rgba(157, 78, 221, 0.5)' },
+                            '50%': { boxShadow: '0 0 30px rgba(157, 78, 221, 0.8)' },
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        'rotate-slow': {
+                            '0%': { transform: 'rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', 'Orbitron', sans-serif;
+            background-color: #0A0E27;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(157, 78, 221, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 40% 40%, rgba(0, 245, 255, 0.05) 0%, transparent 30%);
+            color: #E0E6ED;
+            overflow-x: hidden;
+        }
+        
+        .player-container {
+            background: linear-gradient(135deg, rgba(21, 25, 51, 0.9), rgba(30, 33, 64, 0.9));
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
+                        0 0 20px rgba(157, 78, 221, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .player-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(157, 78, 221, 0.5), transparent);
+        }
+        
+        .visualizer-container {
+            background: linear-gradient(135deg, #0A0E27, #151933);
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(157, 78, 221, 0.2);
+        }
+        
+        .visualizer-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(157, 78, 221, 0.5), transparent);
+        }
+        
+        .visualizer-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255, 0, 110, 0.5), transparent);
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background-color: rgba(136, 146, 176, 0.3);
+            position: relative;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #9D4EDD, #FF006E);
+            width: 0%;
+            transition: width 0.1s linear;
+            position: relative;
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(157, 78, 221, 0.5);
+        }
+        
+        .progress::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background-color: #FF006E;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 10px rgba(255, 0, 110, 0.8);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .progress-bar:hover .progress::after {
+            opacity: 1;
+        }
+        
+        .volume-slider {
+            width: 4px;
+            height: 80px;
+            background-color: rgba(136, 146, 176, 0.3);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            writing-mode: bt-lr; /* IE */
+            -webkit-appearance: slider-vertical; /* WebKit */
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background-color: #9D4EDD;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 10px rgba(157, 78, 221, 0.8);
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        
+        .volume-slider::-webkit-slider-thumb:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background-color: #9D4EDD;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 10px rgba(157, 78, 221, 0.8);
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        
+        .volume-slider::-moz-range-thumb:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .control-btn {
+            color: #8892B0;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            color: #9D4EDD;
+            transform: scale(1.1);
+        }
+        
+        .play-btn {
+            background: linear-gradient(135deg, #9D4EDD, #FF006E);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(157, 78, 221, 0.7);
+        }
+        
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .mode-btn {
+            color: #8892B0;
+            background-color: transparent;
+            border: 1px solid rgba(136, 146, 176, 0.3);
+            transition: all 0.2s;
+        }
+        
+        .mode-btn:hover {
+            color: #9D4EDD;
+            border-color: #9D4EDD;
+            box-shadow: 0 0 10px rgba(157, 78, 221, 0.3);
+        }
+        
+        .mode-btn.active {
+            color: #9D4EDD;
+            border-color: #9D4EDD;
+            background-color: rgba(157, 78, 221, 0.1);
+            box-shadow: 0 0 15px rgba(157, 78, 221, 0.4);
+        }
+        
+        .file-input-label {
+            background-color: rgba(30, 33, 64, 0.5);
+            border: 1px solid rgba(136, 146, 176, 0.3);
+            color: #8892B0;
+            transition: all 0.2s;
+        }
+        
+        .file-input-label:hover {
+            color: #9D4EDD;
+            border-color: #9D4EDD;
+            box-shadow: 0 0 10px rgba(157, 78, 221, 0.3);
+        }
+        
+        .time-display {
+            color: #8892B0;
+            font-size: 11px;
+        }
+        
+        .track-name {
+            color: #E0E6ED;
+        }
+        
+        .track-artist {
+            color: #8892B0;
+        }
+        
+        .volume-icon {
+            color: #8892B0;
+        }
+        
+        .volume-container:hover .volume-icon {
+            color: #9D4EDD;
+        }
+        
+        .tab-indicator {
+            height: 2px;
+            background: linear-gradient(to right, #9D4EDD, #FF006E);
+            width: 0;
+            transition: width 0.3s ease;
+            position: absolute;
+            bottom: 0;
+        }
+        
+        .tab-container {
+            position: relative;
+        }
+        
+        .tab-container:hover .tab-indicator {
+            width: 100%;
+        }
+        
+        .volume-control-container {
+            position: relative;
+        }
+        
+        .volume-slider-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(21, 25, 51, 0.95), rgba(30, 33, 64, 0.95));
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(157, 78, 221, 0.2);
+            display: none;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .volume-slider-container.show {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        header {
+            background: linear-gradient(135deg, rgba(21, 25, 51, 0.9), rgba(30, 33, 64, 0.9));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(to right, #9D4EDD, #FF006E);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(157, 78, 221, 0.3);
+        }
+        
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: rgba(157, 78, 221, 0.5);
+            border-radius: 50%;
+            animation: float 10s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+        
+        .glow-effect {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(157, 78, 221, 0.2) 0%, transparent 70%);
+            filter: blur(40px);
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-dark-text h-screen flex flex-col overflow-hidden">
+    <!-- 背景粒子效果 -->
+    <div class="bg-particles" id="particles"></div>
+    
+    <header class="py-3 px-6 relative">
+        <h1 class="text-xl font-medium text-center">音频可视化播放器</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col items-center justify-center p-4 max-w-5xl mx-auto w-full relative">
+        <!-- 发光效果 -->
+        <div class="glow-effect" style="top: 10%; left: 10%;"></div>
+        <div class="glow-effect" style="bottom: 10%; right: 10%; background: radial-gradient(circle, rgba(255, 0, 110, 0.2) 0%, transparent 70%);"></div>
+        
+        <div class="visualizer-container w-full h-64 md:h-80 rounded-lg mb-4">
+            <canvas id="visualizer" class="w-full h-full"></canvas>
+        </div>
+        
+        <div class="flex justify-center gap-2 mb-4">
+            <div class="tab-container relative">
+                <button class="mode-btn px-4 py-1.5 rounded-full text-sm font-medium active" data-mode="bars">
+                    条形图
+                </button>
+                <div class="tab-indicator"></div>
+            </div>
+            <div class="tab-container relative">
+                <button class="mode-btn px-4 py-1.5 rounded-full text-sm font-medium" data-mode="wave">
+                    波形图
+                </button>
+                <div class="tab-indicator"></div>
+            </div>
+            <div class="tab-container relative">
+                <button class="mode-btn px-4 py-1.5 rounded-full text-sm font-medium" data-mode="circular">
+                    环形图
+                </button>
+                <div class="tab-indicator"></div>
+            </div>
+        </div>
+        
+        <div class="player-container w-full rounded-lg p-4">
+            <div class="text-center mb-3">
+                <div class="track-name text-base font-medium mb-1 truncate" id="track-name">未选择音频</div>
+            </div>
+            
+            <div class="file-input-container text-center mb-3">
+                <label for="file-input" class="file-input-label inline-block px-4 py-1.5 rounded-full cursor-pointer text-sm">
+                    <i class="fas fa-folder-open mr-1"></i>选择音频文件
+                </label>
+                <input type="file" id="file-input" class="hidden" accept="audio/*">
+            </div>
+            
+            <div class="progress-container mb-3">
+                <div class="progress-bar rounded-full overflow-hidden" id="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div class="time-display flex justify-between mt-1">
+                    <span id="current-time">0:00</span>
+                    <span id="total-time">0:00</span>
+                </div>
+            </div>
+
+            <div class="controls flex justify-center items-center gap-3 mb-3">
+                <button class="control-btn p-1" id="download-btn" title="下载当前图像">
+                    <i class="fas fa-download text-lg"></i>
+                </button>
+                <button class="control-btn p-1" id="prev-btn" title="上一首">
+                    <i class="fas fa-step-backward text-lg"></i>
+                </button>
+                <button class="play-btn" id="play-btn" title="播放/暂停">
+                    <i class="fas fa-play text-xs" id="play-icon"></i>
+                    <i class="fas fa-pause text-xs hidden" id="pause-icon"></i>
+                </button>
+                <button class="control-btn p-1" id="next-btn" title="下一首">
+                    <i class="fas fa-step-forward text-lg"></i>
+                </button>
+                <div class="volume-control-container">
+                    <button class="control-btn p-1" id="volume-btn" title="音量">
+                        <i class="fas fa-volume-up text-lg" id="volume-icon"></i>
+                    </button>
+                    <div class="volume-slider-container" id="volume-slider-container">
+                        <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="70" orient="vertical">
+                        <span class="text-xs mt-2" id="volume-value">70</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 创建背景粒子效果
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // 随机位置、大小和动画延迟
+                const size = Math.random() * 3 + 1;
+                const left = Math.random() * 100;
+                const delay = Math.random() * 10;
+                const duration = Math.random() * 20 + 10;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${left}%`;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // 随机颜色
+                const colors = ['rgba(157, 78, 221, 0.5)', 'rgba(255, 0, 110, 0.5)', 'rgba(0, 245, 255, 0.5)'];
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // 页面加载时创建粒子
+        window.addEventListener('DOMContentLoaded', createParticles);
+        
+        class AudioVisualizer {
+            constructor() {
+                this.audio = new Audio();
+                this.audioContext = null;
+                this.analyser = null;
+                this.source = null;
+                this.dataArray = null;
+                this.waveDataArray = null;
+                this.smoothedDataArray = null; // 用于平滑条形图数据
+                this.animationId = null;
+                this.canvas = document.getElementById('visualizer');
+                this.ctx = this.canvas.getContext('2d');
+                this.isPlaying = false;
+                this.visualizationMode = 'bars';
+                this.lastFrameData = null; // 保存最后一帧数据用于暂停时下载
+                
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.setupAudio();
+            }
+
+            setupCanvas() {
+                const resizeCanvas = () => {
+                    this.canvas.width = this.canvas.offsetWidth * window.devicePixelRatio;
+                    this.canvas.height = this.canvas.offsetHeight * window.devicePixelRatio;
+                    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                };
+                
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+            }
+
+            setupAudio() {
+                this.audio.addEventListener('loadedmetadata', () => {
+                    document.getElementById('total-time').textContent = this.formatTime(this.audio.duration);
+                });
+
+                this.audio.addEventListener('timeupdate', () => {
+                    const progress = (this.audio.currentTime / this.audio.duration) * 100;
+                    document.getElementById('progress').style.width = `${progress}%`;
+                    document.getElementById('current-time').textContent = this.formatTime(this.audio.currentTime);
+                });
+
+                this.audio.addEventListener('ended', () => {
+                    this.pause();
+                    document.getElementById('progress').style.width = '0%';
+                    document.getElementById('current-time').textContent = '0:00';
+                });
+
+                this.audio.volume = 0.7;
+            }
+
+            setupEventListeners() {
+                // Play/Pause button
+                document.getElementById('play-btn').addEventListener('click', () => {
+                    if (this.isPlaying) {
+                        this.pause();
+                    } else {
+                        this.play();
+                    }
+                });
+
+                // Download button
+                document.getElementById('download-btn').addEventListener('click', () => {
+                    this.downloadVisualization();
+                });
+
+                // File input
+                document.getElementById('file-input').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const url = URL.createObjectURL(file);
+                        this.loadAudio(url, file.name);
+                    }
+                });
+
+                // Progress bar
+                document.getElementById('progress-bar').addEventListener('click', (e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    this.audio.currentTime = percent * this.audio.duration;
+                });
+
+                // Volume control
+                const volumeBtn = document.getElementById('volume-btn');
+                const volumeSliderContainer = document.getElementById('volume-slider-container');
+                const volumeSlider = document.getElementById('volume-slider');
+                const volumeValue = document.getElementById('volume-value');
+                const volumeIcon = document.getElementById('volume-icon');
+                
+                // Toggle volume slider visibility
+                volumeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    volumeSliderContainer.classList.toggle('show');
+                });
+                
+                // Update volume when slider changes
+                volumeSlider.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    this.audio.volume = value / 100;
+                    volumeValue.textContent = value;
+                    
+                    // 更新音量图标
+                    this.updateVolumeIcon(value);
+                });
+                
+                // Hide volume slider when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!volumeSliderContainer.contains(e.target) && e.target !== volumeBtn) {
+                        volumeSliderContainer.classList.remove('show');
+                    }
+                });
+                
+                // Prevent volume slider from closing when clicking inside it
+                volumeSliderContainer.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+
+                // Visualization modes
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.mode-btn').forEach(b => {
+                            b.classList.remove('active');
+                        });
+                        btn.classList.add('active');
+                        this.visualizationMode = btn.dataset.mode;
+                    });
+                });
+            }
+
+            // 更新音量图标
+            updateVolumeIcon(value) {
+                const volumeIcon = document.getElementById('volume-icon');
+                if (value == 0) {
+                    volumeIcon.className = 'fas fa-volume-mute text-lg';
+                } else if (value < 50) {
+                    volumeIcon.className = 'fas fa-volume-down text-lg';
+                } else {
+                    volumeIcon.className = 'fas fa-volume-up text-lg';
+                }
+            }
+
+            loadAudio(url, name) {
+                this.audio.src = url;
+                document.getElementById('track-name').textContent = name;
+                
+                this.audio.addEventListener('canplaythrough', () => {
+                    this.initAudioContext();
+                }, { once: true });
+            }
+
+            initAudioContext() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 256;
+                    
+                    const bufferLength = this.analyser.frequencyBinCount;
+                    this.dataArray = new Uint8Array(bufferLength);
+                    this.waveDataArray = new Uint8Array(bufferLength * 2); // For waveform
+                    this.smoothedDataArray = new Uint8Array(bufferLength); // For smoothed bars
+                    
+                    this.source = this.audioContext.createMediaElementSource(this.audio);
+                    this.source.connect(this.analyser);
+                    this.analyser.connect(this.audioContext.destination);
+                }
+            }
+
+            play() {
+                if (this.audio.src) {
+                    this.audio.play();
+                    this.isPlaying = true;
+                    document.getElementById('play-icon').classList.add('hidden');
+                    document.getElementById('pause-icon').classList.remove('hidden');
+                    
+                    if (this.audioContext && this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                    
+                    this.visualize();
+                }
+            }
+
+            pause() {
+                this.audio.pause();
+                this.isPlaying = false;
+                document.getElementById('play-icon').classList.remove('hidden');
+                document.getElementById('pause-icon').classList.add('hidden');
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+            }
+
+            visualize() {
+                if (!this.analyser) return;
+                
+                this.animationId = requestAnimationFrame(() => this.visualize());
+                
+                const width = this.canvas.offsetWidth;
+                const height = this.canvas.offsetHeight;
+                
+                // 根据可视化模式选择不同的清除方式
+                if (this.visualizationMode === 'bars') {
+                    // 条形图完全清除，减少残影
+                    this.ctx.fillStyle = 'rgba(10, 14, 39, 0.2)';
+                    this.ctx.fillRect(0, 0, width, height);
+                } else if (this.visualizationMode === 'wave') {
+                    // 波形图使用半透明背景创建轨迹效果
+                    this.ctx.fillStyle = 'rgba(10, 14, 39, 0.05)';
+                    this.ctx.fillRect(0, 0, width, height);
+                } else {
+                    // 环形图完全清除
+                    this.ctx.fillStyle = 'rgba(10, 14, 39, 0.2)';
+                    this.ctx.fillRect(0, 0, width, height);
+                }
+                
+                // 获取数据并保存最后一帧
+                switch (this.visualizationMode) {
+                    case 'bars':
+                        this.analyser.getByteFrequencyData(this.dataArray);
+                        this.lastFrameData = {
+                            type: 'bars',
+                            dataArray: new Uint8Array(this.dataArray),
+                            smoothedDataArray: new Uint8Array(this.smoothedDataArray)
+                        };
+                        this.drawBars(width, height);
+                        break;
+                    case 'wave':
+                        this.analyser.getByteTimeDomainData(this.waveDataArray);
+                        this.lastFrameData = {
+                            type: 'wave',
+                            waveDataArray: new Uint8Array(this.waveDataArray)
+                        };
+                        this.drawWave(width, height);
+                        break;
+                    case 'circular':
+                        this.analyser.getByteFrequencyData(this.dataArray);
+                        this.lastFrameData = {
+                            type: 'circular',
+                            dataArray: new Uint8Array(this.dataArray)
+                        };
+                        this.drawCircular(width, height);
+                        break;
+                }
+            }
+
+            drawBars(width, height) {
+                // 平滑处理数据，减少抖动
+                const smoothingFactor = 0.7; // 平滑因子，值越大越平滑
+                for (let i = 0; i < this.dataArray.length; i++) {
+                    this.smoothedDataArray[i] = this.smoothedDataArray[i] * smoothingFactor + 
+                                              this.dataArray[i] * (1 - smoothingFactor);
+                }
+                
+                const barWidth = (width / this.smoothedDataArray.length) * 2.5;
+                let x = 0;
+                
+                for (let i = 0; i < this.smoothedDataArray.length; i++) {
+                    const barHeight = (this.smoothedDataArray[i] / 255) * height * 0.8;
+                    
+                    // 使用渐变色，从紫色到粉色到青色
+                    const gradient = this.ctx.createLinearGradient(0, height - barHeight, 0, height);
+                    const hue = (i / this.smoothedDataArray.length) * 120 + 270; // 从紫色到青色
+                    gradient.addColorStop(0, `hsla(${hue}, 100%, 60%, 0.8)`);
+                    gradient.addColorStop(1, `hsla(${hue}, 100%, 40%, 0.8)`);
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                    
+                    // 添加发光效果
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+                    
+                    x += barWidth + 1;
+                }
+                
+                // 重置阴影
+                this.ctx.shadowBlur = 0;
+            }
+
+            drawWave(width, height) {
+                const centerY = height / 2;
+                
+                // 绘制主波形线
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = '#9D4EDD';
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = '#9D4EDD';
+                this.ctx.beginPath();
+                
+                const sliceWidth = width / this.waveDataArray.length;
+                let x = 0;
+                
+                for (let i = 0; i < this.waveDataArray.length; i++) {
+                    const v = this.waveDataArray[i] / 128.0;
+                    const y = v * height / 2;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                this.ctx.lineTo(width, centerY);
+                this.ctx.stroke();
+                
+                // 绘制第二条波形线，稍微偏移并使用不同颜色
+                this.ctx.lineWidth = 1.5;
+                this.ctx.strokeStyle = '#FF006E';
+                this.ctx.shadowColor = '#FF006E';
+                this.ctx.beginPath();
+                
+                x = 0;
+                
+                for (let i = 0; i < this.waveDataArray.length; i++) {
+                    const v = this.waveDataArray[i] / 128.0;
+                    const y = v * height / 2 + 5; // 轻微偏移
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                this.ctx.lineTo(width, centerY + 5);
+                this.ctx.stroke();
+                
+                // 绘制第三条波形线，使用青色
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeStyle = '#00F5FF';
+                this.ctx.shadowColor = '#00F5FF';
+                this.ctx.beginPath();
+                
+                x = 0;
+                
+                for (let i = 0; i < this.waveDataArray.length; i++) {
+                    const v = this.waveDataArray[i] / 128.0;
+                    const y = v * height / 2 - 5; // 轻微偏移
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                this.ctx.lineTo(width, centerY - 5);
+                this.ctx.stroke();
+                
+                // 重置阴影
+                this.ctx.shadowBlur = 0;
+            }
+
+            drawCircular(width, height) {
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = Math.min(width, height) / 4;
+                
+                // 绘制中心圆
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius * 0.3, 0, 2 * Math.PI);
+                this.ctx.fillStyle = 'rgba(10, 14, 39, 0.5)';
+                this.ctx.fill();
+                
+                // 绘制环形条
+                for (let i = 0; i < this.dataArray.length; i++) {
+                    const angle = (i / this.dataArray.length) * Math.PI * 2;
+                    const barHeight = (this.dataArray[i] / 255) * radius;
+                    
+                    const x1 = centerX + Math.cos(angle) * radius;
+                    const y1 = centerY + Math.sin(angle) * radius;
+                    const x2 = centerX + Math.cos(angle) * (radius + barHeight);
+                    const y2 = centerY + Math.sin(angle) * (radius + barHeight);
+                    
+                    // 使用渐变色
+                    const hue = (i / this.dataArray.length) * 120 + 270; // 从紫色到青色
+                    this.ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x1, y1);
+                    this.ctx.lineTo(x2, y2);
+                    this.ctx.stroke();
+                }
+                
+                // 绘制内圈
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius * 0.3, 0, 2 * Math.PI);
+                this.ctx.strokeStyle = 'rgba(157, 78, 221, 0.5)';
+                this.ctx.lineWidth = 1;
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = '#9D4EDD';
+                this.ctx.stroke();
+                
+                // 重置阴影
+                this.ctx.shadowBlur = 0;
+            }
+
+            downloadVisualization() {
+                // 创建一个临时canvas用于下载
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // 设置临时canvas的尺寸
+                tempCanvas.width = this.canvas.width;
+                tempCanvas.height = this.canvas.height;
+                
+                // 填充背景
+                tempCtx.fillStyle = '#0A0E27';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                
+                const width = this.canvas.offsetWidth;
+                const height = this.canvas.offsetHeight;
+                
+                // 如果有保存的最后一帧数据，使用它来绘制
+                if (this.lastFrameData) {
+                    // 恢复数据数组
+                    if (this.lastFrameData.type === 'bars') {
+                        this.dataArray = this.lastFrameData.dataArray;
+                        this.smoothedDataArray = this.lastFrameData.smoothedDataArray;
+                        this.drawBarsToContext(tempCtx, width, height);
+                    } else if (this.lastFrameData.type === 'wave') {
+                        this.waveDataArray = this.lastFrameData.waveDataArray;
+                        this.drawWaveToContext(tempCtx, width, height);
+                    } else if (this.lastFrameData.type === 'circular') {
+                        this.dataArray = this.lastFrameData.dataArray;
+                        this.drawCircularToContext(tempCtx, width, height);
+                    }
+                } else if (this.analyser && this.isPlaying) {
+                    // 如果正在播放，获取当前数据
+                    switch (this.visualizationMode) {
+                        case 'bars':
+                            this.analyser.getByteFrequencyData(this.dataArray);
+                            this.drawBarsToContext(tempCtx, width, height);
+                            break;
+                        case 'wave':
+                            this.analyser.getByteTimeDomainData(this.waveDataArray);
+                            this.drawWaveToContext(tempCtx, width, height);
+                            break;
+                        case 'circular':
+                            this.analyser.getByteFrequencyData(this.dataArray);
+                            this.drawCircularToContext(tempCtx, width, height);
+                            break;
+                    }
+                } else {
+                    // 如果没有数据，绘制静态的可视化效果
+                    this.drawStaticVisualization(tempCtx, width, height);
+                }
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                link.download = `visualization-${timestamp}.png`;
+                link.href = tempCanvas.toDataURL();
+                link.click();
+            }
+            
+            // 绘制静态可视化效果（当没有音频数据时）
+            drawStaticVisualization(ctx, width, height) {
+                // 根据当前模式绘制静态效果
+                switch (this.visualizationMode) {
+                    case 'bars':
+                        // 绘制静态条形图
+                        const barCount = 50;
+                        const barWidth = width / barCount * 0.8;
+                        const barSpacing = width / barCount * 0.2;
+                        
+                        for (let i = 0; i < barCount; i++) {
+                            const barHeight = Math.random() * height * 0.6 + height * 0.1;
+                            const x = i * (barWidth + barSpacing);
+                            const hue = (i / barCount) * 120 + 270;
+                            
+                            const gradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
+                            gradient.addColorStop(0, `hsla(${hue}, 100%, 60%, 0.8)`);
+                            gradient.addColorStop(1, `hsla(${hue}, 100%, 40%, 0.8)`);
+                            
+                            ctx.fillStyle = gradient;
+                            ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                            
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+                        }
+                        break;
+                        
+                    case 'wave':
+                        // 绘制静态波形
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#9D4EDD';
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#9D4EDD';
+                        ctx.beginPath();
+                        
+                        const points = 100;
+                        for (let i = 0; i <= points; i++) {
+                            const x = (i / points) * width;
+                            const y = height / 2 + Math.sin(i * 0.2) * height * 0.2;
+                            
+                            if (i === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        }
+                        ctx.stroke();
+                        break;
+                        
+                    case 'circular':
+                        // 绘制静态环形
+                        const centerX = width / 2;
+                        const centerY = height / 2;
+                        const radius = Math.min(width, height) / 4;
+                        
+                        // 绘制中心圆
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius * 0.3, 0, 2 * Math.PI);
+                        ctx.fillStyle = 'rgba(10, 14, 39, 0.5)';
+                        ctx.fill();
+                        
+                        // 绘制环形条
+                        const barCount2 = 60;
+                        for (let i = 0; i < barCount2; i++) {
+                            const angle = (i / barCount2) * Math.PI * 2;
+                            const barHeight = Math.random() * radius * 0.5 + radius * 0.2;
+                            
+                            const x1 = centerX + Math.cos(angle) * radius;
+                            const y1 = centerY + Math.sin(angle) * radius;
+                            const x2 = centerX + Math.cos(angle) * (radius + barHeight);
+                            const y2 = centerY + Math.sin(angle) * (radius + barHeight);
+                            
+                            const hue = (i / barCount2) * 120 + 270;
+                            ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+                            ctx.lineWidth = 2;
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.stroke();
+                        }
+                        break;
+                }
+                
+                // 重置阴影
+                ctx.shadowBlur = 0;
+            }
+            
+            // 为下载功能添加的绘制方法
+            drawBarsToContext(ctx, width, height) {
+                // 平滑处理数据，减少抖动
+                const smoothingFactor = 0.7; // 平滑因子，值越大越平滑
+                for (let i = 0; i < this.dataArray.length; i++) {
+                    this.smoothedDataArray[i] = this.smoothedDataArray[i] * smoothingFactor + 
+                                              this.dataArray[i] * (1 - smoothingFactor);
+                }
+                
+                const barWidth = (width / this.smoothedDataArray.length) * 2.5;
+                let x = 0;
+                
+                for (let i = 0; i < this.smoothedDataArray.length; i++) {
+                    const barHeight = (this.smoothedDataArray[i] / 255) * height * 0.8;
+                    
+                    // 使用渐变色，从紫色到粉色到青色
+                    const gradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
+                    const hue = (i / this.smoothedDataArray.length) * 120 + 270; // 从紫色到青色
+                    gradient.addColorStop(0, `hsla(${hue}, 100%, 60%, 0.8)`);
+                    gradient.addColorStop(1, `hsla(${hue}, 100%, 40%, 0.8)`);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                    
+                    // 添加发光效果
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+                    
+                    x += barWidth + 1;
+                }
+                
+                // 重置阴影
+                ctx.shadowBlur = 0;
+            }
+            
+            drawWaveToContext(ctx, width, height) {
+                const centerY = height / 2;
+                
+                // 绘制主波形线
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#9D4EDD';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#9D4EDD';
+                ctx.beginPath();
+                
+                const sliceWidth = width / this.waveDataArray.length;
+                let x = 0;
+                
+                for (let i = 0; i < this.waveDataArray.length; i++) {
+                    const v = this.waveDataArray[i] / 128.0;
+                    const y = v * height / 2;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                ctx.lineTo(width, centerY);
+                ctx.stroke();
+                
+                // 绘制第二条波形线，稍微偏移并使用不同颜色
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#FF006E';
+                ctx.shadowColor = '#FF006E';
+                ctx.beginPath();
+                
+                x = 0;
+                
+                for (let i = 0; i < this.waveDataArray.length; i++) {
+                    const v = this.waveDataArray[i] / 128.0;
+                    const y = v * height / 2 + 5; // 轻微偏移
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                ctx.lineTo(width, centerY + 5);
+                ctx.stroke();
+                
+                // 绘制第三条波形线，使用青色
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#00F5FF';
+                ctx.shadowColor = '#00F5FF';
+                ctx.beginPath();
+                
+                x = 0;
+                
+                for (let i = 0; i < this.waveDataArray.length; i++) {
+                    const v = this.waveDataArray[i] / 128.0;
+                    const y = v * height / 2 - 5; // 轻微偏移
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                ctx.lineTo(width, centerY - 5);
+                ctx.stroke();
+                
+                // 重置阴影
+                ctx.shadowBlur = 0;
+            }
+            
+            drawCircularToContext(ctx, width, height) {
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = Math.min(width, height) / 4;
+                
+                // 绘制中心圆
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.3, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(10, 14, 39, 0.5)';
+                ctx.fill();
+                
+                // 绘制环形条
+                for (let i = 0; i < this.dataArray.length; i++) {
+                    const angle = (i / this.dataArray.length) * Math.PI * 2;
+                    const barHeight = (this.dataArray[i] / 255) * radius;
+                    
+                    const x1 = centerX + Math.cos(angle) * radius;
+                    const y1 = centerY + Math.sin(angle) * radius;
+                    const x2 = centerX + Math.cos(angle) * (radius + barHeight);
+                    const y2 = centerY + Math.sin(angle) * (radius + barHeight);
+                    
+                    // 使用渐变色
+                    const hue = (i / this.dataArray.length) * 120 + 270; // 从紫色到青色
+                    ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+                
+                // 绘制内圈
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.3, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(157, 78, 221, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#9D4EDD';
+                ctx.stroke();
+                
+                // 重置阴影
+                ctx.shadowBlur = 0;
+            }
+
+            formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+        }
+
+        // Initialize the visualizer when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new AudioVisualizer();
+        });
+    </script>
+</body>
+</html>

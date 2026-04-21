@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048游戏</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 阻止游戏区域默认滑动 */
+        #game-board {
+            touch-action: none;
+            -ms-touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <header>
+            <h1>2048</h1>
+            <div class="scores">
+                <div class="score-box">
+                    <div class="score-title">分数</div>
+                    <div id="score" class="score-value">0</div>
+                </div>
+                <div class="score-box">
+                    <div class="score-title">最高分</div>
+                    <div id="best-score" class="score-value">0</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls">
+            <button id="new-game">新游戏</button>
+            <button id="undo">撤销</button>
+            <div class="size-control">
+                <label for="grid-size">棋盘大小:</label>
+                <select id="grid-size">
+                    <option value="4">4×4</option>
+                    <option value="5">5×5</option>
+                    <option value="6">6×6</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="game-board" class="game-board"></div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
