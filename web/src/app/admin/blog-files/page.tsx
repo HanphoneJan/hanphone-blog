@@ -1,5 +1,6 @@
 'use client'
 
+import '../admin-animations.css'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { ENDPOINTS } from '@/lib/api'
@@ -183,10 +184,10 @@ export default function FileManagementPage() {
     fetchFiles()
   }, [currentDir])
 
-  // 处理文件上传
+  // 处理文件上传（批量）
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
     try {
       setUploading(true)
@@ -198,17 +199,33 @@ export default function FileManagementPage() {
       } else {
         formData.append('namespace', 'blog')
       }
-      formData.append('file', file)
+      for (const file of files) {
+        formData.append('files', file)
+      }
+
       const res = await apiClient({
-        url: ENDPOINTS.FILE.UPLOAD,
+        url: ENDPOINTS.FILE.UPLOAD_BATCH,
         method: 'POST',
         data: formData
       })
 
       if (res.data.code === 200) {
+        const results = res.data.results as Array<{
+          success: boolean
+          filename: string
+          originalName: string
+          error?: string
+        }>
+        const successCount = results.filter(r => r.success).length
+        const failCount = results.length - successCount
+
         fetchFiles()
         e.target.value = ''
-        showAlert(ADMIN_FILE_LABELS.UPLOAD_SUCCESS)
+        if (failCount > 0) {
+          showAlert(`上传完成：${successCount} 个成功，${failCount} 个失败`)
+        } else {
+          showAlert(`成功上传 ${successCount} 个文件`)
+        }
       } else {
         throw new Error(res.data.error || '文件上传失败')
       }
@@ -338,6 +355,7 @@ export default function FileManagementPage() {
 
   // 进入目录
   const handleEnterDirectory = (dirName: string) => {
+    setLoading(true)
     setCurrentDir(currentDir ? `${currentDir}/${dirName}` : dirName)
   }
 
@@ -345,6 +363,7 @@ export default function FileManagementPage() {
   const handleGoBack = () => {
     if (!currentDir) return
 
+    setLoading(true)
     const dirs = currentDir.split('/')
     dirs.pop()
     setCurrentDir(dirs.join('/'))
@@ -362,7 +381,7 @@ export default function FileManagementPage() {
     breadcrumbs.push(
       <button
         key="root"
-        onClick={() => setCurrentDir('')}
+        onClick={() => { setLoading(true); setCurrentDir('') }}
         className="text-blue-600 hover:text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
       ></button>
     )
@@ -374,7 +393,7 @@ export default function FileManagementPage() {
         <React.Fragment key={`breadcrumb-${index}`}>
           <ChevronRight className="h-3.5 w-3.5 mx-1 text-slate-500 dark:text-slate-400" />
           <button
-            onClick={() => setCurrentDir(path)}
+            onClick={() => { setLoading(true); setCurrentDir(path) }}
             className="text-blue-600 hover:text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
           >
             {dir}
@@ -506,10 +525,11 @@ export default function FileManagementPage() {
               <div className="flex items-center gap-2">
                 <label className="inline-flex items-center px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow transition-colors cursor-pointer text-xs" style={{ backgroundColor: 'rgb(var(--primary))' }}>
                   <Upload className="h-3.5 w-3.5 mr-1.5" />
-                  上传
+                  批量上传
                   <input
                     ref={uploadRef}
                     type="file"
+                    multiple
                     onChange={handleFileUpload}
                     className="hidden"
                     disabled={uploading || loading}
@@ -545,7 +565,7 @@ export default function FileManagementPage() {
             )}
 
             {/* 面包屑导航 */}
-            <div className="mb-1 mt-3 px-2 flex sm:text-base items-center text-xs overflow-x-auto pb-1 hide-scrollbar">
+            <div className="mb-1 mt-3 px-2 flex sm:text-base items-center text-xs overflow-x-auto pb-1 scrollbar-hide">
               <div className="flex items-center whitespace-nowrap">
                 {renderBreadcrumbs()}
                 {currentDir && (
@@ -632,7 +652,7 @@ export default function FileManagementPage() {
                       .map(item => (
                         <tr
                           key={`dir-${item.name}`}
-                          className="hover:bg-slate-100/60 transition-colors" style={{ backgroundColor: 'transparent' }}
+                          className="hover:bg-[rgb(var(--hover))] transition-colors"
                         >
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center">
@@ -674,7 +694,7 @@ export default function FileManagementPage() {
                       .map(item => (
                         <tr
                           key={`file-${item.name}`}
-                          className="hover:bg-slate-100/60 transition-colors" style={{ backgroundColor: 'transparent' }}
+                          className="hover:bg-[rgb(var(--hover))] transition-colors"
                         >
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center">
@@ -912,42 +932,6 @@ export default function FileManagementPage() {
           document.body
         )}
 
-      <style jsx global>{`
-        @keyframes admin-fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        @keyframes admin-scaleIn {
-          from {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        .animate-fadeIn {
-          animation: admin-fadeIn 0.3s ease-out forwards;
-        }
-        .animate-scaleIn {
-          animation: admin-scaleIn 0.3s ease-out forwards;
-        }
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        tr:hover td {
-          background-color: rgb(var(--hover));
-        }
-      `}</style>
     </div>
   )
 }
