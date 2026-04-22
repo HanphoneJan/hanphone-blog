@@ -115,9 +115,8 @@ public class TagServiceImpl implements TagService {
                 throw new IllegalArgumentException("Size must be greater than 0");
             }
 
-            Sort sort = Sort.by(Sort.Direction.DESC, "blogs.size");
-            Pageable pageable = PageRequest.of(0, size, sort);
-            List<Tag> tags = tagRepository.findTop(pageable);
+            Pageable pageable = PageRequest.of(0, size);
+            List<Tag> tags = tagRepository.findTopByBlogCount(pageable);
             return reduceTagsAttributes(tags);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid size parameter: " + e.getMessage(), e);

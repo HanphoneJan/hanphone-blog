@@ -19,4 +19,7 @@ public interface TypeRepository extends JpaRepository<Type,Long> {
     @Query("select t from Type t")
     List<Type> findTop(Pageable pageable);
 
+    @Query("select t from Type t left join t.blogs b group by t.id, t.name, t.pic_url, t.color order by count(b) desc")
+    List<Type> findTopByBlogCount(Pageable pageable);
+
 }
