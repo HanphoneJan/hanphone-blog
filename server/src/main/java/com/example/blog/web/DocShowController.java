@@ -24,9 +24,16 @@ public class DocShowController {
     }
 
     @GetMapping("/docs")
-    public Result<Page<Doc>> listDocs(
+    public Result<?> listDocs(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
             @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {"createTime"}, direction = Sort.Direction.DESC) Pageable pageable) {
-        return new Result<>(true, StatusCode.OK, "获取文档列表成功", docService.listPublishedDoc(pageable));
+        if (page != null && size != null) {
+            Sort sort = Sort.by(Sort.Direction.DESC, "createTime");
+            Pageable customPageable = PageRequest.of(page - 1, size, sort);
+            return new Result<>(true, StatusCode.OK, "获取文档列表成功", docService.listPublishedDoc(customPageable));
+        }
+        return new Result<>(true, StatusCode.OK, "获取文档列表成功", docService.listPublishedDoc());
     }
 
     @GetMapping("/docs/hot")

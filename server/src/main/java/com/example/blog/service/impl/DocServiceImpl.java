@@ -48,6 +48,15 @@ public class DocServiceImpl implements DocService {
     }
 
     @Override
+    public List<Doc> listPublishedDoc() {
+        try {
+            return docRepository.findByPublishedTrue();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list published docs", e);
+        }
+    }
+
+    @Override
     public Page<Doc> listPublishedDoc(Pageable pageable) {
         requireNonNull(pageable, "pageable must not be null");
         try {

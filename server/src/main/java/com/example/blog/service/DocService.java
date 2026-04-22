@@ -12,6 +12,8 @@ public interface DocService {
 
     Page<Doc> listDoc(Pageable pageable);
 
+    List<Doc> listPublishedDoc();
+
     Page<Doc> listPublishedDoc(Pageable pageable);
 
     Page<Doc> listHotDoc(Pageable pageable);
