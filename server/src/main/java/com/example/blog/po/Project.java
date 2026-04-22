@@ -20,4 +20,14 @@ public class Project {
     private String techs;
     private Integer type;
     private boolean recommend;
+
+    @Column(name = "published")
+    private Boolean published = false;
+
+    @PrePersist
+    protected void onCreate() {
+        if (published == null) {
+            published = false;
+        }
+    }
 }

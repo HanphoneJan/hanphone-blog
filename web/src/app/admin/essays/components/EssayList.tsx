@@ -11,7 +11,9 @@ interface EssayListProps {
   sortOrder: 'asc' | 'desc' | null
   onToggleSort: () => void
   updateRecommendLoading: number | null
+  updatePublishedLoading: number | null
   onToggleRecommend: (essay: Essay) => void
+  onTogglePublished: (essay: Essay) => void
   onEdit: (essay: Essay) => void
   onDelete: (id: number) => void
 }
@@ -23,7 +25,9 @@ export function EssayList({
   sortOrder,
   onToggleSort,
   updateRecommendLoading,
+  updatePublishedLoading,
   onToggleRecommend,
+  onTogglePublished,
   onEdit,
   onDelete
 }: EssayListProps) {
@@ -76,6 +80,7 @@ export function EssayList({
               <th className="py-3 px-4 text-left border-b border-[rgb(var(--border))]">随笔标题</th>
               <th className="py-3 px-4 text-left border-b border-[rgb(var(--border))]">文件</th>
               <th className="py-3 px-4 text-left border-b border-[rgb(var(--border))]">发布时间</th>
+              <th className="py-3 px-4 text-left border-b border-[rgb(var(--border))]">发布</th>
               <th className="py-3 px-4 text-left border-b border-[rgb(var(--border))]">推荐</th>
               <th className="py-3 px-4 text-left border-b border-[rgb(var(--border))]">操作</th>
             </tr>
@@ -89,14 +94,16 @@ export function EssayList({
                   index={index}
                   isMobile={false}
                   updateRecommendLoading={updateRecommendLoading}
+                  updatePublishedLoading={updatePublishedLoading}
                   onToggleRecommend={onToggleRecommend}
+                  onTogglePublished={onTogglePublished}
                   onEdit={onEdit}
                   onDelete={onDelete}
                 />
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-[rgb(var(--muted))]">
+                <td colSpan={7} className="py-8 text-center text-[rgb(var(--muted))]">
                   暂无匹配的随笔数据
                 </td>
               </tr>
@@ -115,7 +122,9 @@ export function EssayList({
                   index={index}
                   isMobile={true}
                   updateRecommendLoading={updateRecommendLoading}
+                  updatePublishedLoading={updatePublishedLoading}
                   onToggleRecommend={onToggleRecommend}
+                  onTogglePublished={onTogglePublished}
                   onEdit={onEdit}
                   onDelete={onDelete}
                 />

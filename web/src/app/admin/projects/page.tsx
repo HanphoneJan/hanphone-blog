@@ -55,10 +55,12 @@ const ProjectManagement = () => {
     localInputValues,
     deleteConfirm,
     updateRecommendLoading,
+    updatePublishedLoading,
     getProjectList,
     setDeleteConfirm,
     handleDeleteConfirm,
     toggleRecommend,
+    togglePublished,
     handleTypeChange,
     handleLocalInputChange,
     handleFilterChange,
@@ -198,6 +200,7 @@ const ProjectManagement = () => {
               localInputValues={localInputValues}
               stats={stats}
               updateRecommendLoading={updateRecommendLoading}
+              updatePublishedLoading={updatePublishedLoading}
               imageUploadRef={imageUploadRef}
               onFilterChange={handleFilterChange}
               onResetFilters={resetFilters}
@@ -220,6 +223,7 @@ const ProjectManagement = () => {
               onConfirmTagInput={confirmTagInput}
               onRemoveTag={removeTag}
               onToggleRecommend={toggleRecommend}
+              onTogglePublished={togglePublished}
               onDelete={setDeleteConfirm}
             />
           </motion.div>

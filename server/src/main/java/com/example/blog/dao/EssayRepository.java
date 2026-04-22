@@ -28,4 +28,12 @@ public interface EssayRepository extends JpaRepository<Essay,Long>, JpaSpecifica
     @Query("select e from Essay e where e.recommend = true")
     List<Essay> findTop(Pageable pageable);
 
+    @Modifying
+    @Query("UPDATE Essay e SET e.published = :published WHERE e.id = :id")
+    int updatePublished(@Param("id") Long id, @Param("published") boolean published);
+
+    List<Essay> findByPublishedTrue();
+
+    List<Essay> findByPublishedTrue(Pageable pageable);
+
 }

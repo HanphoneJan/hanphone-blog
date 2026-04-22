@@ -337,7 +337,11 @@ export const ADMIN_PROJECT_LABELS = {
   DELETE_FAIL: '项目删除失败',
   UPDATE_SUCCESS: '项目更新成功',
   UPDATE_FAIL: '项目更新失败',
-  OPERATION_FAIL: '操作失败，请重试'
+  OPERATION_FAIL: '操作失败，请重试',
+  PUBLISHED_SUCCESS: '发布成功',
+  PUBLISHED_FAIL: '发布失败',
+  UNPUBLISHED_SUCCESS: '取消发布成功',
+  UNPUBLISHED_FAIL: '取消发布失败'
 } as const
 
 // ==================== 管理后台 - 随笔 ====================
@@ -354,7 +358,11 @@ export const ADMIN_ESSAY_LABELS = {
   OPERATION_FAIL_MSG: '操作失败',
   PUBLISH_FAIL: '发布随笔失败',
   DELETE_SUCCESS: '删除成功！',
-  DELETE_FAIL: '删除失败'
+  DELETE_FAIL: '删除失败',
+  PUBLISHED_SUCCESS: '发布成功',
+  PUBLISHED_FAIL: '发布失败',
+  UNPUBLISHED_SUCCESS: '取消发布成功',
+  UNPUBLISHED_FAIL: '取消发布失败'
 } as const
 
 // ==================== 管理后台 - 文件 ====================

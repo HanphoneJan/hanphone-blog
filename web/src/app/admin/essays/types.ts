@@ -32,6 +32,7 @@ export interface Essay {
   image?: string | null
   praise?: number | null
   recommend?: boolean
+  published?: boolean
 }
 
 // 表单错误类型

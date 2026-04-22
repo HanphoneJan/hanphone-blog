@@ -109,6 +109,7 @@ export const processProjectData = (data: any[]): Project[] => {
     ...item,
     techs: item.techs || '',
     recommend: item.recommend || false,
+    published: item.published || false,
     inputVisible: false,
     inputValue: '',
     editingTitle: false,
@@ -129,6 +130,7 @@ export const filterProjects = (
     type: number
     searchQuery: string
     status: 'all' | 'recommended' | 'unrecommended'
+    publishStatus: 'all' | 'published' | 'unpublished'
   }
 ): Project[] => {
   let result = [...projects]
@@ -149,6 +151,13 @@ export const filterProjects = (
     result = result.filter(item => item.recommend)
   } else if (filters.status === 'unrecommended') {
     result = result.filter(item => !item.recommend)
+  }
+
+  // 按发布状态筛选
+  if (filters.publishStatus === 'published') {
+    result = result.filter(item => item.published)
+  } else if (filters.publishStatus === 'unpublished') {
+    result = result.filter(item => !item.published)
   }
 
   return result

@@ -28,4 +28,16 @@ public interface ProjectService {
     Project updateProject(Long id, Project project);
 
     Boolean changeRecommend(Long projectId, Boolean recommend);
+
+    List<Project> listPublishedProject();
+
+    Page<Project> listPublishedProject(Pageable pageable);
+
+    List<Project> listPublishedProjectByType(Integer type);
+
+    Page<Project> listPublishedProjectByType(Integer type, Pageable pageable);
+
+    Page<Project> listPublishedProject(String query, Pageable pageable);
+
+    Boolean changePublished(Long projectId, Boolean published);
 }

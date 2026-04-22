@@ -143,4 +143,25 @@ public class EssayController {
             return new Result<>(false, StatusCode.ERROR, "操作失败");
         }
     }
+
+    @PostMapping("/essays/published")
+    public Result<Void> published(@RequestBody Map<String, Object> para) {
+        Object essayIdObj = para.get("essayId");
+        if (essayIdObj == null) {
+            return new Result<>(false, StatusCode.ERROR, "essayId不能为空");
+        }
+        if (!(essayIdObj instanceof Number)) {
+            return new Result<>(false, StatusCode.ERROR, "essayId必须是数字类型");
+        }
+        Long essayId = ((Number) essayIdObj).longValue();
+        Boolean published = (Boolean) para.get("published");
+        try {
+            if (essayService.changePublished(essayId, published)) {
+                return new Result<>(true, StatusCode.OK, "操作成功");
+            }
+            return new Result<>(false, StatusCode.ERROR, "操作失败");
+        } catch (Exception e) {
+            return new Result<>(false, StatusCode.ERROR, "操作失败");
+        }
+    }
 }

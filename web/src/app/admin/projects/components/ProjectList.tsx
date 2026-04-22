@@ -15,6 +15,7 @@ interface ProjectListProps {
   localInputValues: { [key: number]: { title?: string; content?: string; imageUrl?: string; url?: string; techInput?: string } }
   stats: ProjectStatsType
   updateRecommendLoading: number | null
+  updatePublishedLoading: number | null
   imageUploadRef: React.RefObject<HTMLInputElement | null>
   onFilterChange: (name: keyof ProjectFilters, value: any) => void
   onResetFilters: () => void
@@ -37,6 +38,7 @@ interface ProjectListProps {
   onConfirmTagInput: (project: Project) => void
   onRemoveTag: (index: number, project: Project) => void
   onToggleRecommend: (project: Project) => void
+  onTogglePublished: (project: Project) => void
   onDelete: (projectId: number | null) => void
 }
 
@@ -48,6 +50,7 @@ export const ProjectList = ({
   localInputValues,
   stats,
   updateRecommendLoading,
+  updatePublishedLoading,
   imageUploadRef,
   onFilterChange,
   onResetFilters,
@@ -70,6 +73,7 @@ export const ProjectList = ({
   onConfirmTagInput,
   onRemoveTag,
   onToggleRecommend,
+  onTogglePublished,
   onDelete
 }: ProjectListProps) => {
   return (
@@ -106,6 +110,19 @@ export const ProjectList = ({
               <option value="all">全部状态</option>
               <option value="recommended">已推荐</option>
               <option value="unrecommended">未推荐</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs text-[rgb(var(--text-muted))]">发布状态</label>
+            <select
+              value={filters.publishStatus}
+              onChange={e => onFilterChange('publishStatus', e.target.value)}
+              className="w-full px-3 py-1.5 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))]"
+            >
+              <option value="all">全部状态</option>
+              <option value="published">已发布</option>
+              <option value="unpublished">未发布</option>
             </select>
           </div>
 
@@ -170,6 +187,7 @@ export const ProjectList = ({
                 project={project}
                 localValues={localInputValues[projectId] || {}}
                 updateRecommendLoading={updateRecommendLoading === project.id}
+                updatePublishedLoading={updatePublishedLoading === project.id}
                 imageUploadRef={imageUploadRef}
                 onEditTitle={onEditTitle}
                 onSaveTitle={onSaveTitle}
@@ -190,6 +208,7 @@ export const ProjectList = ({
                 onConfirmTagInput={onConfirmTagInput}
                 onRemoveTag={onRemoveTag}
                 onToggleRecommend={onToggleRecommend}
+                onTogglePublished={onTogglePublished}
                 onDelete={onDelete}
               />
             )

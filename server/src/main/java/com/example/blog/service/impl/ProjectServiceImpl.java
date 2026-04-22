@@ -66,7 +66,14 @@ public class ProjectServiceImpl implements ProjectService {
         try {
             Sort sort = Sort.by(Sort.Direction.DESC, "id");
             Pageable pageable = PageRequest.of(0, size, sort);
-            return projectRepository.findTop(pageable);
+            return projectRepository.findAll(
+                    (Specification<Project>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("recommend"), true));
+                        predicates.add(cb.equal(root.get("published"), true));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable).getContent();
         } catch (Exception e) {
             throw new RuntimeException("Failed to list recommend projects with size: " + size, e);
         }
@@ -197,6 +204,106 @@ public class ProjectServiceImpl implements ProjectService {
             return affectedRows > 0;
         } catch (Exception e) {
             throw new RuntimeException("Error changing recommend status for project: " + Id, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public Boolean changePublished(Long id, Boolean published) {
+        requireNonNull(id, "project id must not be null");
+        requireNonNull(published, "published flag must not be null");
+        try {
+            int affectedRows = projectRepository.updatePublished(id, published);
+            return affectedRows > 0;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to change published status for project: " + id, e);
+        }
+    }
+
+    @Override
+    public List<Project> listPublishedProject() {
+        try {
+            return projectRepository.findByPublishedTrue();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list published projects", e);
+        }
+    }
+
+    @Override
+    public Page<Project> listPublishedProject(Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            return projectRepository.findAll(
+                    (Specification<Project>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("published"), true));
+                        predicates.add(cb.notEqual(root.get("type"), 0));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list published projects with pageable", e);
+        }
+    }
+
+    @Override
+    public List<Project> listPublishedProjectByType(Integer type) {
+        requireNonNull(type, "type must not be null");
+        try {
+            return projectRepository.findAll(
+                    (Specification<Project>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("published"), true));
+                        predicates.add(cb.equal(root.get("type"), type));
+                        predicates.add(cb.notEqual(root.get("type"), 0));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    });
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list published projects by type: " + type, e);
+        }
+    }
+
+    @Override
+    public Page<Project> listPublishedProjectByType(Integer type, Pageable pageable) {
+        requireNonNull(type, "type must not be null");
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            return projectRepository.findAll(
+                    (Specification<Project>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("published"), true));
+                        predicates.add(cb.equal(root.get("type"), type));
+                        predicates.add(cb.notEqual(root.get("type"), 0));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list published projects by type with pageable: " + type, e);
+        }
+    }
+
+    @Override
+    public Page<Project> listPublishedProject(String query, Pageable pageable) {
+        requireNonNull(query, "query must not be null");
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            String searchKeyword = query.trim();
+            return projectRepository.findAll(
+                    (Specification<Project>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("published"), true));
+                        Predicate titlePredicate = cb.like(root.get("title"), "%" + searchKeyword + "%");
+                        Predicate contentPredicate = cb.like(root.get("content"), "%" + searchKeyword + "%");
+                        Predicate techsPredicate = cb.like(root.get("techs"), "%" + searchKeyword + "%");
+                        Predicate searchPredicate = cb.or(titlePredicate, contentPredicate, techsPredicate);
+                        predicates.add(searchPredicate);
+                        predicates.add(cb.notEqual(root.get("type"), 0));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to search published projects with query: " + query, e);
         }
     }
 }

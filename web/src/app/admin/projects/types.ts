@@ -16,6 +16,7 @@ export interface Project {
   type: number
   techs: string
   recommend?: boolean
+  published?: boolean
   inputVisible?: boolean
   inputValue?: string
   editingTitle?: boolean
@@ -51,6 +52,7 @@ export interface ProjectFilters {
   type: number
   searchQuery: string
   status: 'all' | 'recommended' | 'unrecommended'
+  publishStatus: 'all' | 'published' | 'unpublished'
   sortBy: 'created' | 'name' | 'progress'
   sortOrder: 'asc' | 'desc'
 }

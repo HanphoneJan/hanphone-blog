@@ -26,6 +26,14 @@ public interface EssayService {
     Essay updateLikes(Long userId,Long essayId, boolean isLike);
     Boolean changeRecommend(Long essayId, Boolean recommend);
 
+    List<Essay> listPublishedEssay(Long userId);
+
+    Page<Essay> listPublishedEssay(Long userId, Pageable pageable);
+
+    Page<Essay> listPublishedEssay(String query, Pageable pageable);
+
+    Boolean changePublished(Long essayId, Boolean published);
+
     Essay getEssayDetail(Long userId, Long id);
 
     Page<Essay> listEssay(String query, Pageable pageable);

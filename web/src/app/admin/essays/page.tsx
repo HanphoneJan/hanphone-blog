@@ -63,6 +63,8 @@ export default function EssayManagementPage() {
     toggleSortOrder,
     updateRecommendLoading,
     toggleRecommend,
+    updatePublishedLoading,
+    togglePublished,
     deleteEssay,
     saveEssay,
     getEssayList,
@@ -249,7 +251,9 @@ export default function EssayManagementPage() {
               sortOrder={sortOrder}
               onToggleSort={toggleSortOrder}
               updateRecommendLoading={updateRecommendLoading}
+              updatePublishedLoading={updatePublishedLoading}
               onToggleRecommend={toggleRecommend}
+              onTogglePublished={togglePublished}
               onEdit={handleEdit}
               onDelete={openDeleteModal}
             />

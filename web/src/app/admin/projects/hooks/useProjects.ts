@@ -29,12 +29,14 @@ export const useProjects = () => {
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
   const [updateRecommendLoading, setUpdateRecommendLoading] = useState<number | null>(null)
+  const [updatePublishedLoading, setUpdatePublishedLoading] = useState<number | null>(null)
 
   // 筛选状态
   const [filters, setFilters] = useState<ProjectFilters>({
     type: -1,
     searchQuery: '',
     status: 'all',
+    publishStatus: 'all',
     sortBy: 'created',
     sortOrder: 'desc'
   })
@@ -81,7 +83,8 @@ export const useProjects = () => {
     const filtered = filterProjects(projectList, {
       type: filters.type,
       searchQuery: filters.searchQuery,
-      status: filters.status
+      status: filters.status,
+      publishStatus: filters.publishStatus
     })
     return sortProjects(filtered, filters.sortBy, filters.sortOrder)
   }, [projectList, filters])
@@ -158,6 +161,34 @@ export const useProjects = () => {
     }
   }, [])
 
+  // 切换发布状态
+  const togglePublished = useCallback(async (project: Project) => {
+    try {
+      setUpdatePublishedLoading(project.id)
+
+      const response = await fetchData(ENDPOINTS.ADMIN.PROJECT_PUBLISHED, 'POST', {
+        projectId: project.id,
+        published: !project.published
+      })
+
+      if (response.code === 200) {
+        setProjectList(prev =>
+          prev.map(item =>
+            item.id === project.id ? { ...item, published: !project.published } : item
+          )
+        )
+        showAlert(project.published ? '取消发布成功' : '发布成功')
+      } else {
+        showAlert(project.published ? '取消发布失败' : '发布失败')
+      }
+    } catch (error) {
+      console.error('发布状态更新失败:', error)
+      showAlert(ADMIN_PROJECT_LABELS.OPERATION_FAIL)
+    } finally {
+      setUpdatePublishedLoading(null)
+    }
+  }, [])
+
   // 更新项目类型
   const handleTypeChange = useCallback((projectId: number | null, type: number) => {
     if (!projectId) return
@@ -196,6 +227,7 @@ export const useProjects = () => {
       type: -1,
       searchQuery: '',
       status: 'all',
+      publishStatus: 'all',
       sortBy: 'created',
       sortOrder: 'desc'
     })
@@ -339,10 +371,12 @@ export const useProjects = () => {
     localInputValues,
     deleteConfirm,
     updateRecommendLoading,
+    updatePublishedLoading,
     getProjectList,
     setDeleteConfirm,
     handleDeleteConfirm,
     toggleRecommend,
+    togglePublished,
     handleTypeChange,
     handleLocalInputChange,
     handleFilterChange,

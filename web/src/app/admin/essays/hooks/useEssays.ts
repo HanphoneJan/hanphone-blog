@@ -14,6 +14,7 @@ export function useEssays() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null)
   const [updateRecommendLoading, setUpdateRecommendLoading] = useState<number | null>(null)
+  const [updatePublishedLoading, setUpdatePublishedLoading] = useState<number | null>(null)
 
   // API调用函数
   const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
@@ -45,6 +46,7 @@ export function useEssays() {
           ...item,
           vis: false,
           recommend: item.recommend || false,
+          published: item.published || false,
           essayFileUrls: (item.essayFileUrls || []).map(file => ({
             ...file,
             name: file.name || file.url.split('/').pop() || `文件${file.id}`
@@ -123,6 +125,34 @@ export function useEssays() {
     }
   }
 
+  // 切换发布状态
+  const togglePublished = async (essay: Essay) => {
+    if (!essay.id) return
+
+    try {
+      setUpdatePublishedLoading(essay.id)
+
+      const response = await fetchData(ENDPOINTS.ADMIN.ESSAY_PUBLISHED, 'POST', {
+        essayId: essay.id,
+        published: !essay.published
+      })
+
+      if (response.code === 200) {
+        setEssayList(prev =>
+          prev.map(item => (item.id === essay.id ? { ...item, published: !essay.published } : item))
+        )
+        showAlert(essay.published ? '取消发布成功' : '发布成功')
+      } else {
+        showAlert(essay.published ? '取消发布失败' : '发布失败')
+      }
+    } catch (error) {
+      console.error('发布状态更新失败:', error)
+      showAlert(ADMIN_ESSAY_LABELS.OPERATION_FAIL)
+    } finally {
+      setUpdatePublishedLoading(null)
+    }
+  }
+
   // 删除随笔
   const deleteEssay = async (id: number): Promise<boolean> => {
     try {
@@ -146,7 +176,11 @@ export function useEssays() {
   const saveEssay = async (essayData: Essay): Promise<boolean> => {
     try {
       setLoading(true)
-      const data = await fetchData(ENDPOINTS.ADMIN.ESSAY, 'POST', { essay: essayData })
+      const dataToSave = {
+        ...essayData,
+        published: essayData.id === null ? true : (essayData.published !== false)
+      }
+      const data = await fetchData(ENDPOINTS.ADMIN.ESSAY, 'POST', { essay: dataToSave })
       setLoading(false)
 
       if (data.code === 200) {
@@ -175,6 +209,8 @@ export function useEssays() {
     toggleSortOrder,
     updateRecommendLoading,
     toggleRecommend,
+    updatePublishedLoading,
+    togglePublished,
     deleteEssay,
     saveEssay,
     getEssayList,

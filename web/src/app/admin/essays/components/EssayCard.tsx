@@ -1,6 +1,6 @@
 'use client'
 
-import { Edit3, Trash2, Star, StarOff, Loader2, FileImage, FileVideo, FileText } from 'lucide-react'
+import { Edit3, Trash2, Star, StarOff, Eye, EyeOff, Loader2, FileImage, FileVideo, FileText } from 'lucide-react'
 import type { Essay } from '../types'
 import { formatDate, countFilesByType, getFileName } from '../utils'
 
@@ -9,7 +9,9 @@ interface EssayCardProps {
   index: number
   isMobile: boolean
   updateRecommendLoading: number | null
+  updatePublishedLoading: number | null
   onToggleRecommend: (essay: Essay) => void
+  onTogglePublished: (essay: Essay) => void
   onEdit: (essay: Essay) => void
   onDelete: (id: number) => void
 }
@@ -19,7 +21,9 @@ export function EssayCard({
   index,
   isMobile,
   updateRecommendLoading,
+  updatePublishedLoading,
   onToggleRecommend,
+  onTogglePublished,
   onEdit,
   onDelete
 }: EssayCardProps) {
@@ -53,6 +57,24 @@ export function EssayCard({
   // 渲染操作按钮
   const renderActions = () => (
     <>
+      <button
+        onClick={() => onTogglePublished(essay)}
+        disabled={updatePublishedLoading === essay.id}
+        className={`p-1.5 rounded-full transition-colors ${
+          essay.published
+            ? 'bg-green-100/60 text-green-600 hover:bg-green-100/80'
+            : 'bg-[rgb(var(--hover))]/60 text-[rgb(var(--muted))] hover:bg-[rgb(var(--hover))]/80'
+        }`}
+        title={essay.published ? '取消发布' : '发布'}
+      >
+        {updatePublishedLoading === essay.id ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : essay.published ? (
+          <Eye className="h-4 w-4" />
+        ) : (
+          <EyeOff className="h-4 w-4" />
+        )}
+      </button>
       <button
         onClick={() => onToggleRecommend(essay)}
         disabled={updateRecommendLoading === essay.id}
@@ -148,6 +170,26 @@ export function EssayCard({
       </td>
       <td className="py-3 px-4 border-b border-[rgb(var(--border))]/30 text-[rgb(var(--muted))] text-sm">
         {formatDate(essay.createTime)}
+      </td>
+      <td className="py-3 px-4 border-b border-[rgb(var(--border))]/30">
+        <button
+          onClick={() => onTogglePublished(essay)}
+          disabled={updatePublishedLoading === essay.id}
+          className={`p-1.5 rounded-full transition-colors ${
+            essay.published
+              ? 'bg-green-100/60 text-green-600 hover:bg-green-100/80'
+              : 'bg-[rgb(var(--hover))]/60 text-[rgb(var(--muted))] hover:bg-[rgb(var(--hover))]/80'
+          }`}
+          title={essay.published ? '取消发布' : '发布'}
+        >
+          {updatePublishedLoading === essay.id ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : essay.published ? (
+            <Eye className="h-4 w-4" />
+          ) : (
+            <EyeOff className="h-4 w-4" />
+          )}
+        </button>
       </td>
       <td className="py-3 px-4 border-b border-[rgb(var(--border))]/30">
         <button

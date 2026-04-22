@@ -1,6 +1,6 @@
 'use client'
 
-import { Edit2, Save, X, Upload as UploadIcon, Trash2, Loader2 } from 'lucide-react'
+import { Edit2, Save, X, Upload as UploadIcon, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Project } from '../types'
@@ -18,6 +18,7 @@ interface ProjectCardProps {
     techInput?: string
   }
   updateRecommendLoading: boolean
+  updatePublishedLoading: boolean
   imageUploadRef: React.RefObject<HTMLInputElement | null>
   onEditTitle: (projectId: number | null) => void
   onSaveTitle: (projectId: number | null) => void
@@ -38,6 +39,7 @@ interface ProjectCardProps {
   onConfirmTagInput: (project: Project) => void
   onRemoveTag: (index: number, project: Project) => void
   onToggleRecommend: (project: Project) => void
+  onTogglePublished: (project: Project) => void
   onDelete: (projectId: number | null) => void
 }
 
@@ -45,6 +47,7 @@ export const ProjectCard = ({
   project,
   localValues,
   updateRecommendLoading,
+  updatePublishedLoading,
   imageUploadRef,
   onEditTitle,
   onSaveTitle,
@@ -65,6 +68,7 @@ export const ProjectCard = ({
   onConfirmTagInput,
   onRemoveTag,
   onToggleRecommend,
+  onTogglePublished,
   onDelete
 }: ProjectCardProps) => {
   const projectId = project.id
@@ -316,6 +320,26 @@ export const ProjectCard = ({
 
               {/* 操作按钮 */}
               <div className="flex items-end justify-end gap-2">
+                <button
+                  onClick={() => onTogglePublished(project)}
+                  disabled={updatePublishedLoading}
+                  className={`px-4 py-2 rounded transition-colors text-sm flex items-center gap-2 ${
+                    project.published
+                      ? 'bg-green-100/60 text-green-600 hover:bg-green-100/80'
+                      : 'bg-[rgb(var(--hover))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--muted))]'
+                  }`}
+                  title={project.published ? '取消发布' : '发布'}
+                >
+                  {updatePublishedLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : project.published ? (
+                    <Eye className="h-4 w-4" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
+                  {project.published ? '已发布' : '未发布'}
+                </button>
+
                 <StatusBadge
                   recommend={project.recommend}
                   loading={updateRecommendLoading}

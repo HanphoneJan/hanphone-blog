@@ -41,9 +41,9 @@ public class EssayShowController {
         if (page != null && pageSize != null) {
             Sort sort = Sort.by(Sort.Direction.DESC, "createTime");
             Pageable pageable = PageRequest.of(page - 1, pageSize, sort);
-            return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listEssay(userId, pageable));
+            return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listPublishedEssay(userId, pageable));
         }
-        return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listEssay(userId));
+        return new Result<>(true, StatusCode.OK, "获取随笔列表成功", essayService.listPublishedEssay(userId));
     }
 
     @GetMapping("/getRecommendEssayList")
@@ -65,7 +65,7 @@ public class EssayShowController {
     public Result<Page<Essay>> search(
             @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {"createTime"}, direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam String query) {
-        return new Result<>(true, StatusCode.OK, "搜索随笔成功", essayService.listEssay(query, pageable));
+        return new Result<>(true, StatusCode.OK, "搜索随笔成功", essayService.listPublishedEssay(query, pageable));
     }
 
     /**

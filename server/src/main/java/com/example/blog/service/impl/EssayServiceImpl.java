@@ -235,6 +235,99 @@ public class EssayServiceImpl implements EssayService {
     }
 
     @Override
+    @Transactional
+    public Boolean changePublished(Long id, Boolean published) {
+        requireNonNull(id, "essay id must not be null");
+        requireNonNull(published, "published flag must not be null");
+        try {
+            int affectedRows = essayRepository.updatePublished(id, published);
+            return affectedRows > 0;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to change published status for essay: " + id, e);
+        }
+    }
+
+    @Override
+    public List<Essay> listPublishedEssay(Long userId) {
+        try {
+            List<Essay> essays = essayRepository.findByPublishedTrue();
+            essays.forEach(essay -> {
+                Objects.requireNonNull(essay, "essay must not be null");
+                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
+                Optional<UserEssayLike> existingLike = userId != null
+                        ? userEssayLikeRepository.findByUserIdAndEssayId(userId, essay.getId())
+                        : Optional.empty();
+                essay.setEssayFileUrls(fileUrls);
+                essay.setLiked(existingLike.isPresent());
+                fillParentCommentId(essay);
+            });
+            return essays;
+        } catch (Exception e) {
+            throw new RuntimeException("获取已发布随笔列表失败", e);
+        }
+    }
+
+    @Override
+    public Page<Essay> listPublishedEssay(Long userId, Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            Page<Essay> essays = essayRepository.findAll((Specification<Essay>) (root, cq, cb) -> {
+                List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.equal(root.get("published"), true));
+                if (userId != null) {
+                    predicates.add(cb.equal(root.get("user").get("id"), userId));
+                }
+                cq.where(predicates.toArray(new Predicate[0]));
+                return null;
+            }, pageable);
+
+            return essays.map(essay -> {
+                Objects.requireNonNull(essay, "essay must not be null");
+                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
+                Optional<UserEssayLike> existingLike = userId != null
+                        ? userEssayLikeRepository.findByUserIdAndEssayId(userId, essay.getId())
+                        : Optional.empty();
+                essay.setEssayFileUrls(fileUrls);
+                essay.setLiked(existingLike.isPresent());
+                fillParentCommentId(essay);
+                return essay;
+            });
+        } catch (Exception e) {
+            throw new RuntimeException("获取已发布随笔分页列表失败", e);
+        }
+    }
+
+    @Override
+    public Page<Essay> listPublishedEssay(String query, Pageable pageable) {
+        requireNonNull(query, "query must not be null");
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            String searchKeyword = query.trim();
+            Page<Essay> essays = essayRepository.findAll(
+                    (Specification<Essay>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("published"), true));
+                        Predicate titlePredicate = cb.like(root.get("title"), "%" + searchKeyword + "%");
+                        Predicate contentPredicate = cb.like(root.get("content"), "%" + searchKeyword + "%");
+                        Predicate searchPredicate = cb.or(titlePredicate, contentPredicate);
+                        predicates.add(searchPredicate);
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable);
+
+            return essays.map(essay -> {
+                Objects.requireNonNull(essay, "essay must not be null");
+                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
+                essay.setEssayFileUrls(fileUrls);
+                fillParentCommentId(essay);
+                return essay;
+            });
+        } catch (Exception e) {
+            throw new RuntimeException("搜索已发布随笔失败，关键字: " + query, e);
+        }
+    }
+
+    @Override
     public Essay getEssayDetail(Long userId, Long id) {
         Objects.requireNonNull(id, "essay id must not be null");
         try {
@@ -293,7 +386,14 @@ public class EssayServiceImpl implements EssayService {
         }
         try {
             org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, size);
-            List<Essay> essays = essayRepository.findTop(pageable);
+            List<Essay> essays = essayRepository.findAll(
+                    (Specification<Essay>) (root, cq, cb) -> {
+                        List<Predicate> predicates = new ArrayList<>();
+                        predicates.add(cb.equal(root.get("recommend"), true));
+                        predicates.add(cb.equal(root.get("published"), true));
+                        cq.where(predicates.toArray(new Predicate[0]));
+                        return null;
+                    }, pageable).getContent();
             essays.forEach(essay -> {
                 Objects.requireNonNull(essay, "essay must not be null");
                 List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());

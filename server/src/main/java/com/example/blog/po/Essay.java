@@ -38,6 +38,9 @@ public class Essay {
     @Column(name = "recommend")
     private boolean recommend;
 
+    @Column(name = "published")
+    private Boolean published = false;
+
     @Column(name = "image")
     private String image;
 
@@ -54,5 +57,12 @@ public class Essay {
     @OneToMany(mappedBy = "essay", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("essay")
     private List<EssayComment> essayComments = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        if (published == null) {
+            published = false;
+        }
+    }
 
 }

@@ -191,7 +191,8 @@ export const useProjectForm = (onSuccess: () => void) => {
         url: formData.url,
         techs: formData.techs,
         type: formData.type,
-        recommend: false
+        recommend: false,
+        published: true
       }
 
       const res = await fetchData(ENDPOINTS.ADMIN.PROJECT, 'POST', { project: projectData })

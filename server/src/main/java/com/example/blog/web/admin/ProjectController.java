@@ -67,4 +67,25 @@ public class ProjectController {
         }
     }
 
+    @PostMapping("/projects/published")
+    public Result<Void> published(@RequestBody Map<String, Object> para) {
+        Object projectIdObj = para.get("projectId");
+        if (projectIdObj == null) {
+            return new Result<>(false, StatusCode.ERROR, "projectId不能为空");
+        }
+        if (!(projectIdObj instanceof Number)) {
+            return new Result<>(false, StatusCode.ERROR, "projectId必须是数字类型");
+        }
+        Long projectId = ((Number) projectIdObj).longValue();
+        Boolean published = (Boolean) para.get("published");
+        try {
+            if (projectService.changePublished(projectId, published)) {
+                return new Result<>(true, StatusCode.OK, "操作成功");
+            }
+            return new Result<>(false, StatusCode.ERROR, "操作失败");
+        } catch (Exception e) {
+            return new Result<>(false, StatusCode.ERROR, "操作失败");
+        }
+    }
+
 }

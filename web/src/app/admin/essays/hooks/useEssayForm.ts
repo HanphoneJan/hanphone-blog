@@ -12,7 +12,8 @@ const initialEssay: Essay = {
   content: '',
   createTime: '',
   essayFileUrls: [],
-  recommend: false
+  recommend: false,
+  published: false
 }
 
 export function useEssayForm() {
@@ -86,7 +87,8 @@ export function useEssayForm() {
       ...essay,
       essayFileUrls: allFiles,
       createTime: essay.createTime || new Date().toISOString(),
-      user_id: userInfo?.id || 1000
+      user_id: userInfo?.id || 1000,
+      published: essay.id === null ? true : (essay.published !== false)
     }
   }, [essay, userInfo?.id])
 

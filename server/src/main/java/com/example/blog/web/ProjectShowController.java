@@ -44,18 +44,18 @@ public class ProjectShowController {
             Pageable pageable = PageRequest.of(page - 1, pageSize, sort);
             if (type != null) {
                 return new Result<>(true, StatusCode.OK, "获取项目列表成功",
-                        projectService.listProjectByType(type, pageable));
+                        projectService.listPublishedProjectByType(type, pageable));
             }
             return new Result<>(true, StatusCode.OK, "获取项目列表成功",
-                    projectService.listProject(pageable));
+                    projectService.listPublishedProject(pageable));
         }
         // 不传分页参数，返回列表
         if (type != null) {
             return new Result<>(true, StatusCode.OK, "获取项目列表成功",
-                    projectService.listProjectByType(type));
+                    projectService.listPublishedProjectByType(type));
         }
         // 前台接口过滤掉 type=0（不展示）的项目
-        List<Project> projects = projectService.listProject();
+        List<Project> projects = projectService.listPublishedProject();
         List<Project> filtered = projects.stream()
                 .filter(p -> p.getType() != null && p.getType() != 0)
                 .collect(Collectors.toList());
@@ -71,6 +71,6 @@ public class ProjectShowController {
     public Result<Page<Project>> search(
             @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam String query) {
-        return new Result<>(true, StatusCode.OK, "搜索项目成功", projectService.listProject(query, pageable));
+        return new Result<>(true, StatusCode.OK, "搜索项目成功", projectService.listPublishedProject(query, pageable));
     }
 }
