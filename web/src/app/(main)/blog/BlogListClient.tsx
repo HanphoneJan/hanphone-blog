@@ -286,12 +286,12 @@ export default function BlogListClient({
       <BgOverlay />
 
       <main className="blog-main-prose w-full bg-[rgb(var(--bg)/0.8)] px-4 sm:px-6 lg:px-8 py-6 relative z-10 page-blog">
-        {/* 三栏布局 */}
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_240px] gap-6">
+        {/* 三栏布局 - 固定高度，支持独立滚动 */}
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_240px] gap-6 lg:h-[calc(100vh-120px)]">
 
           {/* 左侧目录树 - 桌面端 */}
-          <aside className="hidden lg:block shrink-0">
-            <nav className="blog-nav-sidebar blog-page-scrollbar pr-2">
+          <aside className="hidden lg:block shrink-0 lg:overflow-y-auto lg:blog-page-scrollbar pr-2">
+            <nav className="blog-nav-sidebar">
               <BlogCategoryTree
                 types={typeList}
                 blogsByType={blogsByType}
@@ -333,7 +333,7 @@ export default function BlogListClient({
           )}
 
           {/* 中间内容区 */}
-          <div className="min-w-0">
+          <div className="min-w-0 lg:overflow-y-auto lg:blog-page-scrollbar lg:px-2">
             {/* 顶部工具栏 */}
             <div className="flex items-center justify-between mb-6">
               {/* 移动端布局 */}
@@ -463,8 +463,8 @@ export default function BlogListClient({
           </div>
 
           {/* 右侧筛选面板 - 桌面端 */}
-          <aside className="hidden lg:block shrink-0">
-            <div className="blog-filter-sidebar blog-page-scrollbar pl-2">
+          <aside className="hidden lg:block shrink-0 lg:overflow-y-auto lg:blog-page-scrollbar pl-2">
+            <div className="blog-filter-sidebar">
               <BlogFilterPanel
                 types={typeList}
                 blogsByType={blogsByType}
