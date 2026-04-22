@@ -22,6 +22,7 @@ import { FeaturedCard } from './components/FeaturedCard'
 import { ArticleRow } from './components/ArticleRow'
 import { BlogCategoryTree } from './components/BlogCategoryTree'
 import { BlogFilterPanel } from './components/BlogFilterPanel'
+import { Pagination } from '../components/Pagination'
 import type { Blog, Type, Tag, PageInfo, BlogsByType } from './types'
 
 interface BlogListClientProps {
@@ -63,6 +64,7 @@ export default function BlogListClient({
   const [pageInfo, setPageInfo] = useState<PageInfo>(initialPageInfo)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
+  const [inputPage, setInputPage] = useState(pageInfo.current)
 
   // 是否展示推荐博客：仅第一页且无筛选条件
   const showRecommendBlogs = useMemo(() => {
@@ -263,28 +265,18 @@ export default function BlogListClient({
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pageInfo.totalPages) {
       setPageInfo(prev => ({ ...prev, current: newPage }))
+      setInputPage(newPage)
       fetchBlogList(newPage)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
-  const generatePageNumbers = () => {
-    const pages: (number | string)[] = []
-    const current = pageInfo.current
-    const totalPages = pageInfo.totalPages
+  const handlePageInputChange = (newPage: number) => {
+    setInputPage(newPage)
+  }
 
-    if (totalPages <= PAGINATION.ELLIPSIS_THRESHOLD) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i)
-    } else {
-      pages.push(1)
-      if (current > 3) pages.push('...')
-      if (current > 2) pages.push(current - 1)
-      if (current !== 1 && current !== totalPages) pages.push(current)
-      if (current < totalPages - 1) pages.push(current + 1)
-      if (current < totalPages - 2) pages.push('...')
-      pages.push(totalPages)
-    }
-    return pages
+  const isCompactLayout = () => {
+    return typeof window !== 'undefined' && window.innerWidth < 640
   }
 
   const hasActiveFilter = selectedTypeId !== null || selectedTagId !== null
@@ -344,25 +336,36 @@ export default function BlogListClient({
           <div className="min-w-0">
             {/* 顶部工具栏 */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* 移动端按钮组 */}
-                <div className="flex items-center gap-2 lg:hidden">
-                  <button
-                    onClick={() => setMobileNavOpen(true)}
-                    className="p-2 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors"
-                    title="打开目录"
-                  >
-                    <ListTree className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setMobileFilterOpen(true)}
-                    className="p-2 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors"
-                    title="打开筛选"
-                  >
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </button>
+              {/* 移动端布局 */}
+              <div className="flex items-center justify-between w-full lg:hidden">
+                <button
+                  onClick={() => setMobileNavOpen(true)}
+                  className="p-2 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors"
+                  title="打开目录"
+                >
+                  <ListTree className="h-4 w-4" />
+                </button>
+
+                <div className="flex items-baseline gap-3">
+                  <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+                    {filterStatusText || BLOG_LABELS.ALL_CATEGORIES}
+                  </h2>
+                  <span className="text-sm text-[rgb(var(--text-muted))]">
+                    共 {pageInfo.total} 篇
+                  </span>
                 </div>
 
+                <button
+                  onClick={() => setMobileFilterOpen(true)}
+                  className="p-2 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors"
+                  title="打开筛选"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* 桌面端布局 */}
+              <div className="hidden lg:flex items-center gap-3">
                 <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
                   {filterStatusText || BLOG_LABELS.ALL_CATEGORIES}
                 </h2>
@@ -375,7 +378,7 @@ export default function BlogListClient({
               {hasActiveFilter && (
                 <button
                   onClick={resetFilters}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.08)] transition-colors"
+                  className="hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.08)] transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
                   重置
@@ -446,40 +449,14 @@ export default function BlogListClient({
 
                 {/* 分页 */}
                 {pageInfo.totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-2 pt-6">
-                    <button
-                      onClick={() => handlePageChange(pageInfo.current - 1)}
-                      disabled={pageInfo.current === 1}
-                      className="px-3 py-2 rounded-lg bg-[rgb(var(--muted))] text-[rgb(var(--text))] hover:bg-[rgb(var(--primary)/0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors blog-text-sm"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-
-                    {generatePageNumbers().map((page, index) => (
-                      <button
-                        key={index}
-                        onClick={() => typeof page === 'number' && handlePageChange(page)}
-                        disabled={typeof page !== 'number'}
-                        className={`px-4 py-2 rounded-lg transition-colors blog-text-sm ${
-                          typeof page === 'number' && page === pageInfo.current
-                            ? 'bg-[rgb(var(--primary))] text-white'
-                            : typeof page === 'number'
-                            ? 'bg-[rgb(var(--muted))] text-[rgb(var(--text))] hover:bg-[rgb(var(--primary)/0.1)]'
-                            : 'bg-transparent text-[rgb(var(--text-muted))] cursor-default'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
-                    <button
-                      onClick={() => handlePageChange(pageInfo.current + 1)}
-                      disabled={pageInfo.current === pageInfo.totalPages}
-                      className="px-3 py-2 rounded-lg bg-[rgb(var(--muted))] text-[rgb(var(--text))] hover:bg-[rgb(var(--primary)/0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors blog-text-sm"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <Pagination
+                    totalcount={pageInfo.total}
+                    currentPage={pageInfo.current}
+                    pageSize={pageInfo.size}
+                    isCompact={isCompactLayout()}
+                    onPageChange={handlePageChange}
+                    onInputChange={handlePageInputChange}
+                  />
                 )}
               </div>
             )}
