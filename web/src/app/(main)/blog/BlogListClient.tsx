@@ -1,15 +1,13 @@
 'use client'
 
-import Link from 'next/link'
 import BgOverlay from '@/app/(main)/components/BgOverlay'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  BookOpen,
-  Filter,
+  ListTree,
+  SlidersHorizontal,
   X,
 } from 'lucide-react'
 import {
@@ -22,52 +20,13 @@ import { BLOG_LABELS } from '@/lib/labels'
 import { ENDPOINTS } from '@/lib/api'
 import { FeaturedCard } from './components/FeaturedCard'
 import { ArticleRow } from './components/ArticleRow'
-import { TagCloud } from './components/TagCloud'
-
-interface Tag {
-  id: number
-  name: string
-  blogCount?: number
-}
-
-// 导出类型供子组件使用
-export interface Blog {
-  id: number
-  title: string
-  description: string
-  firstPicture: string
-  createTime: string
-  views: number
-  recommend: boolean
-  type: {
-    id: number
-    name: string
-  }
-  user: {
-    avatar: string
-    nickname: string
-  }
-}
-
-interface Type {
-  id: number
-  name: string
-}
-
-interface PageInfo {
-  current: number
-  size: number
-  total: number
-  totalPages: number
-}
-
-// 按分类分组的博客摘要（用于侧栏二级导航）
-interface BlogsByType {
-  [typeId: number]: { id: number; title: string }[]
-}
+import { BlogCategoryTree } from './components/BlogCategoryTree'
+import { BlogFilterPanel } from './components/BlogFilterPanel'
+import type { Blog, Type, Tag, PageInfo, BlogsByType } from './types'
 
 interface BlogListClientProps {
   initialBlogs: Blog[]
+  initialRecommendBlogs: Blog[]
   initialTypes: Type[]
   initialPageInfo: PageInfo
   initialTags?: Tag[]
@@ -75,6 +34,7 @@ interface BlogListClientProps {
 
 export default function BlogListClient({
   initialBlogs,
+  initialRecommendBlogs,
   initialTypes,
   initialPageInfo,
   initialTags = []
@@ -102,22 +62,27 @@ export default function BlogListClient({
   const [loading, setLoading] = useState(false)
   const [pageInfo, setPageInfo] = useState<PageInfo>(initialPageInfo)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
 
-  // 分离推荐文章和普通文章
-  const { recommendBlogs, normalBlogs } = useMemo(() => {
-    const recommends = blogList.filter(b => b.recommend)
-    const normals = blogList.filter(b => !b.recommend)
-    return { recommendBlogs: recommends, normalBlogs: normals }
-  }, [blogList])
+  // 是否展示推荐博客：仅第一页且无筛选条件
+  const showRecommendBlogs = useMemo(() => {
+    return pageInfo.current === 1 &&
+      selectedTypeId === null &&
+      selectedTagId === null
+  }, [pageInfo.current, selectedTypeId, selectedTagId])
 
-  // 获取当前选中的分类名称
-  const currentTypeName = useMemo(() => {
-    if (selectedTypeId === null && selectedTagId === null) return null
+  // 获取当前筛选状态文本
+  const filterStatusText = useMemo(() => {
+    if (selectedTypeId !== null && selectedTagId !== null) {
+      const typeName = typeList.find(t => t.id === selectedTypeId)?.name
+      const tagName = tagList.find(t => t.id === selectedTagId)?.name
+      return `分类: ${typeName} · 标签: ${tagName}`
+    }
     if (selectedTypeId !== null) {
       return typeList.find(t => t.id === selectedTypeId)?.name
     }
     if (selectedTagId !== null) {
-      return tagList.find(t => t.id === selectedTagId)?.name
+      return `标签: ${tagList.find(t => t.id === selectedTagId)?.name}`
     }
     return null
   }, [selectedTypeId, selectedTagId, typeList, tagList])
@@ -182,7 +147,6 @@ export default function BlogListClient({
       await Promise.all(
         typeList.map(async (type) => {
           try {
-            // 使用正确的后端 API 端点
             const res = await fetch(
               `${ENDPOINTS.TYPE_BLOGS(type.id)}?${API_PARAMS.PAGE_NUM}=0&${API_PARAMS.PAGE_SIZE}=${BLOG_LIST_CONFIG.TYPE_BLOGS_PAGE_SIZE}`
             )
@@ -202,6 +166,38 @@ export default function BlogListClient({
     }
   }, [typeList])
 
+  // 客户端 fallback：如果服务端未获取到分类，从客户端获取
+  useEffect(() => {
+    if (typeList.length === 0) {
+      fetch(ENDPOINTS.TYPE_LIST)
+        .then(res => res.json())
+        .then(data => {
+          if (data.code === 200 && data.data) {
+            setTypeList(data.data)
+          }
+        })
+        .catch(err => console.error('客户端获取分类失败:', err))
+    }
+  }, [typeList.length])
+
+  // 客户端 fallback：如果服务端未获取到标签，从客户端获取
+  useEffect(() => {
+    if (tagList.length === 0) {
+      fetch(ENDPOINTS.FULL_TAG_LIST)
+        .then(res => res.json())
+        .then(data => {
+          if (data.code === 200 && data.data) {
+            setTagList(data.data.map((tag: { id: number; name: string; blogNumber?: number }) => ({
+              id: tag.id,
+              name: tag.name,
+              blogCount: tag.blogNumber || 0
+            })))
+          }
+        })
+        .catch(err => console.error('客户端获取标签失败:', err))
+    }
+  }, [tagList.length])
+
   useEffect(() => {
     if (typeList.length > 0) {
       fetchBlogsByType()
@@ -219,7 +215,6 @@ export default function BlogListClient({
     if (typeId !== null) {
       setExpandedTypes(prev => new Set(prev).add(typeId))
     }
-    // URL 参数变化时重新获取文章列表
     fetchBlogList(1)
   }, [searchParams])
 
@@ -241,7 +236,7 @@ export default function BlogListClient({
     setPageInfo(prev => ({ ...prev, current: 1 }))
     const url = tagId ? `${ROUTES.BLOG_LIST}?tagId=${tagId}` : ROUTES.BLOG_LIST
     router.push(url)
-    setMobileNavOpen(false)
+    setMobileFilterOpen(false)
   }
 
   const toggleTypeExpand = (typeId: number) => {
@@ -254,6 +249,15 @@ export default function BlogListClient({
       }
       return next
     })
+  }
+
+  const resetFilters = () => {
+    setSelectedTypeId(null)
+    setSelectedTagId(null)
+    setPageInfo(prev => ({ ...prev, current: 1 }))
+    router.push(ROUTES.BLOG_LIST)
+    setMobileNavOpen(false)
+    setMobileFilterOpen(false)
   }
 
   const handlePageChange = (newPage: number) => {
@@ -283,185 +287,100 @@ export default function BlogListClient({
     return pages
   }
 
-  // 渲染左侧导航内容
-  const renderSidebarContent = () => (
-    <>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="blog-text-lg font-semibold text-[rgb(var(--text))] flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-[rgb(var(--primary))]" />
-          {BLOG_LABELS.NAV_TITLE}
-        </h3>
-        {/* 移动端关闭按钮 */}
-        <button
-          onClick={() => setMobileNavOpen(false)}
-          className="lg:hidden p-1 rounded hover:bg-[rgb(var(--hover))]"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      <Link
-        href={ROUTES.BLOG_LIST}
-        onClick={() => handleTypeSelect(null)}
-        className={`block py-2 px-3 rounded-lg transition-colors blog-text-base mb-2 ${
-          selectedTypeId === null
-            ? 'bg-[rgb(var(--primary)/0.1)] text-[rgb(var(--primary))] font-medium'
-            : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--bg))]'
-        }`}
-      >
-        {BLOG_LABELS.ALL_CATEGORIES}
-      </Link>
-
-      {typeList.map((type) => {
-        const isExpanded = expandedTypes.has(type.id)
-        const subBlogs = blogsByType[type.id] || []
-        const isActive = selectedTypeId === type.id
-        const articleCount = subBlogs.length
-
-        return (
-          <div key={type.id} className="mb-1">
-            <div
-              className={`flex items-center justify-between py-2 px-3 rounded-lg transition-colors cursor-pointer ${
-                isActive
-                  ? 'bg-[rgb(var(--primary)/0.1)] text-[rgb(var(--primary))]'
-                  : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--bg))]'
-              }`}
-              onClick={() => handleTypeSelect(type.id)}
-            >
-              <span className="blog-text-base font-medium truncate flex-1">
-                {type.name}
-              </span>
-              {articleCount > 0 && (
-                <span className="text-xs text-[rgb(var(--text-muted))] mr-2">
-                  {articleCount}
-                </span>
-              )}
-              {subBlogs.length > 0 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleTypeExpand(type.id)
-                  }}
-                  className="p-0.5 rounded hover:bg-[rgb(var(--border)/0.3)] transition-colors"
-                  aria-label={isExpanded ? BLOG_LABELS.COLLAPSE : BLOG_LABELS.EXPAND}
-                >
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                  />
-                </button>
-              )}
-            </div>
-
-            {/* 二级导航 */}
-            {isExpanded && subBlogs.length > 0 && (
-              <div className="mt-0.5 space-y-0.5 pl-2 border-l border-[rgb(var(--blog-header-border))] ml-3 mb-3">
-                {subBlogs.slice(0, BLOG_LIST_CONFIG.SUB_NAV_LIMIT).map((blog) => (
-                  <Link
-                    key={blog.id}
-                    href={ROUTES.BLOG_DETAIL(blog.id)}
-                    className="block py-1.5 px-2 rounded blog-nav-item truncate transition-colors duration-150 blog-text-sm"
-                    title={blog.title}
-                    onClick={() => setMobileNavOpen(false)}
-                  >
-                    {blog.title}
-                  </Link>
-                ))}
-                {subBlogs.length > BLOG_LIST_CONFIG.SUB_NAV_LIMIT && (
-                  <div className="py-1 px-2 blog-text-xs text-[rgb(var(--text-muted))]">
-                    {BLOG_LABELS.ARTICLE_COUNT(subBlogs.length)}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )
-      })}
-
-      {/* 标签云 */}
-      {tagList.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-[rgb(var(--blog-header-border))]">
-          <TagCloud
-            tags={tagList}
-            selectedTagId={selectedTagId}
-            onTagClick={handleTagSelect}
-          />
-        </div>
-      )}
-    </>
-  )
+  const hasActiveFilter = selectedTypeId !== null || selectedTagId !== null
 
   return (
     <div className="min-h-screen z-1 flex flex-col bg-[rgb(var(--bg)/0.8)] text-[rgb(var(--text))]">
       <BgOverlay />
 
-      <main className="blog-main-prose w-full bg-[rgb(var(--bg)/0.8)] max-w-7xl mx-auto px-4 py-6 relative z-10 page-blog">
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8">
-          {/* 左侧导航 - 桌面端 */}
+      <main className="blog-main-prose w-full bg-[rgb(var(--bg)/0.8)] px-4 sm:px-6 lg:px-8 py-6 relative z-10 page-blog">
+        {/* 三栏布局 */}
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_240px] gap-6">
+
+          {/* 左侧目录树 - 桌面端 */}
           <aside className="hidden lg:block shrink-0">
-            <nav className="blog-nav-sidebar blog-page-scrollbar border-r border-[rgb(var(--blog-header-border))] pr-4">
-              {renderSidebarContent()}
+            <nav className="blog-nav-sidebar blog-page-scrollbar pr-2">
+              <BlogCategoryTree
+                types={typeList}
+                blogsByType={blogsByType}
+                selectedTypeId={selectedTypeId}
+                expandedTypes={expandedTypes}
+                onToggleExpand={toggleTypeExpand}
+                onSelectType={handleTypeSelect}
+              />
             </nav>
           </aside>
 
-          {/* 移动端抽屉导航 */}
+          {/* 左侧抽屉 - 移动端目录树 */}
           {mobileNavOpen && (
             <>
               <div
                 className="fixed inset-0 bg-black/30 z-40 lg:hidden"
                 onClick={() => setMobileNavOpen(false)}
               />
-              <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[rgb(var(--card))] z-50 lg:hidden shadow-xl p-4 overflow-y-auto">
-                {renderSidebarContent()}
+              <aside className="fixed left-0 top-0 bottom-0 w-72 bg-[rgb(var(--card))] z-50 lg:hidden shadow-xl p-4 overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-[rgb(var(--text))]">目录</h3>
+                  <button
+                    onClick={() => setMobileNavOpen(false)}
+                    className="p-1 rounded hover:bg-[rgb(var(--hover))]"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <BlogCategoryTree
+                  types={typeList}
+                  blogsByType={blogsByType}
+                  selectedTypeId={selectedTypeId}
+                  expandedTypes={expandedTypes}
+                  onToggleExpand={toggleTypeExpand}
+                  onSelectType={handleTypeSelect}
+                />
               </aside>
             </>
           )}
 
-          {/* 主内容区 */}
+          {/* 中间内容区 */}
           <div className="min-w-0">
             {/* 顶部工具栏 */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                {/* 移动端筛选按钮 */}
-                <button
-                  onClick={() => setMobileNavOpen(true)}
-                  className="lg:hidden p-2 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors"
-                >
-                  <Filter className="h-4 w-4" />
-                </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* 移动端按钮组 */}
+                <div className="flex items-center gap-2 lg:hidden">
+                  <button
+                    onClick={() => setMobileNavOpen(true)}
+                    className="p-2 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors"
+                    title="打开目录"
+                  >
+                    <ListTree className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setMobileFilterOpen(true)}
+                    className="p-2 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors"
+                    title="打开筛选"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </button>
+                </div>
+
                 <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-                  {currentTypeName || BLOG_LABELS.ALL_CATEGORIES}
+                  {filterStatusText || BLOG_LABELS.ALL_CATEGORIES}
                 </h2>
                 <span className="text-sm text-[rgb(var(--text-muted))]">
                   共 {pageInfo.total} 篇
                 </span>
               </div>
-            </div>
 
-            {/* 移动端：分类筛选条 */}
-            <div className="lg:hidden flex flex-wrap gap-2 mb-6 pb-4 border-b border-[rgb(var(--blog-header-border))]">
-              <button
-                onClick={() => handleTypeSelect(null)}
-                className={`px-3 py-1.5 rounded-full blog-text-sm transition-colors ${
-                  selectedTypeId === null
-                    ? 'bg-[rgb(var(--primary))] text-white'
-                    : 'bg-[rgb(var(--muted))] text-[rgb(var(--text))] hover:bg-[rgb(var(--primary)/0.1)]'
-                }`}
-              >
-                {BLOG_LABELS.ALL}
-              </button>
-              {typeList.map((type) => (
+              {/* 重置筛选按钮 */}
+              {hasActiveFilter && (
                 <button
-                  key={type.id}
-                  onClick={() => handleTypeSelect(type.id)}
-                  className={`px-3 py-1.5 rounded-full blog-text-sm transition-colors ${
-                    selectedTypeId === type.id
-                      ? 'bg-[rgb(var(--primary))] text-white'
-                      : 'bg-[rgb(var(--muted))] text-[rgb(var(--text))] hover:bg-[rgb(var(--primary)/0.1)]'
-                  }`}
+                  onClick={resetFilters}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.08)] transition-colors"
                 >
-                  {type.name}
+                  <X className="h-3.5 w-3.5" />
+                  重置
                 </button>
-              ))}
+              )}
             </div>
 
             {/* 加载状态 */}
@@ -488,7 +407,7 @@ export default function BlogListClient({
                   {BLOG_LABELS.NO_ARTICLES}
                 </div>
                 <button
-                  onClick={() => handleTypeSelect(null)}
+                  onClick={resetFilters}
                   className="text-[rgb(var(--primary))] hover:text-[rgb(var(--primary-hover))] blog-text-base hover:underline transition-colors"
                 >
                   {BLOG_LABELS.VIEW_ALL}
@@ -497,14 +416,14 @@ export default function BlogListClient({
             ) : (
               /* 文章列表 */
               <div className="space-y-8">
-                {/* 推荐文章区域 */}
-                {recommendBlogs.length > 0 && (
+                {/* 推荐博客区域 - 仅第一页且无筛选时显示 */}
+                {showRecommendBlogs && initialRecommendBlogs.length > 0 && (
                   <section>
                     <h3 className="text-sm font-medium text-[rgb(var(--text-muted))] uppercase tracking-wider mb-4">
                       推荐阅读
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {recommendBlogs.map((blog, index) => (
+                      {initialRecommendBlogs.map((blog, index) => (
                         <FeaturedCard key={blog.id} blog={blog} index={index} />
                       ))}
                     </div>
@@ -513,13 +432,13 @@ export default function BlogListClient({
 
                 {/* 普通文章列表 */}
                 <section>
-                  {recommendBlogs.length > 0 && (
+                  {showRecommendBlogs && initialRecommendBlogs.length > 0 && (
                     <h3 className="text-sm font-medium text-[rgb(var(--text-muted))] uppercase tracking-wider mb-4">
                       最新博客
                     </h3>
                   )}
                   <div className="space-y-2">
-                    {normalBlogs.map((blog, index) => (
+                    {blogList.map((blog, index) => (
                       <ArticleRow key={blog.id} blog={blog} index={index} />
                     ))}
                   </div>
@@ -565,6 +484,51 @@ export default function BlogListClient({
               </div>
             )}
           </div>
+
+          {/* 右侧筛选面板 - 桌面端 */}
+          <aside className="hidden lg:block shrink-0">
+            <div className="blog-filter-sidebar blog-page-scrollbar pl-2">
+              <BlogFilterPanel
+                types={typeList}
+                blogsByType={blogsByType}
+                selectedTypeId={selectedTypeId}
+                tags={tagList}
+                selectedTagId={selectedTagId}
+                onSelectType={handleTypeSelect}
+                onSelectTag={handleTagSelect}
+              />
+            </div>
+          </aside>
+
+          {/* 右侧抽屉 - 移动端筛选 */}
+          {mobileFilterOpen && (
+            <>
+              <div
+                className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+                onClick={() => setMobileFilterOpen(false)}
+              />
+              <aside className="fixed right-0 top-0 bottom-0 w-72 bg-[rgb(var(--card))] z-50 lg:hidden shadow-xl p-4 overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-[rgb(var(--text))]">筛选</h3>
+                  <button
+                    onClick={() => setMobileFilterOpen(false)}
+                    className="p-1 rounded hover:bg-[rgb(var(--hover))]"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <BlogFilterPanel
+                  types={typeList}
+                  blogsByType={blogsByType}
+                  selectedTypeId={selectedTypeId}
+                  tags={tagList}
+                  selectedTagId={selectedTagId}
+                  onSelectType={handleTypeSelect}
+                  onSelectTag={handleTagSelect}
+                />
+              </aside>
+            </>
+          )}
         </div>
       </main>
     </div>

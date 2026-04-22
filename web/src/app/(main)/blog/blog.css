@@ -37,6 +37,15 @@
   overflow-y: auto;
 }
 
+/* 博客列表页 - 右侧筛选面板 */
+.blog-filter-sidebar {
+  position: sticky;
+  top: 6rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+
 .blog-nav-category {
   font-weight: 600;
   color: rgb(var(--text));

@@ -2,44 +2,9 @@ import { ENDPOINTS } from '@/lib/api'
 import { PAGINATION } from '@/lib/constants'
 import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import BlogListClient from './BlogListClient'
+import type { Blog, Type, Tag, PageInfo } from './types'
 
 export const dynamic = 'force-dynamic'
-
-interface Blog {
-  id: number
-  title: string
-  description: string
-  firstPicture: string
-  createTime: string
-  views: number
-  recommend: boolean
-  type: {
-    id: number
-    name: string
-  }
-  user: {
-    avatar: string
-    nickname: string
-  }
-}
-
-interface Type {
-  id: number
-  name: string
-}
-
-interface Tag {
-  id: number
-  name: string
-  blogCount?: number
-}
-
-interface PageInfo {
-  current: number
-  size: number
-  total: number
-  totalPages: number
-}
 
 // 获取博客列表（服务端）
 async function fetchBlogs(): Promise<{ blogs: Blog[]; pageInfo: PageInfo }> {
@@ -65,6 +30,21 @@ async function fetchBlogs(): Promise<{ blogs: Blog[]; pageInfo: PageInfo }> {
   } catch (error) {
     console.error('Failed to fetch blogs:', error)
     return { blogs: [], pageInfo: { current: 1, size: PAGINATION.BLOG_PAGE_SIZE, total: 0, totalPages: 0 } }
+  }
+}
+
+// 获取推荐博客列表（服务端）
+async function fetchRecommendBlogs(): Promise<Blog[]> {
+  try {
+    const res = await fetch(ENDPOINTS.RECOMMEND_BLOG_LIST, { cache: 'no-store' })
+    const data = await res.json()
+    if (data.code === 200 && data.data) {
+      return data.data || []
+    }
+    return []
+  } catch (error) {
+    console.error('Failed to fetch recommend blogs:', error)
+    return []
   }
 }
 
@@ -102,8 +82,9 @@ async function fetchTags(): Promise<Tag[]> {
 
 // 服务端组件
 export default async function BlogListPage() {
-  const [{ blogs, pageInfo }, types, tags] = await Promise.all([
+  const [{ blogs, pageInfo }, recommendBlogs, types, tags] = await Promise.all([
     fetchBlogs(),
+    fetchRecommendBlogs(),
     fetchTypes(),
     fetchTags()
   ])
@@ -137,6 +118,7 @@ export default async function BlogListPage() {
       />
       <BlogListClient
         initialBlogs={blogs}
+        initialRecommendBlogs={recommendBlogs}
         initialTypes={types}
         initialPageInfo={pageInfo}
         initialTags={tags}

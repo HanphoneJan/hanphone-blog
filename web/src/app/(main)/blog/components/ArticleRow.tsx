@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Calendar, Eye } from 'lucide-react'
 import { ROUTES, ASSETS } from '@/lib/constants'
-import type { Blog } from '../BlogListClient'
+import type { Blog } from '../types'
 
 interface ArticleRowProps {
   blog: Blog
