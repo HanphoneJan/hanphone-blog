@@ -30,20 +30,12 @@
 
 /* 博客列表页 - 左侧文档式导航 */
 .blog-nav-sidebar {
-  position: sticky;
-  top: 6rem;
-  align-self: flex-start;
-  max-height: calc(100vh - 8rem);
-  overflow-y: auto;
+  /* 在独立滚动布局中不需要 sticky */
 }
 
 /* 博客列表页 - 右侧筛选面板 */
 .blog-filter-sidebar {
-  position: sticky;
-  top: 6rem;
-  align-self: flex-start;
-  max-height: calc(100vh - 8rem);
-  overflow-y: auto;
+  /* 在独立滚动布局中不需要 sticky */
 }
 
 .blog-nav-category {

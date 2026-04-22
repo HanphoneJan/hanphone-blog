@@ -89,15 +89,23 @@ export default function BlogListClient({
     return null
   }, [selectedTypeId, selectedTagId, typeList, tagList])
 
+  // 获取当前页应使用的 pageSize
+  const getPageSize = useCallback((page: number) => {
+    // 第一页使用较小的 pageSize（因为可能包含推荐博客）
+    // 后续页面使用更大的 pageSize
+    return page === 1 ? PAGINATION.BLOG_PAGE_SIZE : PAGINATION.BLOG_PAGE_SIZE_LARGE
+  }, [])
+
   // 客户端获取博客列表（用于分页和筛选）
   const fetchBlogList = useCallback(async (page: number = pageInfo.current) => {
     try {
       setLoading(true)
+      const pageSize = getPageSize(page)
 
       // 如果有选中标签，使用标签 API
       if (selectedTagId !== null) {
         const res = await fetch(
-          `${ENDPOINTS.TAG_BLOGS(selectedTagId)}?${API_PARAMS.PAGE_NUM}=${page - 1}&${API_PARAMS.PAGE_SIZE}=${pageInfo.size}`
+          `${ENDPOINTS.TAG_BLOGS(selectedTagId)}?${API_PARAMS.PAGE_NUM}=${page - 1}&${API_PARAMS.PAGE_SIZE}=${pageSize}`
         )
         const result = await res.json()
         if (result.data) {
@@ -106,7 +114,8 @@ export default function BlogListClient({
             ...prev,
             total: result.data.totalElements || 0,
             totalPages: result.data.totalPages || 1,
-            current: page
+            current: page,
+            size: pageSize
           }))
         }
         return
@@ -116,7 +125,7 @@ export default function BlogListClient({
       const params: Record<string, string> = {
         [API_PARAMS.QUERY]: '',
         [API_PARAMS.PAGE_NUM]: String(page),
-        [API_PARAMS.PAGE_SIZE]: String(pageInfo.size)
+        [API_PARAMS.PAGE_SIZE]: String(pageSize)
       }
       if (selectedTypeId !== null) {
         params[API_PARAMS.TYPE_ID] = String(selectedTypeId)
@@ -131,7 +140,8 @@ export default function BlogListClient({
           ...prev,
           total: result.data.totalElements,
           totalPages: result.data.totalPages,
-          current: result.data.number + 1
+          current: result.data.number + 1,
+          size: pageSize
         }))
       }
     } catch (error) {
@@ -139,7 +149,7 @@ export default function BlogListClient({
     } finally {
       setLoading(false)
     }
-  }, [pageInfo.size, selectedTypeId, selectedTagId])
+  }, [getPageSize, pageInfo.current, selectedTypeId, selectedTagId])
 
   // 获取各分类下的文章标题（用于左侧二级导航）
   const fetchBlogsByType = useCallback(async () => {
