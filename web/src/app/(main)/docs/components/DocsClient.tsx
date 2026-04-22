@@ -833,7 +833,7 @@ function FileRow({ node }: { node: TreeNode }) {
   return (
     <motion.a
       href={`/docs/${encodeURIComponent(doc.filename.replace(/\.[^.]+$/, ''))}`}
-      className="group flex items-center gap-3 px-4 h-10 border-b border-[rgb(var(--border))/0.25] hover:bg-[rgb(var(--hover))] transition-colors"
+      className="group flex items-center gap-3 px-4 h-10 border-b border-[rgb(var(--border))/0.1] hover:bg-[rgb(var(--hover))] transition-colors"
       whileHover={{ x: 2 }}
       transition={{ duration: 0.15 }}
     >
@@ -860,7 +860,7 @@ function FileRow({ node }: { node: TreeNode }) {
       <span className="hidden md:inline text-xs text-[rgb(var(--text-muted))/0.4] tabular-nums w-24 text-right shrink-0">
         {doc.createTime}
       </span>
-      <div className="w-8 flex justify-end shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="shrink-0">
         <DocAction doc={doc} />
       </div>
     </motion.a>
@@ -879,7 +879,7 @@ function FolderRow({
   return (
     <motion.button
       onClick={() => onNavigate(node.path)}
-      className="group w-full flex items-center gap-3 px-4 h-10 border-b border-[rgb(var(--border))/0.25] hover:bg-[rgb(var(--hover))] transition-colors"
+      className="group w-full flex items-center gap-3 px-4 h-10 border-b border-[rgb(var(--border))/0.1] hover:bg-[rgb(var(--hover))] transition-colors"
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.99 }}
       transition={{ duration: 0.15 }}
