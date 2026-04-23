@@ -39,4 +39,6 @@ public interface EssayService {
     Page<Essay> listEssay(String query, Pageable pageable);
 
     List<Essay> listRecommendEssayTop(Integer size);
+
+    Long count();
 }

@@ -406,6 +406,15 @@ public class EssayServiceImpl implements EssayService {
         }
     }
 
+    @Override
+    public Long count() {
+        try {
+            return essayRepository.count();
+        } catch (Exception e) {
+            throw new RuntimeException("获取随笔总数失败", e);
+        }
+    }
+
     /**
      * 填充评论的 parentCommentId，使前端能够识别评论的父子关系
      */

@@ -22,6 +22,7 @@ export const ENDPOINTS = {
   FRIENDLINKS_APPLY: `${API_BASE_URL}/friendLinks/apply`,
   RECOMMEND_BLOG_LIST: `${API_BASE_URL}/getRecommendBlogList`,
   RECOMMEND_ESSAY_LIST: `${API_BASE_URL}/getRecommendEssayList`,
+  SITE_STATS: `${API_BASE_URL}/site-stats`,
   TYPE_LIST: `${API_BASE_URL}/getTypeList`,
   TAG_LIST: `${API_BASE_URL}/getTagList`,
   FULL_TYPE_LIST: `${API_BASE_URL}/getFullTypeList`,

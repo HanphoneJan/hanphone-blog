@@ -9,6 +9,8 @@ import com.example.blog.po.Tag;
 import com.example.blog.po.Type;
 import com.example.blog.service.BlogMonthlyVisitsService;
 import com.example.blog.service.BlogService;
+import com.example.blog.service.EssayService;
+import com.example.blog.service.ProjectService;
 import com.example.blog.service.TagService;
 import com.example.blog.service.TypeService;
 import com.example.blog.vo.BlogQuery;
@@ -19,7 +21,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class IndexController {
@@ -28,12 +32,18 @@ public class IndexController {
     private final TypeService typeService;
     private final TagService tagService;
     private final BlogMonthlyVisitsService blogMonthlyVisitsService;
+    private final EssayService essayService;
+    private final ProjectService projectService;
 
-    public IndexController(TagService tagService, TypeService typeService, BlogService blogService, BlogMonthlyVisitsService blogMonthlyVisitsService) {
+    public IndexController(TagService tagService, TypeService typeService, BlogService blogService,
+                           BlogMonthlyVisitsService blogMonthlyVisitsService, EssayService essayService,
+                           ProjectService projectService) {
         this.tagService = tagService;
         this.typeService = typeService;
         this.blogService = blogService;
         this.blogMonthlyVisitsService = blogMonthlyVisitsService;
+        this.essayService = essayService;
+        this.projectService = projectService;
     }
 
     @GetMapping("/blogs")
@@ -105,5 +115,14 @@ public class IndexController {
         // 递增访问量并获取更新后的总访问量
         Long totalVisits = blogMonthlyVisitsService.incrementAndGetTotalVisits();
         return new Result<>(true, StatusCode.OK, "获取网站浏览量成功", totalVisits);
+    }
+
+    @GetMapping("/site-stats")
+    public Result<Map<String, Long>> getSiteStats() {
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("blogCount", blogService.countBlog());
+        stats.put("essayCount", essayService.count());
+        stats.put("projectCount", projectService.count());
+        return new Result<>(true, StatusCode.OK, "获取站点统计成功", stats);
     }
 }

@@ -284,6 +284,15 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    public Long count() {
+        try {
+            return projectRepository.count();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to count projects", e);
+        }
+    }
+
+    @Override
     public Page<Project> listPublishedProject(String query, Pageable pageable) {
         requireNonNull(query, "query must not be null");
         requireNonNull(pageable, "pageable must not be null");

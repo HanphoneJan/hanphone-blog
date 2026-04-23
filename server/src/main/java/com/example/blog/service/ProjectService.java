@@ -40,4 +40,6 @@ public interface ProjectService {
     Page<Project> listPublishedProject(String query, Pageable pageable);
 
     Boolean changePublished(Long projectId, Boolean published);
+
+    Long count();
 }
