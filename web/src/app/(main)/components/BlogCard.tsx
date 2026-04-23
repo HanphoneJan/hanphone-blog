@@ -1,10 +1,10 @@
 /**
- * 博客卡片组件 - 带有优雅的进入动画
+ * 博客卡片组件 - 杂志风横向卡片
  */
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Calendar, Eye, Tag as TagIcon, Star } from 'lucide-react'
+import { Calendar, Eye, Tag as TagIcon, Star, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { ROUTES, ASSETS } from '@/lib/constants'
 import { formatDate } from '../utils'
@@ -20,100 +20,95 @@ export function BlogCard({ blog, index = 0 }: BlogCardProps) {
   return (
     <motion.div
       variants={cardVariants}
-      initial='initial'
-      animate='animate'
-      exit='exit'
+      initial="initial"
+      animate="animate"
+      exit="exit"
       layout
       style={{ zIndex: index }}
     >
       <Link
         href={ROUTES.BLOG_DETAIL(blog.id)}
-        className='block border-b border-[rgb(var(--border))] p-4 hover:bg-[rgb(var(--primary)/0.05)] cursor-pointer transition-all duration-300 rounded-lg py-4'
+        className="group block bg-[rgb(var(--card))] rounded-xl border overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-md"
+        style={{ borderColor: 'rgb(var(--border))' }}
       >
-        <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-          {/* 博客图片 */}
-          <div className='sm:col-span-1'>
-            <motion.div
-              className='relative h-40 w-full rounded-lg overflow-hidden shadow-md border border-[rgb(var(--border))]'
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-            >
-              <Image
-                src={blog.firstPicture}
-                alt={blog.title}
-                sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 720px'
-                fill
-                loading='eager'
-                priority={true}
-                className='object-fit transition-transform duration-500 hover:scale-105'
+        <div className="flex flex-col sm:flex-row">
+          {/* 图片区 */}
+          <div className="sm:w-[240px] flex-shrink-0">
+            <div className="img-zoom-container h-[180px] sm:h-full relative">
+              <div
+                className="img-bg absolute inset-0"
+                style={{ backgroundImage: `url(${blog.firstPicture})` }}
               />
-            </motion.div>
+              <div className="img-zoom-overlay" />
+              {/* 推荐标记 */}
+              {blog.recommend && (
+                <div
+                  className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{ background: 'rgba(250,204,21,0.9)', color: '#92400e' }}
+                >
+                  <Star className="w-3 h-3 fill-current" />
+                  推荐
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 博客信息 */}
-          <div className='sm:col-span-2 flex flex-col'>
-            <motion.h3
-              className='text-xl font-semibold mb-2 text-[rgb(var(--primary))] hover:text-[rgb(var(--primary-hover))] transition-colors flex items-center'
-              whileHover={{ x: 4 }}
-              transition={{ duration: 0.2 }}
+          {/* 内容区 */}
+          <div className="flex-1 p-5 flex flex-col">
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className="text-xs px-2 py-0.5 rounded-md font-medium"
+                style={{ background: 'rgb(var(--color-7) / 0.1)', color: 'rgb(var(--color-7))' }}
+              >
+                {blog.type.name}
+              </span>
+              <span className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+                {/* 模拟阅读时间 */}
+                {Math.max(3, Math.ceil(blog.description.length / 150))} 分钟阅读
+              </span>
+            </div>
+
+            <h3
+              className="text-lg font-bold mb-2 transition-colors group-hover:text-[rgb(var(--primary))]"
+              style={{ color: 'rgb(var(--text))' }}
             >
               {blog.title}
-              {blog.recommend && (
-                <motion.span
-                  className='ml-2 text-xs bg-yellow-500/15 text-yellow-500 px-1 md:px-2 py-1 rounded-full flex items-center'
-                  style={{
-                    backgroundColor: 'rgba(250, 204, 21, 0.15)',
-                    color: 'rgb(250, 204, 21)',
-                    boxShadow: '0 1px 3px -1px rgb(250 204 21 / 0.2)'
-                  }}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3, type: 'spring', stiffness: 500 }}
-                >
-                  <Star
-                    className='h-3 w-3 fill-current'
-                    style={{ color: 'rgb(250, 204, 21)' }}
-                  />
-                  <span className='md:inline ml-1 hidden'>推荐</span>
-                </motion.span>
-              )}
-            </motion.h3>
-            <p className='text-[rgb(var(--text-muted))] line-clamp-3 mb-4 grow'>
+            </h3>
+
+            <p className="text-sm line-clamp-2 mb-4 flex-grow" style={{ color: 'rgb(var(--text-muted))' }}>
               {blog.description}
             </p>
-            <div className='flex items-center text-sm text-[rgb(var(--text-muted))] flex-wrap'>
-              <div className='flex items-center mr-4 mb-2 sm:mb-0'>
-                <div className='relative h-6 w-6 rounded-full overflow-hidden mr-2 border border-[rgb(var(--border))]'>
+
+            <div
+              className="flex items-center justify-between pt-3"
+              style={{ borderTop: '1px solid rgb(var(--border))' }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full overflow-hidden relative">
                   <Image
                     src={blog.user.avatar || ASSETS.DEFAULT_AVATAR}
                     alt={blog.user.nickname}
                     fill
-                    loading='eager'
-                    priority={true}
-                    className='object-cover w-full h-full'
+                    className="object-cover"
                   />
                 </div>
-                <span className='text-[rgb(var(--primary))] font-medium'>
+                <span className="text-sm font-medium" style={{ color: 'rgb(var(--text))' }}>
                   {blog.user.nickname}
                 </span>
+                <span className="text-xs hidden sm:inline" style={{ color: 'rgb(var(--text-muted))' }}>
+                  {formatDate(blog.createTime)}
+                </span>
               </div>
-              <div className='hidden sm:flex items-center mr-4 mb-2 sm:mb-0'>
-                <Calendar className='mr-1 h-4 w-4' />
-                <span>{formatDate(blog.createTime)}</span>
-              </div>
-              <div className='flex items-center mr-4 mb-2 sm:mb-0'>
-                <Eye className='mr-1 h-4 w-4' />
-                <span>{blog.views}</span>
-              </div>
-              <div className='ml-auto'>
-                <motion.span
-                  className='inline-flex items-center px-2 py-1 bg-[rgb(var(--muted))] text-[rgb(var(--primary))] rounded text-xs border border-[rgb(var(--border))] hover:bg-[rgb(var(--primary)/0.1)] hover:text-[rgb(var(--primary-hover))] transition-colors'
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <TagIcon className='mr-1 h-3 w-3' />
-                  {blog.type.name}
-                </motion.span>
+
+              <div className="flex items-center gap-3 text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+                <span className="flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5" />
+                  {blog.views}
+                </span>
+                <span className="flex items-center gap-1 read-more-arrow" style={{ color: 'rgb(var(--primary))' }}>
+                  阅读
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </span>
               </div>
             </div>
           </div>

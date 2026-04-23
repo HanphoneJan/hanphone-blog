@@ -8,17 +8,20 @@ import { PAGINATION, HOME_CONFIG } from '@/lib/constants'
 import { HOME_LABELS } from '@/lib/labels'
 
 import { useHomeCache } from './hooks/useHomeCache'
-import { useTypewriter } from './hooks/useTypewriter'
+
+import './home.css'
 import { useHomeData } from './hooks/useHomeData'
 import { isCompactLayout } from './utils'
-import BgOverlay from '@/app/(main)/components/BgOverlay'
 
 import { BlogList } from './components/BlogList'
 import { Sidebar } from './components/Sidebar'
-import { MobileSidebar } from './components/MobileSidebar'
 import { Pagination } from './components/Pagination'
+import { HeroSection } from './components/HeroSection'
+import { FeaturedSection } from './components/FeaturedSection'
+import { ProjectSection } from './components/ProjectSection'
+import { ProfileCard } from './components/ProfileCard'
 
-import type { HomeQueryInfo, Blog, Type, Tag } from './types'
+import type { HomeQueryInfo, Blog, Type, Tag, Essay, Project, SiteStats } from './types'
 
 // 动画变体定义
 const pageVariants = {
@@ -32,18 +35,6 @@ const pageVariants = {
   }
 } as const
 
-const heroVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.8,
-      ease: "easeOut"
-    }
-  }
-} as const
-
 const contentVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -52,20 +43,6 @@ const contentVariants = {
     transition: {
       duration: 0.6,
       ease: "easeOut"
-    }
-  }
-} as const
-
-const sidebarVariants = {
-  hidden: { opacity: 0, x: 30 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut",
-      staggerChildren: 0.1,
-      delayChildren: 0.2
     }
   }
 } as const
@@ -102,6 +79,9 @@ interface HomeClientProps {
   initialTags: Tag[]
   initialRecommendList: Blog[]
   initialTotal: number
+  initialEssays: Essay[]
+  initialProjects: Project[]
+  initialSiteStats: SiteStats
 }
 
 export default function HomeClient({
@@ -109,13 +89,11 @@ export default function HomeClient({
   initialTypes,
   initialTags,
   initialRecommendList,
-  initialTotal
+  initialTotal,
+  initialEssays,
+  initialProjects,
+  initialSiteStats
 }: HomeClientProps) {
-  // 打字机效果
-  const intro = useTypewriter({
-    text: HOME_LABELS.INTRO_TYPING
-  })
-
   // 页面加载时滚动到顶部
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -138,11 +116,6 @@ export default function HomeClient({
   const [selected, setSelected] = useState(false)
 
   // UI状态
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [showTypes, setShowTypes] = useState(true)
-  const [showTags, setShowTags] = useState(true)
-  const [moreType, setMoreType] = useState(true)
-  const [moreTag, setMoreTag] = useState(true)
   const [screenWidth, setScreenWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : HOME_CONFIG.INIT_SCREEN_WIDTH
   )
@@ -166,8 +139,6 @@ export default function HomeClient({
     getTypeList,
     getTagList,
     getRecommendList,
-    getFullTypeList,
-    getFullTagList,
     setBlogList,
     setTotalcount
   } = useHomeData({
@@ -190,9 +161,6 @@ export default function HomeClient({
   useEffect(() => {
     const handleResize = () => {
       setScreenWidth(window.innerWidth)
-      if (window.innerWidth >= HOME_CONFIG.SIDEBAR_CLOSE_BREAKPOINT) {
-        setSidebarOpen(false)
-      }
     }
 
     window.addEventListener('resize', handleResize)
@@ -323,7 +291,6 @@ export default function HomeClient({
       setBlogList(filteredBlogs)
       setTotalcount(filteredBlogs.length)
       updateSelectMethod()
-      setSidebarOpen(false)
     },
     [selectedTagIds, getFromCache, setCache, setBlogList, setTotalcount, updateSelectMethod]
   )
@@ -419,7 +386,6 @@ export default function HomeClient({
       }
 
       setSelectMethod(methodText)
-      setSidebarOpen(false)
     },
     [
       selectedTagIds,
@@ -433,26 +399,6 @@ export default function HomeClient({
     ]
   )
 
-  // 处理分类展开/收起
-  const handleDealType = useCallback(async () => {
-    if (moreType) {
-      await getFullTypeList()
-    } else {
-      await getTypeList()
-    }
-    setMoreType((prev) => !prev)
-  }, [moreType, getFullTypeList, getTypeList])
-
-  // 处理标签展开/收起
-  const handleDealTag = useCallback(async () => {
-    if (moreTag) {
-      await getFullTagList()
-    } else {
-      await getTagList()
-    }
-    setMoreTag((prev) => !prev)
-  }, [moreTag, getFullTagList, getTagList])
-
   // 更新博客列表（重置筛选）
   const updateBlogList = useCallback(() => {
     setSelected(false)
@@ -463,208 +409,183 @@ export default function HomeClient({
     getBlogList()
   }, [getBlogList])
 
+  // 内容区域滚动入场动画
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px 0px -80px 0px',
+      threshold: 0.05
+    }
+
+    const fadeInObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible')
+          fadeInObserver.unobserve(entry.target)
+        }
+      })
+    }, observerOptions)
+
+    document.querySelectorAll('.content-fade-in').forEach(el => {
+      fadeInObserver.observe(el)
+    })
+
+    return () => fadeInObserver.disconnect()
+  }, [blogList, recommendList])
+
   return (
     <motion.div
-      className="min-h-screen z-1 flex flex-col bg-[rgb(var(--bg)/0.8)] overflow-hidden"
+      className="min-h-screen flex flex-col overflow-hidden"
       variants={pageVariants}
       initial="hidden"
       animate="visible"
     >
-      <BgOverlay />
+      {/* 1. 视差滚动全屏Hero */}
+      <HeroSection />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 lg:pt-4 relative z-10">
-        {/* 打字机效果区域 */}
-        <motion.div
-          className="w-full py-10 relative overflow-hidden md:mb-4"
-          variants={heroVariants}
-        >
-          <div className="absolute inset-0 bg-transparent"></div>
-          <div className="max-w-7xl mx-auto px-4 relative z-10">
-            <div className="flex justify-center items-center min-h-[120px]">
-              <motion.h1
-                className="text-xl md:text-2xl font-light text-[rgb(var(--primary))] text-center tracking-wide relative"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                {intro}
-                <motion.span
-                  className="absolute -right-4 top-1/2 transform -translate-y-1/2 w-3 h-5 bg-[rgb(var(--primary))]"
-                  animate={{ opacity: [1, 0, 1] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                />
-              </motion.h1>
-            </div>
-          </div>
+      {/* 2. 主内容区 */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 relative z-10" id="mainContent">
+        {/* 编辑精选区 */}
+        <motion.div variants={contentVariants}>
+          <FeaturedSection recommendList={recommendList} />
         </motion.div>
 
-        {/* 博客内容区域 */}
+        {/* 主内容区网格: 左侧博客(8列) + 右侧侧边栏(4列) */}
         <motion.div
-          className="w-full"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-8"
           variants={contentVariants}
         >
-          {/* 移动端侧边栏 */}
-          <MobileSidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            selected={selected}
-            onResetFilters={updateBlogList}
-            types={typeList}
-            selectedTypeId={selectedTypeId}
-            typeLoading={typeListLoading}
-            typeVisible={typeListVisible}
-            showTypes={showTypes}
-            moreType={moreType}
-            onToggleShowTypes={() => setShowTypes((prev) => !prev)}
-            onSelectType={handleSelectType}
-            onToggleMoreType={handleDealType}
-            tags={tagList}
-            selectedTagIds={selectedTagIds}
-            tagLoading={tagListLoading}
-            tagVisible={tagListVisible}
-            showTags={showTags}
-            moreTag={moreTag}
-            onToggleShowTags={() => setShowTags((prev) => !prev)}
-            onSelectTag={handleSelectTag}
-            onToggleMoreTag={handleDealTag}
-          />
-
-          {/* 主内容区网格布局 */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* 左侧博客列表 */}
+          {/* 左侧：博客列表 */}
+          <div className="lg:col-span-8">
+            {/* 标题栏 */}
             <motion.div
-              className="lg:col-span-3"
-              variants={contentVariants}
+              className="flex justify-between items-center mb-5"
+              variants={headerVariants}
             >
-              <div className="bg-[rgb(var(--bg)/0.85)] backdrop-blur-sm rounded-xl shadow-sm p-4 border border-[rgb(var(--border))]">
-                {/* 标题栏 */}
-                <motion.div
-                  className="flex justify-between items-center lg:cursor-default cursor-pointer relative"
-                  onClick={() => screenWidth < 1024 && setSidebarOpen(true)}
-                  variants={headerVariants}
-                >
-                  <div className="flex items-center">
-                    <AnimatePresence mode="wait">
-                      {selected && (
-                        <motion.div
-                          key="back-btn"
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ArrowLeft
-                            className="mr-2 text-[rgb(var(--primary))] cursor-pointer hover:scale-110 transition-transform h-5 w-5 z-10"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              updateBlogList()
-                            }}
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    {screenWidth < 1024 && (
-                      <motion.button
+              <div className="flex items-center">
+                <AnimatePresence mode="wait">
+                  {selected && (
+                    <motion.div
+                      key="back-btn"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ArrowLeft
+                        className="mr-2 text-[rgb(var(--primary))] cursor-pointer hover:scale-110 transition-transform h-5 w-5 z-10"
                         onClick={(e) => {
                           e.stopPropagation()
-                          setSidebarOpen(true)
+                          updateBlogList()
                         }}
-                        className="mr-2 p-2 rounded-lg hover:bg-[rgb(var(--primary)/0.1)] transition-colors z-10"
-                        aria-label="打开筛选菜单"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Filter className="h-5 w-5 text-[rgb(var(--primary))]" />
-                      </motion.button>
-                    )}
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={selectMethod}
-                        className="text-xl font-bold text-[rgb(var(--primary))]"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        {selectMethod}
-                      </motion.span>
-                    </AnimatePresence>
-                  </div>
-                  <motion.span
-                    className="text-[rgb(var(--text-muted))]"
-                    variants={counterVariants}
-                  >
-                    共{' '}
-                    <motion.span
-                      key={totalcount}
-                      className="text-[rgb(var(--primary))] text-xl font-bold"
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 300 }}
-                    >
-                      {totalcount}
-                    </motion.span>{' '}
-                    篇
-                  </motion.span>
-
-                  {screenWidth < 1024 && (
-                    <div className="absolute inset-0 rounded-lg bg-[rgb(var(--primary)/0.1)] opacity-0 hover:opacity-30 transition-opacity pointer-events-none"></div>
+                      />
+                    </motion.div>
                   )}
-                </motion.div>
-
-                {/* 博客列表 */}
-                <BlogList
-                  blogs={blogList}
-                  loading={blogListLoading}
-                  visible={blogListVisible}
-                  pageSize={queryInfo.pagesize}
-                />
-
-                {/* 分页组件 */}
-                <Pagination
-                  totalcount={totalcount}
-                  queryInfo={queryInfo}
-                  isCompact={isCompact}
-                  onPageChange={handleCurrentChange}
-                  onInputChange={handlePageInputChange}
-                />
+                </AnimatePresence>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={selectMethod}
+                    className="text-xl font-bold text-[rgb(var(--primary))]"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {selectMethod}
+                  </motion.span>
+                </AnimatePresence>
               </div>
+              <motion.span
+                className="text-[rgb(var(--text-muted))]"
+                variants={counterVariants}
+              >
+                共{' '}
+                <motion.span
+                  key={totalcount}
+                  className="text-[rgb(var(--primary))] text-xl font-bold"
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  {totalcount}
+                </motion.span>{' '}
+                篇
+              </motion.span>
             </motion.div>
 
-            {/* 桌面端侧边栏 */}
+            {/* 分类筛选按钮 */}
             <motion.div
-              className="hidden lg:block"
-              variants={sidebarVariants}
+              className="flex items-center gap-2 mb-4 flex-wrap"
+              variants={headerVariants}
             >
-              <Sidebar
-                recommendList={recommendList}
-                recommendLoading={recommendListLoading}
-                recommendVisible={recommendListVisible}
-                types={typeList}
-                selectedTypeId={selectedTypeId}
-                typeLoading={typeListLoading}
-                typeVisible={typeListVisible}
-                showTypes={showTypes}
-                moreType={moreType}
-                onToggleShowTypes={() => setShowTypes((prev) => !prev)}
-                onSelectType={handleSelectType}
-                onToggleMoreType={handleDealType}
-                tags={tagList}
-                selectedTagIds={selectedTagIds}
-                tagLoading={tagListLoading}
-                tagVisible={tagListVisible}
-                showTags={showTags}
-                moreTag={moreTag}
-                onToggleShowTags={() => setShowTags((prev) => !prev)}
-                onSelectTag={handleSelectTag}
-                onToggleMoreTag={handleDealTag}
-              />
+              <button
+                onClick={updateBlogList}
+                className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                  !selected ? 'text-white' : 'hover:bg-[rgb(var(--hover))]'
+                }`}
+                style={!selected ? { background: 'rgb(var(--primary))' } : { color: 'rgb(var(--text-muted))' }}
+              >
+                全部
+              </button>
+              {typeList.slice(0, 5).map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => handleSelectType(type.id)}
+                  className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                    selectedTypeId === type.id
+                      ? 'text-white'
+                      : 'hover:bg-[rgb(var(--hover))]'
+                  }`}
+                  style={
+                    selectedTypeId === type.id
+                      ? { background: 'rgb(var(--primary))' }
+                      : { color: 'rgb(var(--text-muted))' }
+                  }
+                >
+                  {type.name}
+                </button>
+              ))}
             </motion.div>
+
+            {/* 博客列表 */}
+            <BlogList
+              blogs={blogList}
+              loading={blogListLoading}
+              visible={blogListVisible}
+              pageSize={queryInfo.pagesize}
+            />
+
+            {/* 分页组件 */}
+            <Pagination
+              totalcount={totalcount}
+              queryInfo={queryInfo}
+              isCompact={isCompact}
+              onPageChange={handleCurrentChange}
+              onInputChange={handlePageInputChange}
+            />
+          </div>
+
+          {/* 右侧：侧边栏 */}
+          <div className="lg:col-span-4 space-y-6">
+            <ProfileCard stats={initialSiteStats} inline />
+            <Sidebar
+              tags={tagList}
+              tagLoading={tagListLoading}
+              tagVisible={tagListVisible}
+              onSelectTag={handleSelectTag}
+              essays={initialEssays}
+            />
           </div>
         </motion.div>
-      </main>
 
-      <Footer />
+        {/* 项目展示区 */}
+        <motion.div variants={contentVariants}>
+          <ProjectSection projects={initialProjects} />
+        </motion.div>
+
+        {/* Footer */}
+        <Footer />
+      </main>
     </motion.div>
   )
 }

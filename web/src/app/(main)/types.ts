@@ -62,6 +62,38 @@ export interface HomeQueryInfo {
   pagesize: number
 }
 
+// 项目类型（前台使用）
+export interface Project {
+  id: number
+  title: string
+  description: string
+  url: string
+  cover: string
+  type: 'project' | 'tool' | 'game' | 'practice'
+  tags: string[]
+  order: number
+  createTime: string
+  recommend?: boolean
+}
+
+// 随笔类型（前台使用，精简版）
+export interface Essay {
+  id: number
+  content: string
+  createTime: string
+  nickname: string
+  avatar: string
+  likes: number
+  recommend?: boolean
+}
+
+// 站点统计
+export interface SiteStats {
+  blogCount: number
+  essayCount: number
+  projectCount: number
+}
+
 // 分页布局类型
 export type PaginationLayout = 'compact' | 'full'
 

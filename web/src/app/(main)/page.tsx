@@ -4,7 +4,36 @@ import { createMetadata } from '@/lib/seo-config'
 import HomeClient from './HomeClient'
 import type { Blog, Type, Tag } from './types'
 
-export const dynamic = 'force-dynamic'
+// 本地接口定义（遵循其他页面规范）
+interface Essay {
+  id: number
+  content: string
+  createTime: string
+  nickname: string
+  avatar: string
+  likes: number
+}
+
+interface Project {
+  id: number
+  title: string
+  description: string
+  url: string
+  cover: string
+  type: 'project' | 'tool' | 'game' | 'practice'
+  tags: string[]
+  order: number
+  createTime: string
+}
+
+interface SiteStats {
+  blogCount: number
+  essayCount: number
+  projectCount: number
+}
+
+// ISR：每5分钟重新验证
+export const revalidate = 300
 
 // 生成元数据
 export const metadata = createMetadata(
@@ -18,8 +47,13 @@ async function fetchBlogs(): Promise<{ blogs: Blog[]; total: number }> {
   try {
     const res = await fetch(
       `${ENDPOINTS.BLOGS}?pagenum=1&pagesize=${PAGINATION.BLOG_PAGE_SIZE}`,
-      { cache: 'no-store' }
+      { next: { revalidate: 300 } }
     )
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
+
     const data = await res.json()
 
     if (data.code === 200 && data.data) {
@@ -44,7 +78,12 @@ async function fetchBlogs(): Promise<{ blogs: Blog[]; total: number }> {
 // 获取分类列表（服务端）
 async function fetchTypes(): Promise<Type[]> {
   try {
-    const res = await fetch(ENDPOINTS.TYPE_LIST, { cache: 'no-store' })
+    const res = await fetch(ENDPOINTS.TYPE_LIST, { next: { revalidate: 300 } })
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
+
     const data = await res.json()
     return data.code === 200 ? data.data || [] : []
   } catch (error) {
@@ -56,7 +95,12 @@ async function fetchTypes(): Promise<Type[]> {
 // 获取标签列表（服务端）
 async function fetchTags(): Promise<Tag[]> {
   try {
-    const res = await fetch(ENDPOINTS.TAG_LIST, { cache: 'no-store' })
+    const res = await fetch(ENDPOINTS.TAG_LIST, { next: { revalidate: 300 } })
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
+
     const data = await res.json()
     return data.code === 200 ? data.data || [] : []
   } catch (error) {
@@ -68,7 +112,12 @@ async function fetchTags(): Promise<Tag[]> {
 // 获取推荐博客列表（服务端）
 async function fetchRecommendBlogs(): Promise<Blog[]> {
   try {
-    const res = await fetch(ENDPOINTS.RECOMMEND_BLOG_LIST, { cache: 'no-store' })
+    const res = await fetch(ENDPOINTS.RECOMMEND_BLOG_LIST, { next: { revalidate: 300 } })
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
+
     const data = await res.json()
     return data.code === 200 ? data.data || [] : []
   } catch (error) {
@@ -77,13 +126,74 @@ async function fetchRecommendBlogs(): Promise<Blog[]> {
   }
 }
 
+// 获取推荐随笔列表（服务端）
+async function fetchRecommendEssays(): Promise<Essay[]> {
+  try {
+    const res = await fetch(ENDPOINTS.RECOMMEND_ESSAY_LIST, { next: { revalidate: 300 } })
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
+
+    const data = await res.json()
+    return data.code === 200 ? data.data || [] : []
+  } catch (error) {
+    console.error('Failed to fetch recommend essays:', error)
+    return []
+  }
+}
+
+// 获取推荐项目列表（服务端）
+async function fetchRecommendProjects(): Promise<Project[]> {
+  try {
+    const res = await fetch(ENDPOINTS.RECOMMEND_PROJECT_LIST, { next: { revalidate: 300 } })
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
+
+    const data = await res.json()
+    return data.code === 200 ? data.data || [] : []
+  } catch (error) {
+    console.error('Failed to fetch recommend projects:', error)
+    return []
+  }
+}
+
+// 获取站点统计（服务端）
+async function fetchSiteStats(): Promise<SiteStats> {
+  try {
+    const res = await fetch(ENDPOINTS.SITE_STATS, { next: { revalidate: 300 } })
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
+
+    const data = await res.json()
+    if (data.code === 200 && data.data) {
+      return {
+        blogCount: data.data.blogCount || 0,
+        essayCount: data.data.essayCount || 0,
+        projectCount: data.data.projectCount || 0
+      }
+    }
+    return { blogCount: 0, essayCount: 0, projectCount: 0 }
+  } catch (error) {
+    console.error('Failed to fetch site stats:', error)
+    return { blogCount: 0, essayCount: 0, projectCount: 0 }
+  }
+}
+
 // 服务端组件
 export default async function HomePage() {
-  const [blogsData, types, tags, recommendList] = await Promise.all([
+  const [blogsData, types, tags, recommendList, recommendEssays, recommendProjects, siteStats] = await Promise.all([
     fetchBlogs(),
     fetchTypes(),
     fetchTags(),
-    fetchRecommendBlogs()
+    fetchRecommendBlogs(),
+    fetchRecommendEssays(),
+    fetchRecommendProjects(),
+    fetchSiteStats()
   ])
 
   return (
@@ -93,6 +203,9 @@ export default async function HomePage() {
       initialTags={tags}
       initialRecommendList={recommendList}
       initialTotal={blogsData.total}
+      initialEssays={recommendEssays}
+      initialProjects={recommendProjects}
+      initialSiteStats={siteStats}
     />
   )
 }

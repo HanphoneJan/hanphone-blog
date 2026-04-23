@@ -1,5 +1,5 @@
 /**
- * 博客列表组件 - 带有交错进入动画
+ * 博客列表组件 - 杂志风卡片列表
  */
 
 import { motion, AnimatePresence } from 'framer-motion'
@@ -17,32 +17,34 @@ interface BlogListProps {
 
 export function BlogList({ blogs, loading, visible, pageSize }: BlogListProps) {
   return (
-    <AnimatePresence mode='wait'>
-      {loading ? (
-        <motion.div
-          key='skeleton'
-          variants={skeletonVariants}
-          initial='initial'
-          exit='exit'
-        >
-          <BlogListSkeleton count={pageSize} />
-        </motion.div>
-      ) : (
-        <motion.div
-          key='content'
-          className={`transition-opacity duration-500 ${
-            visible ? 'opacity-100' : 'opacity-0'
-          }`}
-          variants={staggerContainerVariants}
-          initial='initial'
-          animate='animate'
-          layout
-        >
-          {blogs.map((blog, index) => (
-            <BlogCard key={blog.id} blog={blog} index={index} />
-          ))}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="space-y-4">
+      <AnimatePresence mode='wait'>
+        {loading ? (
+          <motion.div
+            key='skeleton'
+            variants={skeletonVariants}
+            initial='initial'
+            exit='exit'
+          >
+            <BlogListSkeleton count={pageSize} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key='content'
+            className={`space-y-4 transition-opacity duration-500 ${
+              visible ? 'opacity-100' : 'opacity-0'
+            }`}
+            variants={staggerContainerVariants}
+            initial='initial'
+            animate='animate'
+            layout
+          >
+            {blogs.map((blog, index) => (
+              <BlogCard key={blog.id} blog={blog} index={index} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
