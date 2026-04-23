@@ -192,18 +192,11 @@ export function HeroSection() {
       {/* 英雄区内容 */}
       <div className="hero-content">
         <h1 className="hero-title" ref={titleRef} style={{ color: 'rgb(var(--text))' }}>
-          {`Hanphone's Blog`}
+          {`云林有风`}
         </h1>
         <p className="hero-subtitle" style={{ color: 'rgb(var(--text))' }}>
-          全栈开发 · AI探索 · 持续学习
+          欢迎来到寒枫的博客
         </p>
-        <div className="hero-tags">
-          <span className="hero-tag hero-tag-1">项目</span>
-          <span className="hero-tag hero-tag-2">照片</span>
-          <span className="hero-tag hero-tag-3">文档</span>
-          <span className="hero-tag hero-tag-4">留言</span>
-          <span className="hero-tag hero-tag-5">随笔</span>
-        </div>
       </div>
 
       {/* 滚动指示器 */}

@@ -51,7 +51,7 @@ const Footer: React.FC = () => {
   }, [])
 
   return (
-    <footer className="z-5 relative py-8 mt-8 lg:mt-16 bg-[rgb(var(--bg))] border-t border-[rgb(var(--border))]"
+    <footer className="z-5 relative py-8 mt-3 lg:mt-6 bg-[rgb(var(--bg))] border-t border-[rgb(var(--border))]"
     >
       <div className="container mx-auto px-4 max-w-7xl">
         {/* 主要内容区域 - 采用响应式网格布局 */}

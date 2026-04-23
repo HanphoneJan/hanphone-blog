@@ -4,6 +4,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tag as TagIcon, PenLine } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { TagSkeletonList } from './TagSkeleton'
 import { staggerContainerVariants, skeletonVariants } from '@/components/shared/PageTransition'
 import type { Tag, Essay } from '../types'
@@ -28,6 +29,19 @@ const TAG_COLORS = [
 ]
 
 export function Sidebar({ tags, tagLoading, tagVisible, onSelectTag, essays }: SidebarProps) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  // 监听屏幕宽度变化
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   const handleTagMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const tag = e.currentTarget
     const rect = tag.getBoundingClientRect()
@@ -37,21 +51,35 @@ export function Sidebar({ tags, tagLoading, tagVisible, onSelectTag, essays }: S
     tag.style.setProperty('--y', y + '%')
   }
 
-  const formatRelativeTime = (createTime: string): string => {
+  // 格式化时间：今年的不显示年份，往年显示年份
+  const formatEssayTime = (createTime: string): string => {
     const date = new Date(createTime)
     const now = new Date()
-    const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
-    if (diff < 60) return '刚刚'
-    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
-    if (diff < 604800) return `${Math.floor(diff / 86400)}天前`
-    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    const currentYear = now.getFullYear()
+    const essayYear = date.getFullYear()
+    
+    if (essayYear === currentYear) {
+      // 今年的只显示月日
+      return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    } else {
+      // 往年显示年月日
+      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' })
+    }
   }
 
+  // 对随笔按时间倒序排序（最新的在前），并根据屏幕尺寸决定显示数量
+  const getEssayDisplayCount = () => {
+    return isMobile ? 2 : 5
+  }
+
+  const sortedEssays = [...essays]
+    .sort((a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime())
+    .slice(0, getEssayDisplayCount())
+
   return (
-    <div className="hidden lg:block space-y-6">
-      {/* 热门标签云 */}
-      <div className="bg-[rgb(var(--card))] rounded-xl border p-5" style={{ borderColor: 'rgb(var(--border))' }}>
+    <div className="space-y-6">
+      {/* 热门标签云 - 桌面端显示 */}
+      <div className="hidden lg:block bg-[rgb(var(--card))] rounded-xl border p-5" style={{ borderColor: 'rgb(var(--border))' }}>
         <div className="flex items-center gap-2 mb-4">
           <TagIcon className="w-4 h-4" style={{ color: 'rgb(var(--color-4))' }} />
           <h3 className="font-bold text-sm" style={{ color: 'rgb(var(--text))' }}>热门标签</h3>
@@ -98,15 +126,15 @@ export function Sidebar({ tags, tagLoading, tagVisible, onSelectTag, essays }: S
         </div>
       </div>
 
-      {/* 精选随笔 */}
-      {essays.length > 0 && (
-        <div className="bg-[rgb(var(--card))] rounded-xl border p-5" style={{ borderColor: 'rgb(var(--border))' }}>
+      {/* 精选随笔 - 响应式显示 */}
+      {sortedEssays.length > 0 && (
+        <div className="bg-[rgb(var(--card))] rounded-xl border p-5 lg:p-5" style={{ borderColor: 'rgb(var(--border))' }}>
           <div className="flex items-center gap-2 mb-4">
             <PenLine className="w-4 h-4" style={{ color: 'rgb(var(--color-3))' }} />
             <h3 className="font-bold text-sm" style={{ color: 'rgb(var(--text))' }}>精选随笔</h3>
           </div>
           <div className="space-y-3">
-            {essays.slice(0, 3).map((essay, idx) => (
+            {sortedEssays.map((essay, idx) => (
               <div key={essay.id} className="essay-card p-3 rounded-lg cursor-pointer" style={{ animationDelay: `${idx * 0.1}s` }}>
                 <p className="text-sm line-clamp-2 mb-2" style={{ color: 'rgb(var(--text))' }}>
                   {essay.content}
@@ -119,7 +147,7 @@ export function Sidebar({ tags, tagLoading, tagVisible, onSelectTag, essays }: S
                     />
                     <span className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>{essay.nickname}</span>
                   </div>
-                  <span className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>{formatRelativeTime(essay.createTime)}</span>
+                  <span className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>{formatEssayTime(essay.createTime)}</span>
                 </div>
               </div>
             ))}

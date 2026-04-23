@@ -450,132 +450,131 @@ export default function HomeClient({
           <FeaturedSection recommendList={recommendList} />
         </motion.div>
 
-        {/* 主内容区网格: 左侧博客(8列) + 右侧侧边栏(4列) */}
-        <motion.div
-          className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-8"
-          variants={contentVariants}
-        >
-          {/* 左侧：博客列表 */}
-          <div className="lg:col-span-8">
-            {/* 标题栏 */}
-            <motion.div
-              className="flex justify-between items-center mb-5"
-              variants={headerVariants}
-            >
-              <div className="flex items-center">
-                <AnimatePresence mode="wait">
-                  {selected && (
-                    <motion.div
-                      key="back-btn"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ArrowLeft
-                        className="mr-2 text-[rgb(var(--primary))] cursor-pointer hover:scale-110 transition-transform h-5 w-5 z-10"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          updateBlogList()
-                        }}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={selectMethod}
-                    className="text-xl font-bold text-[rgb(var(--primary))]"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.3 }}
+        {/* 主内容区 */}
+        <motion.div variants={contentVariants}>
+          {/* 标题栏独立出来，不与侧边栏对齐 */}
+          <div className="flex justify-between items-center mb-5">
+            <div className="flex items-center">
+              <AnimatePresence mode="wait">
+                {selected && (
+                  <motion.div
+                    key="back-btn"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    {selectMethod}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-              <motion.span
-                className="text-[rgb(var(--text-muted))]"
-                variants={counterVariants}
-              >
-                共{' '}
+                    <ArrowLeft
+                      className="mr-2 text-[rgb(var(--primary))] cursor-pointer hover:scale-110 transition-transform h-5 w-5 z-10"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        updateBlogList()
+                      }}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence mode="wait">
                 <motion.span
-                  key={totalcount}
-                  className="text-[rgb(var(--primary))] text-xl font-bold"
-                  initial={{ scale: 1.2 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
+                  key={selectMethod}
+                  className="text-xl font-bold text-[rgb(var(--primary))]"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  {totalcount}
-                </motion.span>{' '}
-                篇
-              </motion.span>
-            </motion.div>
-
-            {/* 分类筛选按钮 */}
-            <motion.div
-              className="flex items-center gap-2 mb-4 flex-wrap"
-              variants={headerVariants}
+                  {selectMethod}
+                </motion.span>
+              </AnimatePresence>
+            </div>
+            <motion.span
+              className="text-[rgb(var(--text-muted))]"
+              variants={counterVariants}
             >
-              <button
-                onClick={updateBlogList}
-                className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-                  !selected ? 'text-white' : 'hover:bg-[rgb(var(--hover))]'
-                }`}
-                style={!selected ? { background: 'rgb(var(--primary))' } : { color: 'rgb(var(--text-muted))' }}
+              共{' '}
+              <motion.span
+                key={totalcount}
+                className="text-[rgb(var(--primary))] text-xl font-bold"
+                initial={{ scale: 1.2 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
               >
-                全部
+                {totalcount}
+              </motion.span>
+              {' '}篇
+            </motion.span>
+          </div>
+
+          {/* 分类筛选按钮独立出来 */}
+          <motion.div
+            className="flex items-center gap-2 mb-6 flex-wrap"
+            variants={headerVariants}
+          >
+            <button
+              onClick={updateBlogList}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                !selected ? 'text-white' : 'hover:bg-[rgb(var(--hover))]'
+              }`}
+              style={!selected ? { background: 'rgb(var(--primary))' } : { color: 'rgb(var(--text-muted))' }}
+            >
+              全部
+            </button>
+            {typeList.slice(0, 5).map((type) => (
+              <button
+                key={type.id}
+                onClick={() => handleSelectType(type.id)}
+                className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                  selectedTypeId === type.id
+                    ? 'text-white'
+                    : 'hover:bg-[rgb(var(--hover))]'
+                }`}
+                style={
+                  selectedTypeId === type.id
+                    ? { background: 'rgb(var(--primary))' }
+                    : { color: 'rgb(var(--text-muted))' }
+                }
+              >
+                {type.name}
               </button>
-              {typeList.slice(0, 5).map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => handleSelectType(type.id)}
-                  className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-                    selectedTypeId === type.id
-                      ? 'text-white'
-                      : 'hover:bg-[rgb(var(--hover))]'
-                  }`}
-                  style={
-                    selectedTypeId === type.id
-                      ? { background: 'rgb(var(--primary))' }
-                      : { color: 'rgb(var(--text-muted))' }
-                  }
-                >
-                  {type.name}
-                </button>
-              ))}
-            </motion.div>
+            ))}
+          </motion.div>
 
-            {/* 博客列表 */}
-            <BlogList
-              blogs={blogList}
-              loading={blogListLoading}
-              visible={blogListVisible}
-              pageSize={queryInfo.pagesize}
-            />
+          {/* 网格：左侧博客列表 + 右侧侧边栏 */}
+          <motion.div
+            className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
+            variants={contentVariants}
+          >
+            {/* 左侧：博客列表 */}
+            <div className="lg:col-span-8">
+              <BlogList
+                blogs={blogList}
+                loading={blogListLoading}
+                visible={blogListVisible}
+                pageSize={queryInfo.pagesize}
+              />
+              
+              {/* 分页组件 */}
+              <Pagination
+                totalcount={totalcount}
+                queryInfo={queryInfo}
+                isCompact={isCompact}
+                onPageChange={handleCurrentChange}
+                onInputChange={handlePageInputChange}
+              />
+            </div>
 
-            {/* 分页组件 */}
-            <Pagination
-              totalcount={totalcount}
-              queryInfo={queryInfo}
-              isCompact={isCompact}
-              onPageChange={handleCurrentChange}
-              onInputChange={handlePageInputChange}
-            />
-          </div>
-
-          {/* 右侧：侧边栏 */}
-          <div className="lg:col-span-4 space-y-6">
-            <ProfileCard stats={initialSiteStats} inline />
-            <Sidebar
-              tags={tagList}
-              tagLoading={tagListLoading}
-              tagVisible={tagListVisible}
-              onSelectTag={handleSelectTag}
-              essays={initialEssays}
-            />
-          </div>
+            {/* 右侧：侧边栏 */}
+            <div className="lg:col-span-4 space-y-6">
+              <ProfileCard stats={initialSiteStats} inline />
+              <Sidebar
+                tags={tagList}
+                tagLoading={tagListLoading}
+                tagVisible={tagListVisible}
+                onSelectTag={handleSelectTag}
+                essays={initialEssays}
+              />
+            </div>
+          </motion.div>
         </motion.div>
 
         {/* 项目展示区 */}

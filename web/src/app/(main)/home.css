@@ -184,42 +184,6 @@
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
 
-/* ---------- 浮动标签 ---------- */
-@keyframes floatTag {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(2deg); }
-}
-
-.hero-tags {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  opacity: 0;
-  animation: subtitleFade 0.8s 1.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-}
-
-.hero-tag {
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgb(var(--border) / 0.6);
-  transition: all 0.3s ease;
-  cursor: default;
-}
-
-.hero-tag:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.1);
-}
-
-.hero-tag-1 { background: rgb(var(--color-1) / 0.08); color: rgb(var(--color-1)); animation: floatTag 5s ease-in-out infinite; }
-.hero-tag-2 { background: rgb(var(--color-4) / 0.08); color: rgb(var(--color-4)); animation: floatTag 5s ease-in-out infinite 0.5s; }
-.hero-tag-3 { background: rgb(var(--color-2) / 0.08); color: rgb(var(--color-2)); animation: floatTag 5s ease-in-out infinite 1s; }
-.hero-tag-4 { background: rgb(var(--color-6) / 0.08); color: rgb(var(--color-6)); animation: floatTag 5s ease-in-out infinite 1.5s; }
-.hero-tag-5 { background: rgb(var(--color-3) / 0.08); color: rgb(var(--color-3)); animation: floatTag 5s ease-in-out infinite 2s; }
 
 /* ---------- 滚动指示器 ---------- */
 @keyframes scrollBounce {

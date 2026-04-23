@@ -33,7 +33,7 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* 左侧大图精选 */}
+        {/* 左侧大图精选 - 移动端和桌面端都显示 */}
         {featured && (
           <div className="lg:col-span-3 animate-slide-up">
             <Link
@@ -91,8 +91,8 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
           </div>
         )}
 
-        {/* 右侧小卡片 */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
+        {/* 右侧小卡片 - 只在桌面端显示 */}
+        <div className="hidden lg:flex lg:col-span-2 flex-col gap-4">
           {sideCards.map((blog, index) => (
             <Link
               key={blog.id}
