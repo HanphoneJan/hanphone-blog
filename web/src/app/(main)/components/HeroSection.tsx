@@ -6,6 +6,7 @@ import BgOverlay from './BgOverlay'
 
 export function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null)
+  const bgRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const scrollIndicatorRef = useRef<HTMLDivElement>(null)
   const tickingRef = useRef(false)
@@ -98,6 +99,23 @@ export function HeroSection() {
         orb.style.transform = `translateY(${translateY}px) translateX(${translateX}px) rotate(${rotate}deg)`
       })
 
+      // 背景图片深度视差 + 渐变隐没效果
+      if (bgRef.current) {
+        // 计算隐没位置：scrollProgress 从 0 到 1 时，mask 逐渐上移
+        // maskStart 和 maskEnd 决定了渐变的范围
+        const maskStart = Math.max(0, 100 - scrollProgress * 100)
+        const maskEnd = Math.max(0, 100 - scrollProgress * 60)
+        const mask = `linear-gradient(to bottom, black ${maskStart * 0.7}%, transparent ${maskEnd}%)`
+        bgRef.current.style.maskImage = mask
+        bgRef.current.style.webkitMaskImage = mask
+
+        // 增强“隐没”感：略微缩小并向下移动
+        const scale = 1 + scrollProgress * 0.05
+        const translateY = scrollProgress * 30
+        bgRef.current.style.transform = `scale(${scale}) translateY(${translateY}px)`
+        bgRef.current.style.opacity = String(1 - scrollProgress * 0.4)
+      }
+
       // 英雄区内容淡出
       const heroContent = parallaxHero.querySelector<HTMLElement>('.hero-content')
       if (heroContent) {
@@ -136,7 +154,8 @@ export function HeroSection() {
     <section className="parallax-hero" id="parallaxHero" ref={heroRef}>
       {/* 背景图片层（用户设置，完全不透明） */}
       <div
-        className="absolute inset-0 z-0 bg-no-repeat bg-cover bg-center transition-[background-image] duration-300 ease-in-out"
+        ref={bgRef}
+        className="hero-bg-layer absolute inset-0 z-0 bg-no-repeat bg-cover bg-center transition-[background-image] duration-300 ease-in-out"
         style={{
           backgroundImage: `url(${bgImage})`,
           opacity: 1,
