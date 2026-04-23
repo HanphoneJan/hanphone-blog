@@ -136,15 +136,15 @@ export function HeroSection() {
     <section className="parallax-hero" id="parallaxHero" ref={heroRef}>
       {/* 背景图片层（用户设置，完全不透明） */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 bg-no-repeat bg-cover bg-center transition-[background-image] duration-300 ease-in-out"
         style={{
           backgroundImage: `url(${bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          opacity: 1
+          opacity: 1,
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden'
         }}
       />
-      <BgOverlay opacity={0.1}/>
+      <div className="fixed inset-0 pointer-events-none z-[1]" style={{ backgroundColor: 'rgb(var(--bg) / 0.1)' }} />
       {/* 视差层1：渐变网格背景 */}
       <div className="parallax-layer parallax-layer-1" data-speed="0.2" />
 
