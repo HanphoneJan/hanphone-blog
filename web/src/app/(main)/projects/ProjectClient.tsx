@@ -530,10 +530,10 @@ export default function ProjectClient({ initialProjects }: ProjectClientProps) {
                       animate={{ opacity: 1, scale: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.3, delay: 0.1 }}
-                      className="absolute top-2 right-2 bg-[rgb(var(--warning))] text-white px-2 py-1 rounded-full flex items-center"
+                      className="absolute top-2 right-2 bg-[rgb(var(--primary))] text-[rgb(var(--primary-foreground))] px-2.5 py-1 rounded-full flex items-center shadow-lg"
                     >
-                      <Star className="h-3 w-3 mr-1 fill-current" />
-                      <span className="text-xs font-medium">推荐</span>
+                      <Star className="h-3 w-3 mr-1 fill-[#fbbf24] text-[#fbbf24]" />
+                      <span className="text-xs font-bold tracking-wider">推荐</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -623,10 +623,10 @@ export default function ProjectClient({ initialProjects }: ProjectClientProps) {
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
-                  className="absolute top-2 right-2 bg-[rgb(var(--warning))] text-white px-2 py-1 rounded-full flex items-center"
+                  className="absolute top-2 right-2 bg-[rgb(var(--primary))] text-[rgb(var(--primary-foreground))] px-2.5 py-1 rounded-full flex items-center shadow-lg"
                 >
-                  <Star className="h-3 w-3 mr-1 fill-current" />
-                  <span className="text-xs font-medium">推荐</span>
+                  <Star className="h-3 w-3 mr-1 fill-[#fbbf24] text-[#fbbf24]" />
+                  <span className="text-xs font-bold tracking-wider">推荐</span>
                 </motion.div>
               )}
             </AnimatePresence>

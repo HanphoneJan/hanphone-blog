@@ -5,7 +5,6 @@ import com.example.blog.po.Blog;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.po.Tag;
-import com.example.blog.po.*;
 import com.example.blog.service.BlogService;
 import com.example.blog.service.TagService;
 import com.example.blog.service.TypeService;
@@ -136,7 +135,8 @@ public class BlogController {
 
     @GetMapping("/search")
     public Result<Page<Blog>> search(
-            @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = { "createTime" }, direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {
+                    "createTime" }, direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam String query) {
         return new Result<>(true, StatusCode.OK, "获取搜索博客成功", blogService.listBlog("%" + query + "%", pageable));
     }

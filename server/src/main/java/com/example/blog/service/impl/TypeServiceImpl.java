@@ -9,7 +9,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
@@ -33,7 +32,7 @@ public class TypeServiceImpl implements TypeService {
     @Transactional
     @Override
     public Type getType(Long id) {
-        //springboot2.0将findone改成了getone
+        // springboot2.0将findone改成了getone
         return typeRepository.getReferenceById(id);
     }
 
@@ -77,14 +76,14 @@ public class TypeServiceImpl implements TypeService {
 
     @Override
     public List<Type> listByNameExceptSelf(Long id, String name) {
-        return typeRepository.findByNameExceptSelf(id,name);
+        return typeRepository.findByNameExceptSelf(id, name);
     }
 
     @Transactional
     @Override
     public Type updateType(Long id, Type type) {
         Type t = typeRepository.getReferenceById(id);
-        BeanUtils.copyProperties(type,t, MyBeanUtils.getNullPropertyNames(type));
+        BeanUtils.copyProperties(type, t, MyBeanUtils.getNullPropertyNames(type));
         return typeRepository.save(t);
     }
 

@@ -31,7 +31,8 @@ public class TokenInterceptor implements HandlerInterceptor {
     private static final int STATUS_UNAUTHORIZED = 401;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler)
+            throws Exception {
         // 对 OPTIONS 请求放行，用于处理跨域预检
         if ("OPTIONS".equals(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -51,7 +52,8 @@ public class TokenInterceptor implements HandlerInterceptor {
 
         // 验证 token
         if (!TokenUtil.adminVerify(token)) {
-            handleAuthFailure(response, STATUS_UNAUTHORIZED, CODE_TOKEN_VERIFY_FAIL, MSG_TOKEN_VERIFY_FAIL, "认证失败，未通过拦截器");
+            handleAuthFailure(response, STATUS_UNAUTHORIZED, CODE_TOKEN_VERIFY_FAIL, MSG_TOKEN_VERIFY_FAIL,
+                    "认证失败，未通过拦截器");
             return false;
         }
 
@@ -60,6 +62,7 @@ public class TokenInterceptor implements HandlerInterceptor {
 
     /**
      * 从请求中提取并处理 token
+     * 
      * @param request HTTP 请求
      * @return 处理后的 token，如果无效则返回 null
      */
@@ -87,14 +90,16 @@ public class TokenInterceptor implements HandlerInterceptor {
 
     /**
      * 处理认证失败的情况
-     * @param response HTTP 响应
+     * 
+     * @param response   HTTP 响应
      * @param httpStatus HTTP状态码
-     * @param code 业务错误码
-     * @param message 错误消息
+     * @param code       业务错误码
+     * @param message    错误消息
      * @param logMessage 日志消息
      * @throws Exception 写入响应时可能抛出的异常
      */
-    private void handleAuthFailure(HttpServletResponse response, int httpStatus, String code, String message, String logMessage) throws Exception {
+    private void handleAuthFailure(HttpServletResponse response, int httpStatus, String code, String message,
+            String logMessage) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode json = mapper.createObjectNode();
         json.put("msg", message);

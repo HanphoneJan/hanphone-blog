@@ -17,13 +17,13 @@ interface Essay {
 interface Project {
   id: number
   title: string
-  description: string
+  content: string
+  pic_url: string
   url: string
-  cover: string
-  type: 'project' | 'tool' | 'game' | 'practice'
-  tags: string[]
-  order: number
-  createTime: string
+  techs: string
+  type: number
+  recommend: boolean
+  published: boolean
 }
 
 interface SiteStats {

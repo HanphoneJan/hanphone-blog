@@ -47,7 +47,7 @@ export function ProjectSection({ projects }: ProjectSectionProps) {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" style={{ perspective: '1000px' }}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         {displayProjects.map((project, index) => (
           <a
@@ -55,12 +55,11 @@ export function ProjectSection({ projects }: ProjectSectionProps) {
             href={project.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="card-3d bg-[rgb(var(--card))] rounded-xl border overflow-hidden cursor-pointer group block"
-            style={{ borderColor: 'rgb(var(--border))' }}
+            className="group relative bg-[rgb(var(--card))] rounded-2xl border border-[rgb(var(--border))] overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-[rgb(var(--primary)/0.1)] hover:-translate-y-1 block"
           >
-            <div className="relative h-44 overflow-hidden"
+            <div className="relative h-48 overflow-hidden"
             >
-              <div className="img-zoom-container relative w-full h-full"
+              <div className="relative w-full h-full transition-transform duration-500 group-hover:scale-110"
               >
                 {project.pic_url ? (
                   <Image
@@ -71,42 +70,48 @@ export function ProjectSection({ projects }: ProjectSectionProps) {
                   />
                 ) : (
                   <div
-                    className="img-bg absolute inset-0"
+                    className="absolute inset-0"
                     style={{
                       background: `linear-gradient(135deg, rgb(var(--color-${(index % 4) + 1}) / 0.3), rgb(var(--color-${(index % 4) + 5}) / 0.2))`
                     }}
                   />
                 )}
-                <div className="img-zoom-overlay" />
+                {/* 遮罩层 */}
+                <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/20" />
               </div>
-              <div className="project-link-icon z-10"
+
+              {/* 悬浮图标 */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
               >
-                <ExternalLink className="w-8 h-8 text-white" />
+                <div className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/30 shadow-2xl">
+                  <ExternalLink className="w-6 h-6 text-white" />
+                </div>
               </div>
             </div>
-            <div className="p-4"
+            <div className="p-5"
             >
               <h3
-                className="font-bold mb-1.5 group-hover:text-[rgb(var(--primary))] transition-colors"
+                className="text-base font-bold mb-2 group-hover:text-[rgb(var(--primary))] transition-colors line-clamp-1"
                 style={{ color: 'rgb(var(--text))' }}
               >
                 {project.title}
               </h3>
-              <p className="text-sm line-clamp-2 mb-3" style={{ color: 'rgb(var(--text-muted))' }}>
-                {project.description}
+              <p className="text-sm line-clamp-2 mb-4 leading-relaxed" style={{ color: 'rgb(var(--text-muted))' }}>
+                {project.content}
               </p>
-              <div className="flex flex-wrap gap-1.5"
+              <div className="flex flex-wrap gap-2"
               >
-                {project.tags?.slice(0, 3).map((tag, tagIndex) => (
+                {project.techs?.split(',').slice(0, 3).map((tech, techIndex) => (
                   <span
-                    key={tag}
-                    className="px-2 py-0.5 rounded text-xs font-medium"
+                    key={tech}
+                    className="px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-bold"
                     style={{
-                      background: `${typeColors[tagIndex % typeColors.length]}20`,
-                      color: typeColors[tagIndex % typeColors.length]
+                      background: `${typeColors[techIndex % typeColors.length]}15`,
+                      color: typeColors[techIndex % typeColors.length],
+                      border: `1px solid ${typeColors[techIndex % typeColors.length]}30`
                     }}
                   >
-                    {tag}
+                    {tech.trim()}
                   </span>
                 ))}
               </div>

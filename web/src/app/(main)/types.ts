@@ -67,15 +67,13 @@ export interface HomeQueryInfo {
 export interface Project {
   id: number
   title: string
-  description: string
+  content: string
+  pic_url: string
   url: string
-  cover: string
-  pic_url:string
-  type: 'project' | 'tool' | 'game' | 'practice'
-  tags: string[]
-  order: number
-  createTime: string
-  recommend?: boolean
+  techs: string
+  type: number
+  recommend: boolean
+  published: boolean
 }
 
 // 随笔类型（前台使用，精简版）

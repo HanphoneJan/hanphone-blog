@@ -18,4 +18,9 @@ public final class PaginationConstants {
      * 推荐博客列表显示数量
      */
     public static final int RECOMMEND_BLOG_SIZE = 8;
+
+    /**
+     * 推荐项目列表显示数量
+     */
+    public static final int RECOMMEND_PROJECT_SIZE = 6;
 }

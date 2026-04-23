@@ -8,8 +8,6 @@ import com.example.blog.po.Blog;
 import com.example.blog.po.Type;
 import com.example.blog.po.User;
 import com.example.blog.po.UserBlogLike;
-import com.example.blog.dao.*;
-import com.example.blog.po.*;
 import com.example.blog.service.BlogService;
 import com.example.blog.util.MarkdownUtils;
 import com.example.blog.util.MyBeanUtils;
@@ -138,23 +136,23 @@ public class BlogServiceImpl implements BlogService {
             // 前台搜索只返回已发布的博客
             // 搜索范围扩展到标题、描述、内容三个字段
             String searchKeyword = query.trim();
-            
+
             Page<Blog> blogs = blogRepository.findAll(
                     (Specification<Blog>) (root, cq, cb) -> {
                         List<Predicate> predicates = new ArrayList<>();
-                        
+
                         // 扩展搜索范围：标题、描述、内容
                         Predicate titlePredicate = cb.like(root.get("title"), "%" + searchKeyword + "%");
                         Predicate descriptionPredicate = cb.like(root.get("description"), "%" + searchKeyword + "%");
                         Predicate contentPredicate = cb.like(root.get("content"), "%" + searchKeyword + "%");
-                        
+
                         // 使用 OR 连接多个搜索条件
                         Predicate searchPredicate = cb.or(titlePredicate, descriptionPredicate, contentPredicate);
                         predicates.add(searchPredicate);
-                        
+
                         // 只返回已发布的博客
                         predicates.add(cb.equal(root.get("published"), true));
-                        
+
                         cq.where(predicates.toArray(new Predicate[0]));
                         return null;
                     }, pageable);

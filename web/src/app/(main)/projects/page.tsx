@@ -4,13 +4,13 @@ import ProjectClient from './ProjectClient'
 interface Project {
   id: number
   title: string
-  description: string
+  content: string
+  pic_url: string
   url: string
-  cover: string
-  type: 'project' | 'tool' | 'game' | 'practice'
-  tags: string[]
-  order: number
-  createTime: string
+  techs: string
+  type: number
+  recommend: boolean
+  published: boolean
 }
 
 // ISR：每5分钟重新验证

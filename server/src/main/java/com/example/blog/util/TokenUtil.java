@@ -78,12 +78,12 @@ public class TokenUtil {
     /**
      * 签名验证
      */
-    public static boolean verify(String token){
+    public static boolean verify(String token) {
         try {
             JWTVerifier verifier = JWT.require(Algorithm.HMAC256(TOKEN_SECRET)).withIssuer(JWT_ISSUER).build();
             DecodedJWT jwt = verifier.verify(token);
             return true;
-        } catch (Exception e){
+        } catch (Exception e) {
             return false;
         }
     }
@@ -91,13 +91,13 @@ public class TokenUtil {
     /**
      * 管理员认证
      */
-    public static boolean adminVerify(String token){
+    public static boolean adminVerify(String token) {
         try {
             // 建议：这里也统一使用 JWT_ISSUER 变量，而不是硬编码 "auth0"
             JWTVerifier verifier = JWT.require(Algorithm.HMAC256(TOKEN_SECRET)).withIssuer(JWT_ISSUER).build();
             DecodedJWT jwt = verifier.verify(token);
             return "1".equals(jwt.getClaim("userType").asString());
-        } catch (Exception e){
+        } catch (Exception e) {
             return false;
         }
     }
