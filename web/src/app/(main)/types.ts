@@ -15,6 +15,7 @@ export interface Blog {
   type: {
     id: number
     name: string
+    pic_url?: string
   }
   user: {
     avatar: string
@@ -69,6 +70,7 @@ export interface Project {
   description: string
   url: string
   cover: string
+  pic_url:string
   type: 'project' | 'tool' | 'game' | 'practice'
   tags: string[]
   order: number

@@ -405,12 +405,13 @@ export const FOOTER_CONFIG = {
 export const PAGINATION = {
   DEFAULT_PAGE: 1,
   DEFAULT_PAGE_SIZE: 10,
+  HOME_BLOG_PAGE_SIZE: 5,
   // 博客列表页每页数量
   BLOG_PAGE_SIZE: 8,
   // 博客列表页后续页每页数量（更大的 pageSize）
   BLOG_PAGE_SIZE_LARGE: 12,
   // 分页器显示省略号阈值（少于等于该数量时显示全部页码）
-  ELLIPSIS_THRESHOLD: 7
+  ELLIPSIS_THRESHOLD: 5
 } as const
 
 // ==================== 个人主页配置 ====================

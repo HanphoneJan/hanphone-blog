@@ -42,9 +42,9 @@ export function ArticleRow({ blog, index = 0 }: ArticleRowProps) {
         <div className="flex gap-4 p-4 rounded-xl border border-transparent hover:border-[rgb(var(--border))] hover:bg-[rgb(var(--card))] transition-all duration-300">
           {/* 缩略图 - 移动端适当放大 */}
           <div className="relative w-28 h-20 sm:w-32 sm:h-24 md:w-36 md:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-[rgb(var(--muted))]">
-            {blog.firstPicture ? (
+            {blog.firstPicture || blog.type?.pic_url ? (
               <Image
-                src={blog.firstPicture}
+                src={blog.firstPicture || blog.type?.pic_url}
                 alt={blog.title}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"

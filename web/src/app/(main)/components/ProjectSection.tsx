@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ExternalLink, Star } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
 import type { Project } from '../types'
 
@@ -13,7 +13,7 @@ interface ProjectSectionProps {
 export function ProjectSection({ projects }: ProjectSectionProps) {
   if (!projects || projects.length === 0) return null
 
-  const displayProjects = projects.slice(0, 6)
+  const displayProjects = projects.slice(0, 3)
 
   const typeColors = [
     'rgb(var(--color-1))',
@@ -60,14 +60,14 @@ export function ProjectSection({ projects }: ProjectSectionProps) {
           >
             <div className="relative h-44 overflow-hidden"
             >
-              <div className="img-zoom-container absolute inset-0"
+              <div className="img-zoom-container relative w-full h-full"
               >
-                {project.cover ? (
+                {project.pic_url ? (
                   <Image
-                    src={project.cover}
+                    src={project.pic_url}
                     alt={project.title}
                     fill
-                    className="object-cover img-bg"
+                    className="object-cover"
                   />
                 ) : (
                   <div
@@ -83,15 +83,6 @@ export function ProjectSection({ projects }: ProjectSectionProps) {
               >
                 <ExternalLink className="w-8 h-8 text-white" />
               </div>
-              {project.recommend && (
-                <div
-                  className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{ background: 'rgba(250,204,21,0.9)', color: '#92400e' }}
-                >
-                  <Star className="w-3 h-3 fill-current" />
-                  推荐
-                </div>
-              )}
             </div>
             <div className="p-4"
             >

@@ -34,10 +34,10 @@ export function BlogCard({ blog, index = 0 }: BlogCardProps) {
         <div className="flex flex-col sm:flex-row">
           {/* 图片区 */}
           <div className="sm:w-[240px] flex-shrink-0">
-            <div className="img-zoom-container h-[180px] sm:h-full relative">
+            <div className="img-zoom-container relative h-[180px] sm:h-full w-full">
               <div
                 className="img-bg absolute inset-0"
-                style={{ backgroundImage: `url(${blog.firstPicture})` }}
+                style={{ backgroundImage: `url(${blog.firstPicture || blog.type?.pic_url})` }}
               />
               <div className="img-zoom-overlay" />
               {/* 推荐标记 */}

@@ -106,7 +106,7 @@ export default function HomeClient({
   const [queryInfo, setQueryInfo] = useState<HomeQueryInfo>({
     query: '',
     pagenum: PAGINATION.DEFAULT_PAGE,
-    pagesize: PAGINATION.BLOG_PAGE_SIZE
+    pagesize: PAGINATION.HOME_BLOG_PAGE_SIZE
   })
 
   // 筛选状态
@@ -445,7 +445,7 @@ export default function HomeClient({
 
       {/* 2. 主内容区 */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 relative z-10" id="mainContent">
-        {/* 编辑精选区 */}
+        {/* 推荐博客区 */}
         <motion.div variants={contentVariants}>
           <FeaturedSection recommendList={recommendList} />
         </motion.div>
@@ -583,9 +583,10 @@ export default function HomeClient({
           <ProjectSection projects={initialProjects} />
         </motion.div>
 
+
+      </main>
         {/* Footer */}
         <Footer />
-      </main>
     </motion.div>
   )
 }

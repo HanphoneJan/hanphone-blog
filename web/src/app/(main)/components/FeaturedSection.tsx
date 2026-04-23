@@ -23,12 +23,12 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
           className="w-1 h-5 rounded-full"
           style={{ background: 'linear-gradient(to bottom, rgb(var(--color-7)), rgb(var(--color-4)))' }}
         />
-        <h2 className="text-lg font-bold" style={{ color: 'rgb(var(--text))' }}>编辑精选</h2>
+        <h2 className="text-lg font-bold" style={{ color: 'rgb(var(--text))' }}>推荐博客</h2>
         <span
           className="text-xs px-2 py-0.5 rounded-full ml-2"
           style={{ background: 'rgb(var(--color-7) / 0.1)', color: 'rgb(var(--color-7))' }}
         >
-          Editor's Pick
+          Recommended BLOG
         </span>
       </div>
 
@@ -40,11 +40,11 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
               href={ROUTES.BLOG_DETAIL(featured.id)}
               className="group relative rounded-2xl overflow-hidden cursor-pointer block h-[320px] lg:h-[400px]"
             >
-              <div className="img-zoom-container absolute inset-0">
-                {featured.firstPicture ? (
+              <div className="img-zoom-container relative w-full h-full">
+                {featured.firstPicture || featured.type?.pic_url ? (
                   <div
                     className="img-bg absolute inset-0"
-                    style={{ backgroundImage: `url(${featured.firstPicture})` }}
+                    style={{ backgroundImage: `url(${featured.firstPicture || featured.type?.pic_url})` }}
                   />
                 ) : (
                   <div
@@ -100,11 +100,11 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
               className="group relative rounded-xl overflow-hidden cursor-pointer flex-1 min-h-[120px] block animate-slide-up"
               style={{ animationDelay: `${(index + 1) * 0.1}s` }}
             >
-              <div className="img-zoom-container absolute inset-0">
-                {blog.firstPicture ? (
+              <div className="img-zoom-container relative w-full h-full">
+                {blog.firstPicture || blog.type?.pic_url ? (
                   <div
                     className="img-bg absolute inset-0"
-                    style={{ backgroundImage: `url(${blog.firstPicture})` }}
+                    style={{ backgroundImage: `url(${blog.firstPicture || blog.type?.pic_url})` }}
                   />
                 ) : (
                   <div

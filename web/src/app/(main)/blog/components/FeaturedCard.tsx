@@ -42,9 +42,9 @@ export function FeaturedCard({ blog, index = 0 }: FeaturedCardProps) {
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.5 }}
             >
-              {blog.firstPicture ? (
+              {blog.firstPicture || blog.type?.pic_url ? (
                 <Image
-                  src={blog.firstPicture}
+                  src={blog.firstPicture || blog.type?.pic_url}
                   alt={blog.title}
                   fill
                   className="object-cover"

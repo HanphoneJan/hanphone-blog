@@ -13,6 +13,7 @@ export interface Blog {
   type: {
     id: number
     name: string
+    pic_url?: string
   }
   user: {
     avatar: string

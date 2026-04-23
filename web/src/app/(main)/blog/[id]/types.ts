@@ -22,7 +22,7 @@ export interface Blog {
     nickname: string;
     avatar: string;
   };
-  type?: { id: number; name: string };
+  type?: { id: number; name: string; pic_url?: string };
   tags: { id: number; name: string }[];
   comments: CommentItem[];
 }

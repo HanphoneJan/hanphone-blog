@@ -306,14 +306,20 @@
   position: relative;
 }
 
-.img-zoom-container img,
-.img-zoom-container .img-bg {
+.img-zoom-container img {
   transition: transform 0.7s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.5s ease;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.img-zoom-container .img-bg {
+  transition: transform 0.7s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.5s ease;
+  width: 100%;
+  height: 100%;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
 }
 
 .img-zoom-container:hover img,
