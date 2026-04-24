@@ -109,19 +109,17 @@ export function HeroSection() {
         bgRef.current.style.maskImage = mask
         bgRef.current.style.webkitMaskImage = mask
 
-        // 增强“隐没”感：略微缩小并向下移动
-        const scale = 1 + scrollProgress * 0.05
         const translateY = scrollProgress * 30
-        bgRef.current.style.transform = `scale(${scale}) translateY(${translateY}px)`
+        bgRef.current.style.transform = `translateY(${translateY}px)`
         bgRef.current.style.opacity = String(1 - scrollProgress * 0.4)
       }
 
       // 英雄区内容淡出
       const heroContent = parallaxHero.querySelector<HTMLElement>('.hero-content')
       if (heroContent) {
-        const fadeProgress = Math.min(scrollProgress * 1.5, 1)
+        const fadeProgress = Math.min(scrollProgress * 0.8, 1)
         heroContent.style.opacity = String(1 - fadeProgress)
-        heroContent.style.transform = `translateY(${scrollProgress * 40}px)`
+        heroContent.style.transform = `translateY(${scrollProgress * 20}px)`
       }
     }
 
@@ -191,17 +189,16 @@ export function HeroSection() {
 
       {/* 英雄区内容 */}
       <div className="hero-content">
-        <h1 className="hero-title" ref={titleRef} style={{ color: 'rgb(var(--text))' }}>
+        <h1 className="hero-title" ref={titleRef}>
           {`云林有风`}
         </h1>
-        <p className="hero-subtitle" style={{ color: 'rgb(var(--text))' }}>
+        <p className="hero-subtitle">
           欢迎来到寒枫的博客
         </p>
       </div>
 
       {/* 滚动指示器 */}
       <div className="scroll-indicator" id="scrollIndicator" ref={scrollIndicatorRef} onClick={scrollToContent}>
-        <span className="scroll-indicator-text">向下滚动</span>
         <div className="scroll-indicator-arrow" />
       </div>
     </section>

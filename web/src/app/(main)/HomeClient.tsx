@@ -444,7 +444,7 @@ export default function HomeClient({
       <HeroSection />
 
       {/* 2. 主内容区 */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 relative z-10" id="mainContent">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 relative z-10" id="mainContent">
         {/* 推荐博客区 */}
         <motion.div variants={contentVariants}>
           <FeaturedSection recommendList={recommendList} />
