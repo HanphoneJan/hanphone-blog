@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGithub, faBilibili } from '@fortawesome/free-brands-svg-icons'
-import { Mail, Eye, TrendingUp, Rss } from 'lucide-react'
+import { Mail, Eye, TrendingUp, Rss, Clock } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
@@ -20,11 +20,36 @@ interface VisitCountResponse {
   data: number
 }
 
+const SITE_START_DATE = process.env.NEXT_PUBLIC_SITE_START_DATE
+
+function formatDuration(ms: number): string {
+  const seconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+  const years = Math.floor(days / 365)
+
+  const remainDays = days % 365
+  const remainHours = hours % 24
+  const remainMinutes = minutes % 60
+  const remainSeconds = seconds % 60
+
+  const parts: string[] = []
+  if (years > 0) parts.push(`${years}年`)
+  if (remainDays > 0) parts.push(`${remainDays}天`)
+  if (remainHours > 0 || parts.length === 0) parts.push(`${remainHours}小时`)
+  if (remainMinutes > 0 || parts.length === 0) parts.push(`${remainMinutes}分`)
+  parts.push(`${remainSeconds}秒`)
+
+  return parts.join(' ')
+}
+
 const Footer: React.FC = () => {
   const { theme } = useTheme()
   const [totalVisitCount, setTotalVisitCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [uptime, setUptime] = useState('')
 
   useEffect(() => {
     const fetchVisitCount = async (retryCount = 0): Promise<void> => {
@@ -56,6 +81,24 @@ const Footer: React.FC = () => {
     }
 
     fetchVisitCount()
+  }, [])
+
+  // 站点运行时间计时器
+  useEffect(() => {
+    if (!SITE_START_DATE) return
+
+    const start = new Date(SITE_START_DATE).getTime()
+    if (isNaN(start)) return
+
+    const update = () => {
+      const now = Date.now()
+      const diff = now - start
+      setUptime(diff > 0 ? formatDuration(diff) : '')
+    }
+
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
   }, [])
 
   return (
@@ -210,6 +253,13 @@ const Footer: React.FC = () => {
           <p className="text-sm text-center md:text-left text-[rgb(var(--text-muted))]">
             {FOOTER_LABELS.COPYRIGHT(new Date().getFullYear())}
           </p>
+          {uptime && (
+            <div className="flex items-center gap-1.5 text-sm text-[rgb(var(--text-muted))]">
+              <Clock className="h-3.5 w-3.5 text-[rgb(var(--primary))]" />
+              <span>已运行</span>
+              <span className="font-medium text-[rgb(var(--text))]">{uptime}</span>
+            </div>
+          )}
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-[rgb(var(--text-muted))]">
             <Link href={ROUTES.TERMS} className="transition-colors duration-300 hover:text-[rgb(var(--primary))]">
               {FOOTER_LABELS.TERMS}

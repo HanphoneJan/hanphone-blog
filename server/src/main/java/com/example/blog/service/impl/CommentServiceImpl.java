@@ -102,7 +102,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Page<Comment> listComment(Pageable pageable) {
-        requireNonNull(pageable, "pageable must not be null");
+        Objects.requireNonNull(pageable, "pageable must not be null");
         try {
             Page<Comment> comments = commentRepository.findAll(pageable);
             comments.getContent().forEach(comment -> {

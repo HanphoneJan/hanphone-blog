@@ -92,6 +92,8 @@ export interface SiteStats {
   blogCount: number
   essayCount: number
   projectCount: number
+  messageCount: number
+  docCount: number
 }
 
 // 分页布局类型

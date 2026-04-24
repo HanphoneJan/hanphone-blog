@@ -57,18 +57,30 @@ export function ProfileCard({ stats, inline = false }: ProfileCardProps) {
           热爱技术与创作，记录学习路上的点滴。关注Agent开发、前端工程化和机器学习应用。
         </p>
         {/* 统计 */}
-        <div className="grid grid-cols-3 gap-2 mt-4 pt-4" style={{ borderTop: '1px solid rgb(var(--border))' }}>
-          <div className="text-center">
-            <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--primary))' }}>{stats.blogCount}</div>
-            <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>文章</div>
+        <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgb(var(--border))' }}>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--primary))' }}>{stats.blogCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>文章</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-2))' }}>{stats.essayCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>随笔</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-6))' }}>{stats.projectCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>项目</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-2))' }}>{stats.essayCount}</div>
-            <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>随笔</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-6))' }}>{stats.projectCount}</div>
-            <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>项目</div>
+          <div className="grid grid-cols-2 gap-2 mt-2 px-4">
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-3))' }}>{stats.messageCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>留言</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-5))' }}>{stats.docCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>文档</div>
+            </div>
           </div>
         </div>
         {/* 社交链接 */}
@@ -120,18 +132,30 @@ export function ProfileCard({ stats, inline = false }: ProfileCardProps) {
           热爱技术与创作，记录学习路上的点滴。关注Agent开发、前端工程化和机器学习应用。
         </p>
         {/* 统计 */}
-        <div className="grid grid-cols-3 gap-2 mt-4 pt-4" style={{ borderTop: '1px solid rgb(var(--border))' }}>
-          <div className="text-center">
-            <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--primary))' }}>{stats.blogCount}</div>
-            <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>文章</div>
+        <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgb(var(--border))' }}>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--primary))' }}>{stats.blogCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>文章</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-2))' }}>{stats.essayCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>随笔</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-6))' }}>{stats.projectCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>项目</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-2))' }}>{stats.essayCount}</div>
-            <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>随笔</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-6))' }}>{stats.projectCount}</div>
-            <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>项目</div>
+          <div className="grid grid-cols-2 gap-2 mt-2 px-4">
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-3))' }}>{stats.messageCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>留言</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold stat-number" style={{ color: 'rgb(var(--color-5))' }}>{stats.docCount}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>文档</div>
+            </div>
           </div>
         </div>
         {/* 社交链接 */}

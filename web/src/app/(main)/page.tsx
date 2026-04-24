@@ -30,6 +30,8 @@ interface SiteStats {
   blogCount: number
   essayCount: number
   projectCount: number
+  messageCount: number
+  docCount: number
 }
 
 // ISR：每5分钟重新验证
@@ -174,13 +176,15 @@ async function fetchSiteStats(): Promise<SiteStats> {
       return {
         blogCount: data.data.blogCount || 0,
         essayCount: data.data.essayCount || 0,
-        projectCount: data.data.projectCount || 0
+        projectCount: data.data.projectCount || 0,
+        messageCount: data.data.messageCount || 0,
+        docCount: data.data.docCount || 0
       }
     }
-    return { blogCount: 0, essayCount: 0, projectCount: 0 }
+    return { blogCount: 0, essayCount: 0, projectCount: 0, messageCount: 0, docCount: 0 }
   } catch (error) {
     console.error('Failed to fetch site stats:', error)
-    return { blogCount: 0, essayCount: 0, projectCount: 0 }
+    return { blogCount: 0, essayCount: 0, projectCount: 0, messageCount: 0, docCount: 0 }
   }
 }
 

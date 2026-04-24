@@ -102,7 +102,7 @@ public class EssayCommentServiceImpl implements EssayCommentService {
 
     @Override
     public Page<EssayComment> listEssayComment(Pageable pageable) {
-        requireNonNull(pageable, "pageable must not be null");
+        Objects.requireNonNull(pageable, "pageable must not be null");
         try {
             Page<EssayComment> essayComments = essayCommentRepository.findAll(pageable);
             essayComments.getContent().forEach(essayComment -> {
