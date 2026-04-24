@@ -163,7 +163,7 @@
   line-height: 1.1;
   margin-bottom: 1.5rem;
   perspective: 800px;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.95);   
   text-shadow:
     0 2px 12px rgba(0, 0, 0, 0.45),
     0 0 30px rgba(0, 0, 0, 0.25),
@@ -186,7 +186,7 @@
   font-size: clamp(1rem, 2vw, 1.25rem);
   line-height: 1.7;
   margin-bottom: 2.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.7);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35), 0 0 16px rgba(0, 0, 0, 0.12);
 }
 
@@ -213,7 +213,7 @@
   background: currentColor;
   margin-left: 2px;
   vertical-align: text-bottom;
-  animation: cursorBlink 0.75s step-end infinite;
+  animation: cursorBlink 1.25s step-end infinite;
 }
 
 .typing-cursor.done {
@@ -267,7 +267,7 @@
   font-size: 0.75rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgb(var(--text-muted));
+  color: rgb(var(--text));
 }
 
 .scroll-indicator-arrow {
@@ -284,7 +284,7 @@
   content: '';
   width: 4px;
   height: 8px;
-  background: rgb(var(--text-muted));
+  background: rgb(var(--border));
   border-radius: 2px;
   animation: scrollBounce 2s ease-in-out infinite;
 }
@@ -504,12 +504,12 @@ body.home-page.theme-cyber .main-content {
 .header-transparent nav button,
 .header-transparent input,
 .header-transparent input::placeholder {
-  color: #fff !important;
+    color: rgba(255, 255, 255, 0.45) !important;
 }
 
 /* Logo渐变文字在透明模式下恢复为白色 */
 .header-transparent .text-xl {
-  -webkit-text-fill-color: #fff !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.45)!important;
   background: none !important;
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { ASSETS, STORAGE_KEYS, HOME_CONFIG } from '@/lib/constants'
-import BgOverlay from './BgOverlay'
+import  BgOverlay  from './BgOverlay'
 
 export function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null)
@@ -203,7 +203,7 @@ export function HeroSection() {
           WebkitBackfaceVisibility: 'hidden'
         }}
       />
-      {/* <BgOverlay opacity={0.1}/> */}
+    <BgOverlay bgColor="0,0,0" opacity={0.4} />
 
       {/* 视差层1：渐变网格背景 */}
       <div className="parallax-layer parallax-layer-1" data-speed="0.2" />

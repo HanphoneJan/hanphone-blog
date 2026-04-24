@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGithub, faBilibili } from '@fortawesome/free-brands-svg-icons'
-import { Mail, Eye, TrendingUp, Rss, Clock, CalendarDays } from 'lucide-react'
+import { Mail, Eye, Clock, Rss } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
@@ -44,6 +44,18 @@ function formatDuration(ms: number): string {
   return parts.join(' ')
 }
 
+// 从完整 uptime 字符串中提取“年+天”部分
+function formatUptimeDisplay(uptime: string): string {
+  const yearMatch = uptime.match(/(\d+)年/)
+  const dayMatch = uptime.match(/(\d+)天/)
+  const years = yearMatch ? yearMatch[1] : ''
+  const days = dayMatch ? dayMatch[1] : '0'
+  if (years) {
+    return `${years}年${days}天`
+  }
+  return `${days}天`
+}
+
 const Footer: React.FC = () => {
   const { theme } = useTheme()
   const [totalVisitCount, setTotalVisitCount] = useState<number | null>(null)
@@ -56,7 +68,7 @@ const Footer: React.FC = () => {
       try {
         setLoading(true)
         const response = await apiClient.get<VisitCountResponse>(ENDPOINTS.GET_VISIT_COUNT, {
-          timeout: 30000, // 增加超时到30秒
+          timeout: 30000,
         })
 
         if (response.data.flag && response.data.code === API_CODE.SUCCESS) {
@@ -67,7 +79,6 @@ const Footer: React.FC = () => {
           setError(true)
         }
       } catch (err) {
-        // 网络错误或超时，最多重试2次
         if (retryCount < 2) {
           console.warn(`访问量请求失败，第 ${retryCount + 1} 次重试...`)
           await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)))
@@ -83,7 +94,6 @@ const Footer: React.FC = () => {
     fetchVisitCount()
   }, [])
 
-  // 站点运行时间计时器
   useEffect(() => {
     if (!SITE_START_DATE) return
 
@@ -106,7 +116,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto px-4 max-w-7xl">
         {/* 主要内容区域 - 采用响应式网格布局 */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 mb-4">
-          {/* 二维码区域 - 在小屏幕占满宽度，大屏幕占2列 */}
+          {/* 二维码区域 */}
           <div className="md:col-span-2 flex flex-col items-center md:items-start">
             <div className="bg-card p-2 rounded-lg shadow-lg mb-2 transform transition-transform duration-300 hover:scale-105">
               <Image
@@ -124,13 +134,12 @@ const Footer: React.FC = () => {
             </p>
           </div>
 
-          {/* 联系我区域 - 小屏幕占满，大屏幕占3列 */}
+          {/* 联系我区域 */}
           <div className="md:col-span-3 flex flex-col">
             <h4 className="text-lg font-semibold mb-4 pb-2 border-b border-[rgb(var(--border))] relative after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-12 after:bg-[rgb(var(--primary))] text-[rgb(var(--primary))]">
               {FOOTER_LABELS.CONTACT_ME}
             </h4>
             <div className="flex flex-col h-full justify-between">
-              {/* 社交按钮组 - 包含 GitHub、Bilibili、RSS 和邮箱 */}
               <div className="flex flex-wrap gap-3 mt-2">
                 <a
                   href={FOOTER_CONFIG.GITHUB}
@@ -139,10 +148,7 @@ const Footer: React.FC = () => {
                   className="p-2.5 rounded-full transition-all duration-300 transform hover:-translate-y-1 shadow-md flex items-center justify-center bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))]"
                   aria-label="GitHub"
                 >
-                  <FontAwesomeIcon
-                    icon={faGithub}
-                    className="h-4 w-4 text-[rgb(var(--text))]"
-                  />
+                  <FontAwesomeIcon icon={faGithub} className="h-4 w-4 text-[rgb(var(--text))]" />
                 </a>
                 <a
                   href={FOOTER_CONFIG.BILIBILI}
@@ -151,10 +157,7 @@ const Footer: React.FC = () => {
                   className="p-2.5 rounded-full transition-all duration-300 transform hover:-translate-y-1 shadow-md flex items-center justify-center bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))]"
                   aria-label="Bilibili"
                 >
-                  <FontAwesomeIcon
-                    icon={faBilibili}
-                    className="h-4 w-4 text-pink-400"
-                  />
+                  <FontAwesomeIcon icon={faBilibili} className="h-4 w-4 text-pink-400" />
                 </a>
                 <Link
                   href="/rss"
@@ -176,7 +179,7 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* 博客简介 - 小屏幕占满，大屏幕占4列 */}
+          {/* 博客简介区域 */}
           <div className="md:col-span-4">
             <h4 className="text-lg font-semibold mb-4 pb-2 border-b border-[rgb(var(--border))] relative after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-12 after:bg-[rgb(var(--primary))] text-[rgb(var(--primary))]">
               {FOOTER_LABELS.BLOG_INTRO}
@@ -200,70 +203,61 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-{/* 访问统计区域 - 横排合并卡片，带文字标签 */}
-<div className="md:col-span-3">
-  <h4 className="text-lg font-semibold mb-4 pb-2 border-b border-[rgb(var(--border))] relative after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-12 after:bg-[rgb(var(--primary))] text-[rgb(var(--primary))]">
-    {FOOTER_LABELS.SITE_STATS}
-  </h4>
-  <div className="flex items-stretch rounded-xl border border-[rgb(var(--border))] shadow-sm hover:shadow-md transition-all duration-300 bg-[rgb(var(--card))] overflow-hidden">
-    {/* 左侧：访问量 */}
-    <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 group">
-      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-[rgb(var(--primary))]/80 to-[rgb(var(--primary-hover))]/80">
-        <Eye className="h-4 w-4 text-white" />
-      </div>
-      {loading ? (
-        <div className="h-6 w-20 bg-gradient-to-r from-[rgb(var(--card))] to-[rgb(var(--hover))] rounded-md animate-pulse"></div>
-      ) : error ? (
-        <span className="text-sm text-[rgb(var(--text-muted))]">--</span>
-      ) : (
-        <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))]">
-          {totalVisitCount?.toLocaleString()}
-        </span>
-      )}
-      <span className="text-xs font-medium text-[rgb(var(--text-muted))]">总访问量</span>
-    </div>
+          {/* 访问统计区域 */}
+          <div className="md:col-span-3">
+            <h4 className="text-lg font-semibold mb-4 pb-2 border-b border-[rgb(var(--border))] relative after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-12 after:bg-[rgb(var(--primary))] text-[rgb(var(--primary))]">
+              {FOOTER_LABELS.SITE_STATS}
+            </h4>
+            <div className="flex items-stretch rounded-xl border border-[rgb(var(--border))] shadow-sm hover:shadow-md transition-all duration-300 bg-[rgb(var(--card))] overflow-hidden">
+              {/* 左侧：访问量 */}
+              <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 group">
+                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-[rgb(var(--primary))]/80 to-[rgb(var(--primary-hover))]/80">
+                  <Eye className="h-4 w-4 text-white" />
+                </div>
+                {loading ? (
+                  <div className="h-6 w-20 bg-gradient-to-r from-[rgb(var(--card))] to-[rgb(var(--hover))] rounded-md animate-pulse"></div>
+                ) : error ? (
+                  <span className="text-sm text-[rgb(var(--text-muted))]">--</span>
+                ) : (
+                  <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))]">
+                    {totalVisitCount?.toLocaleString()}
+                  </span>
+                )}
+                <span className="text-xs font-medium text-[rgb(var(--text-muted))]">总访问量</span>
+              </div>
 
-    {/* 分隔线 */}
-    <div className="w-px bg-[rgb(var(--border))] my-2"></div>
+              {/* 分隔线 */}
+              <div className="w-px bg-[rgb(var(--border))] my-2"></div>
 
-    {/* 右侧：运行时间（纯色图标，只显示年和日） */}
-    {uptime ? (
-      <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[rgb(var(--color-2))]">
-          <Clock className="h-4 w-4 text-white" />
-        </div>
-        <div className="flex items-baseline gap-1 flex-wrap justify-center">
-          <span className="text-xl font-bold text-[rgb(var(--color-2))]">
-            {(() => {
-              const yearMatch = uptime.match(/(\d+)年/)
-              const dayMatch = uptime.match(/(\d+)天/)
-              const years = yearMatch ? yearMatch[1] : ''
-              const days = dayMatch ? dayMatch[1] : '0'
-              if (years) {
-                return `${years}年${days}天`
-              }
-              return `${days}天`
-            })()}
-          </span>
-        </div>
-        <span className="text-xs font-medium text-[rgb(var(--text-muted))]">已运行</span>
-      </div>
-    ) : (
-      <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3">
-        <div className="w-9 h-9 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] flex items-center justify-center">
-          <Clock className="h-4 w-4 text-[rgb(var(--text-muted))] animate-pulse" />
-        </div>
-        <span className="text-xs text-[rgb(var(--text-muted))]">加载中...</span>
-        <span className="text-xs text-[rgb(var(--text-muted))]">已运行</span>
-      </div>
-    )}
-  </div>
-</div>
+              {/* 右侧：运行时间 */}
+              {uptime ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[rgb(var(--color-2))]">
+                    <Clock className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="flex items-baseline gap-1 flex-wrap justify-center">
+                    <span className="text-xl font-bold text-[rgb(var(--color-2))]">
+                      {formatUptimeDisplay(uptime)}
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium text-[rgb(var(--text-muted))]">已运行</span>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3">
+                  <div className="w-9 h-9 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-[rgb(var(--text-muted))] animate-pulse" />
+                  </div>
+                  <span className="text-xs text-[rgb(var(--text-muted))]">加载中...</span>
+                  <span className="text-xs text-[rgb(var(--text-muted))]">已运行</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="my-6 opacity-60 border-t border-[rgb(var(--border))]"></div>
 
-        {/* 底部信息区域 - 移除原来的运行时间显示 */}
+        {/* 底部信息区域 */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-center md:text-left text-[rgb(var(--text-muted))]">
             {FOOTER_LABELS.COPYRIGHT(new Date().getFullYear())}
