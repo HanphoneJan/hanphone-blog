@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
@@ -16,6 +16,10 @@ export function useEssays() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null)
   const [updateRecommendLoading, setUpdateRecommendLoading] = useState<number | null>(null)
   const [updatePublishedLoading, setUpdatePublishedLoading] = useState<number | null>(null)
+
+  // 分页状态
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
 
   // API调用函数
   const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
@@ -85,7 +89,15 @@ export function useEssays() {
     }
 
     setFilteredEssayList(result)
+    setCurrentPage(1) // 筛选或排序变化时重置到第一页
   }, [essayList, searchKeyword, sortOrder])
+
+  // 前端本地分页
+  const totalPages = Math.max(1, Math.ceil(filteredEssayList.length / pageSize))
+  const paginatedEssayList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredEssayList.slice(start, start + pageSize)
+  }, [filteredEssayList, currentPage, pageSize])
 
   // 切换排序顺序
   const toggleSortOrder = () => {
@@ -200,9 +212,15 @@ export function useEssays() {
     }
   }
 
+  // 分页跳转
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(Math.max(1, Math.min(totalPages, page)))
+  }, [totalPages])
+
   return {
     essayList,
-    filteredEssayList,
+    filteredEssayList: paginatedEssayList,
+    allFilteredEssayList: filteredEssayList,
     loading,
     searchKeyword,
     setSearchKeyword,
@@ -215,6 +233,9 @@ export function useEssays() {
     deleteEssay,
     saveEssay,
     getEssayList,
-    fetchData
+    fetchData,
+    currentPage,
+    totalPages,
+    goToPage
   }
 }

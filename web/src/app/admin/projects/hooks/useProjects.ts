@@ -42,6 +42,10 @@ export const useProjects = () => {
     sortOrder: 'desc'
   })
 
+  // 分页状态
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
+
   // 本地输入状态管理
   const [localInputValues, setLocalInputValues] = useState<{
     [key: number]: {
@@ -89,6 +93,18 @@ export const useProjects = () => {
     })
     return sortProjects(filtered, filters.sortBy, filters.sortOrder)
   }, [projectList, filters])
+
+  // 前端本地分页
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize))
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredList.slice(start, start + pageSize)
+  }, [filteredList, currentPage, pageSize])
+
+  // 筛选变化时重置到第一页
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters])
 
   // 更新项目
   const updateProject = useCallback(async (updatedProject: Project) => {
@@ -364,15 +380,24 @@ export const useProjects = () => {
     })
   }, [updateProject])
 
+  // 分页跳转（确保不超出范围）
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(Math.max(1, Math.min(totalPages, page)))
+  }, [totalPages])
+
   return {
     projectList,
-    filteredList,
+    filteredList: paginatedList,
+    allFilteredList: filteredList,
     loading,
     filters,
     localInputValues,
     deleteConfirm,
     updateRecommendLoading,
     updatePublishedLoading,
+    currentPage,
+    pageSize,
+    totalPages,
     getProjectList,
     setDeleteConfirm,
     handleDeleteConfirm,
@@ -388,6 +413,7 @@ export const useProjects = () => {
     showTagInput,
     confirmTagInput,
     removeTag,
-    updateProject
+    updateProject,
+    goToPage
   }
 }

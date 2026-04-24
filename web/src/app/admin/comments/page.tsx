@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect, useCallback} from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { Delete, Loader2, AlertCircle, Search,  X } from 'lucide-react'
 import Link from 'next/link'
@@ -86,17 +86,20 @@ export default function CommentsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedBlog, setSelectedBlog] = useState<string>('all')
+  // 分页状态
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
 
-  // 获取评论列表
-  const getCommentList = async () => {
+  // 获取评论列表（后端限制200条，前端本地分页）
+  const getCommentList = useCallback(async () => {
     try {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.COMMMENT_LIST)
 
       if (res.code === API_CODE.SUCCESS) {
-        const comments = res.data || []
+        // 后端返回 List（最多200条）
+        const comments = Array.isArray(res.data) ? res.data : (res.data?.content || [])
         setCommentList(comments)
-        setFilteredCommentList(comments)
       } else {
         showAlert(ADMIN_COMMENT_LABELS.FETCH_LIST_FAIL)
       }
@@ -106,9 +109,9 @@ export default function CommentsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  // 搜索和筛选功能
+  // 搜索和筛选功能（重置到第一页）
   const handleSearchAndFilter = useCallback(() => {
     let filtered = commentList
 
@@ -129,12 +132,28 @@ export default function CommentsPage() {
     }
 
     setFilteredCommentList(filtered)
+    setCurrentPage(1) // 筛选时重置到第一页
   }, [commentList, searchKeyword, selectedBlog])
 
   // 当搜索条件或博客筛选变化时更新列表
   useEffect(() => {
     handleSearchAndFilter()
   }, [handleSearchAndFilter])
+
+  // 前端本地分页：计算当前页显示的数据
+  const paginatedComments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredCommentList.slice(start, start + pageSize)
+  }, [filteredCommentList, currentPage, pageSize])
+
+  const totalPages = Math.max(1, Math.ceil(filteredCommentList.length / pageSize))
+
+  // 当总页数变化时，确保当前页不超出范围
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [totalPages, currentPage])
 
   // 获取唯一的博客列表用于筛选
   const blogOptions = Array.from(
@@ -282,9 +301,9 @@ export default function CommentsPage() {
                   <div key={item} className="animate-pulse bg-[rgb(var(--muted))]/50 rounded-lg h-16"></div>
                 ))}
               </div>
-            ) : filteredCommentList.length > 0 ? (
+            ) : paginatedComments.length > 0 ? (
               <div className="">
-                {filteredCommentList.map(comment => (
+                {paginatedComments.map(comment => (
                   <motion.div
                     key={comment.id}
                     variants={cardVariants}
@@ -364,6 +383,50 @@ export default function CommentsPage() {
                     清除筛选
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* 分页组件 */}
+            {filteredCommentList.length > 0 && (
+              <div className="mt-4 flex items-center justify-between border-t border-[rgb(var(--border))] pt-3">
+                <div className="text-sm text-[rgb(var(--muted))]">
+                  显示 {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredCommentList.length)} 条，共 {filteredCommentList.length} 条
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2.5 py-1 rounded-md text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgb(var(--hover))] transition-colors"
+                  >
+                    上一页
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1))
+                    .map((p, idx, arr) => (
+                      <span key={p} className="flex items-center">
+                        {idx > 0 && arr[idx - 1] !== p - 1 && (
+                          <span className="px-1 text-[rgb(var(--muted))]">...</span>
+                        )}
+                        <button
+                          onClick={() => setCurrentPage(p)}
+                          className={`min-w-[28px] px-2 py-1 rounded-md text-sm transition-colors ${
+                            p === currentPage
+                              ? 'bg-[rgb(var(--primary))] text-white'
+                              : 'border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      </span>
+                    ))}
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="px-2.5 py-1 rounded-md text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgb(var(--hover))] transition-colors"
+                  >
+                    下一页
+                  </button>
+                </div>
               </div>
             )}
           </div>

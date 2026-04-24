@@ -50,12 +50,15 @@ const ProjectManagement = () => {
   const {
     projectList,
     filteredList,
+    allFilteredList,
     loading,
     filters,
     localInputValues,
     deleteConfirm,
     updateRecommendLoading,
     updatePublishedLoading,
+    currentPage,
+    totalPages,
     getProjectList,
     setDeleteConfirm,
     handleDeleteConfirm,
@@ -70,7 +73,8 @@ const ProjectManagement = () => {
     cancelEdit,
     showTagInput,
     confirmTagInput,
-    removeTag
+    removeTag,
+    goToPage
   } = useProjects()
 
   const {
@@ -226,7 +230,51 @@ const ProjectManagement = () => {
               onTogglePublished={togglePublished}
               onDelete={setDeleteConfirm}
             />
-          </motion.div>
+
+                {/* 分页组件 */}
+                {allFilteredList.length > 0 && (
+                  <div className="px-6 py-4 border-t border-[rgb(var(--border))] flex items-center justify-between">
+                    <div className="text-sm text-[rgb(var(--text-muted))]">
+                      显示 {(currentPage - 1) * 20 + 1} - {Math.min(currentPage * 20, allFilteredList.length)} 条，共 {allFilteredList.length} 条
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-2.5 py-1 rounded-md text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgb(var(--hover))] transition-colors"
+                      >
+                        上一页
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1))
+                        .map((p, idx, arr) => (
+                          <span key={p} className="flex items-center">
+                            {idx > 0 && arr[idx - 1] !== p - 1 && (
+                              <span className="px-1 text-[rgb(var(--text-muted))]">...</span>
+                            )}
+                            <button
+                              onClick={() => goToPage(p)}
+                              className={`min-w-[28px] px-2 py-1 rounded-md text-sm transition-colors ${
+                                p === currentPage
+                                  ? 'bg-[rgb(var(--primary))] text-white'
+                                  : 'border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </span>
+                        ))}
+                      <button
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        className="px-2.5 py-1 rounded-md text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgb(var(--hover))] transition-colors"
+                      >
+                        下一页
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
         )}
       </AnimatePresence>
         </motion.div>
