@@ -125,13 +125,29 @@ const Header: React.FC = () => {
   const [isClient, setIsClient] = useState<boolean>(false)
   const [userInfoFormVisible, setUserInfoFormVisible] = useState<boolean>(false)
   const [backgroundSettingsOpen, setBackgroundSettingsOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
+
+  const isHomePage = pathname === '/'
+  const isTransparent = isHomePage && !isScrolled
 
   // 监听路径变化，更新激活状态
   useEffect(() => {
     setActiveIndex(pathname)
   }, [pathname])
+
+  // 管理body的home-page class（控制main-content的padding-top）
+  useEffect(() => {
+    if (isHomePage) {
+      document.body.classList.add('home-page')
+    } else {
+      document.body.classList.remove('home-page')
+    }
+    return () => {
+      document.body.classList.remove('home-page')
+    }
+  }, [isHomePage])
 
   useEffect(() => {
     setIsClient(true)
@@ -314,14 +330,11 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        document.querySelector('header')?.classList.add('header-scrolled')
-      } else {
-        document.querySelector('header')?.classList.remove('header-scrolled')
-      }
+      setIsScrolled(window.scrollY > window.innerHeight * 0.8)
     }
 
     window.addEventListener('scroll', handleScroll)
+    handleScroll() // 初始检查
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
@@ -423,7 +436,11 @@ const Header: React.FC = () => {
       <div className="relative flex items-center">
         <button
           onClick={handleToggleTheme}
-          className="relative z-10 w-10 h-10 flex items-center justify-center shrink-0 rounded-full bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] transition-none border border-[rgb(var(--border))]"
+          className={`relative z-10 w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
+            isTransparent
+              ? 'hover:bg-[rgb(var(--bg)/0.2)]'
+              : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
+          }`}
           aria-label={getThemeLabel()}
           title={getThemeLabel()}
         >
@@ -450,20 +467,32 @@ const Header: React.FC = () => {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onShowLogin}
-            className="px-3 py-2 text-white text-sm rounded-lg transition-none whitespace-nowrap bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))] font-semibold shadow-sm"
+            className={`px-3 py-2 text-white text-sm rounded-lg transition-none whitespace-nowrap font-semibold shadow-sm ${
+              isTransparent
+                ? 'bg-[rgb(var(--primary))]/90 hover:bg-[rgb(var(--primary-hover))]/90'
+                : 'bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))]'
+            }`}
           >
             登录
           </button>
           <button
             onClick={onShowRegister}
-            className="px-3 py-2 text-white text-sm rounded-lg transition-none whitespace-nowrap hidden sm:inline bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))] font-semibold shadow-sm"
+            className={`px-3 py-2 text-white text-sm rounded-lg transition-none whitespace-nowrap hidden sm:inline font-semibold shadow-sm ${
+              isTransparent
+                ? 'bg-[rgb(var(--primary))]/90 hover:bg-[rgb(var(--primary-hover))]/90'
+                : 'bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))]'
+            }`}
           >
             注册
           </button>
           {renderThemeToggleButton()}
           <button
             onClick={() => setBackgroundSettingsOpen(true)}
-            className="w-10 h-10 flex items-center justify-center shrink-0 rounded-full bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] transition-none border border-[rgb(var(--border))]"
+            className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
+              isTransparent
+                ? 'hover:bg-[rgb(var(--bg)/0.2)]'
+                : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
+            }`}
             aria-label="自定义背景"
             title="自定义背景"
           >
@@ -479,7 +508,11 @@ const Header: React.FC = () => {
         {renderThemeToggleButton()}
         <button
           onClick={() => setBackgroundSettingsOpen(true)}
-          className="w-10 h-10 flex items-center justify-center shrink-0 rounded-full bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] transition-none border border-[rgb(var(--border))]"
+          className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
+            isTransparent
+              ? 'hover:bg-[rgb(var(--bg)/0.2)]'
+              : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
+          }`}
           aria-label="自定义背景"
           title="自定义背景"
         >
@@ -595,7 +628,11 @@ const Header: React.FC = () => {
       )}
 
       <header
-        className="site-header w-full h-14 fixed top-0 left-0 right-0 z-1000 backdrop-blur-sm bg-[rgb(var(--bg))]/95 text-[rgb(var(--text))] border-b border-[rgb(var(--border))]/30"
+        className={`site-header w-full h-14 fixed top-0 left-0 right-0 z-1000 text-[rgb(var(--text))] transition-all duration-300 ${
+          isTransparent
+            ? 'header-transparent bg-transparent border-0'
+            : 'backdrop-blur-sm bg-[rgb(var(--bg))]/95 border-b border-[rgb(var(--border))]/30'
+        }`}
       >
         <div className="w-full h-full container mx-auto pl-1 pr-2">
           <div className="flex items-center justify-between gap-2 h-full">
@@ -610,7 +647,11 @@ const Header: React.FC = () => {
 
               {/* 移动端/中等屏搜索按钮：<1100px 显示，与主题按钮同尺寸 */}
               <button
-                className="min-[1100px]:hidden w-10 h-10 flex items-center justify-center shrink-0 rounded-full bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] transition-none border border-[rgb(var(--border))]"
+                className={`min-[1100px]:hidden w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
+                  isTransparent
+                    ? 'hover:bg-[rgb(var(--bg)/0.2)]'
+                    : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
+                }`}
                 onClick={() => setMobileSearchVisible(true)}
                 aria-label="搜索"
               >
@@ -620,7 +661,9 @@ const Header: React.FC = () => {
 
               {/* 桌面端导航菜单 */}
             <nav
-              className="hidden md:flex items-center flex-nowrap shrink-0 gap-0.5 bg-[rgb(var(--card))]/20 p-1 rounded-xl min-w-0 border border-[rgb(var(--border))]/30"
+              className={`hidden md:flex items-center flex-nowrap shrink-0 gap-0.5 p-1 rounded-xl min-w-0 ${
+                isTransparent ? '' : 'bg-[rgb(var(--card))]/20 border border-[rgb(var(--border))]/30'
+              }`}
             >
               {menuList.map(item => {
                 const routePath = `/${item.path}`
@@ -632,8 +675,12 @@ const Header: React.FC = () => {
                     title={item.authName}
                     className={`flex items-center shrink-0 rounded-lg transition-none whitespace-nowrap ${
                       isActive
-                        ? 'bg-[rgb(var(--primary))] text-white shadow-md font-semibold'
-                        : 'hover:bg-[rgb(var(--hover))] text-[rgb(var(--text))]'
+                        ? isTransparent
+                          ? 'text-[rgb(var(--primary))] font-semibold'
+                          : 'bg-[rgb(var(--primary))] text-white shadow-md font-semibold'
+                        : isTransparent
+                          ? 'hover:bg-[rgb(var(--bg)/0.15)] text-[rgb(var(--text))]'
+                          : 'hover:bg-[rgb(var(--hover))] text-[rgb(var(--text))]'
                     } min-[1100px]:px-2.5 min-[1100px]:py-1.5 px-2 py-1.5 ${item.enName}`}
                   >
                     {getMenuIcon(item.id)}
@@ -656,7 +703,11 @@ const Header: React.FC = () => {
                     onFocus={() => setSearching(query.trim() !== '')}
                     onBlur={() => setTimeout(() => setSearching(false), 300)}
                     placeholder="搜索..."
-                    className="w-full px-4 py-1.5 pl-9 bg-[rgb(var(--card))] border border-[rgb(var(--border))] text-[rgb(var(--text))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] rounded-lg transition-none text-sm"
+                    className={`w-full px-4 py-1.5 pl-9 text-[rgb(var(--text))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] rounded-lg transition-none text-sm ${
+                      isTransparent
+                        ? 'bg-[rgb(var(--bg)/0.15)] border border-[rgb(var(--text)/0.15)]'
+                        : 'bg-[rgb(var(--card))] border border-[rgb(var(--border))]'
+                    }`}
                   />
                 </div>
                 {renderSearchResults()}
@@ -667,7 +718,11 @@ const Header: React.FC = () => {
 
               {/* 移动端菜单按钮：与主题按钮同尺寸 */}
               <button
-                className="md:hidden w-10 h-10 flex items-center justify-center shrink-0 rounded-full bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] transition-none border border-[rgb(var(--border))]"
+                className={`md:hidden w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
+                  isTransparent
+                    ? 'hover:bg-[rgb(var(--bg)/0.2)]'
+                    : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
+                }`}
                 onClick={() => setMenuHiddenVisible(!menuHiddenVisible)}
                 aria-label="菜单"
               >

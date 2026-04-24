@@ -415,3 +415,51 @@
 .stat-number {
   animation: countUp 0.6s ease forwards;
 }
+
+/* ============================================
+   首页透明Header模式 - Hero全屏到顶
+   ============================================ */
+
+/* 首页时移除main-content顶部padding，让Hero顶到页面顶部 */
+body.home-page .main-content,
+body.home-page.theme-macaron .main-content,
+body.home-page.theme-cyber .main-content {
+  padding-top: 0 !important;
+}
+
+/* 透明Header下文字阴影，确保在Hero背景上可读 */
+.header-transparent .text-xl,
+.header-transparent span:not(.sr-only),
+.header-transparent nav button,
+.header-transparent input {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* 深色主题下增强文字阴影 */
+.dark .header-transparent .text-xl,
+.dark .header-transparent span:not(.sr-only),
+.dark .header-transparent nav button,
+.dark .header-transparent input {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 覆盖macaron/cyber主题的header伪元素装饰 */
+.theme-macaron .header-transparent::before,
+.theme-cyber .header-transparent::before {
+  display: none !important;
+}
+
+/* 覆盖macaron/cyber主题的header背景 */
+.theme-macaron .header-transparent,
+.theme-cyber .header-transparent {
+  background: transparent !important;
+  border: none !important;
+  border-image: none !important;
+  box-shadow: none !important;
+}
+
+/* 覆盖light/dark主题header的border-bottom */
+.light .header-transparent,
+.dark .header-transparent {
+  border-bottom: none !important;
+}
