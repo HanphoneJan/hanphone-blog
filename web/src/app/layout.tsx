@@ -6,6 +6,7 @@ import './globals.css'
 import { headers } from 'next/headers'
 import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 
+import { IMAGE } from '@/lib/constants'
 const notoSerifSc = Noto_Serif_SC({
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
@@ -44,8 +45,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: `${SITE_URL}${SITE_CONFIG.images.ogImage}`,
-        width: 1200,
-        height: 630,
+        width: IMAGE.OG_IMAGE_WIDTH,
+        height: IMAGE.OG_IMAGE_HEIGHT,
         alt: SITE_CONFIG.name,
       },
     ],

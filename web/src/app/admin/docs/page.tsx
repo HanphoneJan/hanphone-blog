@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import React from 'react'
 
+import { API_CODE } from '@/lib/constants'
 interface DocItem {
   id: number
   docId: string
@@ -237,7 +238,7 @@ export default function DocManagementPage() {
         params: { namespace: ns }
       })
       const result = res.data as { code: number; items?: FsItem[] }
-      if (result.code === 200 && Array.isArray(result.items)) {
+      if (result.code === API_CODE.SUCCESS && Array.isArray(result.items)) {
         setFsItems(result.items)
       } else {
         setFsItems([])
@@ -352,7 +353,7 @@ export default function DocManagementPage() {
         data: formData
       })
 
-      if (res.data.code !== 200) {
+      if (res.data.code !== API_CODE.SUCCESS) {
         throw new Error(res.data.error || '批量上传失败')
       }
 
@@ -600,7 +601,7 @@ export default function DocManagementPage() {
         parentNamespace: parentNs
       })
 
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         setShowCreateDirModal(false)
         setNewDirName('')
         setError(null)

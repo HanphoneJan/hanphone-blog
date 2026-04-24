@@ -12,6 +12,7 @@ import ModalOverlay from '@/components/shared/ModalOverlay'
 import { LINK_TYPES } from '../../types'
 import type { FriendLink } from '../../types'
 
+import {  API_CODE , TIME } from '@/lib/constants'
 interface AddLinkModalProps {
   isOpen: boolean
   onClose: () => void
@@ -94,7 +95,7 @@ export function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) 
 
       const res = response.data
 
-      if (res.code === 200 && res.data) {
+      if (res.code === API_CODE.SUCCESS && res.data) {
         const parsed = res.data
         setFormData(prev => ({
           ...prev,
@@ -157,7 +158,7 @@ export function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) 
 
       const res = response.data
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         setSuccess(true)
         showAlert('友链添加成功')
         setTimeout(() => {
@@ -165,7 +166,7 @@ export function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) 
           setFormData(initialFormData)
           onSuccess()
           onClose()
-        }, 1500)
+        }, TIME.PASSWORD_RESET_DELAY)
       } else {
         setError(res.message || '添加失败')
       }

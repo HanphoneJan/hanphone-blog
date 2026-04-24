@@ -13,7 +13,7 @@ import { ENDPOINTS } from '@/lib/api'
 import { ADMIN_BLOG_INPUT_LABELS } from '@/lib/labels'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
-import { STORAGE_KEYS } from '@/lib/constants'
+import {    STORAGE_KEYS , API_CODE , TIME , IMAGE } from '@/lib/constants'
 import ModalOverlay from '@/components/shared/ModalOverlay'
 // 引入 lucide 图标
 import {
@@ -221,7 +221,7 @@ export default function BlogEditorPage() {
     // 延迟1秒保存，避免频繁写入
     saveTimerRef.current = setTimeout(() => {
       saveDraftToLocalStorage()
-    }, 1000)
+    }, TIME.SUCCESS_CLOSE_DELAY)
 
     return () => {
       if (saveTimerRef.current) {
@@ -265,7 +265,7 @@ export default function BlogEditorPage() {
   const getTypeList = async () => {
     try {
       const data = await fetchData(ENDPOINTS.ADMIN.FULL_TYPE_LIST)
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         setTypeList(data.data)
       } else {
         showAlert(ADMIN_BLOG_INPUT_LABELS.FETCH_TYPE_FAIL)
@@ -278,7 +278,7 @@ export default function BlogEditorPage() {
   const getTagList = async () => {
     try {
       const data = await fetchData(ENDPOINTS.ADMIN.FULL_TAG_LIST)
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         setTagList(data.data)
       } else {
         showAlert(ADMIN_BLOG_INPUT_LABELS.FETCH_TAG_FAIL)
@@ -333,7 +333,7 @@ export default function BlogEditorPage() {
 
       const data = await fetchData(ENDPOINTS.BLOGS, 'POST', { blog: updatedBlog })
 
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         // 保存成功后清除草稿
         localStorage.removeItem(BLOG_DRAFT_KEY)
         showAlert(ADMIN_BLOG_INPUT_LABELS.MODIFY_SUCCESS)
@@ -373,8 +373,8 @@ export default function BlogEditorPage() {
       // 使用Compressor压缩图片
       new Compressor(file, {
         quality: 0.8, // 压缩质量，0-1之间
-        maxWidth: 1200, // 最大宽度限制
-        maxHeight: 1200, // 最大高度限制
+        maxWidth: IMAGE.MAX_WIDTH,
+        maxHeight: IMAGE.MAX_HEIGHT,
         mimeType: 'image/jpeg', // 确保MIME类型正确
         convertSize: 102400, // 小于100KB的图片也进行转换
         success: async compressedResult => {
@@ -440,7 +440,7 @@ export default function BlogEditorPage() {
 
       const data = await fetchData(ENDPOINTS.ADMIN.BLOGS, 'POST', { blog: newBlog })
 
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         // 发布成功后清除草稿
         localStorage.removeItem(BLOG_DRAFT_KEY)
         showAlert(ADMIN_BLOG_INPUT_LABELS.PUBLISH_SUCCESS)

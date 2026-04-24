@@ -19,6 +19,7 @@ import { ADMIN_TYPE_LABELS, COMMON_LABELS } from '@/lib/labels'
 import { PicResponse } from '@/types/response'
 import Compressor from 'compressorjs'
 
+import {  API_CODE , IMAGE } from '@/lib/constants'
 // 动画变体定义
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -110,7 +111,7 @@ export default function CategoryManagement() {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.FULL_TYPE_LIST)
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         // 按博客数量排序（降序）
         const sortedCategories = res.data.sort(
           (a: Category, b: Category) => b.blogs.length - a.blogs.length
@@ -162,7 +163,7 @@ export default function CategoryManagement() {
 
   // 处理图片上传成功
   const handleUploadSuccess = (data: PicResponse) => {
-    if (data.code === 200) {
+    if (data.code === API_CODE.SUCCESS) {
       // 修改：检查code而不是status
       const url = data.url
       // 更新文件列表确保图片回显
@@ -187,8 +188,8 @@ export default function CategoryManagement() {
     // 使用Compressor压缩图片
     new Compressor(file, {
       quality: 0.8, // 压缩质量，0-1之间
-      maxWidth: 1200, // 最大宽度限制
-      maxHeight: 1200, // 最大高度限制
+      maxWidth: IMAGE.MAX_WIDTH,
+      maxHeight: IMAGE.MAX_HEIGHT,
       mimeType: 'image/jpeg', // 确保MIME类型正确
       convertSize: 102400, // 小于100KB的图片也进行转换
       success: async compressedResult => {
@@ -283,7 +284,7 @@ export default function CategoryManagement() {
         res = await fetchData(ENDPOINTS.ADMIN.TYPES, 'POST', payload)
       }
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(res.message || (currentCategory?.id ? ADMIN_TYPE_LABELS.SAVE_SUCCESS : ADMIN_TYPE_LABELS.CREATE_SUCCESS))
         handleCloseDialog()
         getFullCategoryList()
@@ -304,7 +305,7 @@ export default function CategoryManagement() {
       setLoading(true)
       const res = await fetchData(`${ENDPOINTS.ADMIN.TYPES}/${id}/delete`, 'GET')
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(res.message || ADMIN_TYPE_LABELS.DELETE_SUCCESS)
         getFullCategoryList()
       } else {

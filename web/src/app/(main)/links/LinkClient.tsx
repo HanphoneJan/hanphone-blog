@@ -9,7 +9,7 @@ import {
   Plus
 } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
-import { ASSETS } from '@/lib/constants'
+import {  ASSETS , API_CODE } from '@/lib/constants'
 import { SITE_URL } from '@/lib/seo-config'
 import BgOverlay from '@/app/(main)/components/BgOverlay'
 import ApplyModal from './components/ApplyModal'
@@ -89,7 +89,7 @@ async function fetchFriendLinks(): Promise<FriendLink[]> {
 
     const data = await response.json()
 
-    if (data.code !== 200) {
+    if (data.code !== API_CODE.SUCCESS) {
       throw new Error(data.message || 'Failed to fetch friend links')
     }
 

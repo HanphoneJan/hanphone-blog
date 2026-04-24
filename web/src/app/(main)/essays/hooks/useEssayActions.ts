@@ -6,6 +6,7 @@ import { showAlert } from '@/lib/Alert'
 import { ESSAY_LABELS } from '@/lib/labels'
 import type { Essay, UserInfo, Comment } from '../types'
 
+import { API_CODE } from '@/lib/constants'
 interface UseEssayActionsOptions {
   userInfo: UserInfo | null
   essays: Essay[]
@@ -51,7 +52,7 @@ export function useEssayActions({
         isLike: newIsLiked
       })
 
-      if (res.code !== 200) {
+      if (res.code !== API_CODE.SUCCESS) {
         // 回滚状态
         dispatch({
           type: 'UPDATE_LIKE',
@@ -90,7 +91,7 @@ export function useEssayActions({
         parentCommentId: -1
       })
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const newComment: Comment = {
           id: res.data.id,
           userId: userInfo.id,
@@ -135,7 +136,7 @@ export function useEssayActions({
         parentCommentId: commentId || -1
       })
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const newReply: Comment = {
           id: res.data.id,
           userId: userInfo.id,
@@ -171,7 +172,7 @@ export function useEssayActions({
     try {
       const res = await fetchData(`${ENDPOINTS.ESSAYS}/comments/${commentId}`, 'DELETE')
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         dispatch({ type: 'DELETE_COMMENT', payload: { essayId, commentId } })
         showAlert(ESSAY_LABELS.DELETE_SUCCESS)
       } else {

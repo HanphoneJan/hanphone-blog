@@ -24,6 +24,7 @@ import { EditDialog } from './components/dialogs/EditDialog'
 
 import type { Blog, Type, Tag, EditBlogForm } from './types'
 
+import { API_CODE } from '@/lib/constants'
 // 动画变体定义
 const pageVariants: Variants = {
   hidden: { opacity: 0 },
@@ -161,7 +162,7 @@ export default function BlogManagementPage() {
   // 获取所有分类
   const getFullTypeList = async () => {
     const data = await fetchData(ENDPOINTS.ADMIN.FULL_TYPE_LIST)
-    if (data.code === 200) {
+    if (data.code === API_CODE.SUCCESS) {
       setTypeList(data.data)
     } else {
       showAlert(ADMIN_BLOG_LABELS.FETCH_TYPE_FAIL)
@@ -171,7 +172,7 @@ export default function BlogManagementPage() {
   // 获取所有标签
   const getFullTagList = async () => {
     const data = await fetchData(ENDPOINTS.ADMIN.FULL_TAG_LIST)
-    if (data.code === 200) {
+    if (data.code === API_CODE.SUCCESS) {
       setTagList(data.data)
     } else {
       showAlert(ADMIN_BLOG_LABELS.FETCH_TAG_FAIL)

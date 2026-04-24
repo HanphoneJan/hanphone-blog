@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useTheme } from '@/contexts/ThemeProvider'
-import { STORAGE_KEYS, ROUTES, ASSETS, HOME_CONFIG } from '@/lib/constants'
+import { STORAGE_KEYS, ROUTES, ASSETS, HOME_CONFIG, TIME, Z_INDEX } from '@/lib/constants'
 import { ADMIN_NAV_LABELS } from '@/lib/labels'
 
 interface AdminHeaderProps {
@@ -207,7 +207,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
         setAnimateThemeToggle(true)
         toggleTheme()
         // 动画时长 500ms，结束后重置状态避免残留
-        setTimeout(() => setAnimateThemeToggle(false), 500)
+        setTimeout(() => setAnimateThemeToggle(false), TIME.LONG_PRESS_DURATION)
       }
 
       // 根据主题返回对应的图标和 aria-label
@@ -382,7 +382,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
                 top: dropdownPosition.top,
                 left: dropdownPosition.left,
                 width: dropdownPosition.width,
-                zIndex: 9999 // 全局最高层级
+                zIndex: Z_INDEX.LIVE2D // 全局最高层级
               }}
               className="bg-[rgb(var(--card))] rounded-lg shadow-sm py-1 border border-[rgb(var(--border))] overflow-visible"
             >

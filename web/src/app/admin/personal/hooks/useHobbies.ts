@@ -5,6 +5,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { Hobby, Item, PersonInfoFormData } from '../types'
 
+import { API_CODE } from '@/lib/constants'
 export function useHobbies() {
   const [hobbies, setHobbies] = useState<Hobby[]>([])
 
@@ -48,7 +49,7 @@ export function useHobbies() {
           method: 'POST',
           data: newItem
         })
-        if (res.data.code === 200) {
+        if (res.data.code === API_CODE.SUCCESS) {
           return { success: true, message: '' }
         } else {
           return { success: false, message: res.data.message || '' }
@@ -62,7 +63,7 @@ export function useHobbies() {
           method: 'POST',
           data: updatedItem
         })
-        if (res.data.code === 200) {
+        if (res.data.code === API_CODE.SUCCESS) {
           return { success: true, message: '' }
         } else {
           return { success: false, message: res.data.message || '' }
@@ -81,7 +82,7 @@ export function useHobbies() {
         method: 'GET'
       })
 
-      if (res.data.code === 200) {
+      if (res.data.code === API_CODE.SUCCESS) {
         return { success: true }
       } else {
         return { success: false, message: res.data.message || '' }

@@ -7,6 +7,7 @@ import { ENDPOINTS } from "@/lib/api";
 import apiClient from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeProvider';
 
+import { API_CODE } from '@/lib/constants'
 // 定义用户数据类型
 interface UserData {
   loginProvince: string;
@@ -377,7 +378,7 @@ const VisitorMap: React.FC<VisitorMapProps> = ({ style }) => {
   const fetchUserData = async () => {
     const res = await fetchData(ENDPOINTS.ADMIN.USER_AREA_LIST);
 
-    if (res?.code === 200 && Array.isArray(res.data)) {
+    if (res?.code === API_CODE.SUCCESS && Array.isArray(res.data)) {
       const provinceMap: Record<string, UserData[]> = {};
 
       res.data.forEach((item: UserData) => {

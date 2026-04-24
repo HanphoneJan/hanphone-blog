@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Filter } from 'lucide-react'
 import Footer from '@/components/Footer'
-import { PAGINATION, HOME_CONFIG } from '@/lib/constants'
+import {  PAGINATION, HOME_CONFIG , TIME } from '@/lib/constants'
 import { HOME_LABELS } from '@/lib/labels'
 
 import { useHomeCache } from './hooks/useHomeCache'
@@ -182,7 +182,7 @@ export default function HomeClient({
     if (selectedTypeId === null && selectedTagIds.length === 0) {
       const timer = setTimeout(() => {
         getBlogList()
-      }, 300)
+      }, TIME.DEBOUNCE_DELAY)
       return () => clearTimeout(timer)
     }
   }, [queryInfo, getBlogList, selectedTypeId, selectedTagIds])

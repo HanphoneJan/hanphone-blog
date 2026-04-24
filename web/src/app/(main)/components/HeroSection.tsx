@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { ASSETS, STORAGE_KEYS } from '@/lib/constants'
+import { ASSETS, STORAGE_KEYS, HOME_CONFIG } from '@/lib/constants'
 import BgOverlay from './BgOverlay'
 
 export function HeroSection() {
@@ -76,29 +76,26 @@ export function HeroSection() {
           idx++
           setSubtitleText(fullSubtitle.slice(0, idx))
           setShowCursor(true)
-          timeoutId = setTimeout(tick, 110)
+          timeoutId = setTimeout(tick, HOME_CONFIG.TYPEWRITER_CHAR_DELAY)
         } else {
           timeoutId = setTimeout(() => {
             deleting = true
             tick()
-          }, 3000)
+          }, HOME_CONFIG.TYPEWRITER_RESET_DELAY)
         }
       } else {
         if (idx > 0) {
           idx--
           setSubtitleText(fullSubtitle.slice(0, idx))
           setShowCursor(true)
-          timeoutId = setTimeout(tick, 55)
+          timeoutId = setTimeout(tick, HOME_CONFIG.TYPEWRITER_DELETE_DELAY)
         } else {
-          timeoutId = setTimeout(() => {
-            deleting = false
-            tick()
-          }, 2000)
+          timeoutId = setTimeout(() => { deleting = false; tick() }, HOME_CONFIG.TYPEWRITER_PAUSE_AFTER_DELETE)
         }
       }
     }
 
-    timeoutId = setTimeout(tick, 1200)
+    timeoutId = setTimeout(tick, HOME_CONFIG.TYPEWRITER_START_DELAY)
 
     return () => {
       mountedRef.current = false

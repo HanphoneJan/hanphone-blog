@@ -4,6 +4,7 @@ import { createMetadata } from '@/lib/seo-config'
 import BlogDetailClient from './components/BlogDetailClient'
 import type { Blog, RelatedBlog } from './types'
 
+import { API_CODE } from '@/lib/constants'
 interface BlogDetailPageProps {
   params: Promise<{ id: string }>
 }
@@ -16,7 +17,7 @@ async function fetchBlogData(id: string): Promise<Blog | null> {
     })
     const data = await res.json()
 
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return {
         ...data.data,
         likes: data.data.likes ?? 0,

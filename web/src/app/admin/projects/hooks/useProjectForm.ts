@@ -9,6 +9,7 @@ import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import Compressor from 'compressorjs'
 
+import {  API_CODE , IMAGE } from '@/lib/constants'
 // API调用函数
 const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
   try {
@@ -67,8 +68,8 @@ export const useProjectForm = (onSuccess: () => void) => {
     return new Promise<void>((resolve, reject) => {
       new Compressor(file, {
         quality: 0.8,
-        maxWidth: 1200,
-        maxHeight: 1200,
+        maxWidth: IMAGE.MAX_WIDTH,
+        maxHeight: IMAGE.MAX_HEIGHT,
         mimeType: 'image/jpeg',
         convertSize: 102400,
         success: async (compressedResult) => {
@@ -128,8 +129,8 @@ export const useProjectForm = (onSuccess: () => void) => {
 
     new Compressor(file, {
       quality: 0.8,
-      maxWidth: 1200,
-      maxHeight: 1200,
+      maxWidth: IMAGE.MAX_WIDTH,
+      maxHeight: IMAGE.MAX_HEIGHT,
       mimeType: 'image/jpeg',
       convertSize: 102400,
       success: async (compressedResult) => {
@@ -197,7 +198,7 @@ export const useProjectForm = (onSuccess: () => void) => {
 
       const res = await fetchData(ENDPOINTS.ADMIN.PROJECT, 'POST', { project: projectData })
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_PROJECT_LABELS.PUBLISH_SUCCESS)
         resetForm()
         onSuccess()

@@ -7,6 +7,7 @@ import { showAlert } from '@/lib/Alert'
 import { ADMIN_BLOG_LABELS } from '@/lib/labels'
 import type { Blog, QueryInfo } from '../types'
 
+import { API_CODE } from '@/lib/constants'
 export function useBlogs() {
   const [blogList, setBlogList] = useState<Blog[]>([])
   const [totalcount, setTotalcount] = useState(0)
@@ -41,7 +42,7 @@ export function useBlogs() {
       pagesize
     })
 
-    if (data.code === 200) {
+    if (data.code === API_CODE.SUCCESS) {
       const formattedBlogs = data.data.content.map((blog: Blog) => ({
         ...blog,
         inputVisible: false,
@@ -58,7 +59,7 @@ export function useBlogs() {
   const removeBlogById = async (id: number, onSuccess?: () => void) => {
     showAlert(ADMIN_BLOG_LABELS.DELETE_CONFIRM, { type: 'warning', duration: 3000 })
     const data = await fetchData(`${ENDPOINTS.ADMIN.BLOGS}/${id}/delete`, 'GET')
-    if (data.code === 200) {
+    if (data.code === API_CODE.SUCCESS) {
       showAlert(ADMIN_BLOG_LABELS.DELETE_SUCCESS)
       onSuccess?.()
     } else {
@@ -68,7 +69,7 @@ export function useBlogs() {
 
   const updateBlog = async (blog: Blog, onSuccess?: () => void) => {
     const data = await fetchData(ENDPOINTS.ADMIN.BLOGS, 'POST', { blog })
-    if (data.code === 200) {
+    if (data.code === API_CODE.SUCCESS) {
       onSuccess?.()
       return true
     }
@@ -83,7 +84,7 @@ export function useBlogs() {
         recommend: !blog.recommend
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         onSuccess?.()
         showAlert(blog.recommend ? ADMIN_BLOG_LABELS.UNRECOMMEND_SUCCESS : ADMIN_BLOG_LABELS.RECOMMEND_SUCCESS)
         return true
@@ -107,7 +108,7 @@ export function useBlogs() {
         blog: { ...blog, published: !blog.published }
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         onSuccess?.()
         showAlert(blog.published ? ADMIN_BLOG_LABELS.UNPUBLISH_SUCCESS : ADMIN_BLOG_LABELS.PUBLISH_SUCCESS)
         return true
@@ -127,7 +128,7 @@ export function useBlogs() {
   const updateBlogField = async (blog: Blog, field: Partial<Blog>, successMsg: string, failMsg: string, onSuccess?: () => void) => {
     const updatedBlog = { ...blog, ...field }
     const data = await fetchData(ENDPOINTS.ADMIN.BLOGS, 'POST', { blog: updatedBlog })
-    if (data.code === 200) {
+    if (data.code === API_CODE.SUCCESS) {
       showAlert(successMsg)
       onSuccess?.()
       return true

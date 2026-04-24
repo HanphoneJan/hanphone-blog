@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { ENDPOINTS } from '@/lib/api'
-import { ASSETS } from '@/lib/constants'
+import {  ASSETS , API_CODE } from '@/lib/constants'
 import { ADMIN_LINK_LABELS } from '@/lib/labels'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
@@ -76,7 +76,7 @@ export function useLinks() {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.FRIENDLINKS)
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const processedData = processFriendLinkData(res.data)
         setFriendLinkList(processedData)
         return processedData
@@ -106,7 +106,7 @@ export function useLinks() {
         friendLink: friendLinkData
       })
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_LINK_LABELS.PUBLISH_SUCCESS)
         await getFriendLinkList()
         return true
@@ -131,7 +131,7 @@ export function useLinks() {
         friendLink: updatedFriendLink
       })
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_LINK_LABELS.UPDATE_SUCCESS)
         return true
       } else {
@@ -155,7 +155,7 @@ export function useLinks() {
       setLoading(true)
       const res = await fetchData(`${ENDPOINTS.ADMIN.FRIENDLINK}/${id}`, 'DELETE')
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_LINK_LABELS.DELETE_SUCCESS)
         await getFriendLinkList()
         return true
@@ -198,7 +198,7 @@ export function useLinks() {
         recommend: !friendLink.recommend
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         setFriendLinkList(prev =>
           prev.map(item =>
             item.id === friendLink.id ? { ...item, recommend: !friendLink.recommend } : item
@@ -229,7 +229,7 @@ export function useLinks() {
         published: !friendLink.published
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         setFriendLinkList(prev =>
           prev.map(item =>
             item.id === friendLink.id ? { ...item, published: !friendLink.published } : item
@@ -264,7 +264,7 @@ export function useLinks() {
         applyText: friendLink.applyText
       })
 
-      if (response.code === 200 && response.data) {
+      if (response.code === API_CODE.SUCCESS && response.data) {
         showAlert('解析成功')
         return response.data as ParsedApplyText
       } else {

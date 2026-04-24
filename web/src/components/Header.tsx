@@ -31,7 +31,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
 import { alertSuccess } from '@/lib/Alert'
-import { STORAGE_KEYS, ASSETS, ROUTES } from '@/lib/constants'
+import { STORAGE_KEYS, ASSETS, ROUTES, API_CODE, TIME } from '@/lib/constants'
 import { AUTH_LABELS } from '@/lib/labels'
 import UserInfoForm from './UserInfoForm'
 import BackgroundSettings from './BackgroundSettings'
@@ -204,7 +204,7 @@ const Header: React.FC = () => {
 
       const data = response.data
 
-      if (!data.flag || data.code !== 200) {
+      if (!data.flag || data.code !== API_CODE.SUCCESS) {
         throw new Error(`搜索失败: ${data.message || '未知错误'}`)
       }
 
@@ -266,7 +266,7 @@ const Header: React.FC = () => {
           setSearchList([])
           setSearching(false)
         }
-      }, 300)
+      }, TIME.DEBOUNCE_DELAY)
     },
     [fetchSearchResults]
   )
@@ -301,7 +301,7 @@ const Header: React.FC = () => {
       // 等待动画完成后再进行页面跳转
       setTimeout(() => {
         router.push(url)
-      }, 1000) // 时间应与动画持续时间一致
+      }, TIME.SUCCESS_CLOSE_DELAY)
     } else {
       // 如果没有找到页面元素，直接跳转
       router.push(url)
@@ -398,7 +398,7 @@ const Header: React.FC = () => {
       setAnimateThemeToggle(true)
       toggleTheme()
       // 动画时长 500ms，结束后重置状态避免残留
-      setTimeout(() => setAnimateThemeToggle(false), 500)
+      setTimeout(() => setAnimateThemeToggle(false), TIME.LONG_PRESS_DURATION)
     }
 
     // 根据主题返回对应的图标和 aria-label
@@ -698,7 +698,7 @@ const Header: React.FC = () => {
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     onFocus={() => setSearching(query.trim() !== '')}
-                    onBlur={() => setTimeout(() => setSearching(false), 300)}
+                    onBlur={() => setTimeout(() => setSearching(false), TIME.ANIMATION_DURATION)}
                     placeholder="搜索..."
                     className={`w-full px-4 py-1.5 pl-9 text-[rgb(var(--text))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] rounded-lg transition-none text-sm ${
                       isTransparent

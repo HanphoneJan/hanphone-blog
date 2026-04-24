@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '@/lib/api'
-import { PAGINATION } from '@/lib/constants'
+import {  PAGINATION , API_CODE } from '@/lib/constants'
 import { createMetadata } from '@/lib/seo-config'
 import HomeClient from './HomeClient'
 import type { Blog, Type, Tag } from './types'
@@ -56,7 +56,7 @@ async function fetchBlogs(): Promise<{ blogs: Blog[]; total: number }> {
 
     const data = await res.json()
 
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       // 对博客列表进行排序，推荐博客优先
       const sortedBlogs = (data.data.content || []).sort((a: Blog, b: Blog) => {
         if (b.recommend && !a.recommend) return 1
@@ -85,7 +85,7 @@ async function fetchTypes(): Promise<Type[]> {
     }
 
     const data = await res.json()
-    return data.code === 200 ? data.data || [] : []
+    return data.code === API_CODE.SUCCESS ? data.data || [] : []
   } catch (error) {
     console.error('Failed to fetch types:', error)
     return []
@@ -102,7 +102,7 @@ async function fetchTags(): Promise<Tag[]> {
     }
 
     const data = await res.json()
-    return data.code === 200 ? data.data || [] : []
+    return data.code === API_CODE.SUCCESS ? data.data || [] : []
   } catch (error) {
     console.error('Failed to fetch tags:', error)
     return []
@@ -119,7 +119,7 @@ async function fetchRecommendBlogs(): Promise<Blog[]> {
     }
 
     const data = await res.json()
-    return data.code === 200 ? data.data || [] : []
+    return data.code === API_CODE.SUCCESS ? data.data || [] : []
   } catch (error) {
     console.error('Failed to fetch recommend blogs:', error)
     return []
@@ -136,7 +136,7 @@ async function fetchRecommendEssays(): Promise<Essay[]> {
     }
 
     const data = await res.json()
-    return data.code === 200 ? data.data || [] : []
+    return data.code === API_CODE.SUCCESS ? data.data || [] : []
   } catch (error) {
     console.error('Failed to fetch recommend essays:', error)
     return []
@@ -153,7 +153,7 @@ async function fetchRecommendProjects(): Promise<Project[]> {
     }
 
     const data = await res.json()
-    return data.code === 200 ? data.data || [] : []
+    return data.code === API_CODE.SUCCESS ? data.data || [] : []
   } catch (error) {
     console.error('Failed to fetch recommend projects:', error)
     return []
@@ -170,7 +170,7 @@ async function fetchSiteStats(): Promise<SiteStats> {
     }
 
     const data = await res.json()
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return {
         blogCount: data.data.blogCount || 0,
         essayCount: data.data.essayCount || 0,

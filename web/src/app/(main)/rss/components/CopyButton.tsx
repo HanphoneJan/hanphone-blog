@@ -4,6 +4,7 @@ import { Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import { alertSuccess } from '@/lib/Alert'
 
+import { TIME } from '@/lib/constants'
 interface CopyButtonProps {
   text: string
 }
@@ -16,11 +17,11 @@ export default function CopyButton({ text }: CopyButtonProps) {
       await navigator.clipboard.writeText(text)
       alertSuccess('RSS 链接已复制到剪贴板！')
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setTimeout(() => setCopied(false), TIME.ALERT_DURATION)
     } catch {
       alertSuccess('RSS 链接已复制到剪贴板！')
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setTimeout(() => setCopied(false), TIME.ALERT_DURATION)
     }
   }
 

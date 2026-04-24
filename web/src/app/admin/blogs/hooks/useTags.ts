@@ -7,6 +7,7 @@ import { showAlert } from '@/lib/Alert'
 import { ADMIN_BLOG_LABELS } from '@/lib/labels'
 import type { Blog, Tag } from '../types'
 
+import {  API_CODE , TIME } from '@/lib/constants'
 interface UseTagsProps {
   tagList: Tag[]
   setTagList: React.Dispatch<React.SetStateAction<Tag[]>>
@@ -24,7 +25,7 @@ export function useTags({ tagList, setTagList, setBlogList, fetchData }: UseTags
 
     setTimeout(() => {
       editInputRef.current?.focus()
-    }, 100)
+    }, TIME.ALERT_INIT_DELAY)
   }, [setBlogList])
 
   const handleInputConfirm = useCallback(async (row: Blog) => {
@@ -46,7 +47,7 @@ export function useTags({ tagList, setTagList, setBlogList, fetchData }: UseTags
         newTag = existingTag
       } else {
         const res = await fetchData(ENDPOINTS.ADMIN.TAGS, 'POST', { tag: { name: tagName } })
-        if (res.code === 200) {
+        if (res.code === API_CODE.SUCCESS) {
           newTag = res.data as Tag
           setTagList(prev => [...prev, newTag as Tag])
         } else {
@@ -64,7 +65,7 @@ export function useTags({ tagList, setTagList, setBlogList, fetchData }: UseTags
       }
 
       const res = await fetchData(ENDPOINTS.ADMIN.BLOGS, 'POST', { blog: updatedBlog })
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_BLOG_LABELS.TAG_ADD_SUCCESS)
         setBlogList(prev => prev.map(item => (item.id === row.id ? updatedBlog : item)))
       } else {
@@ -85,7 +86,7 @@ export function useTags({ tagList, setTagList, setBlogList, fetchData }: UseTags
       const updatedBlog = { ...row, tags: validTags }
 
       const res1 = await fetchData(ENDPOINTS.ADMIN.BLOGS, 'POST', { blog: updatedBlog })
-      if (res1.code !== 200) throw new Error()
+      if (res1.code !== API_CODE.SUCCESS) throw new Error()
 
       const deletedTag = row.tags[i]
       await apiClient({

@@ -5,6 +5,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { Skill, Item, PersonInfoFormData } from '../types'
 
+import { API_CODE } from '@/lib/constants'
 export function useSkills() {
   const [skills, setSkills] = useState<Skill[]>([])
 
@@ -47,7 +48,7 @@ export function useSkills() {
           method: 'POST',
           data: newItem
         })
-        if (res.data.code === 200) {
+        if (res.data.code === API_CODE.SUCCESS) {
           return { success: true, message: '' }
         } else {
           return { success: false, message: res.data.message || '' }
@@ -61,7 +62,7 @@ export function useSkills() {
           method: 'POST',
           data: updatedItem
         })
-        if (res.data.code === 200) {
+        if (res.data.code === API_CODE.SUCCESS) {
           return { success: true, message: '' }
         } else {
           return { success: false, message: res.data.message || '' }
@@ -80,7 +81,7 @@ export function useSkills() {
         method: 'GET'
       })
 
-      if (res.data.code === 200) {
+      if (res.data.code === API_CODE.SUCCESS) {
         return { success: true }
       } else {
         return { success: false, message: res.data.message || '' }

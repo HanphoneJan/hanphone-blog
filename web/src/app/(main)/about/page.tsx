@@ -1,6 +1,7 @@
 import { ENDPOINTS } from '@/lib/api'
 import PersonalClient from './PersonalClient'
 
+import { API_CODE } from '@/lib/constants'
 export const dynamic = 'force-dynamic'
 
 // 定义数据类型
@@ -23,7 +24,7 @@ async function fetchPersonalData(): Promise<Item[]> {
     })
     const data = await res.json()
 
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data
     }
     return []

@@ -6,7 +6,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_PERSONAL_LABELS } from '@/lib/labels'
-import { ASSETS } from '@/lib/constants'
+import {  ASSETS , API_CODE } from '@/lib/constants'
 import { UserInfo } from '../types'
 
 export function usePersonal() {
@@ -60,7 +60,7 @@ export function usePersonal() {
         data: { user: userForm }
       })
 
-      if (res.data.code === 200) {
+      if (res.data.code === API_CODE.SUCCESS) {
         if (updateUserInfo) {
           updateUserInfo(res.data.data)
         }
@@ -94,7 +94,7 @@ export function usePersonal() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
 
-      if (response.data.code === 200) {
+      if (response.data.code === API_CODE.SUCCESS) {
         setImageUrl(response.data.url || ASSETS.DEFAULT_AVATAR)
       } else {
         showAlert(ADMIN_PERSONAL_LABELS.AVATAR_UPLOAD_FAIL)
@@ -125,7 +125,7 @@ export function usePersonal() {
         }
       })
 
-      if (res.data.code === 200) {
+      if (res.data.code === API_CODE.SUCCESS) {
         if (updateUserInfo) {
           updateUserInfo(res.data.data)
         }

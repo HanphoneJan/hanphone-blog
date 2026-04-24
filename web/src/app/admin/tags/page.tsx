@@ -8,6 +8,7 @@ import apiClient from '@/lib/utils' // 导入apiClient
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_TAG_LABELS, COMMON_LABELS } from '@/lib/labels'
 
+import { API_CODE } from '@/lib/constants'
 // 动画变体定义
 const pageVariants: Variants = {
   hidden: { opacity: 0 },
@@ -84,7 +85,7 @@ export default function TagsManagementPage() {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.GET_FULL_TAG_LIST_AND_BLOG_NUMBER)
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         // 按博客数量排序（降序）
         const sortedTags = res.data.sort((a: Tag, b: Tag) => b.blogsNumber - a.blogsNumber)
         setTagList(sortedTags)
@@ -157,7 +158,7 @@ export default function TagsManagementPage() {
         res = await fetchData(ENDPOINTS.ADMIN.TAGS, 'POST', { tag: tagData })
       }
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(res.message || (currentTag.id ? ADMIN_TAG_LABELS.SAVE_SUCCESS : ADMIN_TAG_LABELS.CREATE_SUCCESS))
         handleCloseDialog()
         getFullTagList()
@@ -178,7 +179,7 @@ export default function TagsManagementPage() {
       setLoading(true)
       const res = await fetchData(`${ENDPOINTS.ADMIN.TAGS}/${id}/delete`, 'GET')
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(res.message || ADMIN_TAG_LABELS.DELETE_SUCCESS)
         getFullTagList()
       } else {

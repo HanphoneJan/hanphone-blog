@@ -7,6 +7,7 @@ import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_BLOG_LABELS } from '@/lib/labels'
 
+import {  API_CODE , IMAGE } from '@/lib/constants'
 export function useImageUpload() {
   const uploadRef = useRef<HTMLInputElement>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -41,8 +42,8 @@ export function useImageUpload() {
       // 使用Compressor压缩图片
       new Compressor(file, {
         quality: 0.8,
-        maxWidth: 1200,
-        maxHeight: 1200,
+        maxWidth: IMAGE.MAX_WIDTH,
+        maxHeight: IMAGE.MAX_HEIGHT,
         mimeType: 'image/jpeg',
         convertSize: 102400,
         success: async compressedResult => {
@@ -69,7 +70,7 @@ export function useImageUpload() {
             })
 
             const data = response.data
-            if (data.code === 200) {
+            if (data.code === API_CODE.SUCCESS) {
               setDialogImageUrl(data.url)
               showAlert(ADMIN_BLOG_LABELS.IMAGE_UPLOAD_SUCCESS)
             } else {

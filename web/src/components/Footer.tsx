@@ -9,7 +9,7 @@ import { Mail, Eye, TrendingUp, Rss } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
-import { FOOTER_CONFIG, ROUTES } from '@/lib/constants'
+import {  FOOTER_CONFIG, ROUTES , API_CODE } from '@/lib/constants'
 import { FOOTER_LABELS } from '@/lib/labels'
 
 // 定义接口返回数据类型
@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
         setLoading(true)
         const response = await apiClient.get<VisitCountResponse>(ENDPOINTS.GET_VISIT_COUNT)
 
-        if (response.data.flag && response.data.code === 200) {
+        if (response.data.flag && response.data.code === API_CODE.SUCCESS) {
           setTotalVisitCount(response.data.data)
           setError(false)
         } else {

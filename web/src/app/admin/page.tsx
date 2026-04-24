@@ -8,6 +8,7 @@ import TypeChart from '@/components/charts/TypeChart'
 import VisitorMap from '@/components/charts/VisitorMap'
 import { ENDPOINTS } from '@/lib/api'
 import { BarChart3, FileText, ThumbsUp, MessageSquare, Eye, MapPin } from 'lucide-react'
+import { API_CODE } from '@/lib/constants'
 import apiClient from '@/lib/utils' // 导入axios实例
 
 // 动画变体定义
@@ -120,22 +121,22 @@ export default function DashboardPage() {
       setStats([
         {
           title: '总访问量',
-          value: viewRes.code === 200 ? viewRes.data : 0,
+          value: viewRes.code === API_CODE.SUCCESS ? viewRes.data : 0,
           icon: <Eye className="h-5 w-5 text-[rgb(var(--primary))]" />
         },
         {
           title: '博客总数',
-          value: blogRes.code === 200 ? blogRes.data : 0,
+          value: blogRes.code === API_CODE.SUCCESS ? blogRes.data : 0,
           icon: <FileText className="h-5 w-5 text-[rgb(var(--primary))]" />
         },
         {
           title: '点赞数',
-          value: appreciateRes.code === 200 ? appreciateRes.data : 0,
+          value: appreciateRes.code === API_CODE.SUCCESS ? appreciateRes.data : 0,
           icon: <ThumbsUp className="h-5 w-5 text-[rgb(var(--primary))]" />
         },
         {
           title: '评论数',
-          value: commentRes.code === 200 ? commentRes.data : 0,
+          value: commentRes.code === API_CODE.SUCCESS ? commentRes.data : 0,
           icon: <MessageSquare className="h-5 w-5 text-[rgb(var(--primary))]" />
         }
       ])

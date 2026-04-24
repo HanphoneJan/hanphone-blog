@@ -11,6 +11,7 @@ import { showMessage, setMessageHandler, clearMessageTimer, welcomeMessage } fro
 import { getLocalStorage, setLocalStorage, randomSelection } from '../utils';
 import logger from '../logger';
 import { MessageCircle, User, Shirt, X, Camera } from 'lucide-react';
+import {  TIME , LIVE2D } from '@/lib/constants';
 
 interface Live2DContainerProps {
   config: Live2DConfig;
@@ -126,7 +127,7 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
       if (welcome) {
         showMessage(welcome, 7000, 11);
       }
-    }, 3000);
+    }, TIME.ALERT_DURATION);
     
     return () => clearTimeout(timer);
   }, [tips]);
@@ -308,7 +309,7 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
     setIsVisible(false);
     setTimeout(() => {
       onClose?.();
-    }, 3000);
+    }, TIME.ALERT_DURATION);
   }, [tips, onClose]);
 
   // 切换纹理（暂不支持）
@@ -382,10 +383,10 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
         <canvas
           ref={canvasRef}
           id="live2d"
-          width={220}
-          height={320}
+          width={LIVE2D.DEFAULT_WIDTH}
+          height={LIVE2D.DEFAULT_HEIGHT}
           className="cursor-grab active:cursor-grabbing rounded-lg"
-          style={{ width: 220, height: 320 }}
+          style={{ width: LIVE2D.DEFAULT_WIDTH, height: LIVE2D.DEFAULT_HEIGHT }}
         />
         
       </div>

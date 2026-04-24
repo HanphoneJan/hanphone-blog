@@ -58,7 +58,10 @@ export const TIME = {
   DEBOUNCE_DELAY: 300,
   
   // 拖拽移动阈值
-  DRAG_MOVE_THRESHOLD: 3
+  DRAG_MOVE_THRESHOLD: 3,
+
+  // 加载条持续时间
+  LOADING_BAR_DURATION: 800
 } as const
 
 // ==================== 图片处理常量 ====================
@@ -82,7 +85,11 @@ export const IMAGE = {
   DEFAULT_MIME_TYPE: 'image/jpeg',
   
   // 默认扩展名
-  DEFAULT_EXTENSION: 'jpeg'
+  DEFAULT_EXTENSION: 'jpeg',
+
+  // OG 图片尺寸
+  OG_IMAGE_WIDTH: 1200,
+  OG_IMAGE_HEIGHT: 630
 } as const
 
 // ==================== 响应式断点（像素） ====================
@@ -435,6 +442,11 @@ export const HOME_CONFIG = {
   TYPEWRITER_RESET_DELAY: 3000,
   // 打字机初始延迟（毫秒）
   TYPEWRITER_INIT_DELAY: 200,
+  // Hero 区域打字机效果专用配置
+  TYPEWRITER_CHAR_DELAY: 110,
+  TYPEWRITER_DELETE_DELAY: 55,
+  TYPEWRITER_PAUSE_AFTER_DELETE: 2000,
+  TYPEWRITER_START_DELAY: 1200,
   // 获取全部博客时的每页数量（用于筛选场景）
   ALL_BLOGS_PAGE_SIZE: 1000,
   // 分页紧凑布局断点（px）
@@ -468,5 +480,13 @@ export const CHART_CONFIG = {
   // 小屏幕断点
   SMALL_SCREEN_BREAKPOINT: 400,
   // 分类图表：最多展示的分类数量
-  MAX_CATEGORIES_DISPLAY: 4
+  MAX_CATEGORIES_DISPLAY: 4,
+
+  // 标签云默认容器尺寸
+  TAG_CLOUD_WIDTH: 400,
+  TAG_CLOUD_HEIGHT: 300,
+
+  // 标签云 3D 球体参数
+  TAG_CLOUD_RADIUS: 112,
+  TAG_CLOUD_DISTANCE: 187
 } as const

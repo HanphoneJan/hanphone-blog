@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import React from 'react'
 
+import { API_CODE } from '@/lib/constants'
 // 文件服务域名
 const fileDomain = process.env.NEXT_PUBLIC_FILE_DOMAIN || 'hanphone.top'
 
@@ -166,7 +167,7 @@ export default function FileManagementPage() {
         namespace: currentDir
       })
 
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         setFiles(data.items || [])
       } else {
         throw new Error(data.error || '获取文件列表失败')
@@ -209,7 +210,7 @@ export default function FileManagementPage() {
         data: formData
       })
 
-      if (res.data.code === 200) {
+      if (res.data.code === API_CODE.SUCCESS) {
         const results = res.data.results as Array<{
           success: boolean
           filename: string
@@ -252,7 +253,7 @@ export default function FileManagementPage() {
         parentNamespace: currentDir
       })
 
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         setShowCreateDirModal(false)
         setNewDirName('')
         fetchFiles()
@@ -293,7 +294,7 @@ export default function FileManagementPage() {
         isDirectory: currentDeleteItem.isDirectory
       })
 
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_FILE_LABELS.DELETE_SUCCESS)
         fetchFiles()
         closeDeleteModal()

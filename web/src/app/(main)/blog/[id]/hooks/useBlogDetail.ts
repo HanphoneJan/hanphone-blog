@@ -3,7 +3,7 @@
 import { useReducer, useEffect, useCallback, useMemo, useState } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { ENDPOINTS } from '@/lib/api'
-import { STORAGE_KEYS, ASSETS } from '@/lib/constants'
+import {  STORAGE_KEYS, ASSETS , API_CODE } from '@/lib/constants'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
@@ -190,7 +190,7 @@ export function useBlogDetail(blogId: string, initialBlog?: Blog, initialRelated
       const queryParams = userInfo?.id ? { userId: userInfo.id } : {}
       const res = await fetchData(`${ENDPOINTS.BLOG}/${blogId}`, 'GET', queryParams)
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const blogData = {
           ...res.data,
           likes: res.data.likes ?? 0,
@@ -255,7 +255,7 @@ export function useBlogDetail(blogId: string, initialBlog?: Blog, initialRelated
         blogId: state.blog.id,
         isLike: !state.blog.isLiked
       })
-      if (res.code !== 200) {
+      if (res.code !== API_CODE.SUCCESS) {
         dispatch({ type: 'TOGGLE_LIKE' })
         showAlert(res.message || BLOG_DETAIL_LABELS.OPERATION_FAIL_RETRY)
       }

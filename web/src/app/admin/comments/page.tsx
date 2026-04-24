@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
-import { ASSETS } from '@/lib/constants'
+import {  ASSETS , API_CODE } from '@/lib/constants'
 import { ADMIN_COMMENT_LABELS } from '@/lib/labels'
 
 // 动画变体定义
@@ -93,7 +93,7 @@ export default function CommentsPage() {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.COMMMENT_LIST)
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const comments = res.data || []
         setCommentList(comments)
         setFilteredCommentList(comments)
@@ -154,7 +154,7 @@ export default function CommentsPage() {
       setLoading(true)
       const res = await fetchData(`${ENDPOINTS.COMMENTS}/${deleteConfirm}`, 'DELETE')
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_COMMENT_LABELS.DELETE_SUCCESS)
         getCommentList()
       } else {

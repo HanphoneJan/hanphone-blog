@@ -7,6 +7,7 @@ import { BREAKPOINT } from '@/lib/constants'
 const Live2DWidget = () => {
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [hidden, setHidden] = useState(false)
 
   // 检测是否为移动端
   useEffect(() => {
@@ -19,6 +20,20 @@ const Live2DWidget = () => {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // 滚动到 hero 区域时隐藏 widget
+  useEffect(() => {
+    const handleScroll = () => {
+      const hero = document.getElementById('parallaxHero')
+      if (!hero) return
+      const rect = hero.getBoundingClientRect()
+      // hero 还在视口内（底部还没滚出屏幕上方）时隐藏
+      setHidden(rect.bottom > 0)
+    }
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   // 防止水合不匹配
   if (!mounted) return null
 
@@ -28,7 +43,9 @@ const Live2DWidget = () => {
   }
 
   return (
-    <div className="fixed bottom-0 right-0 z-[9999]">
+    <div
+      className={`fixed bottom-0 right-0 z-[9999] transition-opacity duration-500 ${hidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+    >
       <Live2DWidgetComponent
         config={{
           drag: true,

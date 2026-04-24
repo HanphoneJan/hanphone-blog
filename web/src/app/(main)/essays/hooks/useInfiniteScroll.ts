@@ -6,6 +6,7 @@ import { showAlert } from '@/lib/Alert'
 import { ESSAY_LABELS } from '@/lib/labels'
 import { ENDPOINTS } from '@/lib/api'
 
+import {  API_CODE , PAGINATION } from '@/lib/constants'
 interface UseInfiniteScrollOptions {
   userInfo: UserInfo | null
   fetchData: (url: string, method?: string, data?: unknown) => Promise<any>
@@ -46,7 +47,7 @@ export function useInfiniteScroll({
     const queryParams = {
       ...(userInfoRef.current?.id && { userId: userInfoRef.current.id }),
       page: currentPage,
-      pageSize: 10
+      pageSize: PAGINATION.DEFAULT_PAGE_SIZE
     }
 
     const res = await fetchData(ENDPOINTS.ESSAYS, 'GET', queryParams)
@@ -54,7 +55,7 @@ export function useInfiniteScroll({
     const essayList = res.data?.content || []
     const totalPages = res.data?.totalPages || 1
 
-    if (res.code === 200 && essayList.length > 0) {
+    if (res.code === API_CODE.SUCCESS && essayList.length > 0) {
       const sortedList = formatEssays(essayList)
 
       if (isLoadMore) {

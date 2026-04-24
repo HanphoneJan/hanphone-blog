@@ -1,6 +1,7 @@
 import { ENDPOINTS } from '@/lib/api'
 import EssayClient from './EssayClient'
 
+import { API_CODE } from '@/lib/constants'
 interface Essay {
   id: number
   content: string
@@ -52,7 +53,7 @@ async function fetchEssays(): Promise<Essay[]> {
 
     const data = await res.json()
 
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data.content || []
     }
     return []

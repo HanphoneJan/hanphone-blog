@@ -7,6 +7,7 @@ import { ADMIN_LINK_LABELS } from '@/lib/labels'
 import { showAlert } from '@/lib/Alert'
 import apiClient from '@/lib/utils'
 
+import { IMAGE } from '@/lib/constants'
 // API调用函数
 const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
   try {
@@ -69,8 +70,8 @@ export function useAvatarUpload({ onUploadSuccess, setLoading }: UseAvatarUpload
     return new Promise((resolve) => {
       new Compressor(file, {
         quality: 0.8, // 压缩质量，0-1之间
-        maxWidth: 1200, // 最大宽度限制
-        maxHeight: 1200, // 最大高度限制
+        maxWidth: IMAGE.MAX_WIDTH,
+        maxHeight: IMAGE.MAX_HEIGHT,
         mimeType: 'image/jpeg', // 确保MIME类型正确
         convertSize: 102400, // 小于100KB的图片也进行转换
         success: async (compressedResult) => {

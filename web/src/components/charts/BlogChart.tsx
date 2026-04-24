@@ -6,6 +6,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
 
+import { API_CODE } from '@/lib/constants'
 interface BlogChartProps {
   psMsg: number
   style?: React.CSSProperties
@@ -425,7 +426,7 @@ const BlogChart: React.FC<BlogChartProps> = ({ psMsg, style }) => {
     }
 
     const res = await fetchData(url)
-    if (res.code === 200) {
+    if (res.code === API_CODE.SUCCESS) {
       const list: CountByMonthItem[] = res.data.map((item: string) => {
         const [date, value] = item.split(',')
         return { date, value }

@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, List, X, FileText, FileCode, FileJson, File,
 import type { DocMeta, DocData } from '../../lib/docLoader'
 import ModalOverlay from '@/components/shared/ModalOverlay'
 
+import { Z_INDEX } from '@/lib/constants'
 // 动画变体定义
 const pageVariants: Variants = {
   hidden: { opacity: 0 },
@@ -646,7 +647,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
             animate="visible"
             exit="exit"
             style={{
-              zIndex: 9999,
+              zIndex: Z_INDEX.LIVE2D,
               background: 'rgb(var(--card))',
               width: '48px',
               height: '48px',

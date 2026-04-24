@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '@/lib/api'
-import { PAGINATION } from '@/lib/constants'
+import {  PAGINATION , API_CODE } from '@/lib/constants'
 import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import BlogListClient from './BlogListClient'
 import type { Blog, Type, Tag, PageInfo } from './types'
@@ -15,7 +15,7 @@ async function fetchBlogs(): Promise<{ blogs: Blog[]; pageInfo: PageInfo }> {
     )
     const data = await res.json()
 
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return {
         blogs: data.data.content || [],
         pageInfo: {
@@ -38,7 +38,7 @@ async function fetchRecommendBlogs(): Promise<Blog[]> {
   try {
     const res = await fetch(ENDPOINTS.RECOMMEND_BLOG_LIST, { cache: 'no-store' })
     const data = await res.json()
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data || []
     }
     return []
@@ -53,7 +53,7 @@ async function fetchTypes(): Promise<Type[]> {
   try {
     const res = await fetch(ENDPOINTS.TYPE_LIST, { cache: 'no-store' })
     const data = await res.json()
-    return data.code === 200 ? data.data || [] : []
+    return data.code === API_CODE.SUCCESS ? data.data || [] : []
   } catch (error) {
     console.error('Failed to fetch types:', error)
     return []
@@ -66,7 +66,7 @@ async function fetchTags(): Promise<Tag[]> {
     // 尝试获取带文章数量的标签列表
     const res = await fetch(ENDPOINTS.FULL_TAG_LIST, { cache: 'no-store' })
     const data = await res.json()
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data.map((tag: { id: number; name: string; blogNumber?: number }) => ({
         id: tag.id,
         name: tag.name,

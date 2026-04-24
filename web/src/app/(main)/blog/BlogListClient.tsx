@@ -10,12 +10,12 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react'
-import {
+import { 
   API_PARAMS,
   ROUTES,
   PAGINATION,
   BLOG_LIST_CONFIG
-} from '@/lib/constants'
+, API_CODE } from '@/lib/constants'
 import { BLOG_LABELS } from '@/lib/labels'
 import { ENDPOINTS } from '@/lib/api'
 import { FeaturedCard } from './components/FeaturedCard'
@@ -184,7 +184,7 @@ export default function BlogListClient({
       fetch(ENDPOINTS.TYPE_LIST)
         .then(res => res.json())
         .then(data => {
-          if (data.code === 200 && data.data) {
+          if (data.code === API_CODE.SUCCESS && data.data) {
             setTypeList(data.data)
           }
         })
@@ -198,7 +198,7 @@ export default function BlogListClient({
       fetch(ENDPOINTS.FULL_TAG_LIST)
         .then(res => res.json())
         .then(data => {
-          if (data.code === 200 && data.data) {
+          if (data.code === API_CODE.SUCCESS && data.data) {
             setTagList(data.data.map((tag: { id: number; name: string; blogNumber?: number }) => ({
               id: tag.id,
               name: tag.name,

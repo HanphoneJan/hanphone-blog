@@ -8,6 +8,7 @@ import { ADMIN_PROJECT_LABELS, ADMIN_LINK_LABELS } from '@/lib/labels'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 
+import { API_CODE } from '@/lib/constants'
 // API调用函数
 const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
   try {
@@ -58,7 +59,7 @@ export const useProjects = () => {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.PROJECTS)
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const processedData = processProjectData(res.data)
         setProjectList(processedData)
         setLocalInputValues({})
@@ -95,7 +96,7 @@ export const useProjects = () => {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.PROJECT, 'POST', { project: updatedProject })
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_PROJECT_LABELS.UPDATE_SUCCESS)
       } else {
         showAlert(res.message || ADMIN_PROJECT_LABELS.UPDATE_FAIL)
@@ -118,7 +119,7 @@ export const useProjects = () => {
       setLoading(true)
       const res = await fetchData(`${ENDPOINTS.ADMIN.PROJECT}/${deleteConfirm}/delete`, 'GET')
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_PROJECT_LABELS.DELETE_SUCCESS)
         getProjectList()
       } else {
@@ -143,7 +144,7 @@ export const useProjects = () => {
         recommend: !project.recommend
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         setProjectList(prev =>
           prev.map(item =>
             item.id === project.id ? { ...item, recommend: !project.recommend } : item
@@ -171,7 +172,7 @@ export const useProjects = () => {
         published: !project.published
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         setProjectList(prev =>
           prev.map(item =>
             item.id === project.id ? { ...item, published: !project.published } : item

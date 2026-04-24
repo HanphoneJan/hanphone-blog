@@ -1,6 +1,7 @@
 import { ENDPOINTS } from '@/lib/api'
 import ProjectClient from './ProjectClient'
 
+import { API_CODE } from '@/lib/constants'
 interface Project {
   id: number
   title: string
@@ -29,7 +30,7 @@ async function fetchProjects(): Promise<Project[]> {
 
     const data = await res.json()
 
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data
     }
     return []

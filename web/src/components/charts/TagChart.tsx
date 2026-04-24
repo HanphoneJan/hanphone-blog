@@ -5,6 +5,7 @@ import { ENDPOINTS } from "@/lib/api";
 import apiClient from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeProvider';
 
+import {  API_CODE , CHART_CONFIG } from '@/lib/constants'
 // 定义标签的类型接口
 interface Tag {
   id: number;
@@ -32,15 +33,15 @@ const TagChart: React.FC<TagChartProps> = ({ style, rotationSpeed = 0.3 }) => {
   const [tagList, setTagList] = useState<string[]>([]);
   const [renderList, setRenderList] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
-  const [containerSize, setContainerSize] = useState({ width: 400, height: 300 });
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: CHART_CONFIG.TAG_CLOUD_WIDTH, height: CHART_CONFIG.TAG_CLOUD_HEIGHT });
   const tagRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
   // 常量定义
-  const radius = 112;
-  const distance = 187;
+  const radius = CHART_CONFIG.TAG_CLOUD_RADIUS;
+  const distance = CHART_CONFIG.TAG_CLOUD_DISTANCE;
 
   // 根据主题获取标签颜色方案
   const getTagColors = () => {
@@ -97,7 +98,7 @@ const TagChart: React.FC<TagChartProps> = ({ style, rotationSpeed = 0.3 }) => {
   // 获取标签数据
   const getData = async () => {
     const res = await fetchData(ENDPOINTS.ADMIN.FULL_TAG_LIST);
-    if (res.code === 200) {
+    if (res.code === API_CODE.SUCCESS) {
       const tags = res.data.map((item: { name: string }) => item.name);
       setTagList(tags);
       initPosition(tags);

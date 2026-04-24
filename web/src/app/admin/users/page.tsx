@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
-import { VALIDATION, ASSETS } from '@/lib/constants'
+import {  VALIDATION, ASSETS , API_CODE } from '@/lib/constants'
 import { ADMIN_USER_LABELS } from '@/lib/labels'
 import md5 from 'md5'
 
@@ -192,7 +192,7 @@ export default function UserManagementPage() {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.USERS, 'GET', { search })
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         let filteredData: User[] = res.data || []
 
         // 搜索过滤
@@ -233,7 +233,7 @@ export default function UserManagementPage() {
       setLoading(true)
       const res = await fetchData(ENDPOINTS.ADMIN.USER, 'POST', { user: row })
 
-      if (res.code !== 200) {
+      if (res.code !== API_CODE.SUCCESS) {
         // 失败时恢复状态并重新加载列表
         setUserList(prev =>
           prev.map(u => (u.id === row.id ? { ...u, type: u.type === '1' ? '0' : '1' } : u))
@@ -256,7 +256,7 @@ export default function UserManagementPage() {
       setLoading(true)
       const res = await fetchData(`${ENDPOINTS.ADMIN.USERS}/${id}/delete`, 'GET')
 
-      if (res.code !== 200) {
+      if (res.code !== API_CODE.SUCCESS) {
         return showAlert(ADMIN_USER_LABELS.DELETE_FAIL)
       }
       showAlert(ADMIN_USER_LABELS.DELETE_SUCCESS)
@@ -405,7 +405,7 @@ export default function UserManagementPage() {
         }
       })
 
-      if (res.code !== 200) {
+      if (res.code !== API_CODE.SUCCESS) {
         showAlert(ADMIN_USER_LABELS.UPDATE_FAIL)
         return
       }

@@ -3,6 +3,7 @@ import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import { cachedGetDocMeta } from '@/app/(main)/docs/lib/docLoader'
 import { cache } from 'react'
 
+import { API_CODE } from '@/lib/constants'
 // ==================== 类型定义 ====================
 
 interface Blog {
@@ -63,7 +64,7 @@ async function fetchAllBlogs(): Promise<Blog[]> {
       { cache: 'no-store' }
     )
     const data = await res.json()
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data.content || []
     }
     return []
@@ -81,7 +82,7 @@ async function fetchAllEssays(): Promise<Essay[]> {
       { cache: 'no-store' }
     )
     const data = await res.json()
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data.content || []
     }
     return []
@@ -99,7 +100,7 @@ async function fetchAllProjects(): Promise<Project[]> {
       { cache: 'no-store' }
     )
     const data = await res.json()
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data.content || []
     }
     return []

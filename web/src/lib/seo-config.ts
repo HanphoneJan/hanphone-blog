@@ -1,10 +1,10 @@
+import { IMAGE } from '@/lib/constants'
 /**
  * SEO配置文件 - 集中管理所有SEO相关配置
  * 修改域名或SEO配置时只需修改此文件
  */
 
 import type { Metadata } from 'next'
-
 // 从环境变量读取站点URL，默认为本地开发地址
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -134,7 +134,7 @@ export function createMetadata(
     siteName: SITE_CONFIG.name,
     title: fullTitle,
     description,
-    images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: title }] : undefined,
+    images: ogImage ? [{ url: ogImage, width: IMAGE.OG_IMAGE_WIDTH, height: IMAGE.OG_IMAGE_HEIGHT, alt: title }] : undefined,
   }
 
   // 如果是文章类型，添加文章特有属性

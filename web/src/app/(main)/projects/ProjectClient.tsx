@@ -10,6 +10,7 @@ import BgOverlay from '@/app/(main)/components/BgOverlay'
 import { ENDPOINTS } from '@/lib/api'
 import { PROJECT_LABELS } from '@/lib/labels'
 
+import { API_CODE } from '@/lib/constants'
 // 动画变体定义
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -378,7 +379,7 @@ export default function ProjectClient({ initialProjects }: ProjectClientProps) {
 
       // 然后从API获取最新数据
       const res = await fetchData(ENDPOINTS.PROJECTS)
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const displayProjects = res.data.filter((project: Project) => project.type !== 0)
         displayProjects.sort((a: Project, b: Project) => {
           if (a.recommend && !b.recommend) return -1

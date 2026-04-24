@@ -22,6 +22,7 @@ import { PasswordReset } from './components/PasswordReset'
 import { Item, PersonInfoFormData, SectionType, ItemType, Skill, Work, Hobby, Evaluation } from './types'
 import { SECTION_NAMES } from './constants'
 
+import { API_CODE } from '@/lib/constants'
 // 动画变体定义
 const pageVariants: Variants = {
   hidden: { opacity: 0 },
@@ -105,7 +106,7 @@ export default function ProfilePage() {
         method: 'GET'
       })
 
-      if (res.data.flag && res.data.code === 200) {
+      if (res.data.flag && res.data.code === API_CODE.SUCCESS) {
         processSkillsData(res.data.data)
         processWorksData(res.data.data)
         processHobbiesData(res.data.data)

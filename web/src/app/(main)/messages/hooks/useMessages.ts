@@ -1,6 +1,6 @@
 import { useState, useEffect, useReducer, useCallback } from 'react'
 import { ENDPOINTS } from '@/lib/api'
-import { ASSETS } from '@/lib/constants'
+import {  ASSETS , API_CODE } from '@/lib/constants'
 import { MESSAGE_LABELS } from '@/lib/labels'
 import { showAlert } from '@/lib/Alert'
 
@@ -128,7 +128,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
   const fetchMessages = useCallback(async () => {
     setLoading(true)
     const res = await fetchData(ENDPOINTS.MESSAGES)
-    if (res.code === 200 && res.flag) {
+    if (res.code === API_CODE.SUCCESS && res.flag) {
       dispatch({ type: 'SET_MESSAGES', payload: buildMessageTree(res.data) })
     }
     setLoading(false)
@@ -146,7 +146,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
         parentMessage: null
       }
       const res = await fetchData(ENDPOINTS.MESSAGES, 'POST', { message })
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const newMsg: Message = {
           ...message,
           id: res.data.id,
@@ -194,7 +194,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
         parentId: target.id
       }
       const res = await fetchData(ENDPOINTS.MESSAGES, 'POST', { message })
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const newReply: Message = {
           ...message,
           id: res.data.id,
@@ -231,7 +231,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
     try {
       setLoading(true)
       const res = await fetchData(`${ENDPOINTS.MESSAGES}/${id}`, 'DELETE')
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         const isTop = messages.some(m => m.id === id)
         if (isTop) {
           dispatch({ type: 'DELETE_MESSAGE', payload: id })

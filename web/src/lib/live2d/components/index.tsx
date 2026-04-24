@@ -11,64 +11,65 @@ import { Live2DConfig, TipsConfig } from '../types';
 import { Live2DContainer } from './Live2DContainer';
 import { getLocalStorage, setLocalStorage } from '../utils';
 import logger from '../logger';
+import { TIME } from '@/lib/constants';
 
 // 默认模型配置
 const DEFAULT_MODELS = [
   {
-    path: '/live2d/models/mimi/迷迷挂件.model3.json',
-    name: '迷迷',
-    message: '你好呀！我是迷迷~',
+    path: '/live2d/models/mimi/\u8ff7\u8ff7\u6302\u4ef6.model3.json',
+    name: '\u8ff7\u8ff7',
+    message: '\u4f60\u597d\u5440\uff01\u6211\u662f\u8ff7\u8ff7~',
   },
   {
     path: '/live2d/models/ariu/ariu.model3.json',
     name: 'Ariu',
-    message: '我是Ariu~',
+    message: '\u6211\u662fAriu~',
   },
 ];
 
 // 默认提示配置
 const DEFAULT_TIPS: TipsConfig = {
   message: {
-    default: ['欢迎来到我的博客！', '今天也要元气满满哦~', '有什么我可以帮你的吗？'],
-    console: '哈哈，你打开了控制台，是想要看看我的秘密吗？',
-    copy: '你都复制了些什么呀，转载要记得注明出处哦~',
-    visibilitychange: '你回来啦~',
-    changeSuccess: '新衣服好看吗？',
-    changeFail: '这个模型只有一种纹理呢~',
-    photo: '要拍照留念吗？',
-    goodbye: '再见啦~要常来看我哦！',
-    hitokoto: '——来自 $1，by $2',
-    welcome: '欢迎来到 $1',
-    referrer: '你从 $1 来到这里，欢迎！',
-    hoverBody: ['让我看看是谁在碰我~', '哎呀，好痒~'],
-    tapBody: ['你戳我干嘛？', '再戳我就要生气了哦~'],
+    default: ['\u6b22\u8fce\u6765\u5230\u6211\u7684\u535a\u5ba2\uff01', '\u4eca\u5929\u4e5f\u8981\u5143\u6c14\u6ee1\u6ee1\u54e6~', '\u6709\u4ec0\u4e48\u6211\u53ef\u4ee5\u5e2e\u4f60\u7684\u5417\uff1f'],
+    console: '\u54c8\u54c8\uff0c\u4f60\u6253\u5f00\u4e86\u63a7\u5236\u53f0\uff0c\u662f\u60f3\u8981\u770b\u770b\u6211\u7684\u79d8\u5bc6\u5417\uff1f',
+    copy: '\u4f60\u90fd\u590d\u5236\u4e86\u4e9b\u4ec0\u4e48\u5440\uff0c\u8f6c\u8f7d\u8981\u8bb0\u5f97\u6ce8\u660e\u51fa\u5904\u54e6~',
+    visibilitychange: '\u4f60\u56de\u6765\u5566~',
+    changeSuccess: '\u65b0\u8863\u670d\u597d\u770b\u5417\uff1f',
+    changeFail: '\u8fd9\u4e2a\u6a21\u578b\u53ea\u6709\u4e00\u79cd\u7eb9\u7406\u5462~',
+    photo: '\u8981\u62cd\u7167\u7559\u5ff5\u5417\uff1f',
+    goodbye: '\u518d\u89c1\u5566~\u8981\u5e38\u6765\u770b\u6211\u54e6\uff01',
+    hitokoto: '\u2014\u2014\u6765\u81ea $1\uff0cby $2',
+    welcome: '\u6b22\u8fce\u6765\u5230 $1',
+    referrer: '\u4f60\u4ece $1 \u6765\u5230\u8fd9\u91cc\uff0c\u6b22\u8fce\uff01',
+    hoverBody: ['\u8ba9\u6211\u770b\u770b\u662f\u8c01\u5728\u78b0\u6211~', '\u54e6\u54e6\uff0c\u597d\u75d2~'],
+    tapBody: ['\u4f60\u6233\u6211\u5e72\u5417\uff1f', '\u518d\u6233\u6211\u5c31\u8981\u751f\u6c14\u4e86\u54e6~'],
   },
   time: [
-    { hour: '6-7', text: '早上好！一日之计在于晨，美好的一天就要开始了。' },
-    { hour: '8-11', text: '上午好！工作顺利嘛，不要久坐，多起来走动走动哦！' },
-    { hour: '12-13', text: '中午了，工作了一个上午，现在是午餐时间！' },
-    { hour: '14-17', text: '午后很容易犯困呢，今天的运动目标完成了吗？' },
-    { hour: '18-19', text: '傍晚了！窗外夕阳的景色很美丽呢，最美不过夕阳红~' },
-    { hour: '20-21', text: '晚上好，今天过得怎么样？' },
-    { hour: '22-23', text: '已经这么晚了呀，早点休息吧，晚安~' },
-    { hour: '0-5', text: '这么晚还不睡吗？当心熬夜秃头哦！' },
+    { hour: '6-7', text: '\u65e9\u4e0a\u597d\uff01\u4e00\u65e5\u4e4b\u8ba1\u5728\u4e8e\u6668\uff0c\u7f8e\u597d\u7684\u4e00\u5929\u5c31\u8981\u5f00\u59cb\u4e86\u3002' },
+    { hour: '8-11', text: '\u4e0a\u5348\u597d\uff01\u5de5\u4f5c\u987a\u5229\u561b\uff0c\u4e0d\u8981\u4e45\u5750\uff0c\u591a\u8d77\u6765\u8d70\u52a8\u8d70\u52a8\u54e6~' },
+    { hour: '12-13', text: '\u4e2d\u5348\u4e86\uff0c\u5de5\u4f5c\u4e86\u4e00\u4e2a\u4e0a\u5348\uff0c\u73b0\u5728\u662f\u5348\u9910\u65f6\u95f4\uff01' },
+    { hour: '14-17', text: '\u5348\u540e\u5f88\u5bb9\u6613\u72af\u56f0\u5462\uff0c\u4eca\u5929\u7684\u8fd0\u52a8\u76ee\u6807\u5b8c\u6210\u4e86\u5417\uff1f' },
+    { hour: '18-19', text: '\u508d\u665a\u4e86\uff01\u7a97\u5916\u5915\u9633\u7684\u666f\u8272\u5f88\u7f8e\u4e3d\u5462\uff0c\u6700\u7f8e\u4e0d\u8fc7\u5915\u9633\u7ea2~' },
+    { hour: '20-21', text: '\u665a\u4e0a\u597d\uff0c\u4eca\u5929\u8fc7\u5f97\u600e\u4e48\u6837\uff1f' },
+    { hour: '22-23', text: '\u5df2\u7ecf\u8fd9\u4e48\u665a\u4e86\u5440\uff0c\u65e9\u70b9\u4f11\u606f\u5427\uff0c\u665a\u5b89~' },
+    { hour: '0-5', text: '\u8fd9\u4e48\u665a\u8fd8\u4e0d\u7761\u5417\uff1f\u5f53\u5fc3\u71ac\u591c\u79c3\u5934\u54e6\uff01' },
   ],
   mouseover: [
-    { selector: 'a[href^="/blog"]', text: '要看看文章吗？' },
-    { selector: '.search-button', text: '想要查找点什么？' },
-    { selector: 'a[href^="/admin"]', text: '这里是管理后台入口' },
+    { selector: 'a[href^="/blog"]', text: '\u8981\u770b\u770b\u6587\u7ae0\u5417\uff1f' },
+    { selector: '.search-button', text: '\u60f3\u8981\u67e5\u627e\u70b9\u4ec0\u4e48\uff1f' },
+    { selector: 'a[href^="/admin"]', text: '\u8fd9\u91cc\u662f\u7ba1\u7406\u540e\u53f0\u5165\u53e3' },
   ],
   click: [
-    { selector: 'a[href^="/blog"]', text: '点击了博客链接呢' },
-    { selector: 'button[type="submit"]', text: '提交表单要小心哦' },
+    { selector: 'a[href^="/blog"]', text: '\u70b9\u51fb\u4e86\u535a\u5ba2\u94fe\u63a5\u5462' },
+    { selector: 'button[type="submit"]', text: '\u63d0\u4ea4\u8868\u5355\u8981\u5c0f\u5fc3\u54e6' },
   ],
   seasons: [
-    { date: '1/1', text: '元旦快乐！新的一年要天天开心哦~' },
-    { date: '2/14', text: '情人节快乐！愿天下有情人终成眷属~' },
-    { date: '5/1', text: '劳动节快乐！工作辛苦了，好好休息一下吧~' },
-    { date: '6/1', text: '儿童节快乐！要保持一颗童心哦~' },
-    { date: '10/1', text: '国庆节快乐！祝祖国繁荣昌盛~' },
-    { date: '12/25', text: '圣诞节快乐！🎄' },
+    { date: '1/1', text: '\u5143\u65e6\u5feb\u4e50\uff01\u65b0\u7684\u4e00\u5e74\u8981\u5929\u5929\u5f00\u5fc3\u54e6~' },
+    { date: '2/14', text: '\u60c5\u4eba\u8282\u5feb\u4e50\uff01\u613f\u5929\u4e0b\u6709\u60c5\u4eba\u7ec8\u6210\u5377\u5c5e~' },
+    { date: '5/1', text: '\u52b3\u52a8\u8282\u5feb\u4e50\uff01\u5de5\u4f5c\u8f9b\u82e6\u4e86\uff0c\u597d\u597d\u4f11\u606f\u4e00\u4e0b\u5427~' },
+    { date: '6/1', text: '\u513f\u7ae5\u8282\u5feb\u4e50\uff01\u8981\u4fdd\u6301\u4e00\u9897\u7ae5\u5fc3\u54e6~' },
+    { date: '10/1', text: '\u56fd\u5e86\u8282\u5feb\u4e50\uff01\u795d\u7956\u56fd\u7e41\u8363\u660c\u76db~' },
+    { date: '12/25', text: '\u5723\u8bde\u8282\u5feb\u4e50\uff01\ud83c\udf84' },
   ],
   models: DEFAULT_MODELS,
 };
@@ -94,27 +95,27 @@ export function Live2DWidget({ config = {}, tips, models }: Live2DWidgetProps) {
     ...config,
   };
 
-  // 检查是否应该隐藏
+  // \u68c0\u67e5\u662f\u5426\u5e94\u8be5\u9690\u85cf
   useEffect(() => {
     const displayTime = getLocalStorage('waifu-display');
     if (displayTime) {
       const elapsed = Date.now() - Number(displayTime);
-      if (elapsed <= 86400000) { // 24小时内
+      if (elapsed <= 86400000) { // 24\u5c0f\u65f6\u5185
         setIsHidden(true);
         setIsFirstTime(true);
         setShowToggle(true);
       }
     }
-    
-    // 延迟加载
+
+    // \u5ef6\u8fdf\u52a0\u8f7d
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 100);
-    
+    }, TIME.ALERT_INIT_DELAY);
+
     return () => clearTimeout(timer);
   }, []);
 
-  // 切换显示状态
+  // \u5207\u6362\u663e\u793a\u72b6\u6001
   const handleToggle = useCallback(() => {
     setShowToggle(false);
     if (isFirstTime) {
@@ -129,14 +130,14 @@ export function Live2DWidget({ config = {}, tips, models }: Live2DWidgetProps) {
     }
   }, [isFirstTime]);
 
-  // 关闭回调
+  // \u5173\u95ed\u56de\u8c03
   const handleClose = useCallback(() => {
     setIsHidden(true);
     setShowToggle(true);
     setIsFirstTime(false);
   }, []);
 
-  // 如果正在加载或隐藏，显示切换按钮
+  // \u5982\u679c\u6b63\u5728\u52a0\u8f7d\u6216\u9690\u85cf\uff0c\u663e\u793a\u5207\u6362\u6309\u94ae
   if (showToggle) {
     return (
       <button
@@ -145,14 +146,14 @@ export function Live2DWidget({ config = {}, tips, models }: Live2DWidgetProps) {
           w-12 h-12 bg-amber-500 hover:bg-amber-600 text-white rounded-r-lg
           shadow-lg transition-all duration-300 cursor-pointer
           -ml-8 hover:-ml-2"
-        title="显示看板娘"
+        title="\u663e\u793a\u770b\u677f\u5a18"
       >
         <Baby size={24} />
       </button>
     );
   }
 
-  // 如果隐藏或未加载，不显示
+  // \u5982\u679c\u9690\u85cf\u6216\u672a\u52a0\u8f7d\uff0c\u4e0d\u663e\u793a
   if (isHidden || !isLoaded) {
     return null;
   }

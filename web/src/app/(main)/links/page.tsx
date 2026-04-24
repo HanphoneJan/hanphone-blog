@@ -1,6 +1,7 @@
 import { ENDPOINTS } from '@/lib/api'
 import LinkClient from './LinkClient'
 
+import { API_CODE } from '@/lib/constants'
 interface FriendLink {
   id: number
   type: 'friend' | 'tool' | 'blog' | 'resource'
@@ -29,7 +30,7 @@ async function fetchFriendLinks(): Promise<FriendLink[]> {
 
     const data = await res.json()
 
-    if (data.code === 200 && data.data) {
+    if (data.code === API_CODE.SUCCESS && data.data) {
       return data.data
     }
     return []

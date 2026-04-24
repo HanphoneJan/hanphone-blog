@@ -6,6 +6,7 @@ import CircularProgress from './ReadingProgress'
 import ModalOverlay from '@/components/shared/ModalOverlay'
 import type { Heading } from '../types'
 
+import { Z_INDEX } from '@/lib/constants'
 interface MobileTocProps {
   headings: Heading[]
   activeHeading: string
@@ -87,7 +88,7 @@ function MobileToc({
       <button
         onClick={onToggleSidebar}
         className="fixed bottom-6 left-6 lg:hidden hover:scale-105 duration-300 rounded-full"
-        style={{ zIndex: 9999, background: 'rgb(var(--card))', width: '56px', height: '56px', padding: 0 }}
+        style={{ zIndex: Z_INDEX.LIVE2D, background: 'rgb(var(--card))', width: '56px', height: '56px', padding: 0 }}
         aria-label="打开目录"
       >
         <CircularProgress progress={readingProgress} size={56} strokeWidth={4}>

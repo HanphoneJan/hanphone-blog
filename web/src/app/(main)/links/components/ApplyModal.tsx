@@ -6,6 +6,7 @@ import { X, Link2, User, Image, Rss, Palette, FileText, Send, Loader2, Check } f
 import { ENDPOINTS } from '@/lib/api'
 import { SITE_URL } from '@/lib/seo-config'
 
+import { API_CODE } from '@/lib/constants'
 interface ApplyModalProps {
   isOpen: boolean
   onClose: () => void
@@ -88,7 +89,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
 
       const data = await res.json()
 
-      if (data.flag && data.code === 200) {
+      if (data.flag && data.code === API_CODE.SUCCESS) {
         setSuccess(true)
         setTimeout(() => {
           setSuccess(false)

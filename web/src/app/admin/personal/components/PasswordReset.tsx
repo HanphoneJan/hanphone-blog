@@ -9,6 +9,7 @@ import { showAlert } from '@/lib/Alert'
 import ModalOverlay from '@/components/shared/ModalOverlay'
 import { ADMIN_PERSONAL_LABELS } from '@/lib/labels'
 
+import { API_CODE } from '@/lib/constants'
 interface PasswordResetProps {
   userId: number
   loading: boolean
@@ -69,7 +70,7 @@ export function PasswordReset({ userId, loading, setLoading, onClose }: Password
         }
       })
 
-      if (res.data.code === 200) {
+      if (res.data.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_PERSONAL_LABELS.PASSWORD_RESET_SUCCESS)
         onClose()
       } else {

@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { ENDPOINTS } from '@/lib/api'
-import { HOME_CONFIG, PAGINATION } from '@/lib/constants'
+import {  HOME_CONFIG, PAGINATION , TIME } from '@/lib/constants'
 import { HOME_LABELS } from '@/lib/labels'
 import type {
   Blog,
@@ -164,7 +164,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
       })
       setBlogList(sortedBlogs)
       setTotalcount(res.data?.totalElements || 0)
-      setTimeout(() => setBlogListVisible(true), 100)
+      setTimeout(() => setBlogListVisible(true), TIME.ALERT_INIT_DELAY)
     } finally {
       setBlogListLoading(false)
     }
@@ -177,7 +177,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
     try {
       const res = await fetchData<Blog[]>(ENDPOINTS.RECOMMEND_BLOG_LIST)
       setRecommendList(res.data || [])
-      setTimeout(() => setRecommendListVisible(true), 100)
+      setTimeout(() => setRecommendListVisible(true), TIME.ALERT_INIT_DELAY)
     } finally {
       setRecommendListLoading(false)
     }
@@ -190,7 +190,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
     try {
       const res = await fetchData<Type[]>(ENDPOINTS.TYPE_LIST)
       setTypeList(res.data || [])
-      setTimeout(() => setTypeListVisible(true), 100)
+      setTimeout(() => setTypeListVisible(true), TIME.ALERT_INIT_DELAY)
     } finally {
       setTypeListLoading(false)
     }
@@ -203,7 +203,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
     try {
       const res = await fetchData<Tag[]>(ENDPOINTS.TAG_LIST)
       setTagList(res.data || [])
-      setTimeout(() => setTagListVisible(true), 100)
+      setTimeout(() => setTagListVisible(true), TIME.ALERT_INIT_DELAY)
     } finally {
       setTagListLoading(false)
     }
@@ -216,7 +216,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
     try {
       const res = await fetchData<Type[]>(ENDPOINTS.FULL_TYPE_LIST)
       setTypeList(res.data?.sort(compare<Type>('blogs')) || [])
-      setTimeout(() => setTypeListVisible(true), 100)
+      setTimeout(() => setTypeListVisible(true), TIME.ALERT_INIT_DELAY)
     } finally {
       setTypeListLoading(false)
     }
@@ -229,7 +229,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
     try {
       const res = await fetchData<Tag[]>(ENDPOINTS.FULL_TAG_LIST)
       setTagList(res.data?.sort(compare<Tag>('blogs')) || [])
-      setTimeout(() => setTagListVisible(true), 100)
+      setTimeout(() => setTagListVisible(true), TIME.ALERT_INIT_DELAY)
     } finally {
       setTagListLoading(false)
     }
@@ -283,7 +283,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
 
         setBlogList(filteredBlogs)
         setTotalcount(filteredBlogs.length)
-        setTimeout(() => setBlogListVisible(true), 100)
+        setTimeout(() => setBlogListVisible(true), TIME.ALERT_INIT_DELAY)
 
         // 更新筛选文本
         const type = typeList.find((item) => item.id === id)
@@ -378,7 +378,7 @@ export function useHomeData(options: UseHomeDataOptions): UseHomeDataReturn {
 
         setBlogList(filteredBlogs)
         setTotalcount(filteredBlogs.length)
-        setTimeout(() => setBlogListVisible(true), 100)
+        setTimeout(() => setBlogListVisible(true), TIME.ALERT_INIT_DELAY)
 
         // 更新筛选文本
         let methodText = ''

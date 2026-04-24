@@ -7,6 +7,7 @@ import { showAlert } from '@/lib/Alert'
 import { ADMIN_ESSAY_LABELS, ADMIN_LINK_LABELS } from '@/lib/labels'
 import type { Essay } from '../types'
 
+import { API_CODE } from '@/lib/constants'
 export function useEssays() {
   const [essayList, setEssayList] = useState<Essay[]>([])
   const [filteredEssayList, setFilteredEssayList] = useState<Essay[]>([])
@@ -41,7 +42,7 @@ export function useEssays() {
   const getEssayList = useCallback(async () => {
     try {
       const data = await fetchData(ENDPOINTS.ADMIN.ESSAYS)
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         const list = data.data.map((item: Essay) => ({
           ...item,
           vis: false,
@@ -109,7 +110,7 @@ export function useEssays() {
         recommend: !essay.recommend
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         setEssayList(prev =>
           prev.map(item => (item.id === essay.id ? { ...item, recommend: !essay.recommend } : item))
         )
@@ -137,7 +138,7 @@ export function useEssays() {
         published: !essay.published
       })
 
-      if (response.code === 200) {
+      if (response.code === API_CODE.SUCCESS) {
         setEssayList(prev =>
           prev.map(item => (item.id === essay.id ? { ...item, published: !essay.published } : item))
         )
@@ -157,7 +158,7 @@ export function useEssays() {
   const deleteEssay = async (id: number): Promise<boolean> => {
     try {
       const data = await fetchData(`${ENDPOINTS.ADMIN.ESSAY}/${id}/delete`, 'GET')
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_ESSAY_LABELS.DELETE_SUCCESS)
         getEssayList()
         return true
@@ -183,7 +184,7 @@ export function useEssays() {
       const data = await fetchData(ENDPOINTS.ADMIN.ESSAY, 'POST', { essay: dataToSave })
       setLoading(false)
 
-      if (data.code === 200) {
+      if (data.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_ESSAY_LABELS.OPERATION_SUCCESS)
         getEssayList()
         return true

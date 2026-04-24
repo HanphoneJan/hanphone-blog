@@ -6,6 +6,7 @@ import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
 import type { CommentItem, ParentComment, UserInfo } from '../types'
 
+import { API_CODE } from '@/lib/constants'
 interface UseCommentsOptions {
   blogId: number
   userInfo: UserInfo | null
@@ -63,7 +64,7 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
         parentId: parentId
       })
 
-      if (res.code !== 200) {
+      if (res.code !== API_CODE.SUCCESS) {
         showAlert(res.message || BLOG_DETAIL_LABELS.COMMENT_FAIL_RETRY)
       } else {
         let parentCommentInfo: ParentComment | null = null
@@ -109,7 +110,7 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
     try {
       const res = await fetchData(`${ENDPOINTS.COMMENTS}/${id}`, 'DELETE')
 
-      if (res.code === 200) {
+      if (res.code === API_CODE.SUCCESS) {
         showAlert(BLOG_DETAIL_LABELS.DELETE_SUCCESS)
         dispatch({ type: 'DELETE_COMMENT', payload: id })
       } else {
