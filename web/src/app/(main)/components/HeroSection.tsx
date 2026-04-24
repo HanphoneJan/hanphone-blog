@@ -203,7 +203,7 @@ export function HeroSection() {
           WebkitBackfaceVisibility: 'hidden'
         }}
       />
-      <BgOverlay opacity={0.1}/>
+      {/* <BgOverlay opacity={0.1}/> */}
 
       {/* 视差层1：渐变网格背景 */}
       <div className="parallax-layer parallax-layer-1" data-speed="0.2" />

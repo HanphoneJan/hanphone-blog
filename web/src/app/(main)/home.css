@@ -154,7 +154,7 @@
   pointer-events: none;
   background:
     linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, transparent 8%),
-    linear-gradient(to top, rgb(var(--overlay) / 0.25) 0%, rgb(var(--overlay) / 0.2) 10%, transparent 20%);
+    linear-gradient(to top, rgb(var(--overlay) / 0.1) 0%, rgb(var(--overlay) / 0.01) 10%, transparent 15%);
 }
 
 .hero-title {

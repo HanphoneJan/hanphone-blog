@@ -5,11 +5,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGithub, faBilibili } from '@fortawesome/free-brands-svg-icons'
-import { Mail, Eye, TrendingUp, Rss, Clock } from 'lucide-react'
+import { Mail, Eye, TrendingUp, Rss, Clock, CalendarDays } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
-import {  FOOTER_CONFIG, ROUTES , API_CODE } from '@/lib/constants'
+import { FOOTER_CONFIG, ROUTES, API_CODE } from '@/lib/constants'
 import { FOOTER_LABELS } from '@/lib/labels'
 
 // 定义接口返回数据类型
@@ -102,8 +102,7 @@ const Footer: React.FC = () => {
   }, [])
 
   return (
-    <footer className="z-5 relative py-8 mt-3 lg:mt-6 bg-[rgb(var(--bg))] border-t border-[rgb(var(--border))]"
-    >
+    <footer className="z-5 relative py-8 mt-3 lg:mt-6 bg-[rgb(var(--bg))] border-t border-[rgb(var(--border))]">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* 主要内容区域 - 采用响应式网格布局 */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 mb-8">
@@ -131,12 +130,8 @@ const Footer: React.FC = () => {
               {FOOTER_LABELS.CONTACT_ME}
             </h4>
             <div className="flex flex-col h-full justify-between">
-              <p className="flex items-center text-sm sm:text-base transition-colors duration-300 mb-4 text-[rgb(var(--text))] hover:text-[rgb(var(--primary))]">
-                <Mail className="mr-2 h-4 w-4 shrink-0 text-[rgb(var(--primary))]" />
-                <span className="truncate whitespace-nowrap">{FOOTER_CONFIG.EMAIL}</span>
-              </p>
-
-              <div className="flex space-x-3">
+              {/* 社交按钮组 - 包含 GitHub、Bilibili、RSS 和邮箱 */}
+              <div className="flex flex-wrap gap-3 mt-2">
                 <a
                   href={FOOTER_CONFIG.GITHUB}
                   target="_blank"
@@ -169,6 +164,14 @@ const Footer: React.FC = () => {
                 >
                   <Rss className="h-4 w-4 text-orange-500" />
                 </Link>
+                <a
+                  href={`mailto:${FOOTER_CONFIG.EMAIL}`}
+                  className="p-2.5 rounded-full transition-all duration-300 transform hover:-translate-y-1 shadow-md flex items-center justify-center bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))]"
+                  aria-label="邮箱联系"
+                  title={FOOTER_CONFIG.EMAIL}
+                >
+                  <Mail className="h-4 w-4 text-[rgb(var(--text))]" />
+                </a>
               </div>
             </div>
           </div>
@@ -197,69 +200,89 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* 访问统计区域 - 小屏幕占满，大屏幕占3列 */}
+          {/* 访问统计区域 - 合并运行时间显示 */}
           <div className="md:col-span-3">
             <h4 className="text-lg font-semibold mb-4 pb-2 border-b border-[rgb(var(--border))] relative after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-12 after:bg-[rgb(var(--primary))] text-[rgb(var(--primary))]">
               {FOOTER_LABELS.SITE_STATS}
             </h4>
-            <div className="h-full flex flex-col justify-start">
+            <div className="h-full flex flex-col gap-3">
+              {/* 访问量卡片 */}
               <div className="flex items-center gap-3 p-3 rounded-xl border border-[rgb(var(--border))] shadow-sm hover:shadow-md transition-all duration-300 group bg-[rgb(var(--card))]">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-[rgb(var(--primary))]/80 to-[rgb(var(--primary-hover))]/80">
                   <Eye className="h-5 w-5 text-white" />
                 </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
-                        {FOOTER_LABELS.TOTAL_VISITS}
-                      </span>
-                      <TrendingUp className="h-3 w-3 text-[rgb(var(--success))]" />
-                    </div>
-
-                    {loading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-24 bg-gradient-to-r from-[rgb(var(--card))] to-[rgb(var(--hover))] rounded-md animate-pulse"></div>
-                      </div>
-                    ) : error ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
-                          {FOOTER_LABELS.DATA_LOAD_FAIL}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))]">
-                          {totalVisitCount?.toLocaleString()}
-                        </span>
-                        <span className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                          {FOOTER_LABELS.VISITS_COUNT}
-                        </span>
-                      </div>
-                    )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
+                      {FOOTER_LABELS.TOTAL_VISITS}
+                    </span>
+                    <TrendingUp className="h-3 w-3 text-[rgb(var(--success))]" />
                   </div>
+
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-24 bg-gradient-to-r from-[rgb(var(--card))] to-[rgb(var(--hover))] rounded-md animate-pulse"></div>
+                    </div>
+                  ) : error ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
+                        {FOOTER_LABELS.DATA_LOAD_FAIL}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))]">
+                        {totalVisitCount?.toLocaleString()}
+                      </span>
+                      <span className="text-xs font-medium text-[rgb(var(--text-muted))]">
+                        {FOOTER_LABELS.VISITS_COUNT}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="w-2 h-2 rounded-full animate-ping bg-[rgb(var(--primary))]"></div>
                 </div>
               </div>
+
+              {/* 运行时间卡片 - 合并到统计区域 */}
+              {uptime && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-[rgb(var(--border))] shadow-sm hover:shadow-md transition-all duration-300 bg-[rgb(var(--card))]">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-[rgb(var(--color-2))]/80 to-[rgb(var(--color-3))]/80">
+                    <Clock className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CalendarDays className="h-3 w-3 text-[rgb(var(--color-2))]" />
+                      <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
+                        站点运行
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <span className="text-lg font-bold text-[rgb(var(--color-2))]">
+                        {uptime.split(' ').slice(0, 2).join(' ')}
+                      </span>
+                      <span className="text-xs font-medium text-[rgb(var(--text-muted))]">
+                        {uptime.split(' ').slice(2).join(' ')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full animate-pulse bg-[rgb(var(--color-2))]"></div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className="my-6 opacity-60 border-t border-[rgb(var(--border))]"></div>
 
-        {/* 底部信息区域 - 优化响应式布局 */}
+        {/* 底部信息区域 - 移除原来的运行时间显示 */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-center md:text-left text-[rgb(var(--text-muted))]">
             {FOOTER_LABELS.COPYRIGHT(new Date().getFullYear())}
           </p>
-          {uptime && (
-            <div className="flex items-center gap-1.5 text-sm text-[rgb(var(--text-muted))]">
-              <Clock className="h-3.5 w-3.5 text-[rgb(var(--primary))]" />
-              <span>已运行</span>
-              <span className="font-medium text-[rgb(var(--text))]">{uptime}</span>
-            </div>
-          )}
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-[rgb(var(--text-muted))]">
             <Link href={ROUTES.TERMS} className="transition-colors duration-300 hover:text-[rgb(var(--primary))]">
               {FOOTER_LABELS.TERMS}
