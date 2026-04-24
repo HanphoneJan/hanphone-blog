@@ -104,69 +104,77 @@ export function HeroSection() {
   }, [])
 
   // 视差滚动效果
-  const updateParallax = useCallback(() => {
-    const parallaxHero = heroRef.current
-    if (!parallaxHero) return
+const updateParallax = useCallback(() => {
+  const parallaxHero = heroRef.current
+  if (!parallaxHero) return
 
-    const rect = parallaxHero.getBoundingClientRect()
-    const viewportHeight = window.innerHeight
+  const rect = parallaxHero.getBoundingClientRect()
+  const viewportHeight = window.innerHeight
 
-    if (rect.bottom > 0 && rect.top < viewportHeight) {
-      const scrollProgress = -rect.top / viewportHeight
+  if (rect.bottom > 0 && rect.top < viewportHeight) {
+    const scrollProgress = -rect.top / viewportHeight
 
-      // 隐藏滚动指示器
-      if (scrollIndicatorRef.current) {
-        if (scrollProgress > 0.15) {
-          scrollIndicatorRef.current.classList.add('hidden')
-        } else {
-          scrollIndicatorRef.current.classList.remove('hidden')
-        }
-      }
-
-      // 更新各层视差
-      const layers = parallaxHero.querySelectorAll<HTMLElement>('.parallax-layer')
-      layers.forEach(layer => {
-        const speed = parseFloat(layer.dataset.speed || '0.3')
-        const translateY = scrollProgress * viewportHeight * speed
-        layer.style.transform = `translateY(${translateY}px)`
-      })
-
-      // 独立的光斑视差（带旋转）
-      const orbs = parallaxHero.querySelectorAll<HTMLElement>('.parallax-orb')
-      orbs.forEach((orb, index) => {
-        const speed = parseFloat(orb.dataset.speed || '0.4')
-        const rotate = scrollProgress * (index % 2 === 0 ? 15 : -10)
-        const translateY = scrollProgress * viewportHeight * speed
-        const translateX = scrollProgress * (index % 2 === 0 ? 20 : -15)
-        orb.style.transform = `translateY(${translateY}px) translateX(${translateX}px) rotate(${rotate}deg)`
-      })
-
-      // 背景图片深度视差 + 渐变隐没效果
-      if (bgRef.current) {
-        // 更平滑的 mask 过渡：保持顶部可见区域，底部渐隐范围随滚动扩展
-        const fadeStart = Math.max(20, 90 - scrollProgress * 45)
-        const fadeEnd = Math.max(32, 100 - scrollProgress * 30)
-        const mask = `linear-gradient(to bottom, black ${fadeStart}%, transparent ${fadeEnd}%)`
-        bgRef.current.style.maskImage = mask
-        bgRef.current.style.webkitMaskImage = mask
-
-        const translateY = scrollProgress * 30
-        bgRef.current.style.transform = `translateY(${translateY}px)`
-        bgRef.current.style.opacity = String(1 - scrollProgress * 0.35)
-      }
-
-      // 英雄区内容淡出
-      const heroContent = parallaxHero.querySelector<HTMLElement>('.hero-content')
-      if (heroContent) {
-        const fadeProgress = Math.min(scrollProgress * 0.8, 1)
-        heroContent.style.opacity = String(1 - fadeProgress)
-        heroContent.style.transform = `translateY(${scrollProgress * 20}px)`
+    // 隐藏滚动指示器（保持原逻辑）
+    if (scrollIndicatorRef.current) {
+      if (scrollProgress > 0.15) {
+        scrollIndicatorRef.current.classList.add('hidden')
+      } else {
+        scrollIndicatorRef.current.classList.remove('hidden')
       }
     }
 
-    tickingRef.current = false
-  }, [])
+    // 普通视差层（保持原速度）
+    const layers = parallaxHero.querySelectorAll<HTMLElement>('.parallax-layer')
+    layers.forEach(layer => {
+      const speed = parseFloat(layer.dataset.speed || '0.3')
+      const translateY = scrollProgress * viewportHeight * speed
+      layer.style.transform = `translateY(${translateY}px)`
+    })
 
+    // 光斑视差（保持原效果）
+    const orbs = parallaxHero.querySelectorAll<HTMLElement>('.parallax-orb')
+    orbs.forEach((orb, index) => {
+      const speed = parseFloat(orb.dataset.speed || '0.4')
+      const rotate = scrollProgress * (index % 2 === 0 ? 15 : -10)
+      const translateY = scrollProgress * viewportHeight * speed
+      const translateX = scrollProgress * (index % 2 === 0 ? 20 : -15)
+      orb.style.transform = `translateY(${translateY}px) translateX(${translateX}px) rotate(${rotate}deg)`
+    })
+
+    // 背景图片效果 ———— 初始时完全不显示 mask 渐变层，滚动后才逐渐出现
+    if (bgRef.current) {
+      // 🔥 修改点：当滚动进度极小（初始状态）时，完全移除 mask 渐变层
+      if (scrollProgress <= 0.01) {
+        bgRef.current.style.maskImage = 'none'
+        bgRef.current.style.webkitMaskImage = 'none'
+      } else {
+        // 渐进出现的 mask 参数（保持原有减轻后的系数）
+        const fadeStart = Math.max(40, 85 - scrollProgress * 25)
+        const fadeEnd   = Math.max(55, 92 - scrollProgress * 15)
+        const mask = `linear-gradient(to bottom, black ${fadeStart}%, transparent ${fadeEnd}%)`
+        bgRef.current.style.maskImage = mask
+        bgRef.current.style.webkitMaskImage = mask
+      }
+
+      // 背景垂直移动幅度（初始为 0，符合预期）
+      const translateY = scrollProgress * 15
+      bgRef.current.style.transform = `translateY(${translateY}px)`
+
+      // 背景淡出速度（初始 opacity = 1）
+      bgRef.current.style.opacity = String(1 - scrollProgress * 0.15)
+    }
+
+    // 英雄区内容淡出（保持原逻辑）
+    const heroContent = parallaxHero.querySelector<HTMLElement>('.hero-content')
+    if (heroContent) {
+      const fadeProgress = Math.min(scrollProgress * 0.6, 1)
+      heroContent.style.opacity = String(1 - fadeProgress)
+      heroContent.style.transform = `translateY(${scrollProgress * 12}px)`
+    }
+  }
+
+  tickingRef.current = false
+}, [])
   useEffect(() => {
     const handleScroll = () => {
       if (!tickingRef.current) {

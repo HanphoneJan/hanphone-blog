@@ -507,6 +507,12 @@ body.home-page.theme-cyber .main-content {
     color: rgba(255, 255, 255, 0.45) !important;
 }
 
+/* 基础样式：透明背景、极简边框、继承文字阴影 */
+.theme-macaron .header-transparent input,
+.theme-cyber .header-transparent input {
+  background-color: transparent !important;
+}
+
 /* Logo渐变文字在透明模式下恢复为白色 */
 .header-transparent .text-xl {
   -webkit-text-fill-color: rgba(255, 255, 255, 0.45)!important;
