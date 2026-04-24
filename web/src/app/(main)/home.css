@@ -181,20 +181,52 @@
   width: 0.3em;
 }
 
-/* ---------- 副标题淡入 ---------- */
-@keyframes subtitleFade {
-  from { opacity: 0; transform: translateY(30px); filter: blur(4px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
-}
-
+/* ---------- 副标题打字机效果 ---------- */
 .hero-subtitle {
   font-size: clamp(1rem, 2vw, 1.25rem);
   line-height: 1.7;
   margin-bottom: 2.5rem;
-  opacity: 0;
-  animation: subtitleFade 1s 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
   color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35), 0 0 16px rgba(0, 0, 0, 0.12);
+}
+
+.typing-char {
+  display: inline-block;
+  animation: typingCharIn 0.08s ease forwards;
+}
+
+@keyframes typingCharIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: currentColor;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursorBlink 0.75s step-end infinite;
+}
+
+.typing-cursor.done {
+  animation: cursorFadeOut 0.4s ease forwards;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes cursorFadeOut {
+  to { opacity: 0; }
 }
 
 
@@ -202,6 +234,11 @@
 @keyframes scrollBounce {
   0%, 100% { transform: translateY(0); opacity: 0.6; }
   50% { transform: translateY(10px); opacity: 1; }
+}
+
+@keyframes indicatorFadeIn {
+  from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
 .scroll-indicator {
@@ -216,7 +253,7 @@
   align-items: center;
   gap: 0.5rem;
   opacity: 0;
-  animation: subtitleFade 0.8s 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: indicatorFadeIn 0.8s 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
   cursor: pointer;
   transition: opacity 0.5s ease;
 }

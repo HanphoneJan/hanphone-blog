@@ -11,6 +11,8 @@ export function HeroSection() {
   const scrollIndicatorRef = useRef<HTMLDivElement>(null)
   const tickingRef = useRef(false)
   const [bgImage, setBgImage] = useState<string>(ASSETS.BACKGROUND_WEBP)
+  const [subtitleText, setSubtitleText] = useState('')
+  const [showCursor, setShowCursor] = useState(false)
 
   // 加载用户设置的背景图片
   useEffect(() => {
@@ -39,7 +41,7 @@ export function HeroSection() {
     return () => window.removeEventListener('blog-bg-change', handler)
   }, [])
 
-  // 逐字拆分标题动画
+  // 逐字拆分标题动画 + 副标题打字机效果
   useEffect(() => {
     const heroTitle = titleRef.current
     if (!heroTitle) return
@@ -58,6 +60,49 @@ export function HeroSection() {
         charIndex++
       }
       heroTitle.appendChild(span)
+    }
+
+    // 副标题打字机效果：循环打字 + 退格
+    const fullSubtitle = '欢迎来到寒枫的博客……'
+    let idx = 0
+    let deleting = false
+    let timeoutId: NodeJS.Timeout
+    const mountedRef = { current: true }
+
+    const tick = () => {
+      if (!mountedRef.current) return
+      if (!deleting) {
+        if (idx < fullSubtitle.length) {
+          idx++
+          setSubtitleText(fullSubtitle.slice(0, idx))
+          setShowCursor(true)
+          timeoutId = setTimeout(tick, 110)
+        } else {
+          timeoutId = setTimeout(() => {
+            deleting = true
+            tick()
+          }, 3000)
+        }
+      } else {
+        if (idx > 0) {
+          idx--
+          setSubtitleText(fullSubtitle.slice(0, idx))
+          setShowCursor(true)
+          timeoutId = setTimeout(tick, 55)
+        } else {
+          timeoutId = setTimeout(() => {
+            deleting = false
+            tick()
+          }, 2000)
+        }
+      }
+    }
+
+    timeoutId = setTimeout(tick, 1200)
+
+    return () => {
+      mountedRef.current = false
+      clearTimeout(timeoutId)
     }
   }, [])
 
@@ -193,7 +238,8 @@ export function HeroSection() {
           {`云林有风`}
         </h1>
         <p className="hero-subtitle">
-          欢迎来到寒枫的博客
+          {subtitleText}
+          {showCursor && <span className="typing-cursor" />}
         </p>
       </div>
 
