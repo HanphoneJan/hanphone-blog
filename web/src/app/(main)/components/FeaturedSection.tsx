@@ -33,14 +33,19 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* 左侧大图精选 - 移动端和桌面端都显示 */}
+        {/* 左侧大图精选 - 图文分离布局 */}
         {featured && (
           <div className="lg:col-span-3 animate-slide-up">
             <Link
               href={ROUTES.BLOG_DETAIL(featured.id)}
-              className="group relative rounded-2xl overflow-hidden cursor-pointer block h-[320px] lg:h-[400px]"
+              className="group block rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg border"
+              style={{
+                background: 'rgb(var(--card))',
+                borderColor: 'rgb(var(--border))',
+              }}
             >
-              <div className="img-zoom-container relative w-full h-full">
+              {/* 图片区 */}
+              <div className="img-zoom-container relative h-[200px] sm:h-[240px] w-full overflow-hidden">
                 {featured.firstPicture || featured.type?.pic_url ? (
                   <div
                     className="img-bg absolute inset-0"
@@ -54,53 +59,65 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
                     }}
                   />
                 )}
-                <div className="img-zoom-overlay" />
+                {/* 推荐标签 */}
+                <div
+                  className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                  style={{ background: 'rgba(250,204,21,0.9)', color: '#92400e' }}
+                >
+                  <Star className="w-3 h-3 fill-current" />
+                  推荐
+                </div>
               </div>
-              {/* 内容 */}
-              <div className="absolute inset-0 flex flex-col justify-end p-6 z-10">
-                <div className="hero-text-reveal">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span
-                      className="text-xs px-2.5 py-1 rounded-full font-medium"
-                      style={{ background: 'rgba(250,204,21,0.9)', color: '#92400e' }}
-                    >
-                      <Star className="w-3 h-3 inline mr-1 fill-current" />
-                      推荐
-                    </span>
-                    <span className="text-xs text-white/70">{featured.type.name}</span>
-                  </div>
-                  <h3 className="text-2xl lg:text-3xl font-bold text-white mb-2 leading-tight group-hover:text-blue-200 transition-colors">
-                    {featured.title}
-                  </h3>
-                  <p className="text-white/70 text-sm line-clamp-2 mb-4 max-w-lg">
-                    {featured.description}
-                  </p>
-                  <div className="flex items-center gap-4 text-white/60 text-sm">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
-                      {formatDate(featured.createTime)}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Eye className="w-4 h-4" />
-                      {featured.views}
-                    </span>
-                  </div>
+
+              {/* 文字内容区 - 完全独立于图片背景 */}
+              <div className="p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-md font-medium"
+                    style={{ background: 'rgb(var(--color-7) / 0.1)', color: 'rgb(var(--color-7))' }}
+                  >
+                    {featured.type.name}
+                  </span>
+                </div>
+                <h3
+                  className="text-xl sm:text-2xl font-bold mb-2 leading-tight transition-colors group-hover:text-[rgb(var(--primary))]"
+                  style={{ color: 'rgb(var(--text))' }}
+                >
+                  {featured.title}
+                </h3>
+                <p className="text-sm line-clamp-2 mb-4" style={{ color: 'rgb(var(--text-muted))' }}>
+                  {featured.description}
+                </p>
+                <div className="flex items-center gap-4 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4" />
+                    {formatDate(featured.createTime)}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="w-4 h-4" />
+                    {featured.views}
+                  </span>
                 </div>
               </div>
             </Link>
           </div>
         )}
 
-        {/* 右侧小卡片 - 只在桌面端显示 */}
-        <div className="hidden lg:flex lg:col-span-2 flex-col gap-4">
+        {/* 右侧小卡片 - 水平图文分离布局 */}
+        <div className="hidden lg:flex lg:col-span-2 flex-col gap-4 lg:h-full">
           {sideCards.map((blog, index) => (
             <Link
               key={blog.id}
               href={ROUTES.BLOG_DETAIL(blog.id)}
-              className="group relative rounded-xl overflow-hidden cursor-pointer flex-1 min-h-[120px] block animate-slide-up"
-              style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+              className="group flex flex-1 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-md border animate-slide-up"
+              style={{
+                animationDelay: `${(index + 1) * 0.1}s`,
+                background: 'rgb(var(--card))',
+                borderColor: 'rgb(var(--border))',
+              }}
             >
-              <div className="img-zoom-container relative w-full h-full">
+              {/* 左侧图片 */}
+              <div className="img-zoom-container relative w-[50%] flex-shrink-0 overflow-hidden">
                 {blog.firstPicture || blog.type?.pic_url ? (
                   <div
                     className="img-bg absolute inset-0"
@@ -114,16 +131,28 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
                     }}
                   />
                 )}
-                <div className="img-zoom-overlay" />
               </div>
-              <div className="absolute inset-0 flex flex-col justify-end p-4 z-10">
-                <span className="text-xs text-white/60 mb-1">{blog.type.name}</span>
-                <h4 className="text-base font-semibold text-white line-clamp-2 group-hover:text-blue-200 transition-colors">
+
+              {/* 右侧文字内容 */}
+              <div className="flex-1 p-4 flex flex-col justify-center min-w-0">
+                <span
+                  className="text-xs px-2 py-0.5 rounded-md font-medium w-fit mb-2"
+                  style={{ background: 'rgb(var(--color-7) / 0.1)', color: 'rgb(var(--color-7))' }}
+                >
+                  {blog.type.name}
+                </span>
+                <h4
+                  className="text-sm font-semibold line-clamp-2 mb-2 transition-colors group-hover:text-[rgb(var(--primary))]"
+                  style={{ color: 'rgb(var(--text))' }}
+                >
                   {blog.title}
                 </h4>
-                <div className="flex items-center gap-3 mt-2 text-white/50 text-xs">
+                <div className="flex items-center gap-3 text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
                   <span>{formatDate(blog.createTime)}</span>
-                  <span>{blog.views} 阅读</span>
+                  <span className="flex items-center gap-1">
+                    <Eye className="w-3 h-3" />
+                    {blog.views}
+                  </span>
                 </div>
               </div>
             </Link>

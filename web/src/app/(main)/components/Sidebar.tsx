@@ -3,7 +3,8 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag as TagIcon, PenLine } from 'lucide-react'
+import { Tag as TagIcon, PenLine, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { TagSkeletonList } from './TagSkeleton'
 import { staggerContainerVariants, skeletonVariants } from '@/components/shared/PageTransition'
@@ -129,14 +130,15 @@ export function Sidebar({ tags, tagLoading, tagVisible, onSelectTag, essays }: S
       {/* 精选随笔 - 响应式显示 */}
       {sortedEssays.length > 0 && (
         <div className="bg-[rgb(var(--card))] rounded-xl border p-5 lg:p-5" style={{ borderColor: 'rgb(var(--border))' }}>
-          <div className="flex items-center gap-2 mb-4">
+          <Link href="/essays" className="group flex items-center gap-2 mb-4">
             <PenLine className="w-4 h-4" style={{ color: 'rgb(var(--color-3))' }} />
-            <h3 className="font-bold text-sm" style={{ color: 'rgb(var(--text))' }}>精选随笔</h3>
-          </div>
+            <h3 className="font-bold text-sm transition-colors group-hover:text-[rgb(var(--primary))]" style={{ color: 'rgb(var(--text))' }}>精选随笔</h3>
+            <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" style={{ color: 'rgb(var(--primary))' }} />
+          </Link>
           <div className="space-y-3">
             {sortedEssays.map((essay, idx) => (
               <div key={essay.id} className="essay-card p-3 rounded-lg cursor-pointer" style={{ animationDelay: `${idx * 0.1}s` }}>
-                <p className="text-sm line-clamp-2 mb-2" style={{ color: 'rgb(var(--text))' }}>
+                <p className="text-sm line-clamp-3 mb-2" style={{ color: 'rgb(var(--text))' }}>
                   {essay.content}
                 </p>
                 <div className="flex items-center justify-between">

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Filter } from 'lucide-react'
+import { ArrowLeft, Filter, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import Footer from '@/components/Footer'
-import {  PAGINATION, HOME_CONFIG , TIME } from '@/lib/constants'
+import { PAGINATION, HOME_CONFIG, TIME, ROUTES } from '@/lib/constants'
 import { HOME_LABELS } from '@/lib/labels'
 
 import { useHomeCache } from './hooks/useHomeCache'
@@ -474,35 +475,42 @@ export default function HomeClient({
                   </motion.div>
                 )}
               </AnimatePresence>
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={selectMethod}
-                  className="text-xl font-bold text-[rgb(var(--primary))]"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {selectMethod}
-                </motion.span>
-              </AnimatePresence>
+              <Link href={ROUTES.BLOG_LIST} className="group flex items-center relative">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={selectMethod}
+                    className="relative text-xl font-bold text-[rgb(var(--primary))]"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {selectMethod}
+                    <span
+                      className="absolute -bottom-0.5 left-0 h-0.5 w-0 rounded-full transition-all duration-300 group-hover:w-full"
+                      style={{ background: 'linear-gradient(to right, rgb(var(--color-7)), rgb(var(--color-4)))' }}
+                    />
+                  </motion.span>
+                </AnimatePresence>
+                <ArrowRight className="w-4 h-4 ml-1.5 text-[rgb(var(--primary))] opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />
+              </Link>
             </div>
             <motion.span
               className="text-[rgb(var(--text-muted))]"
               variants={counterVariants}
             >
-              共{' '}
-              <motion.span
-                key={totalcount}
-                className="text-[rgb(var(--primary))] text-xl font-bold"
-                initial={{ scale: 1.2 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                {totalcount}
+                共{' '}
+                <motion.span
+                  key={totalcount}
+                  className="text-[rgb(var(--primary))] text-xl font-bold"
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  {totalcount}
+                </motion.span>
+                {' '}篇
               </motion.span>
-              {' '}篇
-            </motion.span>
           </div>
 
           {/* 分类筛选按钮独立出来 */}
