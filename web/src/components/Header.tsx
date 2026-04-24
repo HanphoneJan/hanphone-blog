@@ -21,7 +21,8 @@ import {
   Link,
   UserPen,
   ImageIcon,
-  BookOpen
+  BookOpen,
+  LogIn
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import RegisterForm from './RegisterForm'
@@ -461,48 +462,6 @@ const Header: React.FC = () => {
   }
 
   const renderAuthSection = () => {
-    // 未登录状态：显示登录、注册、主题按钮
-    if (!userInfo) {
-      return (
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onShowLogin}
-            className={`px-3 py-2 text-white text-sm rounded-lg transition-none whitespace-nowrap font-semibold shadow-sm ${
-              isTransparent
-                ? 'bg-[rgb(var(--primary))]/90 hover:bg-[rgb(var(--primary-hover))]/90'
-                : 'bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))]'
-            }`}
-          >
-            登录
-          </button>
-          <button
-            onClick={onShowRegister}
-            className={`px-3 py-2 text-white text-sm rounded-lg transition-none whitespace-nowrap hidden sm:inline font-semibold shadow-sm ${
-              isTransparent
-                ? 'bg-[rgb(var(--primary))]/90 hover:bg-[rgb(var(--primary-hover))]/90'
-                : 'bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))]'
-            }`}
-          >
-            注册
-          </button>
-          {renderThemeToggleButton()}
-          <button
-            onClick={() => setBackgroundSettingsOpen(true)}
-            className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
-              isTransparent
-                ? 'hover:bg-[rgb(var(--bg)/0.2)]'
-                : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
-            }`}
-            aria-label="自定义背景"
-            title="自定义背景"
-          >
-            <ImageIcon className="h-5 w-5 text-[rgb(var(--primary))]" />
-          </button>
-        </div>
-      )
-    }
-
-    // 已登录状态：显示主题按钮、用户头像、下拉菜单
     return (
       <div className="flex items-center gap-2 z-1000 shrink-0">
         {renderThemeToggleButton()}
@@ -522,54 +481,92 @@ const Header: React.FC = () => {
           className="relative flex items-center cursor-pointer"
           onClick={() => setUserOptionVisible(!userOptionVisible)}
         >
-          <div className="w-10 h-10 rounded-full overflow-hidden lg:mr-2 shadow-sm border border-blue-300 dark:border-blue-400">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center lg:mr-2 ${
+            isTransparent
+              ? 'hover:bg-[rgb(var(--bg)/0.2)]'
+              : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
+          }`}>
             <Image
-              src={userInfo.avatar || ASSETS.DEFAULT_AVATAR}
-              alt={userInfo.nickname || '用户头像'}
-              width={40}
-              height={40}
+              src={userInfo?.avatar || ASSETS.DEFAULT_AVATAR}
+              alt={userInfo?.nickname || '默认头像'}
+              width={32}
+              height={32}
               priority
-              className="object-cover"
+              className="object-cover rounded-full block"
             />
           </div>
 
-              {userOptionVisible && (
-            <div
-              className="absolute top-full right-0 mt-3 w-48 bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded-lg shadow-sm z-1000 overflow-hidden"
-            >
-              <div
-                className="px-4 py-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--card))]/50"
-              >
-                <h3 className="text-sm font-medium text-[rgb(var(--text))]">
-                  {userInfo.nickname}，欢迎您
-                </h3>
-              </div>
-              <div
-                onClick={() => {
-                  setUserInfoFormVisible(true)
-                  setUserOptionVisible(false)
-                }}
-                className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
-              >
-                <UserPen className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
-                修改个人信息
-              </div>
-              {administrator && (
-                <div
-                  onClick={onManageBlog}
-                  className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
-                >
-                  <Settings className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
-                  管理博客
-                </div>
+          {userOptionVisible && (
+            <div className="absolute top-full right-0 mt-3 w-48 bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded-lg shadow-sm z-1000 overflow-hidden">
+              {userInfo ? (
+                <>
+                  <div className="px-4 py-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--card))]/50">
+                    <h3 className="text-sm font-medium text-[rgb(var(--text))]">
+                      {userInfo.nickname}，欢迎您
+                    </h3>
+                  </div>
+                  <div
+                    onClick={() => {
+                      setUserInfoFormVisible(true)
+                      setUserOptionVisible(false)
+                    }}
+                    className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                  >
+                    <UserPen className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
+                    修改个人信息
+                  </div>
+                  {administrator && (
+                    <div
+                      onClick={() => {
+                        onManageBlog()
+                        setUserOptionVisible(false)
+                      }}
+                      className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                    >
+                      <Settings className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
+                      管理博客
+                    </div>
+                  )}
+                  <div
+                    onClick={() => {
+                      handleLogout()
+                      setUserOptionVisible(false)
+                    }}
+                    className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                  >
+                    <LogOut className="w-4 h-4 mr-2 text-[rgb(var(--danger))]" />
+                    退出登录
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="px-4 py-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--card))]/50">
+                    <h3 className="text-sm font-medium text-[rgb(var(--text-muted))]">
+                      您尚未登录
+                    </h3>
+                  </div>
+                  <div
+                    onClick={() => {
+                      onShowLogin()
+                      setUserOptionVisible(false)
+                    }}
+                    className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                  >
+                    <LogIn className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
+                    登录
+                  </div>
+                  <div
+                    onClick={() => {
+                      onShowRegister()
+                      setUserOptionVisible(false)
+                    }}
+                    className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                  >
+                    <User className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
+                    注册
+                  </div>
+                </>
               )}
-              <div
-                onClick={handleLogout}
-                className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
-              >
-                <LogOut className="w-4 h-4 mr-2 text-[rgb(var(--danger))]" />
-                退出登录
-              </div>
             </div>
           )}
         </div>
