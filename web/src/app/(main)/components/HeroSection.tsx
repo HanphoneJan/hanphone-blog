@@ -101,17 +101,16 @@ export function HeroSection() {
 
       // 背景图片深度视差 + 渐变隐没效果
       if (bgRef.current) {
-        // 计算隐没位置：scrollProgress 从 0 到 1 时，mask 逐渐上移
-        // maskStart 和 maskEnd 决定了渐变的范围
-        const maskStart = Math.max(0, 100 - scrollProgress * 100)
-        const maskEnd = Math.max(0, 100 - scrollProgress * 60)
-        const mask = `linear-gradient(to bottom, black ${maskStart * 0.7}%, transparent ${maskEnd}%)`
+        // 更平滑的 mask 过渡：保持顶部可见区域，底部渐隐范围随滚动扩展
+        const fadeStart = Math.max(20, 90 - scrollProgress * 45)
+        const fadeEnd = Math.max(32, 100 - scrollProgress * 30)
+        const mask = `linear-gradient(to bottom, black ${fadeStart}%, transparent ${fadeEnd}%)`
         bgRef.current.style.maskImage = mask
         bgRef.current.style.webkitMaskImage = mask
 
         const translateY = scrollProgress * 30
         bgRef.current.style.transform = `translateY(${translateY}px)`
-        bgRef.current.style.opacity = String(1 - scrollProgress * 0.4)
+        bgRef.current.style.opacity = String(1 - scrollProgress * 0.35)
       }
 
       // 英雄区内容淡出
@@ -161,7 +160,8 @@ export function HeroSection() {
           WebkitBackfaceVisibility: 'hidden'
         }}
       />
-      <div className="fixed inset-0 pointer-events-none z-[1]" style={{ backgroundColor: 'rgb(var(--bg) / 0.1)' }} />
+      <BgOverlay opacity={0.1}/>
+
       {/* 视差层1：渐变网格背景 */}
       <div className="parallax-layer parallax-layer-1" data-speed="0.2" />
 
