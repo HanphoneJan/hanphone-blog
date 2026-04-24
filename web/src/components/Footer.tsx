@@ -27,10 +27,12 @@ const Footer: React.FC = () => {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    const fetchVisitCount = async () => {
+    const fetchVisitCount = async (retryCount = 0): Promise<void> => {
       try {
         setLoading(true)
-        const response = await apiClient.get<VisitCountResponse>(ENDPOINTS.GET_VISIT_COUNT)
+        const response = await apiClient.get<VisitCountResponse>(ENDPOINTS.GET_VISIT_COUNT, {
+          timeout: 30000, // 增加超时到30秒
+        })
 
         if (response.data.flag && response.data.code === API_CODE.SUCCESS) {
           setTotalVisitCount(response.data.data)
@@ -40,6 +42,12 @@ const Footer: React.FC = () => {
           setError(true)
         }
       } catch (err) {
+        // 网络错误或超时，最多重试2次
+        if (retryCount < 2) {
+          console.warn(`访问量请求失败，第 ${retryCount + 1} 次重试...`)
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)))
+          return fetchVisitCount(retryCount + 1)
+        }
         console.error('Failed to fetch visit count:', err)
         setError(true)
       } finally {

@@ -24,6 +24,8 @@ import static java.util.Objects.requireNonNull;
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
+    private static final int MAX_LIST_SIZE = 200;
+
     private final ProjectRepository projectRepository;
 
     // 构造函数注入时校验依赖非空
@@ -34,7 +36,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<Project> listProject() {
         try {
-            return projectRepository.findAll();
+            // 限制最大返回数量，避免全表查询拖垮性能
+            Pageable limit = PageRequest.of(0, MAX_LIST_SIZE, Sort.by(Sort.Direction.DESC, "id"));
+            return projectRepository.findAll(limit).getContent();
         } catch (Exception e) {
             throw new RuntimeException("Failed to list projects", e);
         }

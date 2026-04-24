@@ -35,4 +35,6 @@ public interface DocService {
     Boolean changeRecommend(Long id, Boolean recommend);
 
     Boolean changePublished(Long id, Boolean published);
+
+    Long count();
 }

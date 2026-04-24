@@ -2,6 +2,9 @@ package com.example.blog.web.admin;
 
 import com.example.blog.po.*;
 import com.example.blog.service.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -99,7 +102,13 @@ public class AdminIndexController {
     }
 
     @GetMapping("/getCommentList")
-    public Result<List<Comment>> getCommentList() {
+    public Result<?> getCommentList(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize) {
+        if (page != null && pageSize != null) {
+            Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "createTime"));
+            return new Result<>(true, StatusCode.OK, "获取评论列表成功", commentService.listComment(pageable));
+        }
         return new Result<>(true, StatusCode.OK, "获取评论列表成功", commentService.listComment());
     }
 

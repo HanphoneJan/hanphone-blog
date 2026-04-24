@@ -191,4 +191,13 @@ public class DocServiceImpl implements DocService {
             throw new RuntimeException("Failed to change published status for doc: " + id, e);
         }
     }
+
+    @Override
+    public Long count() {
+        try {
+            return docRepository.count();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to count docs", e);
+        }
+    }
 }

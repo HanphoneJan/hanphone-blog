@@ -20,5 +20,7 @@ public interface MessageService {
 
     List<String> messageCountByMonth();
 
+    Long count();
+
     void deleteMessage(Long id);
 }

@@ -4,6 +4,9 @@ import com.example.blog.dao.EssayCommentRepository;
 import com.example.blog.po.Essay;
 import com.example.blog.po.EssayComment;
 import com.example.blog.service.EssayCommentService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +17,8 @@ import java.util.Objects;
 
 @Service
 public class EssayCommentServiceImpl implements EssayCommentService {
+
+    private static final int MAX_LIST_SIZE = 200;
 
     private final EssayCommentRepository essayCommentRepository;
 
@@ -75,7 +80,9 @@ public class EssayCommentServiceImpl implements EssayCommentService {
     @Override
     public List<EssayComment> listEssayComment() {
         try {
-            List<EssayComment> essayComments = essayCommentRepository.findAll();
+            // 限制最大返回数量，避免全表查询拖垮性能
+            org.springframework.data.domain.Pageable limit = PageRequest.of(0, MAX_LIST_SIZE, Sort.by("createTime"));
+            List<EssayComment> essayComments = essayCommentRepository.findAll(limit).getContent();
 
             // 处理评论集合时做多层非空保护
             essayComments.forEach(essayComment -> {
@@ -90,6 +97,26 @@ public class EssayCommentServiceImpl implements EssayCommentService {
             return essayComments;
         } catch (Exception e) {
             throw new RuntimeException("Error listing all essay comments", e);
+        }
+    }
+
+    @Override
+    public Page<EssayComment> listEssayComment(Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            Page<EssayComment> essayComments = essayCommentRepository.findAll(pageable);
+            essayComments.getContent().forEach(essayComment -> {
+                if (essayComment != null) {
+                    Essay essay = essayComment.getEssay();
+                    if (essay != null) {
+                        essay.setContent("");
+                        essayComment.setEssay(essay);
+                    }
+                }
+            });
+            return essayComments;
+        } catch (Exception e) {
+            throw new RuntimeException("Error listing essay comments with pageable", e);
         }
     }
 

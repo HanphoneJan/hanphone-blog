@@ -4,6 +4,9 @@ import com.example.blog.dao.CommentRepository;
 import com.example.blog.po.Blog;
 import com.example.blog.po.Comment;
 import com.example.blog.service.CommentService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +17,8 @@ import java.util.Objects;
 
 @Service
 public class CommentServiceImpl implements CommentService {
+
+    private static final int MAX_LIST_SIZE = 200;
 
     private final CommentRepository commentRepository;
 
@@ -75,7 +80,9 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public List<Comment> listComment() {
         try {
-            List<Comment> comments = commentRepository.findAll();
+            // 限制最大返回数量，避免全表查询拖垮性能
+            org.springframework.data.domain.Pageable limit = PageRequest.of(0, MAX_LIST_SIZE, Sort.by("createTime"));
+            List<Comment> comments = commentRepository.findAll(limit).getContent();
 
             // 处理评论集合时做多层非空保护
             comments.forEach(comment -> {
@@ -90,6 +97,26 @@ public class CommentServiceImpl implements CommentService {
             return comments;
         } catch (Exception e) {
             throw new RuntimeException("获取所有评论时发生错误", e);
+        }
+    }
+
+    @Override
+    public Page<Comment> listComment(Pageable pageable) {
+        requireNonNull(pageable, "pageable must not be null");
+        try {
+            Page<Comment> comments = commentRepository.findAll(pageable);
+            comments.getContent().forEach(comment -> {
+                if (comment != null) {
+                    Blog blog = comment.getBlog();
+                    if (blog != null) {
+                        blog.setContent("");
+                        comment.setBlog(blog);
+                    }
+                }
+            });
+            return comments;
+        } catch (Exception e) {
+            throw new RuntimeException("获取评论分页列表时发生错误", e);
         }
     }
 

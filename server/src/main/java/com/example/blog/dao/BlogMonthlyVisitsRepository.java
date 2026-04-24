@@ -29,4 +29,8 @@ public interface BlogMonthlyVisitsRepository extends JpaRepository<BlogMonthlyVi
     // 查询最近半年的访问记录
     @Query("select b from BlogMonthlyVisits b where b.yearMonth >= ?1 order by b.yearMonth asc")
     List<BlogMonthlyVisits> findLastSixMonths(String sixMonthsAgoYearMonth);
+
+    // 使用数据库聚合查询总访问量，避免查全表
+    @Query("select coalesce(sum(b.totalVisits), 0) from BlogMonthlyVisits b")
+    Long sumTotalVisits();
 }

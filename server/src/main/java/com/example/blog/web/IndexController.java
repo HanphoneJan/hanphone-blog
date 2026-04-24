@@ -9,7 +9,9 @@ import com.example.blog.po.Tag;
 import com.example.blog.po.Type;
 import com.example.blog.service.BlogMonthlyVisitsService;
 import com.example.blog.service.BlogService;
+import com.example.blog.service.DocService;
 import com.example.blog.service.EssayService;
+import com.example.blog.service.MessageService;
 import com.example.blog.service.ProjectService;
 import com.example.blog.service.TagService;
 import com.example.blog.service.TypeService;
@@ -34,16 +36,20 @@ public class IndexController {
     private final BlogMonthlyVisitsService blogMonthlyVisitsService;
     private final EssayService essayService;
     private final ProjectService projectService;
+    private final MessageService messageService;
+    private final DocService docService;
 
     public IndexController(TagService tagService, TypeService typeService, BlogService blogService,
                            BlogMonthlyVisitsService blogMonthlyVisitsService, EssayService essayService,
-                           ProjectService projectService) {
+                           ProjectService projectService, MessageService messageService, DocService docService) {
         this.tagService = tagService;
         this.typeService = typeService;
         this.blogService = blogService;
         this.blogMonthlyVisitsService = blogMonthlyVisitsService;
         this.essayService = essayService;
         this.projectService = projectService;
+        this.messageService = messageService;
+        this.docService = docService;
     }
 
     @GetMapping("/blogs")
@@ -123,6 +129,8 @@ public class IndexController {
         stats.put("blogCount", blogService.countBlog());
         stats.put("essayCount", essayService.count());
         stats.put("projectCount", projectService.count());
+        stats.put("messageCount", messageService.count());
+        stats.put("docCount", docService.count());
         return new Result<>(true, StatusCode.OK, "获取站点统计成功", stats);
     }
 }

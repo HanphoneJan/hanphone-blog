@@ -59,19 +59,48 @@ public class EssayServiceImpl implements EssayService {
     public List<Essay> listEssay(Long userId) {
         try {
             List<Essay> essays = essayRepository.findAll();
-            essays.forEach(essay -> {
-                Objects.requireNonNull(essay, "essay must not be null");
-                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
-                Optional<UserEssayLike> existingLike = userId != null
-                        ? userEssayLikeRepository.findByUserIdAndEssayId(userId, essay.getId())
-                        : Optional.empty();
-                essay.setEssayFileUrls(fileUrls);
-                essay.setLiked(existingLike.isPresent());
-                fillParentCommentId(essay);
-            });
+            fillEssayRelations(essays, userId);
             return essays;
         } catch (Exception e) {
             throw new RuntimeException("获取文章列表失败", e);
+        }
+    }
+
+    /**
+     * 批量填充随笔的关联数据（文件URL、点赞状态），避免 N+1 查询
+     */
+    private void fillEssayRelations(List<Essay> essays, Long userId) {
+        if (essays == null || essays.isEmpty()) {
+            return;
+        }
+
+        List<Long> essayIds = essays.stream()
+                .map(Essay::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 批量查询文件URL：1 次查询替代 N 次
+        List<EssayFileUrl> allFileUrls = essayFileUrlRepository.findByEssay_IdIn(essayIds);
+        Map<Long, List<EssayFileUrl>> fileUrlsMap = allFileUrls.stream()
+                .filter(f -> f.getEssay() != null)
+                .collect(java.util.stream.Collectors.groupingBy(f -> f.getEssay().getId()));
+
+        // 批量查询点赞状态：1 次查询替代 N 次
+        java.util.Set<Long> likedEssayIds = java.util.Collections.emptySet();
+        if (userId != null) {
+            likedEssayIds = userEssayLikeRepository.findByUserIdAndEssayIdIn(userId, essayIds)
+                    .stream()
+                    .filter(like -> like.getEssay() != null)
+                    .map(like -> like.getEssay().getId())
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+
+        for (Essay essay : essays) {
+            if (essay == null) continue;
+            essay.setEssayFileUrls(fileUrlsMap.getOrDefault(essay.getId(), java.util.Collections.emptyList()));
+            essay.setLiked(likedEssayIds.contains(essay.getId()));
+            fillParentCommentId(essay);
         }
     }
 
@@ -251,16 +280,7 @@ public class EssayServiceImpl implements EssayService {
     public List<Essay> listPublishedEssay(Long userId) {
         try {
             List<Essay> essays = essayRepository.findByPublishedTrue();
-            essays.forEach(essay -> {
-                Objects.requireNonNull(essay, "essay must not be null");
-                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
-                Optional<UserEssayLike> existingLike = userId != null
-                        ? userEssayLikeRepository.findByUserIdAndEssayId(userId, essay.getId())
-                        : Optional.empty();
-                essay.setEssayFileUrls(fileUrls);
-                essay.setLiked(existingLike.isPresent());
-                fillParentCommentId(essay);
-            });
+            fillEssayRelations(essays, userId);
             return essays;
         } catch (Exception e) {
             throw new RuntimeException("获取已发布随笔列表失败", e);

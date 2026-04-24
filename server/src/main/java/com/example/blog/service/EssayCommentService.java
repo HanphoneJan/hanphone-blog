@@ -1,6 +1,8 @@
 package com.example.blog.service;
 
 import com.example.blog.po.EssayComment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -10,6 +12,8 @@ public interface EssayCommentService {
     EssayComment saveEssayComment(EssayComment comment);
 
     List<EssayComment> listEssayComment();
+
+    Page<EssayComment> listEssayComment(Pageable pageable);
 
     List<String> EssayCommentCountByMonth();
 

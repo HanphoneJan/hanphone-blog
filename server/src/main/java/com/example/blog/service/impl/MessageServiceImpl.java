@@ -9,6 +9,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -18,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 @Service
 public class MessageServiceImpl implements MessageService {
+    private static final int MAX_LIST_SIZE = 200;
+
     private final MessageRepository messageRepository;
 
     // 构造函数注入时校验依赖非空
@@ -28,7 +33,9 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<Message> listMessage() {
         try {
-            return messageRepository.findAll();
+            // 限制最大返回数量，避免全表查询拖垮性能
+            Pageable limit = PageRequest.of(0, MAX_LIST_SIZE, Sort.by(Sort.Direction.DESC, "createTime"));
+            return messageRepository.findAll(limit).getContent();
         } catch (Exception e) {
             throw new RuntimeException("Failed to get message list", e);
         }
@@ -100,6 +107,15 @@ public class MessageServiceImpl implements MessageService {
             return message;
         } catch (Exception e) {
             throw new RuntimeException("Failed to get message with id: " + id, e);
+        }
+    }
+
+    @Override
+    public Long count() {
+        try {
+            return messageRepository.count();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to count messages", e);
         }
     }
 }

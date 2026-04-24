@@ -140,14 +140,8 @@ public class BlogMonthlyVisitsServiceImpl implements BlogMonthlyVisitsService {
     @Override
     public Long getTotalVisits() {
         try {
-            List<BlogMonthlyVisits> allVisits = blogMonthlyVisitsRepository.findAll();
-            return allVisits.stream()
-                    .filter(Objects::nonNull)
-                    .mapToLong(visit -> {
-                        Long visits = visit.getTotalVisits();
-                        return visits != null ? visits : 0L;
-                    })
-                    .sum();
+            Long total = blogMonthlyVisitsRepository.sumTotalVisits();
+            return total != null ? total : 0L;
         } catch (Exception e) {
             throw new RuntimeException("Failed to calculate total visits", e);
         }

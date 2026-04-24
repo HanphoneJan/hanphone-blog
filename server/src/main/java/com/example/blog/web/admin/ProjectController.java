@@ -4,6 +4,9 @@ import com.example.blog.po.Project;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.service.ProjectService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +29,13 @@ public class ProjectController {
     }
 
     @GetMapping("/projects")
-    public Result<List<Project>> projects() {
+    public Result<?> projects(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize) {
+        if (page != null && pageSize != null) {
+            Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by(Sort.Direction.DESC, "id"));
+            return new Result<>(true, StatusCode.OK, "获取项目列表成功", projectService.listProject(pageable));
+        }
         return new Result<>(true, StatusCode.OK, "获取项目列表成功", projectService.listProject());
     }
 
