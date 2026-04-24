@@ -104,7 +104,8 @@ export default function EssayClient({ initialEssays }: EssayClientProps) {
           if (element) {
             hasScrolledToHash.current = true
             setTimeout(() => {
-              element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
+              window.scrollTo({ top: element.offsetTop - headerHeight - 16, behavior: 'smooth' })
             }, 100)
           }
         }

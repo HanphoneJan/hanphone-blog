@@ -181,11 +181,12 @@ export function HeroSection() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [updateParallax])
 
-  // 平滑滚动到内容区
+  // 平滑滚动到内容区（减去 header 高度避免遮挡）
   const scrollToContent = () => {
     const mainContent = document.getElementById('mainContent')
     if (mainContent) {
-      mainContent.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
+      window.scrollTo({ top: mainContent.offsetTop - headerHeight, behavior: 'smooth' })
     }
   }
 

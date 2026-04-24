@@ -30,7 +30,8 @@ const ScrollNavBar = ({ messages, activeId, onNavigate, isVisible }: ScrollNavBa
     onNavigate(messageId)
     const element = document.getElementById(messageId.toString())
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
+      window.scrollTo({ top: element.offsetTop - headerHeight - 16, behavior: 'smooth' })
     }
   }
 
@@ -321,7 +322,8 @@ export default function MessageClient() {
           if (element) {
             hasScrolledToHash.current = true
             setTimeout(() => {
-              element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
+              window.scrollTo({ top: element.offsetTop - headerHeight - 16, behavior: 'smooth' })
             }, 100)
           }
         }

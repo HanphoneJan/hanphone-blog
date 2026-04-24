@@ -229,7 +229,13 @@ export default function HomeClient({
   const handleCurrentChange = useCallback(
     (newPage: number) => {
       setQueryInfo((prev) => ({ ...prev, pagenum: newPage }))
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      const el = document.getElementById('blogListSection')
+      if (el) {
+        const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
+        const rect = el.getBoundingClientRect()
+        const scrollTop = window.scrollY || document.documentElement.scrollTop
+        window.scrollTo({ top: rect.top + scrollTop - headerHeight - 16, behavior: 'smooth' })
+      }
     },
     [setQueryInfo]
   )
@@ -275,13 +281,6 @@ export default function HomeClient({
             )
           }
 
-          // 对博客列表进行排序，推荐博客优先
-          filteredBlogs = filteredBlogs.sort((a, b) => {
-            if (b.recommend && !a.recommend) return 1
-            if (a.recommend && !b.recommend) return -1
-            return 0
-          })
-
           setCache(cacheKey, filteredBlogs)
         } catch (error) {
           console.error('Error selecting type:', error)
@@ -319,9 +318,9 @@ export default function HomeClient({
             const typeData = await typeRes.json()
             filteredBlogs = typeData.data?.content || []
           } else {
-            // 否则获取所有博客
+            // 否则分页获取博客
             const allBlogsRes = await fetch(
-              `/api/blogs?pagenum=1&pagesize=${HOME_CONFIG.ALL_BLOGS_PAGE_SIZE}`
+              `/api/blogs?pagenum=${queryInfo.pagenum}&pagesize=${queryInfo.pagesize}`
             )
             const allBlogsData = await allBlogsRes.json()
             filteredBlogs = allBlogsData.data?.content || []
@@ -342,13 +341,6 @@ export default function HomeClient({
               )
             )
           }
-
-          // 对博客列表进行排序，推荐博客优先
-          filteredBlogs = filteredBlogs.sort((a, b) => {
-            if (b.recommend && !a.recommend) return 1
-            if (a.recommend && !b.recommend) return -1
-            return 0
-          })
 
           setCache(cacheKey, filteredBlogs)
         } catch (error) {
@@ -396,7 +388,9 @@ export default function HomeClient({
       getFromCache,
       setCache,
       setBlogList,
-      setTotalcount
+      setTotalcount,
+      queryInfo.pagenum,
+      queryInfo.pagesize
     ]
   )
 
@@ -454,7 +448,7 @@ export default function HomeClient({
         {/* 主内容区 */}
         <motion.div variants={contentVariants}>
           {/* 标题栏独立出来，不与侧边栏对齐 */}
-          <div className="flex justify-between items-center mb-5">
+          <div id="blogListSection" className="flex justify-between items-center mb-5">
             <div className="flex items-center">
               <AnimatePresence mode="wait">
                 {selected && (

@@ -27,7 +27,7 @@ const Live2DWidget = () => {
       if (!hero) return
       const rect = hero.getBoundingClientRect()
       // hero 还在视口内（底部还没滚出屏幕上方）时隐藏
-      setHidden(rect.bottom > 0)
+      setHidden(rect.bottom > 100)
     }
     handleScroll()
     window.addEventListener('scroll', handleScroll, { passive: true })
