@@ -134,16 +134,16 @@
 @keyframes charRevealGlow {
   0%, 100% {
     text-shadow:
-      0 2px 16px rgba(0, 0, 0, 0.6),
-      0 0 40px rgba(0, 0, 0, 0.35),
-      0 0 20px rgb(var(--primary) / 0.3);
+      0 2px 12px rgba(0, 0, 0, 0.45),
+      0 0 30px rgba(0, 0, 0, 0.25),
+      0 0 20px rgb(var(--primary) / 0.2);
   }
   50% {
     text-shadow:
-      0 2px 16px rgba(0, 0, 0, 0.6),
-      0 0 50px rgba(0, 0, 0, 0.4),
-      0 0 40px rgb(var(--color-4) / 0.35),
-      0 0 70px rgb(var(--color-7) / 0.25);
+      0 2px 12px rgba(0, 0, 0, 0.45),
+      0 0 40px rgba(0, 0, 0, 0.3),
+      0 0 30px rgb(var(--color-4) / 0.25),
+      0 0 50px rgb(var(--color-7) / 0.18);
   }
 }
 
@@ -165,9 +165,9 @@
   perspective: 800px;
   color: #fff;
   text-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.6),
-    0 0 40px rgba(0, 0, 0, 0.35),
-    0 0 80px rgba(0, 0, 0, 0.15);
+    0 2px 12px rgba(0, 0, 0, 0.45),
+    0 0 30px rgba(0, 0, 0, 0.25),
+    0 0 60px rgba(0, 0, 0, 0.1);
 }
 
 .hero-title .char {
@@ -194,7 +194,7 @@
   opacity: 0;
   animation: subtitleFade 1s 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
   color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35), 0 0 16px rgba(0, 0, 0, 0.12);
 }
 
 
@@ -440,15 +440,15 @@ body.home-page.theme-cyber .main-content {
   padding-top: 0 !important;
 }
 
-/* 透明Header下文字阴影，确保在Hero背景上可读 — 多层shadow匹配hero-title层级 */
+/* 透明Header下文字阴影，确保在Hero背景上可读 */
 .header-transparent .text-xl,
 .header-transparent span:not(.sr-only),
 .header-transparent nav button,
 .header-transparent input {
   text-shadow:
-    0 1px 8px rgba(0, 0, 0, 0.55),
-    0 0 24px rgba(0, 0, 0, 0.35),
-    0 0 48px rgba(0, 0, 0, 0.15);
+    0 1px 6px rgba(0, 0, 0, 0.4),
+    0 0 18px rgba(0, 0, 0, 0.22),
+    0 0 36px rgba(0, 0, 0, 0.1);
 }
 
 /* 深色主题下进一步增强 */
@@ -457,9 +457,23 @@ body.home-page.theme-cyber .main-content {
 .dark .header-transparent nav button,
 .dark .header-transparent input {
   text-shadow:
-    0 1px 10px rgba(0, 0, 0, 0.65),
-    0 0 28px rgba(0, 0, 0, 0.45),
-    0 0 56px rgba(0, 0, 0, 0.25);
+    0 1px 8px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(0, 0, 0, 0.3),
+    0 0 42px rgba(0, 0, 0, 0.15);
+}
+
+/* 透明模式下所有文字统一白色 */
+.header-transparent,
+.header-transparent nav button,
+.header-transparent input,
+.header-transparent input::placeholder {
+  color: #fff !important;
+}
+
+/* Logo渐变文字在透明模式下恢复为白色 */
+.header-transparent .text-xl {
+  -webkit-text-fill-color: #fff !important;
+  background: none !important;
 }
 
 /* 覆盖macaron/cyber主题的header伪元素装饰 */

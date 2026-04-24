@@ -676,10 +676,10 @@ const Header: React.FC = () => {
                     className={`flex items-center shrink-0 rounded-lg transition-none whitespace-nowrap ${
                       isActive
                         ? isTransparent
-                          ? 'text-[rgb(var(--primary))] font-semibold'
+                          ? 'text-white font-semibold'
                           : 'bg-[rgb(var(--primary))] text-white shadow-md font-semibold'
                         : isTransparent
-                          ? 'hover:bg-[rgb(var(--bg)/0.15)] text-[rgb(var(--text))]'
+                          ? 'hover:bg-[rgb(var(--bg)/0.15)] text-white'
                           : 'hover:bg-[rgb(var(--hover))] text-[rgb(var(--text))]'
                     } min-[1100px]:px-2.5 min-[1100px]:py-1.5 px-2 py-1.5 ${item.enName}`}
                   >
