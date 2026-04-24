@@ -105,7 +105,7 @@ const Footer: React.FC = () => {
     <footer className="z-5 relative py-8 mt-3 lg:mt-6 bg-[rgb(var(--bg))] border-t border-[rgb(var(--border))]">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* 主要内容区域 - 采用响应式网格布局 */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 mb-4">
           {/* 二维码区域 - 在小屏幕占满宽度，大屏幕占2列 */}
           <div className="md:col-span-2 flex flex-col items-center md:items-start">
             <div className="bg-card p-2 rounded-lg shadow-lg mb-2 transform transition-transform duration-300 hover:scale-105">
@@ -200,80 +200,65 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* 访问统计区域 - 合并运行时间显示 */}
-          <div className="md:col-span-3">
-            <h4 className="text-lg font-semibold mb-4 pb-2 border-b border-[rgb(var(--border))] relative after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-12 after:bg-[rgb(var(--primary))] text-[rgb(var(--primary))]">
-              {FOOTER_LABELS.SITE_STATS}
-            </h4>
-            <div className="h-full flex flex-col gap-3">
-              {/* 访问量卡片 */}
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-[rgb(var(--border))] shadow-sm hover:shadow-md transition-all duration-300 group bg-[rgb(var(--card))]">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-[rgb(var(--primary))]/80 to-[rgb(var(--primary-hover))]/80">
-                  <Eye className="h-5 w-5 text-white" />
-                </div>
+{/* 访问统计区域 - 横排合并卡片，带文字标签 */}
+<div className="md:col-span-3">
+  <h4 className="text-lg font-semibold mb-4 pb-2 border-b border-[rgb(var(--border))] relative after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-12 after:bg-[rgb(var(--primary))] text-[rgb(var(--primary))]">
+    {FOOTER_LABELS.SITE_STATS}
+  </h4>
+  <div className="flex items-stretch rounded-xl border border-[rgb(var(--border))] shadow-sm hover:shadow-md transition-all duration-300 bg-[rgb(var(--card))] overflow-hidden">
+    {/* 左侧：访问量 */}
+    <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 group">
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-[rgb(var(--primary))]/80 to-[rgb(var(--primary-hover))]/80">
+        <Eye className="h-4 w-4 text-white" />
+      </div>
+      {loading ? (
+        <div className="h-6 w-20 bg-gradient-to-r from-[rgb(var(--card))] to-[rgb(var(--hover))] rounded-md animate-pulse"></div>
+      ) : error ? (
+        <span className="text-sm text-[rgb(var(--text-muted))]">--</span>
+      ) : (
+        <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))]">
+          {totalVisitCount?.toLocaleString()}
+        </span>
+      )}
+      <span className="text-xs font-medium text-[rgb(var(--text-muted))]">总访问量</span>
+    </div>
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
-                      {FOOTER_LABELS.TOTAL_VISITS}
-                    </span>
-                    <TrendingUp className="h-3 w-3 text-[rgb(var(--success))]" />
-                  </div>
+    {/* 分隔线 */}
+    <div className="w-px bg-[rgb(var(--border))] my-2"></div>
 
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-24 bg-gradient-to-r from-[rgb(var(--card))] to-[rgb(var(--hover))] rounded-md animate-pulse"></div>
-                    </div>
-                  ) : error ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
-                        {FOOTER_LABELS.DATA_LOAD_FAIL}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))]">
-                        {totalVisitCount?.toLocaleString()}
-                      </span>
-                      <span className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                        {FOOTER_LABELS.VISITS_COUNT}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="w-2 h-2 rounded-full animate-ping bg-[rgb(var(--primary))]"></div>
-                </div>
-              </div>
-
-              {/* 运行时间卡片 - 合并到统计区域 */}
-              {uptime && (
-                <div className="flex items-center gap-3 p-3 rounded-xl border border-[rgb(var(--border))] shadow-sm hover:shadow-md transition-all duration-300 bg-[rgb(var(--card))]">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-[rgb(var(--color-2))]/80 to-[rgb(var(--color-3))]/80">
-                    <Clock className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CalendarDays className="h-3 w-3 text-[rgb(var(--color-2))]" />
-                      <span className="text-sm font-medium text-[rgb(var(--text-muted))]">
-                        站点运行
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-1 flex-wrap">
-                      <span className="text-lg font-bold text-[rgb(var(--color-2))]">
-                        {uptime.split(' ').slice(0, 2).join(' ')}
-                      </span>
-                      <span className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                        {uptime.split(' ').slice(2).join(' ')}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-1.5 h-1.5 rounded-full animate-pulse bg-[rgb(var(--color-2))]"></div>
-                </div>
-              )}
-            </div>
-          </div>
+    {/* 右侧：运行时间（纯色图标，只显示年和日） */}
+    {uptime ? (
+      <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3">
+        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[rgb(var(--color-2))]">
+          <Clock className="h-4 w-4 text-white" />
+        </div>
+        <div className="flex items-baseline gap-1 flex-wrap justify-center">
+          <span className="text-xl font-bold text-[rgb(var(--color-2))]">
+            {(() => {
+              const yearMatch = uptime.match(/(\d+)年/)
+              const dayMatch = uptime.match(/(\d+)天/)
+              const years = yearMatch ? yearMatch[1] : ''
+              const days = dayMatch ? dayMatch[1] : '0'
+              if (years) {
+                return `${years}年${days}天`
+              }
+              return `${days}天`
+            })()}
+          </span>
+        </div>
+        <span className="text-xs font-medium text-[rgb(var(--text-muted))]">已运行</span>
+      </div>
+    ) : (
+      <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3">
+        <div className="w-9 h-9 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] flex items-center justify-center">
+          <Clock className="h-4 w-4 text-[rgb(var(--text-muted))] animate-pulse" />
+        </div>
+        <span className="text-xs text-[rgb(var(--text-muted))]">加载中...</span>
+        <span className="text-xs text-[rgb(var(--text-muted))]">已运行</span>
+      </div>
+    )}
+  </div>
+</div>
         </div>
 
         <div className="my-6 opacity-60 border-t border-[rgb(var(--border))]"></div>
