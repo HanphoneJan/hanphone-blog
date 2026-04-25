@@ -254,7 +254,7 @@ export default function UserManagementPage() {
   const deleteUser = async (id: number) => {
     try {
       setLoading(true)
-      const res = await fetchData(`${ENDPOINTS.ADMIN.USERS}/${id}/delete`, 'GET')
+      const res = await fetchData(`${ENDPOINTS.ADMIN.USERS}/${id}`, 'DELETE')
 
       if (res.code !== API_CODE.SUCCESS) {
         return showAlert(ADMIN_USER_LABELS.DELETE_FAIL)

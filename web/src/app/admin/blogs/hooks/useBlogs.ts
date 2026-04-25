@@ -58,7 +58,7 @@ export function useBlogs() {
 
   const removeBlogById = async (id: number, onSuccess?: () => void) => {
     showAlert(ADMIN_BLOG_LABELS.DELETE_CONFIRM, { type: 'warning', duration: 3000 })
-    const data = await fetchData(`${ENDPOINTS.ADMIN.BLOGS}/${id}/delete`, 'GET')
+    const data = await fetchData(`${ENDPOINTS.ADMIN.BLOGS}/${id}`, 'DELETE')
     if (data.code === API_CODE.SUCCESS) {
       showAlert(ADMIN_BLOG_LABELS.DELETE_SUCCESS)
       onSuccess?.()

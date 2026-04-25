@@ -169,7 +169,7 @@ export function useEssays() {
   // 删除随笔
   const deleteEssay = async (id: number): Promise<boolean> => {
     try {
-      const data = await fetchData(`${ENDPOINTS.ADMIN.ESSAY}/${id}/delete`, 'GET')
+      const data = await fetchData(`${ENDPOINTS.ADMIN.ESSAY}/${id}`, 'DELETE')
       if (data.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_ESSAY_LABELS.DELETE_SUCCESS)
         getEssayList()

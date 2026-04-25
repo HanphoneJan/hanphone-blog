@@ -77,8 +77,8 @@ export function useSkills() {
   const deleteSkill = async (id: number) => {
     try {
       const res = await apiClient({
-        url: `${ENDPOINTS.ADMIN.PERSONINFO}/${id}/delete`,
-        method: 'GET'
+        url: `${ENDPOINTS.ADMIN.PERSONINFO}/${id}`,
+        method: 'DELETE'
       })
 
       if (res.data.code === API_CODE.SUCCESS) {

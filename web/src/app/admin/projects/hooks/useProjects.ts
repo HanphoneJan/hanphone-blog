@@ -133,7 +133,7 @@ export const useProjects = () => {
 
     try {
       setLoading(true)
-      const res = await fetchData(`${ENDPOINTS.ADMIN.PROJECT}/${deleteConfirm}/delete`, 'GET')
+      const res = await fetchData(`${ENDPOINTS.ADMIN.PROJECT}/${deleteConfirm}`, 'DELETE')
 
       if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_PROJECT_LABELS.DELETE_SUCCESS)

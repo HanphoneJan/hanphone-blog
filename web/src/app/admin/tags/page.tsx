@@ -177,7 +177,7 @@ export default function TagsManagementPage() {
   const handleDeleteTag = async (id: number) => {
     try {
       setLoading(true)
-      const res = await fetchData(`${ENDPOINTS.ADMIN.TAGS}/${id}/delete`, 'GET')
+      const res = await fetchData(`${ENDPOINTS.ADMIN.TAGS}/${id}`, 'GET')
 
       if (res.code === API_CODE.SUCCESS) {
         showAlert(res.message || ADMIN_TAG_LABELS.DELETE_SUCCESS)

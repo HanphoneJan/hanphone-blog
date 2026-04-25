@@ -303,7 +303,7 @@ export default function CategoryManagement() {
   const handleDeleteCategory = async (id: number) => {
     try {
       setLoading(true)
-      const res = await fetchData(`${ENDPOINTS.ADMIN.TYPES}/${id}/delete`, 'GET')
+      const res = await fetchData(`${ENDPOINTS.ADMIN.TYPES}/${id}`, 'GET')
 
       if (res.code === API_CODE.SUCCESS) {
         showAlert(res.message || ADMIN_TYPE_LABELS.DELETE_SUCCESS)
