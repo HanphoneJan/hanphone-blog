@@ -11,6 +11,7 @@
     "buildDev": "next build --turbopack",
     "build": "next build",
     "build:static": "node scripts/build-static.mjs",
+    "build:gomoku": "pnpm --filter uni-preset-vue build:h5",
     "start": "next start",
     "serve:dist": "npx serve dist",
     "tauri": "tauri",

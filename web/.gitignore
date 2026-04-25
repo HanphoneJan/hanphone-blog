@@ -38,6 +38,9 @@ yarn-error.log*
 public/sw*
 public/swe-worker*
 
+# Build artifacts
+public/games/gomoku/
+
 # vercel
 .vercel
 

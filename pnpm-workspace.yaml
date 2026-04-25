@@ -1,0 +1,4 @@
+packages:
+  - 'web'
+  - 'apps/gomoku'
+  - 'admin-file'

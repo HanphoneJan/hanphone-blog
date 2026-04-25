@@ -1,0 +1,10 @@
+{
+  "name": "hanphone-blog-workspace",
+  "private": true,
+  "scripts": {
+    "install:all": "pnpm install",
+    "build:web": "pnpm --filter blog3-front build",
+    "build:gomoku": "pnpm --filter uni-preset-vue build:h5",
+    "build:all": "pnpm -r build"
+  }
+}
