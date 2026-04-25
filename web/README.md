@@ -10,11 +10,15 @@
 
 ## 快速开始
 
+本项目作为 **pnpm workspace** 的一部分。推荐在根目录下执行初始化。
+
 ```bash
-cd web/
-npm install
+# 在根目录安装
+pnpm install
+
+# 在 web 目录下或使用过滤
 cp env.example .env
-npm run dev
+pnpm dev
 ```
 
 访问 http://localhost:3000

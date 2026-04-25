@@ -1,6 +1,6 @@
 # 使用多阶段构建优化镜像大小
 # 第一阶段：构建阶段
-FROM maven:3.8.6-openjdk-8 AS builder
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -16,7 +16,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # 第二阶段：运行阶段
-FROM openjdk:8-jre-slim
+FROM eclipse-temurin:17-jre-jammy
 
 # 安装必要的工具
 RUN apt-get update && \

@@ -51,29 +51,29 @@ mvn surefire-report:report
 
 ### Web (Next.js) 测试
 
-```bash
-cd web
+由于项目采用了 **pnpm workspace**，推荐在根目录运行测试：
 
-# 安装依赖（包含测试依赖）
+```bash
+# 安装全量依赖
 pnpm install
 
-# 运行单元测试
-pnpm test
+# 运行 Web 单元测试
+pnpm --filter web test
 
-# 运行单元测试（监视模式）
-pnpm test:watch
+# 运行 Web 单元测试（监视模式）
+pnpm --filter web test:watch
 
 # 生成覆盖率报告
-pnpm test:coverage
+pnpm --filter web test:coverage
 
 # 运行 E2E 测试
-pnpm test:e2e
+pnpm --filter web test:e2e
 
 # 运行 E2E 测试（UI 模式）
-pnpm test:e2e:ui
+pnpm --filter web test:e2e:ui
 
 # 运行 PWA 测试
-pnpm test:pwa
+pnpm --filter web test:pwa
 ```
 
 ## 📊 CI/CD 集成

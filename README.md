@@ -26,8 +26,17 @@
 
 ### 环境要求
 
-- Node.js >= 18, Java JDK >= 17, Maven >= 3.6
+- Node.js >= 18 (推荐使用 pnpm), Java JDK >= 17, Maven >= 3.6
 - PostgreSQL >= 12, Redis >= 5.0
+
+### 初始化工作区
+
+本项目已升级为 **pnpm workspace** 架构，可统一管理前端各个项目。
+
+```bash
+# 在根目录安装所有依赖
+pnpm install
+```
 
 ### 启动后端
 
@@ -43,10 +52,8 @@ mvn spring-boot:run
 ### 启动文件服务
 
 ```bash
-cd admin-file/
-pnpm install
-cp env.example .env   # 编辑 .env 配置 JWT_SECRET
-pnpm start
+# 根目录下执行
+pnpm --filter admin-file start
 ```
 
 文件服务运行在 http://localhost:4000，Swagger 文档地址 http://localhost:4000/api-docs
@@ -54,10 +61,8 @@ pnpm start
 ### 启动前端
 
 ```bash
-cd web/
-pnpm install
-cp env.example .env
-pnpm dev
+# 根目录下执行
+pnpm --filter web dev
 ```
 
 前端运行在 http://localhost:3000
@@ -74,14 +79,14 @@ pnpm dev
 # 后端单元测试
 cd server && mvn test
 
-# 前端单元测试
-cd web && pnpm test
+# 前端单元测试 (在根目录执行)
+pnpm --filter web test
 
 # 前端单元测试（监视模式）
-cd web && pnpm test:watch
+pnpm --filter web test:watch
 
-# 前端 E2E 测试
-cd web && pnpm test:e2e
+# 五子棋小游戏构建验证
+pnpm build:gomoku
 ```
 
 ### CI 状态
@@ -119,20 +124,20 @@ hanphone-blog/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml          # CI 配置
+├── apps/                   # 独立应用/插件 (Monorepo)
+│   └── gomoku/             # 五子棋小游戏源码 (uni-app)
 ├── server/                 # 后端 (Spring Boot)
 │   └── src/test/           # 单元测试
-├── web/                    # 前端 (Next.js)
+├── web/                    # 前端主站 (Next.js)
 │   ├── e2e/                # E2E 测试
 │   ├── public/             # 静态资源
 │   │   ├── tools/          # 工具集合 (hanphone-tool)
 │   │   ├── play/           # 有趣网页 (hanphone-play)
-│   │   ├── games/          # 小游戏 (hanphone-game)
-│   │   └── shared/         # 共享资源（font-awesome 等）
+│   │   ├── games/          # 小游戏构建产物 (Git 忽略)
+│   │   └── shared/         # 共享资源
 │   └── src/test/           # 单元测试
 ├── admin-file/             # 文件服务 (Express.js)
-│   ├── uploads/            # 文件存储目录
-│   └── server.js           # 服务入口
-├── TESTING.md              # 测试文档
+├── pnpm-workspace.yaml     # Workspace 配置
 └── README.md               # 本文件
 ```
 

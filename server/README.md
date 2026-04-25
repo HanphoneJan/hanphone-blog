@@ -1,10 +1,10 @@
 # Hanphone's Blog - 后端
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.4.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Java](https://img.shields.io/badge/Java-1.8-orange.svg)](https://www.java.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-blue.svg)](https://www.postgresql.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.12-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.java.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blue.svg)](https://www.postgresql.org/)
 
-基于 Spring Boot + JPA + PostgreSQL 的博客后端 API。
+基于 Spring Boot 3 + JPA/MyBatis-Plus + PostgreSQL 的博客后端 API。
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### 环境要求
 
-- JDK 1.8+, Maven 3.6+
+- JDK 17+, Maven 3.6+
 - PostgreSQL 12+, Redis 5.0+
 
 ### 启动
@@ -33,7 +33,7 @@ mvn spring-boot:run
 
 服务运行在 http://localhost:8090
 
-- API 文档: http://localhost:8090/swagger-ui.html
+- API 文档 (Swagger): http://localhost:8090/swagger-ui/index.html
 - 健康检查: http://localhost:8090/actuator/health
 
 ---

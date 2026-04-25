@@ -17,8 +17,11 @@ server/src/main/java/com/example/blog/
 │   ├── CommonConstants.java          # 通用常量
 │   └── PaginationConstants.java      # 分页常量
 │
-├── dao/                              # 数据访问层 (Repository)
-│   ├── BlogRepository.java           # 博客数据访问
+├── dao/                              # 数据访问层 (Repository & Mapper)
+│   ├── BlogRepository.java           # 博客数据访问 (JPA)
+│   ├── mapper/                       # MyBatis-Plus Mapper
+│   │   ├── DocMapper.java
+│   │   └── ...
 │   ├── BlogMonthlyVisitsRepository.java  # 博客月访问量
 │   ├── CommentRepository.java        # 评论数据访问
 │   ├── EssayRepository.java          # 随笔数据访问
@@ -221,7 +224,7 @@ User (用户)
 - **XSS**: XssFilter 过滤请求参数
 - **密码加密**: BCrypt 加密存储
 - **Token 验证**: JWT + 拦截器
-- **SQL 注入**: JPA 参数化查询
+- **SQL 注入**: JPA 参数化查询 & MyBatis-Plus 防注入机制
 
 ---
 
@@ -235,33 +238,25 @@ User (用户)
 
 ## 配置说明
 
-### 多环境配置
+### 配置管理
 
-```
-resources/
-├── application.properties          # 公共配置
-├── application-dev.properties      # 开发环境
-└── application-prod.properties     # 生产环境
-```
+项目使用 `spring-dotenv` 管理配置，支持从 `.env` 文件或系统环境变量中读取配置项。
 
 ### 关键配置项
 
 ```properties
 # 数据库
-spring.datasource.url=jdbc:postgresql://localhost:5432/blog
+spring.datasource.url=jdbc:postgresql://${PG_HOST:localhost}:5432/${PG_DATABASE:blog}
 spring.datasource.username=${PG_USERNAME}
 spring.datasource.password=${PG_PASSWORD}
 
 # Redis
-spring.redis.host=${REDIS_HOST}
-spring.redis.password=${REDIS_PASSWORD}
+spring.data.redis.host=${REDIS_HOST:localhost}
+spring.data.redis.password=${REDIS_PASSWORD}
 
 # JWT
 jwt.secret=${TOKEN_SECRET}
 jwt.expiration=604800000
-
-# 日志
-logging.file.path=logs/
 ```
 
 ---
@@ -269,10 +264,11 @@ logging.file.path=logs/
 ## 依赖管理
 
 主要依赖见 `pom.xml`：
-- Spring Boot 2.4.x
+- Spring Boot 3.2.x
 - Spring Data JPA
+- MyBatis-Plus 3.5.x
 - PostgreSQL Driver
 - Redis
-- JWT
-- Swagger 2.x
+- JWT (java-jwt)
+- OpenAPI 3 (SpringDoc)
 - Lombok
