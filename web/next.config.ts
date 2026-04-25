@@ -62,33 +62,18 @@ const nextConfig: NextConfig = {
   },
 async rewrites() {
   return [
-    // 匹配精确的 /games
     {
-      source: '/games',
-      destination: '/games/index.html',
-    },
-    // 匹配 /games/xxx 但不要匹配到 /games/index.html 本身，且排除带后缀的静态文件
-    {
-      source: '/games/:path((?!.*\\.).*)',
+      source: '/games/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
       destination: '/games/:path/index.html',
     },
-    // 同样处理 /tools 和 /play
     {
-      source: '/tools',
-      destination: '/tools/index.html',
-    },
-    {
-      source: '/tools/:path((?!.*\\.).*)',
+      source: '/tools/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
       destination: '/tools/:path/index.html',
     },
     {
-      source: '/play',
-      destination: '/play/index.html',
-    },
-    {
-      source: '/play/:path((?!.*\\.).*)',
+      source: '/play/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
       destination: '/play/:path/index.html',
-    },
+    }
   ];
 },
   // 排除 react-pdf 从服务端打包
