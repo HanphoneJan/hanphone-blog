@@ -67,10 +67,10 @@ async rewrites() {
       source: '/games',
       destination: '/games/index.html',
     },
-    // 匹配 /games/xxx 但不要匹配到 /games/index.html 本身
+    // 匹配 /games/xxx 但不要匹配到 /games/index.html 本身，且排除带后缀的静态文件
     {
-      source: '/games/:path+',
-      destination: '/games/:path+/index.html',
+      source: '/games/:path((?!.*\\.).*)',
+      destination: '/games/:path/index.html',
     },
     // 同样处理 /tools 和 /play
     {
@@ -78,16 +78,16 @@ async rewrites() {
       destination: '/tools/index.html',
     },
     {
-      source: '/tools/:path+',
-      destination: '/tools/:path+/index.html',
+      source: '/tools/:path((?!.*\\.).*)',
+      destination: '/tools/:path/index.html',
     },
     {
       source: '/play',
       destination: '/play/index.html',
     },
     {
-      source: '/play/:path+',
-      destination: '/play/:path+/index.html',
+      source: '/play/:path((?!.*\\.).*)',
+      destination: '/play/:path/index.html',
     },
   ];
 },
