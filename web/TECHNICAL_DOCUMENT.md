@@ -113,6 +113,7 @@ web/src/
 | `/docs/[id]` | docs/[id]/page.tsx | 文档详情 |
 | `/essays` | essays/page.tsx | 随笔 |
 | `/links` | links/page.tsx | 友情链接 |
+| `/rss` | rss/page.tsx | RSS 订阅 |
 | `/messages` | messages/page.tsx | 留言板 |
 | `/projects` | projects/page.tsx | 项目展示 |
 | `/privacy` | privacy/page.tsx | 隐私政策 |
@@ -127,6 +128,7 @@ web/src/
 | `/admin/blogs` | blogs/page.tsx | 博客列表管理 |
 | `/admin/blog-input` | blog-input/page.tsx | 博客编辑/新建 |
 | `/admin/blog-files` | blog-files/page.tsx | 博客文件管理 |
+| `/admin/docs` | docs/page.tsx | 文档管理 |
 | `/admin/essays` | essays/page.tsx | 随笔管理 |
 | `/admin/links` | links/page.tsx | 友情链接管理 |
 | `/admin/projects` | projects/page.tsx | 项目管理 |
@@ -151,6 +153,8 @@ web/src/
 | UserInfoForm.tsx | 用户信息编辑表单 |
 | Live2DWidget.tsx | Live2D 看板娘挂件 |
 | JsonLd.tsx | JSON-LD 结构化数据（SEO） |
+| BackgroundImage.tsx | 背景图组件 |
+| BackgroundSettings.tsx | 背景设置 |
 | AdminHeader.tsx | 后台顶部导航 |
 | charts/ | ECharts 数据可视化组件 |
 | shared/ | 共享 UI 组件（Button, Modal 等） |
@@ -216,7 +220,7 @@ npm run tauri:build    # 生产构建
 - **框架**: Next.js 15.x + React 18.x
 - **语言**: TypeScript 5.x
 - **样式**: Tailwind CSS 4.x
-- **UI**: Ant Design 5.x + Shadcn/ui
+- **UI**: Ant Design 5.x
 - **桌面**: Tauri 2.x
 - **PWA**: Serwist 9.x
 - **测试**: Vitest + @testing-library/react + Playwright

@@ -37,7 +37,7 @@
 - Vite 6.0
 - Element Plus 2.9
 - Pinia 2.3
-- PWA (Serwist/Workbox)
+- PWA (vite-plugin-pwa)
 
 ## 快速开始
 

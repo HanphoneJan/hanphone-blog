@@ -26,10 +26,7 @@ hanphone-blog/
     │   └── components/__tests__/
     │       └── Button.test.tsx          # 组件测试
     │
-    └── e2e/                           # E2E 测试
-        ├── pwa-offline.spec.ts
-        ├── navigation.spec.ts
-        └── accessibility.spec.ts
+    └── e2e/                           # E2E 测试（暂未配置）
 
 └── admin-file/                       # 文件服务 (Express.js)
     └── server.js                     # 主服务（目前未配置独立测试套件）
@@ -68,15 +65,6 @@ pnpm --filter web test:watch
 
 # 生成覆盖率报告
 pnpm --filter web test:coverage
-
-# 运行 E2E 测试
-pnpm --filter web test:e2e
-
-# 运行 E2E 测试（UI 模式）
-pnpm --filter web test:e2e:ui
-
-# 运行 PWA 测试
-pnpm --filter web test:pwa
 ```
 
 ### admin-file (Express.js) 测试
@@ -126,13 +114,6 @@ curl -X POST http://localhost:4000/upload/avatar \
 - React 组件测试使用 `@testing-library/react`
 - Mock 外部依赖（如 `next/navigation`, `next/image`）
 - 测试文件放在 `__tests__` 目录或命名为 `*.test.ts`
-
-### E2E 测试规范
-
-- 使用 Playwright 进行端到端测试
-- 测试文件放在 `e2e/` 目录
-- 每个测试独立运行，不共享状态
-- 支持 PWA、无障碍访问等专项测试
 
 ## 🔧 添加新测试
 
@@ -217,9 +198,6 @@ mvn test -Dmaven.surefire.debug
 # Vitest UI 模式
 pnpm vitest --ui
 
-# Playwright UI 模式
-pnpm test:e2e:ui
-
-# Playwright 调试模式
+# Playwright 调试模式（如有配置）
 pnpm exec playwright test --debug
 ```

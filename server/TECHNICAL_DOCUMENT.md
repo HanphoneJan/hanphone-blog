@@ -10,32 +10,29 @@
 server/src/main/java/com/example/blog/
 ├── config/                           # 配置类
 │   ├── ScheduleConfig.java           # 定时任务配置
-│   ├── SwaggerConfig.java            # Swagger 文档配置
-│   └── SwaggerWebConfiguration.java  # Swagger Web 配置
+│   └── SwaggerConfig.java            # Swagger 文档配置
 │
 ├── constants/                        # 常量定义
 │   ├── CommonConstants.java          # 通用常量
 │   └── PaginationConstants.java      # 分页常量
 │
-├── dao/                              # 数据访问层 (Repository & Mapper)
+├── dao/                              # 数据访问层 (Repository)
 │   ├── BlogRepository.java           # 博客数据访问 (JPA)
-│   ├── mapper/                       # MyBatis-Plus Mapper
-│   │   ├── DocMapper.java
-│   │   └── ...
 │   ├── BlogMonthlyVisitsRepository.java  # 博客月访问量
 │   ├── CommentRepository.java        # 评论数据访问
-│   ├── EssayRepository.java          # 随笔数据访问
+│   ├── DocRepository.java            # 文档数据访问
 │   ├── EssayCommentRepository.java   # 随笔评论
 │   ├── EssayFileUrlRepository.java   # 随笔文件
+│   ├── EssayRepository.java          # 随笔数据访问
 │   ├── FriendLinkRepository.java     # 友情链接
 │   ├── MessageRepository.java        # 留言
 │   ├── PersonInfoRepository.java     # 个人信息
 │   ├── ProjectRepository.java        # 项目
 │   ├── TagRepository.java            # 标签
 │   ├── TypeRepository.java           # 分类
-│   ├── UserRepository.java           # 用户
 │   ├── UserBlogLikeRepository.java   # 博客点赞
-│   └── UserEssayLikeRepository.java  # 随笔点赞
+│   ├── UserEssayLikeRepository.java  # 随笔点赞
+│   └── UserRepository.java           # 用户
 │
 ├── DTO/                              # 数据传输对象
 │   └── TagBlogCountDTO.java          # 标签博客数统计
@@ -78,6 +75,7 @@ server/src/main/java/com/example/blog/
 │   ├── BlogService.java
 │   ├── BlogMonthlyVisitsService.java
 │   ├── CommentService.java
+│   ├── DocService.java               # 文档管理
 │   ├── EmailCaptchaService.java      # 邮箱验证码
 │   ├── EssayCommentService.java
 │   ├── EssayService.java
@@ -88,12 +86,13 @@ server/src/main/java/com/example/blog/
 │   ├── ProjectService.java
 │   ├── TagService.java
 │   ├── TypeService.java
-│   ├── UploadService.java
-│   ├── UserService.java
+│   ├── UploadService.java            # 文件上传
+│   └── UserService.java
 │   └── impl/                         # 业务实现类
 │       ├── BlogServiceImpl.java
 │       ├── BlogMonthlyVisitsServiceImpl.java
 │       ├── CommentServiceImpl.java
+│       ├── DocServiceImpl.java
 │       ├── EmailCaptchaServiceImpl.java
 │       ├── EssayCommentServiceImpl.java
 │       ├── EssayServiceImpl.java
@@ -104,6 +103,7 @@ server/src/main/java/com/example/blog/
 │       ├── ProjectServiceImpl.java
 │       ├── TagServiceImpl.java
 │       ├── TypeServiceImpl.java
+│       ├── UploadServiceImpl.java
 │       └── UserServiceImpl.java
 │
 ├── util/                             # 工具类
@@ -120,6 +120,7 @@ server/src/main/java/com/example/blog/
 │   ├── UserController.java           # 用户相关
 │   ├── ArchiveShowController.java    # 归档
 │   ├── CommentController.java        # 评论
+│   ├── DocShowController.java        # 文档展示
 │   ├── EssayShowController.java      # 随笔展示
 │   ├── FriendLinkShowController.java # 友情链接展示
 │   ├── MessageShowController.java    # 留言展示
@@ -131,14 +132,13 @@ server/src/main/java/com/example/blog/
 │       ├── AdminIndexController.java # 后台首页
 │       ├── AdministratorController.java  # 管理员
 │       ├── BlogController.java       # 博客管理
+│       ├── DocController.java        # 文档管理
 │       ├── EssayController.java      # 随笔管理
 │       ├── FriendLinkController.java # 友链管理
-│       ├── LogManagementController.java  # 日志管理
 │       ├── PersonInfoController.java # 个人信息管理
 │       ├── ProjectController.java    # 项目管理
 │       ├── TagController.java        # 标签管理
-│       ├── TypeController.java       # 分类管理
-│       └── UserController.java       # 用户管理
+│       └── TypeController.java       # 分类管理
 │
 ├── BlogApplication.java              # 启动类
 └── NotFoundException.java            # 自定义异常
@@ -178,6 +178,7 @@ User (用户)
 | UserController | `/user` | 用户注册、登录、验证码 |
 | ArchiveShowController | `/archives` | 博客归档 |
 | CommentController | `/comments` | 评论相关 |
+| DocShowController | `/docs` | 文档展示 |
 | EssayShowController | `/essays` | 随笔展示 |
 | FriendLinkShowController | `/friendlinks` | 友情链接 |
 | MessageShowController | `/messages` | 留言板 |
@@ -193,14 +194,13 @@ User (用户)
 | AdminIndexController | `/admin` | 后台首页、仪表盘 |
 | AdministratorController | `/administrator` | 管理员登录 |
 | BlogController | `/admin/blogs` | 博客增删改查 |
+| DocController | `/admin/docs` | 文档增删改查 |
 | EssayController | `/admin/essays` | 随笔增删改查 |
 | FriendLinkController | `/admin/friendlinks` | 友链管理 |
-| LogManagementController | `/admin/logs` | 日志管理 |
 | PersonInfoController | `/admin/personinfo` | 个人资料 |
 | ProjectController | `/admin/projects` | 项目管理 |
 | TagController | `/admin/tags` | 标签管理 |
 | TypeController | `/admin/types` | 分类管理 |
-| UserController | `/admin/users` | 用户管理 |
 
 ---
 

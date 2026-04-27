@@ -1,6 +1,6 @@
 # 🌟 Hanphone's Blog
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.4.x-brightgreen.svg)](server/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.12-brightgreen.svg)](server/)
 [![Next.js](https://img.shields.io/badge/Next.js-15.x-black.svg)](web/)
 [![CI](https://github.com/HanphoneJan/hanphone-blog/actions/workflows/ci.yml/badge.svg)](https://github.com/HanphoneJan/hanphone-blog/actions)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -48,7 +48,7 @@
 
 - **前端主站**: Next.js 15 + React 18 + TypeScript + Tailwind CSS + Tauri
 - **照片墙**: Vue 3 + Vite + Element Plus + Pinia
-- **后端**: Spring Boot 3.2 + JPA + PostgreSQL + Redis（统一认证）
+- **后端**: Spring Boot 3.2.12 + Java 17 + JPA + MyBatis Plus 3.5.9 + PostgreSQL + Redis（统一认证）
 - **文件服务**: Express.js 5 + Multer + JWT（独立文件存储服务）
 - **照片墙后端**: Express.js 5 + PostgreSQL（照片墙专属业务）
 - **小游戏**: Uni-app + Vue 3 + uni-h5
@@ -140,8 +140,7 @@ pnpm build:photo-wall
 
 - ✅ Server 单元测试 (Maven)
 - ✅ Web 单元测试 (Vitest)
-- ✅ Web E2E 测试 (Playwright)
-- ✅ 构建验证
+- ✅ 构建验证 (服务端打包 + Gomoku + Web)
 
 详见 [TESTING.md](TESTING.md) 获取完整的测试文档。
 
