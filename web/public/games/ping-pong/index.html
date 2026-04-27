@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>双人乒乓对战</title>
+    <!-- 添加Bootstrap CSS文件 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+
+    <style>
+      /* 新增样式：使页面占满整个视口并启用flex布局 */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      canvas {
+        border: 1px solid black;
+      }
+      
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        /* 可以添加一些上下间距 */
+        margin: 20px 0;
+      }
+
+      .button {
+        display: flex;
+        justify-content: center;
+        margin-top: 15px;
+      }
+
+      .btn {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      .btn:hover {
+        background-color: #3e8e41;
+      }
+
+      .control {
+        text-align: center;
+        margin-top: 15px; /* 添加一些间距 */
+      }
+
+      canvas {
+        background: #000;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <canvas id="canvas" width="600" height="400"></canvas>
+    </div>
+    <div class="button">
+      <button id="start-btn" class="btn">开始</button>
+      <button id="pause-btn" class="btn">暂停</button>
+      <button id="restart-btn" class="btn">重新开始</button>
+    </div>
+    <p class="control">操作说明：左侧玩家(W和S键) | 右侧玩家(↑和↓键)</p>
+    <!-- 添加带ID的模态框元素 -->
+    <div class="modal" tabindex="-1" role="dialog" id="message-modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-body">
+            <h5 id="message"></h5>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              id="message-modal-close"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // 初始化画布
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+
+var startBtn = document.getElementById("start-btn");
+var pauseBtn = document.getElementById("pause-btn");
+var restartBtn = document.getElementById("restart-btn");
+var animationId;
+var gameRunning = false;
+
+startBtn.addEventListener("click", function () {
+  if (!gameRunning) {
+    // 仅在游戏未运行时启动
+    gameRunning = true; // 游戏启动时设置为true
+    loop();
+  }
+});
+
+pauseBtn.addEventListener("click", function () {
+  gameRunning = false;
+  cancelAnimationFrame(animationId);
+});
+
+restartBtn.addEventListener("click", function () {
+  document.location.reload();
+});
+
+addEventListener("load", (event) => {
+  draw();
+});
+
+// 定义球的属性
+var ballRadius = 10;
+var ballX = canvas.width / 2;
+var ballY = canvas.height / 2;
+var ballSpeedX = 5;
+var ballSpeedY = 5;
+
+// 定义 paddle（球拍）属性
+var paddleHeight = 80;
+var paddleWidth = 10;
+var leftPaddleY = canvas.height / 2 - paddleHeight / 2;
+var rightPaddleY = canvas.height / 2 - paddleHeight / 2;
+var paddleSpeed = 10;
+
+// 定义分数属性
+var leftPlayerScore = 0;
+var rightPlayerScore = 0;
+var maxScore = 10;
+
+// 监听键盘事件
+document.addEventListener("keydown", keyDownHandler);
+document.addEventListener("keyup", keyUpHandler);
+
+// 处理按键按下
+var upPressed = false;
+var downPressed = false;
+let wPressed = false;
+let sPressed = false;
+
+function keyDownHandler(e) {
+  if (e.key === "ArrowUp") {
+    upPressed = true;
+  } else if (e.key === "ArrowDown") {
+    downPressed = true;
+  } else if (e.key === "w") {
+    wPressed = true;
+  } else if (e.key === "s") {
+    sPressed = true;
+  }
+}
+
+// 处理按键释放
+function keyUpHandler(e) {
+  if (e.key === "ArrowUp") {
+    upPressed = false;
+  } else if (e.key === "ArrowDown") {
+    downPressed = false;
+  } else if (e.key === "w") {
+    wPressed = false;
+  } else if (e.key === "s") {
+    sPressed = false;
+  }
+}
+
+// 更新游戏状态
+function update() {
+  // 移动右侧球拍
+  if (upPressed && rightPaddleY > 0) {
+    rightPaddleY -= paddleSpeed;
+  } else if (downPressed && rightPaddleY + paddleHeight < canvas.height) {
+    rightPaddleY += paddleSpeed;
+  }
+
+  // 基于"w"和"s"键移动左侧球拍
+  if (wPressed && leftPaddleY > 0) {
+    leftPaddleY -= paddleSpeed;
+  } else if (sPressed && leftPaddleY + paddleHeight < canvas.height) {
+    leftPaddleY += paddleSpeed;
+  }
+
+  // 移动球
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+
+  // 检查球是否与画布顶部或底部碰撞
+  if (ballY - ballRadius < 0 || ballY + ballRadius > canvas.height) {
+    ballSpeedY = -ballSpeedY;
+  }
+
+  // 检查球是否与左侧球拍碰撞
+  if (
+    ballX - ballRadius < paddleWidth &&
+    ballY > leftPaddleY &&
+    ballY < leftPaddleY + paddleHeight
+  ) {
+    ballSpeedX = -ballSpeedX;
+  }
+
+  // 检查球是否与右侧球拍碰撞
+  if (
+    ballX + ballRadius > canvas.width - paddleWidth &&
+    ballY > rightPaddleY &&
+    ballY < rightPaddleY + paddleHeight
+  ) {
+    ballSpeedX = -ballSpeedX;
+  }
+
+  // 检查球是否从画布左侧或右侧出界
+  if (ballX < 0) {
+    rightPlayerScore++;
+    reset();
+  } else if (ballX > canvas.width) {
+    leftPlayerScore++;
+    reset();
+  }
+
+  // 检查是否有玩家获胜
+  if (leftPlayerScore === maxScore) {
+    playerWin("左侧玩家");
+  } else if (rightPlayerScore === maxScore) {
+    playerWin("右侧玩家");
+  }
+}
+
+function playerWin(player) {
+  var message = "恭喜！" + player + "获胜！";
+  $("#message").text(message); // 设置消息文本
+  $("#message-modal").modal("show"); // 显示消息模态框
+  reset();
+}
+
+// 将球重置到屏幕中心
+function reset() {
+  ballX = canvas.width / 2;
+  ballY = canvas.height / 2;
+  ballSpeedX = -ballSpeedX;
+  ballSpeedY = Math.random() * 10 - 5;
+}
+
+// 在画布上绘制对象
+function draw() {
+  // 清空画布
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#FFF";
+  ctx.font = "15px Arial";
+
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0);
+  ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.strokeStyle = "#FFF"; // 设置线条颜色为白色
+  ctx.stroke();
+  ctx.closePath();
+
+  // 绘制球
+  ctx.beginPath();
+  ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.closePath();
+
+  // 绘制左侧球拍
+  ctx.fillRect(0, leftPaddleY, paddleWidth, paddleHeight);
+
+  // 绘制右侧球拍
+  ctx.fillRect(
+    canvas.width - paddleWidth,
+    rightPaddleY,
+    paddleWidth,
+    paddleHeight
+  );
+
+  // 绘制分数
+  ctx.fillText("分数: " + leftPlayerScore, 10, 20);
+  ctx.fillText("分数: " + rightPlayerScore, canvas.width - 70, 20);
+}
+
+// 游戏循环
+function loop() {
+  update();
+  draw();
+  animationId = requestAnimationFrame(loop);
+}
+
+$("#message-modal-close").on("click", function () {
+  document.location.reload();
+});
+
+    </script>
+  </body>
+</html>

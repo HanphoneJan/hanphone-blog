@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>生日快乐！</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* 保持原有样式不变 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Dancing Script, "SimSun", "STSong", cursive, serif, sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        text-align: center;
+        padding: 20px;
+        position: relative;
+        transition: background 1.5s ease;
+      }
+
+      body.lighted {
+        background: linear-gradient(135deg, #f06, #f79, #ffcc00);
+      }
+
+      h1,
+      .birthday-message,
+      button {
+        font-family: Dancing Script, cursive, "Noto Serif SC", serif;
+        opacity: 0;
+        transition: opacity 1.5s ease;
+      }
+
+      body.lighted h1,
+      body.lighted .birthday-message,
+      body.lighted button,
+      body.lighted .cake-container {
+        opacity: 1;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 800px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 20px;
+        border-radius: 20px;
+        box-shadow: 0 10px 10px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        opacity: 0;
+        transition: opacity 1.5s ease;
+        overflow: hidden;
+      }
+
+      body.lighted .container {
+        opacity: 1;
+      }
+
+      #lightBtn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 16px 32px;
+        font-size: 1.5rem;
+        background: #ffcc00;
+        color: #333;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        z-index: 20;
+        opacity: 1;
+      }
+
+      body.lighted #lightBtn {
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, -50%) scale(0);
+        transition: all 0.5s ease;
+      }
+
+      #lightBtn:hover {
+        background: #fff;
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.7);
+      }
+
+      #toggleMusic {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        padding: 0;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 64, 129, 0.8);
+        z-index: 15;
+        opacity: 0;
+        transition: opacity 1.5s ease, all 0.3s;
+      }
+
+      body.lighted #toggleMusic {
+        opacity: 1;
+      }
+
+      #toggleMusic:hover {
+        background: #f50057;
+        transform: translateY(0) scale(1.1);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        text-shadow: 1px 1px 0 #ff4081;
+        color: #fff;
+        animation: pulse 2s infinite;
+        word-wrap: break-word;
+      }
+
+      .birthday-message {
+        font-size: 1.8rem;
+        margin: 20px 0;
+        min-height: 80px;
+        color: #ffeb3b;
+        text-shadow: 1px 1px 0 #ff4081;
+        word-wrap: break-word;
+      }
+
+      .cake-container {
+        position: relative;
+        margin: 30px auto;
+        width: 250px;
+        height: 200px;
+        opacity: 0;
+        transition: opacity 1.5s ease;
+      }
+
+      .cake {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .cake-base {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 80px;
+        background: #f8bbd0;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .cake-top {
+        position: absolute;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        height: 60px;
+        background: #f48fb1;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .cake-frosting {
+        position: absolute;
+        bottom: 140px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        height: 30px;
+        background: #f06292;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .candle {
+        position: absolute;
+        bottom: 170px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 10px;
+        height: 40px;
+        background: #fff;
+        z-index: 2;
+      }
+
+      .flame {
+        position: absolute;
+        bottom: 210px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 15px;
+        height: 30px;
+        background: #ff9800;
+        border-radius: 50% 50% 20% 20%;
+        box-shadow: 0 0 5px 5px #ff5722;
+        animation: flicker 0.8s infinite alternate;
+        z-index: 3;
+        cursor: pointer;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .controls button {
+        padding: 12px 24px;
+        font-size: 1.2rem;
+        background: #ff4081;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .controls button:hover {
+        background: #f50057;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .controls button:active {
+        transform: translateY(1px);
+      }
+
+      .falling-element {
+        position: absolute;
+        top: -50px;
+        animation: fall linear forwards;
+        z-index: 1;
+        font-size: 2rem;
+        opacity: 0;
+        transition: opacity 1.5s ease;
+      }
+
+      body.lighted .falling-element {
+        opacity: 1;
+      }
+
+      #fireworks-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 5;
+        opacity: 0;
+        transition: opacity 1.5s ease;
+      }
+
+      body.lighted #fireworks-canvas {
+        opacity: 1;
+      }
+
+      .eaten-cake {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        opacity: 0;
+        transition: opacity 0.5s;
+        pointer-events: none;
+      }
+
+      @keyframes fall {
+        to {
+          transform: translateY(100vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
+      @keyframes flicker {
+        0% {
+          transform: translateX(-50%) scale(1);
+          box-shadow: 0 0 5px 5px #ff5722;
+        }
+        25% {
+          transform: translateX(-50%) scale(1.1);
+          box-shadow: 0 0 4px 3px #ff5722;
+        }
+        50% {
+          transform: translateX(-50%) scale(0.9);
+          box-shadow: 0 0 2px 1px #ff5722;
+        }
+        75% {
+          transform: translateX(-50%) scale(1.05);
+          box-shadow: 0 0 3px 1px #ff5722;
+        }
+        100% {
+          transform: translateX(-50%) scale(1);
+          box-shadow: 0 0 3px 1px #ff5722;
+        }
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 15px;
+          margin: 10px;
+          margin-top:20vh;
+        }
+        
+        h1 {
+          font-size: 2.2rem;
+        }
+
+        .birthday-message {
+          font-size: 1.5rem;
+          min-height: 60px;
+        }
+
+        .cake-container {
+          width: 200px;
+          height: 160px;
+          margin: 20px auto;
+        }
+        
+        .cake-base {
+          height: 60px;
+        }
+        
+        .cake-top {
+          bottom: 60px;
+          height: 50px;
+        }
+        
+        .cake-frosting {
+          bottom: 110px;
+          height: 25px;
+        }
+        
+        .candle {
+          bottom: 135px;
+          height: 35px;
+        }
+        
+        .flame {
+          bottom: 170px;
+          height: 25px;
+          width: 12px;
+        }
+
+        .controls {
+          gap: 10px;
+        }
+        
+        .controls button {
+          padding: 10px 20px;
+          font-size: 1rem;
+        }
+
+        #toggleMusic {
+          width: 45px;
+          height: 45px;
+          font-size: 1rem;
+        }
+        
+        #lightBtn {
+          font-size: 1.3rem;
+          padding: 14px 28px;
+          white-space: nowrap;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 10px;
+          justify-content: flex-start;
+          padding-top: 40px;
+        }
+        
+        .container {
+          padding: 15px 10px;
+          border-radius: 15px;
+        }
+        
+        h1 {
+          font-size: 1.8rem;
+          margin-bottom: 15px;
+        }
+
+        .birthday-message {
+          font-size: 1.2rem;
+          min-height: 50px;
+          margin: 15px 0;
+        }
+
+        .cake-container {
+          width: 150px;
+          height: 120px;
+          margin: 15px auto;
+        }
+        
+        .cake-base {
+          height: 45px;
+        }
+        
+        .cake-top {
+          bottom: 45px;
+          height: 35px;
+        }
+        
+        .cake-frosting {
+          bottom: 80px;
+          height: 20px;
+        }
+        
+        .candle {
+          bottom: 100px;
+          height: 25px;
+          width: 8px;
+        }
+        
+        .flame {
+          bottom: 125px;
+          height: 25px;
+          width: 12px;
+        }
+
+        .controls {
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          margin: 15px 0;
+        }
+
+        .controls button {
+          width: 100%;
+          max-width: 200px;
+          padding: 10px 15px;
+          font-size: 0.9rem;
+        }
+
+        #lightBtn {
+          font-size: 1.2rem;
+          padding: 12px 24px;
+        }
+
+        #toggleMusic {
+          width: 40px;
+          height: 40px;
+          top: 10px;
+          right: 10px;
+        }
+        
+        .falling-element {
+          font-size: 1.5rem;
+        }
+        
+        .eaten-cake {
+          font-size: 1.5rem;
+        }
+      }
+      
+      @media (max-width: 320px) {
+        h1 {
+          font-size: 1.6rem;
+        }
+        
+        .birthday-message {
+          font-size: 1.1rem;
+        }
+        
+        .cake-container {
+          width: 130px;
+          height: 100px;
+        }
+        
+        .cake-base {
+          height: 40px;
+        }
+        
+        .cake-top {
+          bottom: 40px;
+          height: 30px;
+        }
+        
+        .cake-frosting {
+          bottom: 70px;
+          height: 15px;
+        }
+        
+        .candle {
+          bottom: 85px;
+          height: 20px;
+        }
+        
+        .flame {
+          bottom: 105px;
+          height: 15px;
+          width: 8px;
+        }
+        
+        .controls button {
+          font-size: 0.8rem;
+          padding: 8px 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button id="lightBtn">点击开灯</button>
+
+    <div class="container">
+      <h1>晴樨宝宝生日快乐！</h1>
+
+      <div class="birthday-message" id="birthdayMessage">
+        祝宝宝天天开心！
+      </div>
+
+      <div class="cake-container">
+        <div class="cake">
+          <div class="cake-base"></div>
+          <div class="cake-top"></div>
+          <div class="cake-frosting"></div>
+          <div class="candle"></div>
+          <div class="flame" id="candleFlame"></div>
+          <div class="eaten-cake" id="eatenCake">好吃！</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="blowCandle">吹蜡烛</button>
+        <button id="eatCake">吃蛋糕</button>
+        <button id="startFireworks">放烟花</button>
+        <button id="changeMessage">换祝福</button>
+      </div>
+    </div>
+
+    <canvas id="fireworks-canvas"></canvas>
+
+    <button id="toggleMusic">🔇</button>
+
+    <audio id="lightSound">
+      <source src="./audio/turn-on-light.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="backgroundMusic" loop>
+      <source
+        src="./audio/happy-birthday.mp3"
+        type="audio/mpeg"
+      />
+    </audio>
+
+    <audio id="blowSound">
+      <source
+        src="./audio/blow-out.mp3"
+        type="audio/mpeg"
+      />
+    </audio>
+
+        <audio id="fireSound">
+      <source
+        src="./audio/fire.mp3"
+        type="audio/mpeg"
+      />
+    </audio>
+
+    <audio id="eatSound">
+      <source
+        src="./audio/eat.mp3"
+        type="audio/mpeg"
+      />
+    </audio>
+
+    <script>
+      const birthdayMessages = [
+        "祝晴樨宝宝生日快乐，心想事成！",
+        "祝宝宝健康、快乐、幸福，生日快乐！",
+        "愿宝宝的每一天都充满阳光和欢笑！",
+        "愿你的新一岁充满无限可能和惊喜！",
+      ];
+
+      const birthdayMessageEl = document.getElementById("birthdayMessage");
+      const candleFlameEl = document.getElementById("candleFlame");
+      const eatenCakeEl = document.getElementById("eatenCake");
+      const blowCandleBtn = document.getElementById("blowCandle");
+      const eatCakeBtn = document.getElementById("eatCake");
+      const startFireworksBtn = document.getElementById("startFireworks");
+      const changeMessageBtn = document.getElementById("changeMessage");
+      const toggleMusicBtn = document.getElementById("toggleMusic");
+      const lightBtn = document.getElementById("lightBtn");
+      const backgroundMusic = document.getElementById("backgroundMusic");
+      const blowSound = document.getElementById("blowSound");
+      const fireSound = document.getElementById("fireSound");
+      const eatSound = document.getElementById("eatSound");
+      const lightSound = document.getElementById("lightSound");
+      const fireworksCanvas = document.getElementById("fireworks-canvas");
+      const ctx = fireworksCanvas.getContext("2d");
+
+      let cakeEaten = 0;
+      let fireworks = [];
+      let fallingElementsInterval;
+      let fireworksAnimation;
+      let isMusicPlaying = false;
+      let isLighted = false;
+
+      function resizeCanvas() {
+        fireworksCanvas.width = window.innerWidth;
+        fireworksCanvas.height = window.innerHeight;
+      }
+
+      function getRandomMessage() {
+        const randomIndex = Math.floor(Math.random() * birthdayMessages.length);
+        return birthdayMessages[randomIndex];
+      }
+
+      function updateBirthdayMessage() {
+        birthdayMessageEl.textContent = getRandomMessage();
+        birthdayMessageEl.style.animation = "none";
+        setTimeout(() => {
+          birthdayMessageEl.style.animation = "pulse 2s infinite";
+        }, 10);
+      }
+
+      function createFallingElement() {
+        const elements = ["🎂", "🎁", "🎈", "🎉", "⭐", "❤️"];
+        const element = document.createElement("div");
+        element.className = "falling-element";
+        element.textContent =
+          elements[Math.floor(Math.random() * elements.length)];
+        element.style.left = Math.random() * 100 + "vw";
+        element.style.animationDuration = Math.random() * 5 + 5 + "s";
+        document.body.appendChild(element);
+
+        setTimeout(() => {
+          element.remove();
+        }, 10000);
+      }
+
+      function blowOutCandle() {
+        if (candleFlameEl.style.opacity !== "0") {
+          blowSound.play();
+          candleFlameEl.style.transition = "opacity 1.5s ease-out";
+          candleFlameEl.style.opacity = "0";
+          setTimeout(() => {
+            candleFlameEl.style.display = "none";
+          }, 1500);
+        }
+      }
+
+      function eatCake() {
+        if (cakeEaten < 5) {
+          eatSound.currentTime = 0;
+          eatSound.play();
+          cakeEaten++;
+
+          const cakeTop = document.querySelector(".cake-top");
+          const cakeFrosting = document.querySelector(".cake-frosting");
+
+          cakeTop.style.height = 60 - cakeEaten * 5 + "px";
+          cakeFrosting.style.height = 30 - cakeEaten * 3 + "px";
+
+          if (cakeEaten === 5) {
+            eatenCakeEl.style.opacity = "1";
+            setTimeout(() => {
+              eatenCakeEl.style.opacity = "0";
+            }, 2000);
+          }
+        }
+      }
+
+      // 修正烟花类实现
+      class Firework {
+        constructor() {
+          this.x = Math.random() * fireworksCanvas.width;
+          this.y = fireworksCanvas.height;
+          this.targetY = Math.random() * fireworksCanvas.height * 0.6;
+          this.speed = 16 + Math.random() * 3; // 增加上升速度
+          this.particles = [];
+          this.hue = Math.random() * 360;
+          this.exploded = false;
+        }
+
+        update() {
+          if (!this.exploded) {
+            this.y -= this.speed;
+            // 确保烟花能到达目标位置
+            if (this.y <= this.targetY) {
+              this.explode();
+            }
+          }
+
+          // 更新粒子
+          for (let i = 0; i < this.particles.length; i++) {
+            const p = this.particles[i];
+            p.velocityY += p.gravity; // 修正为Y方向速度
+            p.x += p.velocityX;
+            p.y += p.velocityY;
+            p.alpha -= 0.005; // 减慢透明度降低速度，延长可见时间
+
+            if (p.alpha <= 0) {
+              this.particles.splice(i, 1);
+              i--;
+            }
+          }
+        }
+
+        explode() {
+          this.exploded = true;
+          const particleCount = 200 + Math.floor(Math.random() * 50); // 增加粒子数量
+
+          for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 4 + 1; // 调整粒子速度
+
+            this.particles.push({
+              x: this.x,
+              y: this.y,
+              velocityX: Math.cos(angle) * speed,
+              velocityY: Math.sin(angle) * speed, // 明确Y方向速度
+              gravity: 0.03, // 减小重力影响
+              alpha: 1,
+              hue: this.hue + (Math.random() - 0.5) * 60,
+              radius: Math.random() * 2 + 1
+            });
+          }
+        }
+
+        draw() {
+          if (!this.exploded) {
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + 10);
+            ctx.lineTo(this.x, this.y);
+            ctx.strokeStyle = `hsl(${this.hue}, 100%, 50%)`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          } else {
+            for (let i = 0; i < this.particles.length; i++) {
+              const p = this.particles[i];
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+              ctx.fillStyle = `hsla(${p.hue}, 100%, 50%, ${p.alpha})`;
+              ctx.fill();
+            }
+          }
+        }
+      }
+
+      // 修正烟花动画启动函数
+      function startFireworks() {
+        // 清除之前的烟花动画
+        if (fireworksAnimation) {
+          cancelAnimationFrame(fireworksAnimation);
+        }
+        
+        fireworks = [];
+        
+        // 增加烟花数量并延长发射间隔
+        for (let i = 0; i < 8; i++) {
+          setTimeout(() => {
+            fireworks.push(new Firework());
+          }, i * 800);
+        }
+        fireSound.play()
+        // 动画循环
+        function animateFireworks() {
+          ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+          
+          for (let i = 0; i < fireworks.length; i++) {
+            fireworks[i].update();
+            fireworks[i].draw();
+            
+            // 移除已完成的烟花
+            if (fireworks[i].exploded && fireworks[i].particles.length === 0) {
+              fireworks.splice(i, 1);
+              i--;
+            }
+          }
+          
+          // 持续动画直到所有烟花完成
+          fireworksAnimation = requestAnimationFrame(animateFireworks);
+        }
+        
+        animateFireworks();
+      }
+
+      function toggleMusic() {
+        if (isMusicPlaying) {
+          backgroundMusic.pause();
+          toggleMusicBtn.textContent = "🔇";
+        } else {
+          backgroundMusic.play().catch(e => {
+            console.log("音乐播放可能被浏览器阻止:", e);
+          });
+          toggleMusicBtn.textContent = "🔊";
+        }
+        isMusicPlaying = !isMusicPlaying;
+      }
+
+      function turnOnLight() {
+        if (!isLighted) {
+          isLighted = true;
+          document.body.classList.add('lighted');
+          
+          lightSound.play().catch((e) => {
+            console.log("音效播放可能被浏览器阻止:", e);
+          });
+          
+          // 点击开灯时自动播放背景音乐并更新按钮状态
+          backgroundMusic.play().catch(e => {
+            console.log("背景音乐播放可能被浏览器阻止:", e);
+          });
+          isMusicPlaying = true;
+          toggleMusicBtn.textContent = "🔊";
+          
+          setTimeout(() => {
+            startFireworks();
+          }, 1000);
+          
+          fallingElementsInterval = setInterval(createFallingElement, 800);
+        }
+      }
+
+      lightBtn.addEventListener("click", turnOnLight);
+      blowCandleBtn.addEventListener("click", blowOutCandle);
+      eatCakeBtn.addEventListener("click", eatCake);
+      startFireworksBtn.addEventListener("click", startFireworks);
+      changeMessageBtn.addEventListener("click", updateBirthdayMessage);
+      toggleMusicBtn.addEventListener("click", toggleMusic);
+      window.addEventListener("resize", resizeCanvas);
+
+      resizeCanvas();
+    </script>
+  </body>
+</html>

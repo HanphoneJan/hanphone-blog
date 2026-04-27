@@ -1,0 +1,146 @@
+/* 基础样式 */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #faf8ef;
+    color: #776e65;
+    margin: 0;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.game-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* 标题和分数区域 */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 80px;
+    margin: 0;
+}
+
+.scores {
+    display: flex;
+    gap: 10px;
+}
+
+.score-box {
+    background-color: #bbada0;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.score-title {
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.score-value {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* 控制按钮 */
+.controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+button {
+    background-color: #8f7a66;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #9f8b77;
+}
+
+.size-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #bbada0;
+}
+
+/* 游戏板 */
+.game-board {
+    background-color: #bbada0;
+    border-radius: 6px;
+    padding: 15px;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+/* 方块样式 */
+.tile {
+    background-color: #cdc1b4;
+    border-radius: 5px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 45px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+/* 不同数字的方块颜色 */
+.tile-2 { background-color: #eee4da; }
+.tile-4 { background-color: #ede0c8; }
+.tile-8 { background-color: #f2b179; color: white; }
+.tile-16 { background-color: #f59563; color: white; }
+.tile-32 { background-color: #f67c5f; color: white; }
+.tile-64 { background-color: #f65e3b; color: white; }
+.tile-128 { background-color: #edcf72; color: white; font-size: 40px; }
+.tile-256 { background-color: #edcc61; color: white; font-size: 40px; }
+.tile-512 { background-color: #edc850; color: white; font-size: 40px; }
+.tile-1024 { background-color: #edc53f; color: white; font-size: 30px; }
+.tile-2048 { background-color: #edc22e; color: white; font-size: 30px; }
+
+/* 响应式设计 */
+@media (max-width: 520px) {
+    h1 {
+        font-size: 50px;
+    }
+    
+    .game-board {
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .tile {
+        height: 70px;
+        font-size: 35px;
+    }
+    
+    .tile-128, .tile-256, .tile-512 {
+        font-size: 30px;
+    }
+    
+    .tile-1024, .tile-2048 {
+        font-size: 25px;
+    }
+}

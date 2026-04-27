@@ -1,0 +1,32 @@
+{
+  "profile": {
+    "name": "寒枫",
+    "avatar": "https://hanphone.top/images/zhuxun.jpg",
+    "description": "一个焦虑于找工作的大学生",
+    "techDirection": "Agent开发、RAG应用、多模态大模型、全栈开发",
+    "signature": "不鹜于虚声"
+  },
+  "socialLinks": {
+    "bilibili": {
+      "url": "https://space.bilibili.com/649062555/",
+      "displayName": "寒枫君"
+    },
+    "github": {
+      "url": "https://github.com/HanphoneJan/",
+      "displayName": "HanphoneJan"
+    },
+    "email": {
+      "address": "janhizian@qq.com"
+    }
+  },
+  "internalLinks": {
+    "atlas": {
+      "href": "/atlas",
+      "text": "照片墙"
+    },
+    "privateChat": {
+      "href": "/private-chat",
+      "text": "私信"
+    }
+  }
+}

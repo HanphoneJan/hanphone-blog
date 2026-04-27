@@ -1,0 +1,1915 @@
+@import 'tailwindcss';
+
+/* Tailwind v4：覆盖字号主题变量，使 text-* 与 :root 的 --text-* 一致 */
+@theme {
+  --text-base: 1rem;
+  --text-sm: 1rem;
+  --text-xs: 0.9125rem;
+  --text-2xs: 0.85rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.35rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.625rem;
+  --text-table: 1.0625rem;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* 字号体系（rem 基准，正文 1rem = 16px，思源宋体小号更清晰可适当缩小） */
+  --text-base: 1rem;
+  --text-sm: 1rem;
+  --text-xs: 0.9125rem;
+  --text-2xs: 0.75rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.35rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.625rem;
+  --text-table: 1.0625rem;
+
+  /* 默认（白日） */
+  --bg: 255 255 255;
+  --card: 250 251 253;
+  --border: 226 232 240;
+  --blog-header-border: 226 232 240 / 0.5;
+  --text: 15 23 42;
+  --text-muted: 100 116 139;
+  --text-secondary: 100 116 139;
+  --primary: 37 99 235;
+  --primary-hover: 29 78 216;
+  --hover: 239 246 255;
+  --success: 34 197 94;
+  --danger: 239 68 68;
+  --code-bg: 248 250 252;
+  --code-text: 30 41 59;
+  --overlay: 15 23 42;
+
+  /* 颜色序列 - 用于为不同元素分配颜色 */
+  --color-1: 252 211 77;
+  --color-2: 45 212 191;
+  --color-3: 251 146 60;
+  --color-4: 251 113 133;
+  --color-5: 244 114 182;
+  --color-6: 168 85 247;
+  --color-7: 96 165 250;
+  --color-8: 74 222 128;
+}
+
+/* 暗色主题 */
+.dark {
+  --bg: 2 6 23;
+  --card: 15 23 42 / 0.8;
+  --border: 37 58 96 / 0.4;
+  --blog-header-border: 148 163 184 / 0.25;
+  --text: 241 245 249;
+  --text-muted: 148 163 184;
+  --text-secondary: 148 163 184;
+  --primary: 59 130 246;
+  --primary-hover: 37 99 235;
+  --hover: 30 41 59 / 0.3;
+  --success: 34 197 94;
+  --danger: 239 68 68;
+  --code-bg: 15 23 42 / 0.8;
+  --code-text: 241 245 249;
+  --overlay: 2 6 23;
+
+  /* 颜色序列 - 用于为不同元素分配颜色 */
+  --color-1: 252 211 77;
+  --color-2: 45 212 191;
+  --color-3: 251 146 60;
+  --color-4: 251 113 133;
+  --color-5: 244 114 182;
+  --color-6: 168 85 247;
+  --color-7: 96 165 250;
+  --color-8: 74 222 128;
+}
+
+/* 马卡龙主题 - 多色马卡龙，甜美可爱 */
+.theme-macaron {
+  --bg: 255 235 245;
+  --card: 255 250 252;
+  --card-hover: 255 245 250;
+  --border: 244 114 182;
+  --text: 76 29 149;
+  --text-muted: 168 85 247;
+  --text-secondary: 168 85 247;
+  --primary: 219 39 119;
+  --primary-hover: 190 24 93;
+  --secondary: 251 146 60;
+  --accent: 147 51 234;
+  --success: 52 211 153;
+  --danger: 244 63 94;
+  --warning: 250 204 21;
+  --info: 59 130 246;
+  --yellow: 252 211 77;
+  --teal: 45 212 191;
+  --orange: 251 146 60;
+  --rose: 251 113 133;
+  --pink: 244 114 182;
+  --purple: 168 85 247;
+  --blue: 96 165 250;
+  --green: 74 222 128;
+  --hover: 255 228 238;
+  --code-bg: 255 240 248;
+  --code-text: 88 28 135;
+  --blog-header-border: 219 39 119 / 0.3;
+  --overlay: 76 29 149;
+
+  /* 颜色序列 - 引用已定义的颜色 */
+  --color-1: var(--yellow);
+  --color-2: var(--teal);
+  --color-3: var(--orange);
+  --color-4: var(--rose);
+  --color-5: var(--pink);
+  --color-6: var(--purple);
+  --color-7: var(--blue);
+  --color-8: var(--green);
+}
+
+/* 赛博朋克主题 - 多色霓虹，增强科技感 */
+.theme-cyber {
+  --bg: 10 15 25;
+  --card: 18 28 45 / 0.9;
+  --card-hover: 25 40 65 / 0.95;
+  --border: 34 211 238;
+  --text: 241 245 249;
+  --text-muted: 148 163 184;
+  --text-secondary: 148 163 184;
+  --primary: 6 182 212;
+  --primary-hover: 34 211 238;
+  --secondary: 255 0 128;
+  --accent: 147 51 234;
+  --success: 0 255 127;
+  --danger: 255 50 80;
+  --warning: 255 255 0;
+  --hover: 20 40 60;
+  --code-bg: 15 25 40;
+  --code-text: 94 234 212;
+  --blog-header-border: 34 211 238 / 0.35;
+  --overlay: 10 15 25;
+
+  /* 颜色序列 - 霓虹色系 */
+  --color-1: 6 182 212;
+  --color-2: 255 0 128;
+  --color-3: 147 51 234;
+  --color-4: 34 211 238;
+  --color-5: 236 72 153;
+  --color-6: 59 130 246;
+  --color-7: 250 204 21;
+  --color-8: 0 255 127;
+}
+
+
+/* macaron主题Header增强效果 - 多色马卡龙渐变 */
+.theme-macaron .site-header {
+  background: linear-gradient(135deg, rgb(255 240 245) 0%, rgb(255 250 240) 50%, rgb(240 245 255) 100%);
+  color: rgb(76 29 149);
+  border-bottom: 2px solid;
+  border-image: linear-gradient(90deg, rgb(219 39 119), rgb(251 146 60), rgb(147 51 234), rgb(59 130 246)) 1;
+  box-shadow:
+    0 4px 15px -3px rgb(219 39 119 / 0.15),
+    0 0 30px -10px rgb(251 146 60 / 0.1);
+  z-index: 1000 !important;
+}
+
+/* macaron主题下移除主容器的顶部padding（header已改为fixed定位） */
+.theme-macaron .main-content {
+  padding-top: 3.5rem !important;
+}
+
+.theme-macaron .site-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(219, 39, 119, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 70% 70%, rgba(251, 146, 60, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.05) 0%, transparent 50%);
+  animation: header-glow 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+  will-change: transform, opacity;
+}
+
+@keyframes header-glow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(5px, -5px) scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.theme-macaron .site-header .text-xl {
+  background: linear-gradient(
+    90deg,
+    rgb(219 39 119) 0%,
+    rgb(251 146 60) 15%,
+    rgb(252 211 77) 30%,
+    rgb(52 211 153) 45%,
+    rgb(59 130 246) 60%,
+    rgb(147 51 234) 75%,
+    rgb(251 113 133) 90%,
+    rgb(219 39 119) 100%
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-text 6s linear infinite;
+}
+
+@keyframes rainbow-text {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.theme-macaron .site-header button {
+  box-shadow:
+    0 2px 8px -2px rgb(219 39 119 / 0.2),
+    inset 0 0 10px -3px rgb(255 255 255 / 0.5);
+  transition: none;
+  border-radius: 12px;
+}
+
+.theme-macaron .site-header button:hover {
+  box-shadow:
+    0 3px 10px -2px rgb(219 39 119 / 0.25),
+    0 0 16px -5px rgb(251 146 60 / 0.15),
+    inset 0 0 12px -3px rgb(255 255 255 / 0.6);
+  transform: translateY(-1px);
+}
+
+.theme-macaron .site-header button:active {
+  transform: translateY(0);
+}
+
+.theme-macaron .site-header input {
+  border-color: rgb(219 39 119 / 0.4) !important;
+  background-color: rgb(255 255 255 / 0.9) !important;
+  color: rgb(76 29 149) !important;
+  box-shadow:
+    0 2px 8px -2px rgb(219 39 119 / 0.1),
+    inset 0 0 10px -3px rgb(255 255 255 / 0.8);
+  border-radius: 12px;
+  transition: none;
+}
+
+.theme-macaron .site-header input:focus {
+  border-color: rgb(219 39 119) !important;
+  background-color: rgb(255 255 255 / 1) !important;
+  box-shadow:
+    0 0 0 3px rgb(219 39 119 / 0.15),
+    0 4px 15px -3px rgb(219 39 119 / 0.2),
+    inset 0 0 15px -3px rgb(255 255 255 / 0.9);
+}
+
+/* macaron主题背景 - 圆点装饰 + 柔和渐变 */
+.theme-macaron body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(219, 39, 119, 0.03) 0%, transparent 25%),
+    radial-gradient(circle at 75% 25%, rgba(251, 146, 60, 0.03) 0%, transparent 25%),
+    radial-gradient(circle at 25% 75%, rgba(147, 51, 234, 0.03) 0%, transparent 25%),
+    radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.03) 0%, transparent 25%);
+  background-size: 100px 100px;
+  animation: dot-float 10s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes dot-float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, 10px);
+  }
+}
+
+.theme-macaron body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(219, 39, 119, 0.02) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(251, 146, 60, 0.02) 0%, transparent 40%),
+    radial-gradient(circle at 60% 40%, rgba(147, 51, 234, 0.02) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+  animation: gradient-drift 15s ease-in-out infinite alternate;
+}
+
+@keyframes gradient-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(20px, -10px) scale(1.1);
+  }
+}
+
+/* macaron主题悬浮装饰球 */
+.theme-macaron main::before {
+  content: '';
+  position: fixed;
+  top: 10%;
+  left: 5%;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(219, 39, 119, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.1);
+  }
+}
+
+.theme-macaron main::after {
+  content: '';
+  position: fixed;
+  top: 60%;
+  right: 10%;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(251, 146, 60, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float 10s ease-in-out infinite reverse;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* cyber主题背景 - 霓虹渐变 + 扫描线 + 网格 */
+.theme-cyber body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    linear-gradient(180deg, rgba(6, 182, 212, 0.03) 0%, transparent 50%),
+    linear-gradient(90deg, rgba(255, 0, 128, 0.02) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(147, 51, 234, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+  contain: strict;
+}
+
+.theme-cyber body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(34, 211, 238, 0.02) 2px,
+      rgba(34, 211, 238, 0.02) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(34, 211, 238, 0.015) 2px,
+      rgba(34, 211, 238, 0.015) 4px
+    );
+  pointer-events: none;
+  z-index: 0;
+  contain: strict;
+  animation: scanline 10s linear infinite;
+}
+
+/* cyber主题六边形网格背景 */
+.theme-cyber {
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(6, 182, 212, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 0, 128, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.03) 0%, transparent 50%);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
+/* 自上而下扫描，移动量为 4px 的整数倍，与网格周期一致，循环无跳变 */
+@keyframes scanline {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(40px);
+  }
+}
+
+/* cyber主题数据流动线条 */
+.theme-cyber main::before {
+  content: '';
+  position: fixed;
+  top: 10vh;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(6 182 212),
+    rgb(255 0 128),
+    rgb(147 51 234),
+    transparent
+  );
+  opacity: 0.3;
+  contain: strict;
+  animation: data-flow 5s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 往返路径，0% 与 100% 一致，循环无跳变 */
+@keyframes data-flow {
+  0%, 100% {
+    transform: translateX(-100%) translateY(0);
+  }
+  50% {
+    transform: translateX(100%) translateY(70vh);
+  }
+}
+
+/* 静态装饰线，移除动画减轻并发负担 */
+.theme-cyber main::after {
+  content: '';
+  position: fixed;
+  top: 30vh;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(147 51 234 / 0.25),
+    rgb(6 182 212 / 0.2),
+    transparent
+  );
+  opacity: 0.2;
+  contain: strict;
+  pointer-events: none;
+  z-index: 1;
+}
+
+
+/*
+ * 移动端滚动问题修复说明
+ * ========================
+ * 问题根源：
+ * 1. .theme-cyber 的 body::after、main::before/::after 使用 position: fixed + 动画
+ * 2. 伪元素高度设置为 200vh，虽然 pointer-events: none，但仍影响滚动容器计算
+ * 3. 固定定位 + 动画 + 大尺寸元素在移动端触发频繁重排，导致页面自动向上滚动
+ * 解决方案：
+ * 在移动端完全禁用这些伪元素，保留核心功能的同时消除滚动异常
+ */
+@media (max-width: 768px) {
+  .theme-cyber body::before,
+  .theme-cyber body::after,
+  .theme-cyber main::before,
+  .theme-cyber main::after,
+  .theme-cyber .site-header::before {
+    display: none !important;
+  }
+
+  /* 移动端简化 header 文字动画 */
+  .theme-cyber .site-header .text-xl {
+    animation: rainbow-glow 6s linear infinite !important;
+  }
+}
+
+/* cyber主题Header增强效果 - 多色霓虹发光 */
+.theme-cyber .site-header {
+  background: linear-gradient(
+    135deg,
+    rgb(10 15 25) 0%,
+    rgb(18 28 45) 50%,
+    rgb(10 15 25) 100%
+  );
+  color: rgb(241 245 249);
+  border-bottom: 2px solid;
+  border-image: linear-gradient(
+    90deg,
+    rgb(6 182 212),
+    rgb(255 0 128),
+    rgb(147 51 234),
+    rgb(6 182 212)
+  ) 1;
+  box-shadow:
+    0 4px 25px -5px rgb(34 211 238 / 0.4),
+    0 0 50px -10px rgb(255 0 128 / 0.2),
+    0 0 80px -15px rgb(147 51 234 / 0.15),
+    inset 0 0 40px -10px rgb(34 211 238 / 0.05);
+  z-index: 1000 !important;
+}
+
+/* cyber主题下移除主容器的顶部padding（header已改为fixed定位） */
+.theme-cyber .main-content {
+  padding-top: 3.5rem !important;
+}
+
+.theme-cyber .site-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(6, 182, 212, 0.1),
+    transparent
+  );
+  contain: strict;
+  animation: header-scan 6s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 左右往返，0% 与 100% 一致，循环无跳变 */
+@keyframes header-scan {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+/* 仅保留 rainbow-glow，移除 glitch-anim 减轻合成压力 */
+.theme-cyber .site-header .text-xl {
+  background: linear-gradient(
+    90deg,
+    rgb(6 182 212) 0%,
+    rgb(255 0 128) 33%,
+    rgb(147 51 234) 66%,
+    rgb(6 182 212) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 0 10px rgb(34 211 238 / 0.8),
+    0 0 20px rgb(34 211 238 / 0.6),
+    0 0 30px rgb(34 211 238 / 0.4),
+    0 0 40px rgb(255 0 128 / 0.3);
+  animation: rainbow-glow 6s linear infinite;
+}
+
+
+@keyframes rainbow-glow {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.theme-cyber .site-header input {
+  border-color: rgb(34 211 238 / 0.7) !important;
+  background-color: rgb(20 30 45) !important;
+  color: rgb(241 245 249) !important;
+  box-shadow:
+    0 0 15px -5px rgb(34 211 238 / 0.3),
+    inset 0 0 10px -3px rgb(255 0 128 / 0.1);
+  transition: none;
+}
+
+.theme-cyber .site-header input:focus {
+  border-color: rgb(6 182 212) !important;
+  box-shadow:
+    0 0 0 3px rgb(6 182 212 / 0.5),
+    0 0 20px -5px rgb(6 182 212 / 0.4),
+    inset 0 0 15px -5px rgb(255 0 128 / 0.2),
+    0 0 30px -10px rgb(147 51 234 / 0.2);
+}
+
+.theme-cyber .site-header button {
+  box-shadow:
+    0 2px 8px -2px rgb(6 182 212 / 0.3),
+    inset 0 0 10px -3px rgb(6 182 212 / 0.1);
+  transition: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-cyber .site-header button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(6, 182, 212, 0.35),
+    transparent
+  );
+  transition: none;
+  pointer-events: none;
+}
+
+.theme-cyber .site-header button:hover {
+  box-shadow:
+    0 2px 10px -2px rgb(6 182 212 / 0.5),
+    0 0 16px -5px rgb(255 0 128 / 0.3),
+    0 0 24px -8px rgb(147 51 234 / 0.25);
+  transform: translateY(-1px);
+}
+
+.theme-cyber .site-header button:hover::after {
+  left: 100%;
+}
+
+.theme-cyber .site-header button:active {
+  transform: translateY(0);
+}
+
+html {
+  overscroll-behavior: none;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+html {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body {
+  font-size: var(--text-base);
+  font-family: "Noto Serif SC", "Songti SC", SimSun, "STSong", "Times New Roman", serif;
+  line-height: 1.75;
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+  transition: background 0.3s ease, color 0.3s ease;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* 小字号使用 Medium 字重，避免宋体类字体笔画过细 */
+.text-xs,
+.text-sm,
+.blog-text-xs,
+.blog-text-sm {
+  font-weight: 500;
+}
+
+/* 更小更细的字体层级 - 用于辅助信息 */
+.text-2xs {
+  font-size: var(--text-2xs, 0.75rem);
+  font-weight: 400;
+}
+
+/* macaron主题卡片柔和效果 */
+.theme-macaron .border-\[rgb\(var\(--border\)\)\] {
+  border-color: rgb(var(--border)) !important;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 3px -1px rgb(219 39 119 / 0.08),
+    0 0 0 0 transparent;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-macaron .border-\[rgb\(var\(--border\)\]\]:hover {
+  border-color: rgb(219 39 119 / 0.8) !important;
+  box-shadow:
+    0 2px 6px -1px rgb(219 39 119 / 0.12),
+    0 0 0 0 transparent;
+  transform: translateY(-2px);
+}
+
+/* macaron主题多彩标题 */
+.theme-macaron .font-bold.text-\[rgb\(var\(--primary\)\)\] {
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+.theme-macaron .font-bold.text-\[rgb\(var\(--secondary\)\]\] {
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+.theme-macaron .font-bold.text-\[rgb\(var\(--accent\)\]\] {
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+.theme-macaron .font-bold.text-\[rgb\(var\(--warning\)\]\] {
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+.theme-macaron .font-bold.text-\[rgb\(var\(--info\)\]\] {
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+.theme-macaron .font-bold.text-\[rgb\(var\(--success\)\]\] {
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+/* macaron主题多彩标题 - 移除发光 */
+.theme-macaron .text-\[rgb\(var\(--yellow\)\]\] {
+  text-shadow: none !important;
+}
+
+.theme-macaron .text-\[rgb\(var\(--teal\)\]\] {
+  text-shadow: none !important;
+}
+
+.theme-macaron .text-\[rgb\(var\(--orange\)\]\] {
+  text-shadow: none !important;
+}
+
+.theme-macaron .text-\[rgb\(var\(--rose\)\]\] {
+  text-shadow: none !important;
+}
+
+.theme-macaron .text-\[rgb\(var\(--purple\)\]\] {
+  text-shadow: none !important;
+}
+
+/* macaron主题卡片背景渐变 */
+.theme-macaron .bg-\[rgb\(var\(--card\)\]\] {
+  background:
+    linear-gradient(135deg, rgba(255, 250, 252, 0.98) 0%, rgba(255, 245, 250, 0.98) 100%);
+  transition: all 0.3s ease;
+}
+
+.theme-macaron .bg-\[rgb\(var\(--card\)\]\]:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 250, 252, 1) 100%);
+}
+
+/* macaron主题按钮可爱效果 */
+.theme-macaron button {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-macaron button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transition: left 0.6s ease;
+  border-radius: inherit;
+}
+
+.theme-macaron button:hover::before {
+  left: 100%;
+}
+
+.theme-macaron button:active {
+  transform: scale(0.98);
+}
+
+.theme-macaron button:not(:disabled) {
+  box-shadow:
+    0 1px 3px -1px rgb(219 39 119 / 0.12),
+    0 0 0 0 transparent;
+}
+
+.theme-macaron button:not(:disabled):hover {
+  box-shadow:
+    0 2px 6px -1px rgb(219 39 119 / 0.18),
+    0 0 0 0 transparent;
+  transform: translateY(-1px);
+}
+
+.theme-macaron button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* macaron主题文字柔和发光 */
+.theme-macaron .text-\[rgb\(var\(--primary\)\]\] {
+  text-shadow: 0 0 10px rgb(219 39 119 / 0.15);
+  transition: all 0.3s ease;
+}
+
+.theme-macaron .text-\[rgb\(var\(--primary\)\]\]:hover {
+  text-shadow:
+    0 0 15px rgb(219 39 119 / 0.25),
+    0 0 20px rgb(251 146 60 / 0.15);
+}
+
+/* macaron主题标题文本扁平化 */
+.theme-macaron .font-bold.text-\[rgb\(var\(--primary\)\]\] {
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+/* macaron主题标签可爱效果 */
+.theme-macaron .rounded-full {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 20px !important;
+}
+
+.theme-macaron .rounded-full:hover {
+  box-shadow:
+    0 1px 3px -1px rgb(219 39 119 / 0.15),
+    0 0 0 0 transparent;
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* macaron主题链接柔和发光 */
+.theme-macaron a {
+  transition: all 0.3s ease;
+}
+
+.theme-macaron a:hover {
+  text-shadow:
+    0 0 10px rgb(219 39 119 / 0.2),
+    0 0 20px rgb(251 146 60 / 0.15);
+}
+
+/* macaron主题卡片顶部装饰 */
+.theme-macaron .border-\[rgb\(var\(--border\)\]\]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(219 39 119),
+    rgb(251 146 60),
+    rgb(252 211 77),
+    rgb(52 211 153),
+    rgb(59 130 246),
+    rgb(147 51 234),
+    rgb(251 113 133),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.theme-macaron .border-\[rgb\(var\(--border\)\]\]:hover::before {
+  opacity: 0.4;
+}
+
+/* macaron主题按钮多彩效果 */
+.theme-macaron button:not(:disabled):hover {
+  box-shadow:
+    0 2px 6px -1px rgb(219 39 119 / 0.18),
+    0 0 0 0 transparent;
+  transform: translateY(-1px);
+}
+
+/* macaron主题链接多彩效果 */
+.theme-macaron a:hover {
+  text-shadow:
+    0 0 10px rgb(219 39 119 / 0.15),
+    0 0 15px rgb(251 146 60 / 0.1),
+    0 0 20px rgb(147 51 234 / 0.08);
+}
+
+/* macaron主题标签多彩效果 */
+.theme-macaron .rounded-full:hover {
+  box-shadow:
+    0 1px 3px -1px rgb(219 39 119 / 0.12),
+    0 0 0 0 transparent;
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* macaron主题多彩边框变体 */
+.theme-macaron .border-yellow-500 {
+  border-color: rgb(252 211 77) !important;
+}
+
+.theme-macaron .border-teal-400 {
+  border-color: rgb(45 212 191) !important;
+}
+
+.theme-macaron .border-orange-400 {
+  border-color: rgb(251 146 60) !important;
+}
+
+.theme-macaron .border-rose-400 {
+  border-color: rgb(251 113 133) !important;
+}
+
+.theme-macaron .border-pink-400 {
+  border-color: rgb(244 114 182) !important;
+}
+
+.theme-macaron .border-purple-400 {
+  border-color: rgb(168 85 247) !important;
+}
+
+.theme-macaron .border-blue-400 {
+  border-color: rgb(96 165 250) !important;
+}
+
+.theme-macaron .border-green-400 {
+  border-color: rgb(74 222 128) !important;
+}
+
+/* macaron主题多彩文字 */
+.theme-macaron .text-yellow-500 {
+  color: rgb(252 211 77) !important;
+}
+
+.theme-macaron .text-teal-400 {
+  color: rgb(45 212 191) !important;
+}
+
+.theme-macaron .text-orange-400 {
+  color: rgb(251 146 60) !important;
+}
+
+.theme-macaron .text-rose-400 {
+  color: rgb(251 113 133) !important;
+}
+
+.theme-macaron .text-pink-400 {
+  color: rgb(244 114 182) !important;
+}
+
+.theme-macaron .text-purple-400 {
+  color: rgb(168 85 247) !important;
+}
+
+.theme-macaron .text-blue-400 {
+  color: rgb(96 165 250) !important;
+}
+
+.theme-macaron .text-green-400 {
+  color: rgb(74 222 128) !important;
+}
+
+/* 推荐标志样式 - 全局统一为马卡龙主题的黄色 */
+@keyframes macaron-pulse {
+  0%, 100% {
+    box-shadow:
+      0 1px 3px -1px rgb(250 204 21 / 0.2),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 1px 4px -1px rgb(250 204 21 / 0.25),
+      0 0 0 0 transparent;
+  }
+}
+
+/* macaron主题滚动条样式 */
+.theme-macaron::-webkit-scrollbar {
+  width: 8px;
+}
+
+.theme-macaron::-webkit-scrollbar-track {
+  background: rgb(255 240 248);
+}
+
+.theme-macaron::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgb(219 39 119),
+    rgb(251 146 60)
+  );
+  border-radius: 10px;
+}
+
+.theme-macaron::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgb(190 24 93),
+    rgb(234 88 12)
+  );
+}
+
+/* macaron主题输入框聚焦增强 */
+.theme-macaron input:focus,
+.theme-macaron textarea:focus,
+.theme-macaron select:focus {
+  outline: none;
+  animation: macaron-glow 0.3s ease-out forwards;
+}
+
+@keyframes macaron-glow {
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(219 39 119 / 0),
+      0 0 0 0 rgb(251 146 60 / 0);
+  }
+  100% {
+    box-shadow:
+      0 0 0 3px rgb(219 39 119 / 0.12),
+      0 0 0 6px rgb(251 146 60 / 0.08),
+      0 0 0 0 transparent;
+  }
+}
+
+/* cyber主题卡片霓虹边框效果 */
+.theme-cyber .border-\[rgb\(var\(--border\)\)\] {
+  border-color: rgb(var(--border)) !important;
+  box-shadow:
+    0 0 5px -3px rgb(6 182 212 / 0.3),
+    inset 0 0 5px -3px rgb(255 0 128 / 0.1);
+  transition: all 0.3s ease;
+}
+
+.theme-cyber .border-\[rgb\(var\(--border\)\]\]:hover {
+  border-color: rgb(6 182 212) !important;
+  box-shadow:
+    0 0 10px -3px rgb(6 182 212 / 0.5),
+    0 0 20px -5px rgb(255 0 128 / 0.3),
+    inset 0 0 10px -3px rgb(147 51 234 / 0.2);
+}
+
+/* cyber主题卡片背景渐变 */
+.theme-cyber .bg-\[rgb\(var\(--card\)\]\] {
+  background:
+    linear-gradient(135deg, rgba(18, 28, 45, 0.9) 0%, rgba(25, 40, 65, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.theme-cyber .bg-\[rgb\(var\(--card\)\]\]:hover {
+  background:
+    linear-gradient(135deg, rgba(25, 40, 65, 0.95) 0%, rgba(35, 50, 75, 0.95) 100%);
+}
+
+/* cyber主题按钮发光效果 */
+.theme-cyber button {
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-cyber button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.theme-cyber button:hover::before {
+  left: 100%;
+}
+
+.theme-cyber .text-\[rgb\(var\(--primary\)\]\] {
+  text-shadow: 0 0 10px rgb(6 182 212 / 0.5);
+  transition: all 0.3s ease;
+}
+
+.theme-cyber .text-\[rgb\(var\(--primary\)\]\]:hover {
+  text-shadow:
+    0 0 10px rgb(6 182 212 / 0.8),
+    0 0 20px rgb(34 211 238 / 0.6),
+    0 0 30px rgb(255 0 128 / 0.4);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 页面过渡动画 - 增强呼吸感 */
+.page-transition {
+  opacity: 0;
+  animation: fadeIn 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  will-change: opacity, transform;
+  contain: paint;
+}
+
+.page-transition.exit {
+  animation: fadeOut 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+/* 骨架屏shimmer动画 */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* 全局加载进度条 */
+#global-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--primary)),
+    rgb(var(--primary-hover)),
+    rgb(var(--primary))
+  );
+  background-size: 200% 100%;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 0.3s ease;
+  animation: loading-slide 2s ease-in-out infinite, loading-gradient 1.5s linear infinite;
+}
+
+#global-loading-bar.active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@keyframes loading-slide {
+  0% {
+    width: 0%;
+    left: 0;
+  }
+  50% {
+    width: 70%;
+    left: 0;
+  }
+  100% {
+    width: 30%;
+    left: 100%;
+  }
+}
+
+@keyframes loading-gradient {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* cyber主题推荐标志霓虹效果 */
+.theme-cyber .bg-yellow-100 {
+  box-shadow:
+    0 0 10px -2px rgb(255 255 0 / 0.6),
+    0 0 20px -4px rgb(255 255 0 / 0.4),
+    inset 0 0 5px -1px rgb(255 255 0 / 0.2);
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 10px -2px rgb(255 255 0 / 0.6),
+      0 0 20px -4px rgb(255 255 0 / 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 15px -2px rgb(255 255 0 / 0.8),
+      0 0 30px -4px rgb(255 255 0 / 0.6),
+      0 0 40px -6px rgb(255 255 0 / 0.4);
+  }
+}
+
+/* cyber主题标签霓虹效果 */
+.theme-cyber .rounded-full {
+  transition: all 0.3s ease;
+}
+
+.theme-cyber .rounded-full:hover {
+  box-shadow:
+    0 0 10px -3px rgb(var(--primary) / 0.5),
+    0 0 20px -5px rgb(var(--secondary) / 0.3);
+  transform: translateY(-2px);
+}
+
+/* cyber主题链接悬停发光 */
+.theme-cyber a {
+  transition: all 0.3s ease;
+}
+
+.theme-cyber a:hover {
+  text-shadow:
+    0 0 5px rgb(6 182 212 / 0.8),
+    0 0 10px rgb(255 0 128 / 0.6),
+    0 0 15px rgb(147 51 234 / 0.4);
+}
+
+/* cyber主题卡片边框增强效果 */
+.theme-cyber .border-\[rgb\(var\(--border\)\]\] {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.theme-cyber .border-\[rgb\(var\(--border\)\]\]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(6 182 212),
+    rgb(255 0 128),
+    rgb(147 51 234),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.theme-cyber .border-\[rgb\(var\(--border\)\]\]:hover::after {
+  opacity: 0.6;
+}
+
+/* cyber主题滚动条样式 */
+.theme-cyber::-webkit-scrollbar {
+  width: 8px;
+}
+
+.theme-cyber::-webkit-scrollbar-track {
+  background: rgb(10 15 25);
+}
+
+.theme-cyber::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgb(6 182 212),
+    rgb(255 0 128)
+  );
+  border-radius: 4px;
+}
+
+.theme-cyber::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgb(34 211 238),
+    rgb(147 51 234)
+  );
+}
+
+/* cyber主题分页按钮发光 */
+.theme-cyber button:disabled {
+  opacity: 0.5;
+}
+
+.theme-cyber button:not(:disabled) {
+  position: relative;
+}
+
+.theme-cyber button:not(:disabled)::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    45deg,
+    rgb(6 182 212),
+    rgb(255 0 128),
+    rgb(147 51 234)
+  );
+  border-radius: inherit;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.theme-cyber button:not(:disabled):hover::before {
+  opacity: 0.3;
+}
+
+/* cyber主题输入框聚焦增强 */
+.theme-cyber input:focus,
+.theme-cyber textarea:focus,
+.theme-cyber select:focus {
+  outline: none;
+  animation: input-glow 0.3s ease-out forwards;
+}
+
+@keyframes input-glow {
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(6 182 212 / 0),
+      0 0 0 0 rgb(255 0 128 / 0),
+      0 0 0 0 rgb(147 51 234 / 0);
+  }
+  100% {
+    box-shadow:
+      0 0 0 3px rgb(6 182 212 / 0.5),
+      0 0 0 6px rgb(255 0 128 / 0.3),
+      0 0 0 10px rgb(147 51 234 / 0.2);
+  }
+}
+
+.light header {
+  border-bottom: 2px solid rgb(var(--bg));
+}
+
+.light header button,
+.dark header button {
+  transition: none;
+}
+
+.dark header {
+  border-bottom: 2px solid rgb(var(--bg));
+}
+
+/* Alert 组件按钮样式重置，确保关闭按钮正确定位 */
+#alert-container button {
+  position: absolute !important;
+  transform: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  border-radius: 9999px !important;
+}
+
+#alert-container button::before,
+#alert-container button::after {
+  content: none !important;
+}
+
+#alert-container button:hover {
+  transform: none !important;
+}
+
+/* ============================================
+   友链页面野兽派风格 - Brutalist Link Page
+   ============================================ */
+
+/* 野兽派基础样式 - 粗边框、硬朗阴影 */
+.brutalist-card {
+  position: relative;
+  background: rgb(var(--card));
+  border: 3px solid rgb(var(--text));
+  box-shadow: 6px 6px 0 rgb(var(--primary));
+  transition: all 0.15s ease;
+}
+
+.brutalist-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 rgb(var(--primary));
+}
+
+.brutalist-card:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0 rgb(var(--primary));
+}
+
+/* 主题适配 - 默认/明亮主题 */
+.light .brutalist-card,
+:root:not(.dark):not(.theme-macaron):not(.theme-cyber) .brutalist-card {
+  --card: 255 255 255;
+  --text: 0 0 0;
+  --primary: 37 99 235;
+}
+
+/* 暗色主题野兽派适配 */
+.dark .brutalist-card {
+  --card: 15 23 42;
+  --text: 241 245 249;
+  --primary: 59 130 246;
+  border-color: rgb(148 163 184);
+}
+
+/* 马卡龙主题野兽派适配 - 柔和但保持结构 */
+.theme-macaron .brutalist-card {
+  --card: 255 250 252;
+  --text: 76 29 149;
+  --primary: 219 39 119;
+  border-width: 2px;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgb(219 39 119);
+}
+
+.theme-macaron .brutalist-card:hover {
+  box-shadow: 6px 6px 0 rgb(251 146 60);
+}
+
+/* 赛博朋克主题野兽派适配 - 霓虹效果 */
+.theme-cyber .brutalist-card {
+  --card: 18 28 45;
+  --text: 241 245 249;
+  --primary: 6 182 212;
+  border-color: rgb(34 211 238);
+  box-shadow: 
+    4px 4px 0 rgb(6 182 212),
+    0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+.theme-cyber .brutalist-card:hover {
+  box-shadow: 
+    6px 6px 0 rgb(255 0 128),
+    0 0 30px rgba(255, 0, 128, 0.4);
+  border-color: rgb(255 0 128);
+}
+
+/* 野兽派按钮 */
+.brutalist-btn {
+  position: relative;
+  background: rgb(var(--bg));
+  border: 2px solid rgb(var(--text));
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.1s ease;
+}
+
+.brutalist-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--primary));
+  transform: translate(4px, 4px);
+  z-index: -1;
+  transition: all 0.1s ease;
+}
+
+.brutalist-btn:hover {
+  transform: translate(-2px, -2px);
+}
+
+.brutalist-btn:hover::before {
+  transform: translate(6px, 6px);
+}
+
+.brutalist-btn:active {
+  transform: translate(2px, 2px);
+}
+
+.brutalist-btn:active::before {
+  transform: translate(2px, 2px);
+}
+
+/* 主题按钮适配 */
+.theme-macaron .brutalist-btn::before {
+  transform: translate(3px, 3px);
+}
+
+.theme-cyber .brutalist-btn::before {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+/* 野兽派标题样式 */
+.brutalist-title {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+}
+
+/* 野兽派几何装饰 */
+.brutalist-geo {
+  position: absolute;
+  pointer-events: none;
+}
+
+.brutalist-geo--square {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgb(var(--primary));
+}
+
+.brutalist-geo--triangle {
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 35px solid rgb(var(--primary));
+}
+
+.brutalist-geo--circle {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgb(var(--primary));
+  border-radius: 50%;
+}
+
+.brutalist-geo--diamond {
+  width: 30px;
+  height: 30px;
+  background: rgb(var(--primary));
+  transform: rotate(45deg);
+}
+
+/* 主题几何装饰适配 */
+.theme-macaron .brutalist-geo--square,
+.theme-macaron .brutalist-geo--circle {
+  border-width: 2px;
+}
+
+.theme-cyber .brutalist-geo--square,
+.theme-cyber .brutalist-geo--circle {
+  border-color: rgb(34 211 238);
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.5);
+}
+
+.theme-cyber .brutalist-geo--triangle {
+  border-bottom-color: rgb(255 0 128);
+  filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.5));
+}
+
+.theme-cyber .brutalist-geo--diamond {
+  background: rgb(147 51 234);
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+}
+
+/* 野兽派滚动条 */
+.brutalist-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.brutalist-scroll::-webkit-scrollbar-track {
+  background: rgb(var(--muted));
+  border: 2px solid rgb(var(--text));
+}
+
+.brutalist-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--primary));
+  border: 2px solid rgb(var(--text));
+}
+
+.brutalist-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--primary-hover));
+}
+
+/* 加载动画 - 野兽派风格 */
+@keyframes brutalist-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.brutalist-loading {
+  animation: brutalist-pulse 0.5s ease-in-out infinite;
+}
+
+/* 野兽派边框装饰 */
+.brutalist-border {
+  position: relative;
+}
+
+.brutalist-border::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(var(--primary)),
+    rgb(var(--primary)) 8px,
+    transparent 8px,
+    transparent 12px
+  );
+}
+
+/* 主题边框装饰适配 */
+.theme-macaron .brutalist-border::after {
+  height: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(219 39 119),
+    rgb(219 39 119) 6px,
+    rgb(251 146 60) 6px,
+    rgb(251 146 60) 12px
+  );
+}
+
+.theme-cyber .brutalist-border::after {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgb(6 182 212),
+    rgb(255 0 128),
+    rgb(147 51 234),
+    rgb(6 182 212)
+  );
+  background-size: 200% 100%;
+  animation: brutalist-gradient 3s linear infinite;
+}
+
+@keyframes brutalist-gradient {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* 野兽派标签 */
+.brutalist-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgb(var(--primary));
+  color: rgb(var(--bg));
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid rgb(var(--text));
+  box-shadow: 2px 2px 0 rgb(var(--text));
+}
+
+/* 主题标签适配 */
+.theme-macaron .brutalist-tag {
+  border-radius: 0;
+  box-shadow: 2px 2px 0 rgb(76 29 149);
+}
+
+.theme-cyber .brutalist-tag {
+  background: rgb(6 182 212);
+  color: rgb(10 15 25);
+  border-color: rgb(34 211 238);
+  box-shadow: 
+    2px 2px 0 rgb(255 0 128),
+    0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+/* 野兽派网格背景 */
+.brutalist-grid-bg {
+  background-image: 
+    linear-gradient(rgb(var(--border)) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--border)) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 主题网格适配 */
+.theme-macaron .brutalist-grid-bg {
+  background-size: 16px 16px;
+  opacity: 0.5;
+}
+
+.theme-cyber .brutalist-grid-bg {
+  background-image: 
+    linear-gradient(rgba(34, 211, 238, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ============================================
+   Live2D Widget 动画样式
+   ============================================ */
+
+/* Live2D 消息气泡抖动动画 */
+@keyframes waifu-shake {
+  2% {
+    transform: translate(0.5px, -1.5px) rotate(-0.5deg);
+  }
+  4% {
+    transform: translate(0.5px, 1.5px) rotate(1.5deg);
+  }
+  6% {
+    transform: translate(1.5px, 1.5px) rotate(1.5deg);
+  }
+  8% {
+    transform: translate(2.5px, 1.5px) rotate(0.5deg);
+  }
+  10% {
+    transform: translate(0.5px, 2.5px) rotate(0.5deg);
+  }
+  12% {
+    transform: translate(1.5px, 1.5px) rotate(0.5deg);
+  }
+  14% {
+    transform: translate(0.5px, 0.5px) rotate(0.5deg);
+  }
+  16% {
+    transform: translate(-1.5px, -0.5px) rotate(1.5deg);
+  }
+  18% {
+    transform: translate(0.5px, 0.5px) rotate(1.5deg);
+  }
+  20% {
+    transform: translate(2.5px, 2.5px) rotate(1.5deg);
+  }
+  22% {
+    transform: translate(0.5px, -1.5px) rotate(1.5deg);
+  }
+  24% {
+    transform: translate(-1.5px, 1.5px) rotate(-0.5deg);
+  }
+  26% {
+    transform: translate(1.5px, 0.5px) rotate(1.5deg);
+  }
+  28% {
+    transform: translate(-0.5px, -0.5px) rotate(-0.5deg);
+  }
+  30% {
+    transform: translate(1.5px, -0.5px) rotate(-0.5deg);
+  }
+  32% {
+    transform: translate(2.5px, -1.5px) rotate(1.5deg);
+  }
+  34% {
+    transform: translate(2.5px, 2.5px) rotate(-0.5deg);
+  }
+  36% {
+    transform: translate(0.5px, -1.5px) rotate(0.5deg);
+  }
+  38% {
+    transform: translate(2.5px, -0.5px) rotate(-0.5deg);
+  }
+  40% {
+    transform: translate(-0.5px, 2.5px) rotate(0.5deg);
+  }
+  42% {
+    transform: translate(-1.5px, 2.5px) rotate(0.5deg);
+  }
+  44% {
+    transform: translate(-1.5px, 1.5px) rotate(0.5deg);
+  }
+  46% {
+    transform: translate(1.5px, -0.5px) rotate(-0.5deg);
+  }
+  48% {
+    transform: translate(2.5px, -0.5px) rotate(0.5deg);
+  }
+  50% {
+    transform: translate(-1.5px, 1.5px) rotate(0.5deg);
+  }
+  52% {
+    transform: translate(-0.5px, 1.5px) rotate(0.5deg);
+  }
+  54% {
+    transform: translate(-1.5px, 1.5px) rotate(0.5deg);
+  }
+  56% {
+    transform: translate(0.5px, 2.5px) rotate(1.5deg);
+  }
+  58% {
+    transform: translate(2.5px, 2.5px) rotate(0.5deg);
+  }
+  60% {
+    transform: translate(2.5px, -1.5px) rotate(1.5deg);
+  }
+  62% {
+    transform: translate(-1.5px, 0.5px) rotate(1.5deg);
+  }
+  64% {
+    transform: translate(-1.5px, 1.5px) rotate(1.5deg);
+  }
+  66% {
+    transform: translate(0.5px, 2.5px) rotate(1.5deg);
+  }
+  68% {
+    transform: translate(2.5px, -1.5px) rotate(1.5deg);
+  }
+  70% {
+    transform: translate(2.5px, 2.5px) rotate(0.5deg);
+  }
+  72% {
+    transform: translate(-0.5px, -1.5px) rotate(1.5deg);
+  }
+  74% {
+    transform: translate(-1.5px, 2.5px) rotate(1.5deg);
+  }
+  76% {
+    transform: translate(-1.5px, 2.5px) rotate(1.5deg);
+  }
+  78% {
+    transform: translate(-1.5px, 2.5px) rotate(0.5deg);
+  }
+  80% {
+    transform: translate(-1.5px, 0.5px) rotate(-0.5deg);
+  }
+  82% {
+    transform: translate(-1.5px, 0.5px) rotate(-0.5deg);
+  }
+  84% {
+    transform: translate(-0.5px, 0.5px) rotate(1.5deg);
+  }
+  86% {
+    transform: translate(2.5px, 1.5px) rotate(0.5deg);
+  }
+  88% {
+    transform: translate(-1.5px, 0.5px) rotate(1.5deg);
+  }
+  90% {
+    transform: translate(-1.5px, -0.5px) rotate(-0.5deg);
+  }
+  92% {
+    transform: translate(-1.5px, -1.5px) rotate(1.5deg);
+  }
+  94% {
+    transform: translate(0.5px, 0.5px) rotate(-0.5deg);
+  }
+  96% {
+    transform: translate(2.5px, -0.5px) rotate(-0.5deg);
+  }
+  98% {
+    transform: translate(-1.5px, -1.5px) rotate(-0.5deg);
+  }
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+}
+
+/* Live2D Canvas 光标样式 */
+#live2d {
+  cursor: grab;
+}
+
+#live2d:active {
+  cursor: grabbing;
+}
+
+/* Live2D 移动端适配 */
+@media (max-width: 768px) {
+  #live2d {
+    width: 150px !important;
+    height: 210px !important;
+  }
+}
+
+

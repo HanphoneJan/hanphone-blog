@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hanphone-play · 寒枫的有趣网页</title>
+  <meta name="description" content="寒枫的有趣网页合集 - 粒子系统、爱情小游戏、生日贺卡、在线钢琴等创意网页">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poiret+One&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07071a;
+      --bg-card: rgba(255, 255, 255, 0.04);
+      --bg-card-hover: rgba(255, 255, 255, 0.08);
+      --text: #e8e8f0;
+      --text-dim: rgba(232, 232, 240, 0.45);
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans SC', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Background ─── */
+    #stars {
+      position: fixed; inset: 0;
+      z-index: 0; pointer-events: none;
+    }
+
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(90px); opacity: 0.1;
+      z-index: 0; pointer-events: none;
+    }
+    .orb-1 { width: 650px; height: 650px; background: #7c3aed; top: -220px; left: -180px; animation: orb1 38s ease-in-out infinite alternate; }
+    .orb-2 { width: 550px; height: 550px; background: #be185d; bottom: -180px; right: -120px; animation: orb2 44s ease-in-out infinite alternate; }
+    .orb-3 { width: 420px; height: 420px; background: #0e7490; top: 45%; left: 55%; animation: orb3 32s ease-in-out infinite alternate; }
+
+    @keyframes orb1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,60px) scale(1.15); } }
+    @keyframes orb2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-60px,-50px) scale(1.1); } }
+    @keyframes orb3 { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-42%,-58%) scale(0.88); } }
+
+    /* ─── Layout ─── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1240px; margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      padding: 5rem 0 3.5rem;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--text-dim);
+      border: 1px solid var(--border); border-radius: 100px;
+      padding: 0.35rem 1.1rem; margin-bottom: 2rem;
+    }
+    .hero-badge span { opacity: 0.6; }
+
+    .hero-title {
+      font-family: 'Poiret One', cursive;
+      font-size: clamp(3.2rem, 9vw, 6.5rem);
+      font-weight: 400; line-height: 1;
+      background: linear-gradient(135deg, #c084fc 0%, #f472b6 50%, #fb923c 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-sub {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.05rem; font-weight: 300;
+      color: var(--text-dim); letter-spacing: 0.25em;
+      margin-bottom: 3rem;
+    }
+
+    .hero-stats {
+      display: flex; gap: 2.5rem;
+      justify-content: center; margin-bottom: 2.5rem;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: 'Poiret One', cursive; font-size: 2.2rem; line-height: 1;
+      background: linear-gradient(135deg, #c084fc, #f472b6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; letter-spacing: 0.2em;
+      color: var(--text-dim); margin-top: 0.2rem;
+    }
+
+    /* ─── Filter ─── */
+    .filter-bar {
+      display: flex; gap: 0.5rem;
+      justify-content: center; flex-wrap: wrap;
+      margin-bottom: 3rem;
+    }
+    .filter-btn {
+      padding: 0.35rem 1rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      border-radius: 100px;
+      cursor: pointer; font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.2s ease;
+    }
+    .filter-btn:hover { color: #c084fc; border-color: rgba(192,132,252,0.4); background: rgba(192,132,252,0.06); }
+    .filter-btn.active { color: #c084fc; border-color: rgba(192,132,252,0.6); background: rgba(192,132,252,0.1); }
+
+    /* ─── Grid ─── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+      gap: 1.1rem;
+      margin-bottom: 5rem;
+    }
+
+    /* ─── Card ─── */
+    .project-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.6rem 1.5rem 1.4rem;
+      cursor: pointer; text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; gap: 0.6rem;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                  box-shadow 0.3s ease, border-color 0.3s ease,
+                  background 0.3s ease, opacity 0.35s ease;
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      opacity: 0; transform: translateY(18px);
+    }
+    .project-card.vis { opacity: 1; transform: translateY(0); }
+
+    .project-card::after {
+      content: '';
+      position: absolute; inset: 0; border-radius: 18px;
+      background: radial-gradient(circle at 50% 0%, var(--cc, rgba(192,132,252,0.15)), transparent 70%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .project-card:hover::after { opacity: 1; }
+    .project-card:hover {
+      border-color: var(--cc, rgba(192,132,252,0.35));
+      background: var(--bg-card-hover);
+      transform: translateY(-5px);
+      box-shadow: 0 4px 40px rgba(0,0,0,0.35),
+                  0 0 0 1px var(--cc, rgba(192,132,252,0.2)),
+                  0 12px 28px rgba(0,0,0,0.2);
+    }
+
+    .card-emoji { font-size: 2.4rem; line-height: 1; position: relative; z-index: 1; }
+
+    .card-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1rem; font-weight: 400; line-height: 1.45;
+      color: var(--text); position: relative; z-index: 1;
+    }
+
+    .card-dir {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; color: var(--text-dim);
+      letter-spacing: 0.04em; position: relative; z-index: 1;
+    }
+
+    .card-footer {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-top: auto; padding-top: 0.4rem;
+      position: relative; z-index: 1;
+    }
+
+    .card-tag {
+      display: inline-block;
+      padding: 0.15rem 0.65rem; border-radius: 100px;
+      font-size: 0.64rem; font-family: 'JetBrains Mono', monospace;
+      background: rgba(255,255,255,0.05);
+      color: var(--cc, #c084fc);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .card-arrow {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: var(--text-dim);
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .project-card:hover .card-arrow {
+      border-color: var(--cc, rgba(192,132,252,0.5));
+      color: var(--cc, #c084fc);
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* ─── Divider ─── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0 0 2.5rem;
+    }
+
+    /* ─── Footer ─── */
+    footer { padding: 0 0 3.5rem; text-align: center; }
+
+    .footer-links {
+      display: flex; gap: 1.8rem;
+      justify-content: center; flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .footer-link {
+      color: var(--text-dim); text-decoration: none;
+      font-size: 0.82rem; transition: color 0.2s;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .footer-link:hover { color: var(--text); }
+
+    .footer-copy {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; color: var(--text-dim); opacity: 0.45;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 640px) {
+      .hero { padding: 3rem 0 2rem; }
+      .hero-stats { gap: 1.5rem; }
+      .projects-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Empty state ─── */
+    .empty {
+      grid-column: 1 / -1; text-align: center;
+      padding: 4rem 0; color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="stars"></canvas>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="page">
+    <header class="hero">
+      <div class="hero-badge"><span>✦</span> creative playground <span>✦</span></div>
+      <h1 class="hero-title">hanphone-play</h1>
+      <p class="hero-sub">寒枫的有趣网页</p>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num" id="proj-count">—</div>
+          <div class="stat-label">PROJECTS</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">MIT</div>
+          <div class="stat-label">LICENSE</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">VANILLA</div>
+        </div>
+      </div>
+      <div class="filter-bar" id="filter-bar"></div>
+    </header>
+
+    <main>
+      <div class="projects-grid" id="grid"></div>
+    </main>
+
+    <div class="divider"></div>
+
+    <footer>
+      <div class="footer-links">
+        <a href="https://github.com/HanphoneJan/hanphone-play" class="footer-link" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+        <a href="https://github.com/HanphoneJan/hanphone-play/blob/main/LICENSE" class="footer-link" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          MIT License
+        </a>
+        <a href="https://github.com/HanphoneJan/hanphone-play/stargazers" class="footer-link" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Star 支持一下
+        </a>
+      </div>
+      <p class="footer-copy">© 2025 HanphoneJan &nbsp;·&nbsp; made with ✦ and ❤️</p>
+    </footer>
+  </div>
+
+  <!-- AUTO-GENERATED: run `node scripts/update-index.js` to regenerate -->
+  <script id="projects-data" type="application/json">
+[
+    {
+      "dir": "canvas-particle-universe",
+      "path": "canvas-particle-universe/",
+      "title": "Canvas炫彩粒子系统",
+      "emoji": "🎆",
+      "tag": "canvas",
+      "color": "#fbbf24"
+    },
+    {
+      "dir": "congratulation",
+      "path": "congratulation/",
+      "title": "Hanphone's Congratulation",
+      "emoji": "🎉",
+      "tag": "节日",
+      "color": "#f472b6"
+    },
+    {
+      "dir": "hanphonechat",
+      "path": "hanphonechat/browser/",
+      "title": "和AI寒枫聊天",
+      "emoji": "💬",
+      "tag": "ai",
+      "color": "#22d3ee"
+    },
+    {
+      "dir": "happy-birthday",
+      "path": "happy-birthday/",
+      "title": "生日快乐！",
+      "emoji": "🎂",
+      "tag": "节日",
+      "color": "#f472b6"
+    },
+    {
+      "dir": "letter",
+      "path": "letter/browser2/envelope.html",
+      "title": "来自寒枫的信",
+      "emoji": "💌",
+      "tag": "爱情",
+      "color": "#fb7185"
+    },
+    {
+      "dir": "lottery",
+      "path": "lottery/",
+      "title": "Hanphone's Lottery",
+      "emoji": "🎰",
+      "tag": "游戏",
+      "color": "#fbbf24"
+    },
+    {
+      "dir": "love-chiikawa",
+      "path": "love-chiikawa/",
+      "title": "可以成为我的恋人吗?",
+      "emoji": "🐾",
+      "tag": "爱情",
+      "color": "#f472b6"
+    },
+    {
+      "dir": "love-guess-moss",
+      "path": "love-guess-moss/",
+      "title": "摩斯密码表白器",
+      "emoji": "🔐",
+      "tag": "爱情",
+      "color": "#a78bfa"
+    },
+    {
+      "dir": "love-memory",
+      "path": "love-memory/",
+      "title": "致晴樨",
+      "emoji": "🌸",
+      "tag": "爱情",
+      "color": "#f472b6"
+    },
+    {
+      "dir": "read",
+      "path": "read/replicant/",
+      "title": "博客阅读器",
+      "emoji": "📖",
+      "tag": "工具",
+      "color": "#34d399"
+    },
+    {
+      "dir": "resume",
+      "path": "resume/",
+      "title": "寒枫 - 个人简历",
+      "emoji": "📄",
+      "tag": "工具",
+      "color": "#22d3ee"
+    },
+    {
+      "dir": "simple-piano",
+      "path": "simple-piano/",
+      "title": "简易钢琴键盘",
+      "emoji": "🎹",
+      "tag": "创意",
+      "color": "#a78bfa"
+    },
+    {
+      "dir": "todo",
+      "path": "todo/",
+      "title": "高级待办应用",
+      "emoji": "✅",
+      "tag": "工具",
+      "color": "#34d399"
+    },
+    {
+      "dir": "torus-knot-geometry",
+      "path": "torus-knot-geometry/",
+      "title": "WebGL 赛博核心展示 | Three.js Demo",
+      "emoji": "🌀",
+      "tag": "3d",
+      "color": "#22d3ee"
+    },
+    {
+      "dir": "visual-player",
+      "path": "visual-player/",
+      "title": "音频可视化播放器",
+      "emoji": "🎵",
+      "tag": "创意",
+      "color": "#a78bfa"
+    }
+  ]
+  </script>
+
+  <script>
+    /* ─── Stars ─── */
+    const cvs = document.getElementById('stars');
+    const cx = cvs.getContext('2d');
+    let stars = [];
+
+    function resize() {
+      cvs.width = innerWidth;
+      cvs.height = innerHeight;
+    }
+    function initStars() {
+      stars = Array.from({ length: 160 }, () => ({
+        x: Math.random() * cvs.width,
+        y: Math.random() * cvs.height,
+        r: Math.random() * 1.4 + 0.2,
+        o: Math.random() * 0.65 + 0.1,
+        speed: Math.random() * 0.35 + 0.08,
+        phase: Math.random() * Math.PI * 2
+      }));
+    }
+    let t = 0;
+    function drawStars() {
+      cx.clearRect(0, 0, cvs.width, cvs.height);
+      t += 0.008;
+      stars.forEach(s => {
+        cx.beginPath();
+        cx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        cx.fillStyle = `rgba(255,255,255,${s.o * (0.65 + 0.35 * Math.sin(t * s.speed + s.phase))})`;
+        cx.fill();
+      });
+      requestAnimationFrame(drawStars);
+    }
+    resize(); initStars(); drawStars();
+    window.addEventListener('resize', () => { resize(); initStars(); });
+
+    /* ─── Projects ─── */
+    const data = JSON.parse(document.getElementById('projects-data').textContent);
+    document.getElementById('proj-count').textContent = data.length;
+
+    /* Build filter buttons */
+    const tags = ['all', ...new Set(data.map(p => p.tag))];
+    const bar = document.getElementById('filter-bar');
+    bar.innerHTML = tags.map(t =>
+      `<button class="filter-btn${t === 'all' ? ' active' : ''}" data-f="${t}">${t}</button>`
+    ).join('');
+
+    let cur = 'all';
+    bar.addEventListener('click', e => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      cur = btn.dataset.f;
+      bar.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.f === cur));
+      render();
+    });
+
+    function render() {
+      const grid = document.getElementById('grid');
+      const list = cur === 'all' ? data : data.filter(p => p.tag === cur);
+      if (!list.length) {
+        grid.innerHTML = '<div class="empty">没有找到该分类的项目</div>';
+        return;
+      }
+      grid.innerHTML = list.map((p, i) => `
+        <a href="${p.path}" class="project-card" style="--cc:${p.color};transition-delay:${i * 0.038}s" target="_blank" rel="noopener">
+          <div class="card-emoji">${p.emoji}</div>
+          <div class="card-title">${p.title}</div>
+          <div class="card-dir">./${p.dir}/</div>
+          <div class="card-footer">
+            <span class="card-tag">${p.tag}</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </a>
+      `).join('');
+      /* Staggered entrance */
+      requestAnimationFrame(() =>
+        grid.querySelectorAll('.project-card').forEach(c =>
+          requestAnimationFrame(() => c.classList.add('vis'))
+        )
+      );
+    }
+    render();
+  </script>
+</body>
+</html>

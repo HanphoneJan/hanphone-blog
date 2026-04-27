@@ -1,0 +1,6 @@
+packages:
+  - 'web'
+  - 'apps/gomoku'
+  - 'apps/photo-wall'
+  - 'admin-file'
+  - 'photo-wall-server'

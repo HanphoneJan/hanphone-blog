@@ -1,0 +1,33 @@
+/**
+ * TypeScript 配置文件 (tsconfig.json)
+ * 此文件配置 TypeScript 编译器的选项和项目结构。
+ * 
+ * - `files`: 指定要编译的文件列表，当前为空。
+ * - `references`: 引用其他 tsconfig 文件，支持项目的模块化管理。
+ * - `compilerOptions`: 编译器选项配置，包括：
+ *   - `baseUrl`: 基础路径设置为当前目录。
+ *   - `paths`: 路径映射配置，允许使用别名导入模块。
+ *   - `types`: 指定要包含的类型定义，当前包含 Node.js 类型。
+ * - `include`: 指定要包含的文件模式，支持 TypeScript 和 Vue 文件。
+ */
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*"],
+      "@/*": ["src/*"]
+
+    },
+    "types": ["node"],
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "vue.d.ts"
+  ]
+}

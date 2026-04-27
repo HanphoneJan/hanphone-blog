@@ -1,0 +1,37 @@
+@charset "UTF-8";
+/* 全局字体设置 */
+:root {
+  --font-family-base: "Noto Serif SC", "Songti SC", SimSun, "STSong", "Times New Roman", serif;
+}
+
+/* 全局字体统一 */
+html, body {
+  font-family: var(--font-family-base);
+  font-size: 18px;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  font-family: inherit;
+  box-sizing: inherit;
+}
+
+/* 隐藏滚动条 */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}

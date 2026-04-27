@@ -1,0 +1,56 @@
+# IDE
+.idea/
+.vscode/
+.claude
+.codebuddy
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+target/
+out/
+.next/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.swp
+*.swo
+*~
+.cache/
+temp/
+tmp/
+
+# Server specific
+server/logs/
+server/*.jar
+
+# Web specific
+web/.vercel

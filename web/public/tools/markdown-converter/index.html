@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 转换器</title>
+    <meta name="description" content="实时 Markdown 预览与富文本复制，支持 LaTeX 数学公式，一键复制到剪贴板，双栏响应式布局。">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 1rem;
+            background-color: #f5f5f5;
+            /* 防止内容过宽 */
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+
+        .header {
+            margin-bottom: 1.5rem;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        /* 中等屏幕以上使用双列布局 */
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .container {
+                max-width: 1200px;
+                padding: 2rem;
+            }
+            
+            body {
+                padding: 2rem;
+            }
+        }
+
+        .label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1.2rem;
+            color: #374151;
+        }
+
+        .textarea {
+            width: 100%;
+            height: 500px;
+            padding: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-family: monospace;
+            resize: vertical;
+            /* 防止输入框内容溢出 */
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .preview {
+            width: 100%;
+            height: 500px;
+            padding: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            overflow-y: auto;
+            background-color: white;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 0.5rem;
+        }
+
+        .copy-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-button:hover {
+            background-color: #f3f4f6;
+        }
+
+        .copy-button svg {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+        }
+
+        /* 提示框样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            /* 确保提示框不会溢出 */
+            max-width: calc(100% - 40px);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Preview Styles */
+        .preview h1,
+        .preview h2,
+        .preview h3,
+        .preview h4,
+        .preview h5,
+        .preview h6 {
+            margin: 0.67em 0;
+            /* 防止标题过长溢出 */
+            overflow-wrap: break-word;
+        }
+
+        .preview h1 { font-size: 2em; }
+        .preview h2 { font-size: 1.5em; }
+        .preview h3 { font-size: 1.17em; }
+
+        .preview ul,
+        .preview ol {
+            padding-left: 2em;
+            margin: 1em 0;
+        }
+
+        .preview p {
+            margin: 1em 0;
+            /* 段落文本自动换行 */
+            overflow-wrap: break-word;
+        }
+
+        .preview code {
+            background-color: #f3f4f6;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .preview pre {
+            background-color: #f3f4f6;
+            padding: 1em;
+            border-radius: 6px;
+            /* 代码块横向滚动 */
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+
+        .preview pre code {
+            background-color: transparent;
+            padding: 0;
+            /* 代码不自动换行，保持原有格式 */
+            white-space: pre;
+            overflow-wrap: normal;
+        }
+
+        .preview a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .preview a:hover {
+            text-decoration: underline;
+        }
+
+        /* 图片自适应 */
+        .preview img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 表格样式优化，防止溢出 */
+        .preview table {
+            width: 100%;
+            max-width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        
+        .preview th,
+        .preview td {
+            padding: 0.5em;
+            border: 1px solid #ddd;
+            /* 表格内容自动换行 */
+            overflow-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Markdown 转换器</h1>
+        </div>
+        <div class="grid">
+            <div>
+                <label class="label">Markdown 输入</label>
+                <textarea id="markdown-input" class="textarea" placeholder="在这里输入 Markdown 文本..."></textarea>
+            </div>
+            <div>
+                <div class="button-container">
+                    <button id="copy-button" class="copy-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        复制富文本
+                    </button>
+                </div>
+                <div id="preview" class="preview"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 提示框元素 -->
+    <div id="toast" class="toast">富文本已复制到剪贴板！</div>
+    
+    <script src="./marked.min.js"></script>
+    <script src="./latex.js"></script>
+    <script>
+        // 获取 DOM 元素
+        const markdownInput = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview');
+        const copyButton = document.getElementById('copy-button');
+        const toast = document.getElementById('toast');
+
+        // 显示提示框函数
+        function showToast(message = '富文本已复制到剪贴板！', duration = 2000) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            // 定时隐藏提示框
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        function convertToHTML(md) {
+            // 预处理数学表达式，自动添加 $ 或 $$ 边界
+            const processedMd = autoDetectAndWrapMath(md);
+                // 临时替换 \\ 为特殊标记，避免被转义
+            const tempMarker = 'TEMP_DOUBLE_BACKSLASH';
+            let processed = processedMd.replace(/\\\\/g, tempMarker);
+            const html = marked.parse(processed);
+                // 恢复临时标记为 \\
+            const html2 = html.replace(new RegExp(tempMarker, 'g'), '\\\\');
+            return html2;
+        }
+
+        /**
+         * 自动检测数学表达式并添加 $ 或 $$ 边界
+         */
+         function autoDetectAndWrapMath(md) {
+            // 先处理 \[...\] 替换为 $$...$$
+            let processed = md.replace(/\\\[(.*?)\\\]/gs, (match, content) => {
+                // 检查是否已经被 $$ 包裹
+                if (match.startsWith('$$') && match.endsWith('$$')) {
+                    return match;
+                }
+                return `$$${content}$$`;
+            });
+
+            // 再处理 \(...\) 替换为 $...$
+            processed = processed.replace(/\\\((.*?)\\\)/gs, (match, content) => {
+                // 检查是否已经被 $ 包裹或属于 $$...$$ 的一部分
+                if (match.startsWith('$') && match.endsWith('$')) {
+                    return match;
+                }
+                // 检查内容是否包含 display math（避免嵌套问题）
+                if (content.includes('$$')) {
+                    return match;
+                }
+                return `$${content}$`;
+            });
+
+            return processed;
+        }
+
+        // 实时预览
+        markdownInput.addEventListener('input', function () {
+            preview.innerHTML = convertToHTML(this.value);
+        });
+
+        // 复制富文本
+        copyButton.addEventListener('click', function () {
+            const htmlContent = preview.innerHTML;
+
+            // 创建一个临时容器来保存 HTML 内容
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+
+            // 使用 Clipboard API 复制富文本
+            try {
+                navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                        'text/plain': new Blob([tempDiv.textContent], { type: 'text/plain' })
+                    })
+                ]).then(() => {
+                    showToast('富文本已复制到剪贴板！', 2000); // 2秒后自动消失
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    fallbackCopy(tempDiv.textContent);
+                });
+            } catch (err) {
+                console.error('复制失败:', err);
+                fallbackCopy(tempDiv.textContent);
+            }
+        });
+
+        // 降级复制方案
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('内容已复制到剪贴板（纯文本格式）', 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+                showToast('复制失败，请手动复制', 3000); // 失败提示显示3秒
+            }
+            document.body.removeChild(textarea);
+        }
+    </script>
+</body>
+
+</html>
