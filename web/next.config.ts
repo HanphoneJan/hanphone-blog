@@ -18,7 +18,7 @@ const fileDomain = process.env.NEXT_PUBLIC_FILE_DOMAIN || 'hanphone.top'
 const isStaticExport = process.env.STATIC_EXPORT === 'true'
 
 const nextConfig: NextConfig = {
-   trailingSlash: true, 
+  trailingSlash: true,
   // GitHub Pages 静态导出配置
   ...(isStaticExport && {
     output: 'export',
@@ -33,10 +33,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: fileDomain,
         port: '',
-        pathname: '/**' // 允许该域名下所有图片
+        pathname: '/**'
       },
       {
-        protocol: 'http', // 添加http支持
+        protocol: 'http',
         hostname: fileDomain,
         port: '',
         pathname: '/**'
@@ -45,37 +45,65 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cdn.jsdelivr.net',
         port: '',
-        pathname: '/**' // 允许该域名下所有图片
+        pathname: '/**'
       }
     ]
   },
   eslint: {
-    // 生成期间禁用eslint
     ignoreDuringBuilds: true
   },
   typescript: {
-    // 生成期间禁用类型检查
     ignoreBuildErrors: true
   },
   experimental: {
     scrollRestoration: false
   },
-async rewrites() {
-  return [
-    {
-      source: '/games/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
-      destination: '/games/:path/index.html',
-    },
-    {
-      source: '/tools/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
-      destination: '/tools/:path/index.html',
-    },
-    {
-      source: '/play/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
-      destination: '/play/:path/index.html',
-    }
-  ];
-},
+  async rewrites() {
+    return [
+      // 处理 /games 和 /games/
+      {
+        source: '/games',
+        destination: '/games/index.html',
+      },
+      {
+        source: '/games/',
+        destination: '/games/index.html',
+      },
+      // 处理 /games/子路径
+      {
+        source: '/games/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
+        destination: '/games/:path/index.html',
+      },
+      // 处理 /tools 和 /tools/
+      {
+        source: '/tools',
+        destination: '/tools/index.html',
+      },
+      {
+        source: '/tools/',
+        destination: '/tools/index.html',
+      },
+      // 处理 /tools/子路径
+      {
+        source: '/tools/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
+        destination: '/tools/:path/index.html',
+      },
+      // 处理 /play 和 /play/
+      {
+        source: '/play',
+        destination: '/play/index.html',
+      },
+      {
+        source: '/play/',
+        destination: '/play/index.html',
+      },
+      // 处理 /play/子路径
+      {
+        source: '/play/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
+        destination: '/play/:path/index.html',
+      },
+    ]
+  },
   // 排除 react-pdf 从服务端打包
   webpack: (config, { isServer }) => {
     if (isServer) {
