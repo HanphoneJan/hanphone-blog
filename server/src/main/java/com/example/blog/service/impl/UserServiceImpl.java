@@ -273,4 +273,27 @@ public class UserServiceImpl implements UserService {
         user.setLastLoginTime(null);
         return user;
     }
+
+    @Override
+    public List<User> getOnlineUsers() {
+        try {
+            return userRepository.findByIsOnlineTrue();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get online users", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public Boolean setUserOnlineStatus(Long userId, Boolean isOnline) {
+        Objects.requireNonNull(userId, "userId must not be null");
+        Objects.requireNonNull(isOnline, "isOnline must not be null");
+
+        try {
+            int affectedRows = userRepository.updateOnlineStatus(userId, isOnline, new Date());
+            return affectedRows > 0;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set online status for user: " + userId, e);
+        }
+    }
 }

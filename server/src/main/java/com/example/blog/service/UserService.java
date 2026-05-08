@@ -31,4 +31,14 @@ public interface UserService {
      * 清除用户隐私字段，用于公共接口返回
      */
     User clearSensitiveFields(User user);
+
+    /**
+     * 获取在线用户列表（内部接口使用）
+     */
+    List<User> getOnlineUsers();
+
+    /**
+     * 设置用户在线状态（内部接口使用）
+     */
+    Boolean setUserOnlineStatus(Long userId, Boolean isOnline);
 }
