@@ -30,6 +30,9 @@ public class BlogController {
 
     private final TagService tagService;
 
+    // 搜索参数最大长度限制
+    private static final int MAX_SEARCH_QUERY_LENGTH = 100;
+
     public BlogController(BlogService blogService, TypeService typeService, TagService tagService) {
         this.blogService = blogService;
         this.typeService = typeService;
@@ -40,6 +43,18 @@ public class BlogController {
     public Result<Page<Blog>> getBlogList(@RequestBody Map<String, Object> para) {
         int pageNum = (int) para.get("pagenum");
         int pageSize = (int) para.get("pagesize");
+
+        // 防御性编程：限制分页大小防止内存溢出
+        if (pageSize > PaginationConstants.MAX_PAGE_SIZE) {
+            pageSize = PaginationConstants.MAX_PAGE_SIZE;
+        }
+        if (pageSize < PaginationConstants.MIN_PAGE_SIZE) {
+            pageSize = PaginationConstants.DEFAULT_PAGE_SIZE;
+        }
+        if (pageNum < 1) {
+            pageNum = 1;
+        }
+
         BlogQuery blogQuery = new BlogQuery();
         if (para.get("typeId") != null) {
             blogQuery.setTypeId(Long.valueOf(para.get("typeId").toString()));
@@ -138,6 +153,13 @@ public class BlogController {
             @PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {
                     "createTime" }, direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam String query) {
+                        if (query == null || query.trim().isEmpty()) {
+            return new Result<>(false, StatusCode.ERROR, "搜索关键词不能为空", null);
+        }
+        if (query.length() > MAX_SEARCH_QUERY_LENGTH) {
+            return new Result<>(false, StatusCode.ERROR,
+                "搜索关键词过长，最多" + MAX_SEARCH_QUERY_LENGTH + "个字符", null);
+        }
         return new Result<>(true, StatusCode.OK, "获取搜索博客成功", blogService.listBlog("%" + query + "%", pageable));
     }
 

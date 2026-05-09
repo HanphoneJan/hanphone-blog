@@ -54,8 +54,22 @@ public class IndexController {
 
     @GetMapping("/blogs")
     public Result<Page<Blog>> getBlogList(@RequestParam String pagenum, @RequestParam String pagesize) {
+        int pageNum = Integer.parseInt(pagenum);
+        int pageSize = Integer.parseInt(pagesize);
+
+        // 防御性编程：限制分页大小防止内存溢出
+        if (pageSize > PaginationConstants.MAX_PAGE_SIZE) {
+            pageSize = PaginationConstants.MAX_PAGE_SIZE;
+        }
+        if (pageSize < PaginationConstants.MIN_PAGE_SIZE) {
+            pageSize = PaginationConstants.DEFAULT_PAGE_SIZE;
+        }
+        if (pageNum < 1) {
+            pageNum = 1;
+        }
+
         Sort sort = Sort.by(Sort.Direction.DESC, "createTime");
-        Pageable pageable = PageRequest.of(Integer.parseInt(pagenum) - 1, Integer.parseInt(pagesize), sort);
+        Pageable pageable = PageRequest.of(pageNum - 1, pageSize, sort);
         return new Result<>(true, StatusCode.OK, "获取博客列表成功", blogService.listBlog(pageable));
     }
 
@@ -64,9 +78,20 @@ public class IndexController {
         return new Result<>(true, StatusCode.OK, "获取推荐博客成功", blogService.listRecommendBlogTop(PaginationConstants.RECOMMEND_BLOG_SIZE));
     }
 
+    // 搜索参数最大长度限制
+    private static final int MAX_SEARCH_QUERY_LENGTH = 100;
+
     @GetMapping("/search")
     public Result<Page<Blog>> search(@PageableDefault(size = PaginationConstants.DEFAULT_PAGE_SIZE, sort = {"createTime"}, direction = Sort.Direction.DESC) Pageable pageable,
                                      @RequestParam String query) {
+        // 防御性编程：限制搜索查询长度，防止超长搜索词导致内存和性能问题
+        if (query == null || query.trim().isEmpty()) {
+            return new Result<>(false, StatusCode.ERROR, "搜索关键词不能为空", null);
+        }
+        if (query.length() > MAX_SEARCH_QUERY_LENGTH) {
+            return new Result<>(false, StatusCode.ERROR,
+                "搜索关键词过长，最多" + MAX_SEARCH_QUERY_LENGTH + "个字符", null);
+        }
         return new Result<>(true, StatusCode.OK, "获取搜索博客成功", blogService.listBlog(query, pageable));
     }
 

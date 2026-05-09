@@ -1,10 +1,15 @@
 package com.example.blog.handler;
 
+import com.example.blog.po.Result;
+import com.example.blog.po.StatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -27,5 +32,40 @@ public class ControllerExceptionHandler {
         mv.addObject("url",request.getRequestURL());
         mv.addObject("exception",e);
         return mv;
+    }
+
+    /**
+     * 处理 OutOfMemoryError - 返回 503 服务不可用
+     * 这是关键防御：防止 OOM 导致整个应用崩溃
+     */
+    @ExceptionHandler(OutOfMemoryError.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleOutOfMemoryError(HttpServletRequest request, OutOfMemoryError e) {
+        logger.error("OutOfMemoryError! Request URL: {}, Message: {}", request.getRequestURL(), e.getMessage());
+        // 记录关键信息后立即返回，避免分配更多内存
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, "服务器内存不足，请稍后重试", null);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(result);
+    }
+
+    /**
+     * 处理 IllegalArgumentException - 参数错误
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleIllegalArgument(HttpServletRequest request, IllegalArgumentException e) {
+        logger.warn("IllegalArgumentException! Request URL: {}, Message: {}", request.getRequestURL(), e.getMessage());
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, e.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
+    }
+
+    /**
+     * 处理 RuntimeException
+     */
+    @ExceptionHandler(RuntimeException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleRuntimeException(HttpServletRequest request, RuntimeException e) {
+        logger.error("RuntimeException! Request URL: {}, Message: {}", request.getRequestURL(), e.getMessage(), e);
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, "服务器内部错误", null);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
     }
 }

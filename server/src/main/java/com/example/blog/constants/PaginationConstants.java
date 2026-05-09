@@ -23,4 +23,14 @@ public final class PaginationConstants {
      * 推荐项目列表显示数量
      */
     public static final int RECOMMEND_PROJECT_SIZE = 6;
+
+    /**
+     * 最大分页大小（防御恶意大页请求）
+     */
+    public static final int MAX_PAGE_SIZE = 100;
+
+    /**
+     * 默认最小分页大小
+     */
+    public static final int MIN_PAGE_SIZE = 1;
 }

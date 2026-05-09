@@ -54,7 +54,16 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8090/actuator/health || exit 1
 
 # JVM 参数优化
-ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs/heapdump.hprof"
+# -Xms2048m: 初始堆内存 2GB，避免动态扩容开销
+# -Xmx2048m: 最大堆内存 2GB，提供更大缓冲区
+# -XX:MetaspaceSize=256m: 元空间初始大小
+# -XX:MaxMetaspaceSize=256m: 元空间最大大小
+# -XX:+UseG1GC: 使用 G1 垃圾收集器，适合大堆内存
+# -XX:MaxGCPauseMillis=200: 最大 GC 停顿时间 200ms
+# -XX:+HeapDumpOnOutOfMemoryError: OOM 时生成堆转储文件
+# -XX:HeapDumpPath=/logs/heapdump.hprof: 堆转储文件路径
+# -XX:+ExitOnOutOfMemoryError: OOM 时退出 JVM，让容器重启
+ENV JAVA_OPTS="-Xms2048m -Xmx2048m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs/heapdump.hprof -XX:+ExitOnOutOfMemoryError"
 
 # 启动应用
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app/blog.jar"]
