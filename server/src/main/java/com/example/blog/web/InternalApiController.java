@@ -16,7 +16,6 @@ import java.util.List;
  * 这些接口不经过 TokenInterceptor，使用独立的密钥验证
  */
 @RestController
-@RequestMapping("/api")
 public class InternalApiController {
 
     private final UserService userService;
