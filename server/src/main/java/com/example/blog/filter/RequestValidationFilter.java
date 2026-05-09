@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -41,11 +40,19 @@ public class RequestValidationFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        // 1. 验证 URL 长度
         String requestUri = httpRequest.getRequestURI();
-        String queryString = httpRequest.getQueryString();
-        String fullUrl = httpRequest.getRequestURL().toString();
 
+        // 1. 首先验证 URI 长度（getRequestURI 不拼接完整 URL，不会 OOM）
+        //    必须放在第一步，防止超长 URL 在后续 getRequestURL() 调用中先耗尽堆内存
+        if (requestUri.length() > MAX_URL_LENGTH) {
+            logger.warn("Request URI too long: {} chars", requestUri.length());
+            httpResponse.setStatus(HttpServletResponse.SC_REQUEST_URI_TOO_LONG);
+            httpResponse.getWriter().write("{\"success\":false,\"code\":\"414\",\"msg\":\"Request URI too long\"}");
+            return;
+        }
+
+        // 2. 验证完整 URL 长度（getRequestURL 会拼接协议+主机+端口+路径，仅在上一步通过后调用）
+        String fullUrl = httpRequest.getRequestURL().toString();
         if (fullUrl.length() > MAX_URL_LENGTH) {
             logger.warn("Request URL too long: {} chars, URI: {}", fullUrl.length(), requestUri);
             httpResponse.setStatus(HttpServletResponse.SC_REQUEST_URI_TOO_LONG);
@@ -53,7 +60,8 @@ public class RequestValidationFilter implements Filter {
             return;
         }
 
-        // 2. 验证查询字符串长度
+        // 3. 验证查询字符串长度
+        String queryString = httpRequest.getQueryString();
         if (queryString != null && queryString.length() > MAX_QUERY_LENGTH * 10) {
             logger.warn("Query string too long: {} chars, URI: {}", queryString.length(), requestUri);
             httpResponse.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -61,7 +69,7 @@ public class RequestValidationFilter implements Filter {
             return;
         }
 
-        // 3. 验证参数数量和参数值长度
+        // 4. 验证参数数量和参数值长度
         Enumeration<String> parameterNames = httpRequest.getParameterNames();
         int paramCount = 0;
         while (parameterNames.hasMoreElements()) {
@@ -98,14 +106,6 @@ public class RequestValidationFilter implements Filter {
                     }
                 }
             }
-        }
-
-        // 4. 验证 PathVariable 长度（通过 URI 判断）
-        if (requestUri.length() > MAX_URL_LENGTH) {
-            logger.warn("Request URI too long: {} chars", requestUri.length());
-            httpResponse.setStatus(HttpServletResponse.SC_REQUEST_URI_TOO_LONG);
-            httpResponse.getWriter().write("{\"success\":false,\"code\":\"414\",\"msg\":\"Request URI too long\"}");
-            return;
         }
 
         // 继续过滤链
