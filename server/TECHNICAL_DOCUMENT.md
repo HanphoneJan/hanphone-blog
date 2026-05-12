@@ -10,7 +10,8 @@
 server/src/main/java/com/example/blog/
 ├── config/                           # 配置类
 │   ├── ScheduleConfig.java           # 定时任务配置
-│   └── SwaggerConfig.java            # Swagger 文档配置
+│   ├── SwaggerConfig.java            # Swagger 文档配置
+│   └── XssStringDeserializer.java    # Jackson 全局 String HTML 转义(@JsonComponent)
 │
 ├── constants/                        # 常量定义
 │   ├── CommonConstants.java          # 通用常量
@@ -41,7 +42,8 @@ server/src/main/java/com/example/blog/
 │   └── UserType.java                 # 用户类型枚举
 │
 ├── filter/                           # 过滤器
-│   ├── XssFilter.java                # XSS 攻击过滤
+│   ├── RequestValidationFilter.java   # URL 长度校验 & 递归路径防御
+│   ├── XssFilter.java                # XSS 攻击过滤 + 安全响应头
 │   └── XssHttpServletRequestWrapper.java  # XSS 请求包装
 │
 ├── handler/                          # 异常处理器
@@ -221,10 +223,17 @@ User (用户)
 
 ### 防护机制
 
-- **XSS**: XssFilter 过滤请求参数
-- **密码加密**: BCrypt 加密存储
-- **Token 验证**: JWT + 拦截器
+- **XSS 多层防御**: XssFilter 过滤请求参数 + XssStringDeserializer Jackson 全局转义 JSON Body
+- **URL 攻击防御**: RequestValidationFilter 校验 URI 长度上限，防止超长 URL 导致 OOM；递归路径返回 404
+- **密码加密**: BCrypt 加密存储 + 密码复杂度校验（长度 >=8，必须包含字母和数字）
+- **验证码限流**: Redis 60 秒内同邮箱不可重复发送 + 邮箱格式/长度校验
+- **Token 验证**: JWT + 拦截器（admin 接口）+ X-Internal-Key（内部 API）
 - **SQL 注入**: JPA 参数化查询 & MyBatis-Plus 防注入机制
+- **连接池保护**: HikariCP 最大 100 连接，防止并发耗尽
+- **安全响应头**: X-Content-Type-Options, X-XSS-Protection, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy
+- **CORS**: Origin 白名单校验
+- **HTTP 方法控制**: 仅允许 GET/POST/PUT/DELETE/OPTIONS，TRACE/PATCH 等方法返回 405
+- **用户类型默认值**: 新注册用户默认 type='0'，防御权限提升
 
 ---
 
@@ -233,6 +242,48 @@ User (用户)
 | 任务 | 类 | 说明 |
 |------|-----|------|
 | 日志清理 | LogCleanServiceImpl | 每天凌晨2点清理30天前日志 |
+
+---
+
+## 测试工具
+
+项目包含两套 Python 黑盒测试工具，针对已部署的服务进行验证。
+
+### 安全 & 功能回归测试 (`test.py`)
+
+覆盖 12 个测试组、39 个用例：
+
+| 测试组 | 内容 |
+|--------|------|
+| T1 基础设施层 | 安全响应头 (6 项) |
+| T2 URL 超长 & 输入防御 | URI 超长 → 414, 递归路径 → 404, 超大分页裁剪 |
+| T3 并发与连接池 | 10/20 并发请求 |
+| T4 认证鉴权 | 无 token/伪造 token/无 key/弱 key |
+| T5 XSS 防护 | JSON body 转义, 持久化验证 |
+| T6 密码策略 | 长度 <8, 纯字母, 合法密码, 默认 userType |
+| T7 验证码限流 | 首次发送, 60s 限流, 超长邮箱, 非法格式, 空邮箱 |
+| T8 SQL 注入 | 单引号, OR 1=1, 路径注入 |
+| T9 CORS | 白名单 Origin, 恶意 Origin |
+| T10 HTTP 方法 | PUT → 405, TRACE → 405, DELETE |
+| T11 评论功能 | 未登录评论, 字段校验, XSS 转义 |
+| T12 Actuator | 端点最小暴露 |
+
+```bash
+cd server
+python3 test.py [--base-url URL] [--skip-t11]
+```
+
+### 压力测试 (`stress_test.py`)
+
+三种测试策略：
+
+| 策略 | 命令 | 说明 |
+|------|------|------|
+| 渐进式加压 | `python3 stress_test.py` | 1→200 并发逐步增加，找到性能拐点 |
+| 固定并发 | `python3 stress_test.py --concurrency 50 --duration 60` | 固定并发数，持续指定秒数 |
+| 尖峰测试 | `python3 stress_test.py --spike` | 瞬间 200 并发冲击 |
+
+输出指标：RPS、延迟 (min/avg/P50/P95/P99/max/stdev)、成功率、状态码分布、性能拐点分析与容量建议。
 
 ---
 
@@ -250,13 +301,23 @@ spring.datasource.url=jdbc:postgresql://${PG_HOST:localhost}:5432/${PG_DATABASE:
 spring.datasource.username=${PG_USERNAME}
 spring.datasource.password=${PG_PASSWORD}
 
+# 数据库连接池 (HikariCP)
+spring.datasource.hikari.maximum-pool-size=100
+spring.datasource.hikari.minimum-idle=5
+
 # Redis
 spring.data.redis.host=${REDIS_HOST:localhost}
 spring.data.redis.password=${REDIS_PASSWORD}
+spring.redis.lettuce.pool.max-active=16
 
 # JWT
 jwt.secret=${TOKEN_SECRET}
 jwt.expiration=604800000
+
+# 安全策略
+password.min-length=8
+captcha.rate-limit-seconds=60
+captcha.max-email-length=254
 ```
 
 ---

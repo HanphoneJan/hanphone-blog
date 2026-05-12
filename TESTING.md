@@ -1,12 +1,14 @@
 # 测试文档
 
-本项目包含完整的测试套件，涵盖服务端单元测试和前端单元测试、E2E 测试。
+本项目包含完整的测试套件，涵盖服务端单元测试、安全回归测试、压力测试和前端单元测试、E2E 测试。
 
 ## 📁 测试结构
 
 ```
 hanphone-blog/
 ├── server/                          # Java Spring Boot 后端
+│   ├── test.py                      # 安全 & 功能回归测试 (39 用例)
+│   ├── stress_test.py               # 压力测试 (渐进式/固定/尖峰)
 │   └── src/test/java/com/example/blog/
 │       ├── BlogApplicationTests.java    # 应用上下文测试
 │       ├── util/                        # 工具类测试
@@ -48,6 +50,48 @@ mvn test -Dtest=BcryptUtilsTest
 # 生成测试报告
 mvn surefire-report:report
 ```
+
+### Server Python 安全回归测试
+
+针对已部署服务的黑盒测试，覆盖安全响应头、输入防御、并发、认证鉴权、XSS、密码策略、验证码限流、SQL 注入、CORS、HTTP 方法安全、评论功能、Actuator 端点等 12 个测试组。
+
+```bash
+cd server
+
+# 安装依赖
+pip install requests
+
+# 运行全量测试（默认目标 https://hanphone.cn/api）
+python3 test.py
+
+# 指定目标服务器
+python3 test.py --base-url http://localhost:8090/api
+
+# 跳过 T11 评论测试（CommentController 修复未部署时）
+python3 test.py --skip-t11
+```
+
+### Server 压力测试
+
+支持三种策略：渐进式加压 (ramp-up)、固定并发 (fixed)、尖峰冲击 (spike)。
+
+```bash
+cd server
+
+# 渐进式加压：从 1 并发逐步增加到 200，找到性能拐点（默认）
+python3 stress_test.py
+
+# 固定 50 并发，持续 60 秒
+python3 stress_test.py --concurrency 50 --duration 60
+
+# 尖峰测试：200 并发冲击 10 秒
+python3 stress_test.py --spike
+
+# 指定测试接口
+python3 stress_test.py --endpoints /blogs,/search
+```
+
+输出指标：RPS、延迟 (avg/P50/P95/P99/max/stdev)、成功率、状态码分布、性能拐点分析与建议。
 
 ### Web (Next.js) 测试
 

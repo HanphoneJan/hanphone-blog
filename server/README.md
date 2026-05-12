@@ -77,14 +77,26 @@ docker compose up -d
 ```
 server/
 ├── src/main/java/com/example/blog/
-│   ├── web/           # Controller 控制器
-│   ├── service/       # 业务逻辑
-│   ├── dao/           # 数据访问层
-│   ├── po/            # 实体类
-│   └── util/          # 工具类
+│   ├── config/         # 配置类 (Swagger, 定时任务, Jackson)
+│   ├── constants/      # 常量定义
+│   ├── dao/            # 数据访问层 (JPA Repository)
+│   ├── DTO/            # 数据传输对象
+│   ├── enums/          # 枚举类型
+│   ├── filter/         # 过滤器 (XSS, URL 长度校验)
+│   ├── handler/        # 全局异常处理
+│   ├── interceptor/    # 拦截器 (JWT Token)
+│   ├── po/             # 实体类
+│   ├── service/        # 业务逻辑层
+│   ├── util/           # 工具类
+│   ├── vo/             # 视图对象
+│   └── web/            # Controller 控制器 + admin/
 ├── src/main/resources/
 │   └── application.properties
+├── src/test/           # Java 单元测试 (JUnit 5)
+├── test.py             # 安全 & 功能回归测试 (Python)
+├── stress_test.py      # 压力测试 (Python)
 ├── docker-compose.yml
+├── Dockerfile
 └── pom.xml
 ```
 
