@@ -54,3 +54,5 @@ server/*.jar
 
 # Web specific
 web/.vercel
+
+__pycache__

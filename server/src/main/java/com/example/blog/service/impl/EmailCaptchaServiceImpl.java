@@ -27,8 +27,18 @@ public class EmailCaptchaServiceImpl implements EmailCaptchaService {
     @Value("${spring.mail.from-name}")
     private String fromName;
 
+    @Value("${captcha.rate-limit-seconds:60}")
+    private int captchaRateLimitSeconds;
+
+    @Value("${captcha.max-email-length:254}")
+    private int maxEmailLength;
+
     private static final int CAPTCHA_EXPIRE_MINUTES = 5;
     private static final int CAPTCHA_LENGTH = 6;
+
+    // 邮箱格式正则
+    private static final java.util.regex.Pattern EMAIL_PATTERN =
+            java.util.regex.Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     // 构造函数依赖校验
     public EmailCaptchaServiceImpl(JavaMailSender javaMailSender, RedisTemplate<String, String> redisTemplate) {
@@ -41,6 +51,28 @@ public class EmailCaptchaServiceImpl implements EmailCaptchaService {
         try {
             // 校验输入参数
             Objects.requireNonNull(email, "email must not be null");
+
+            // 校验邮箱长度
+            if (email.length() > maxEmailLength) {
+                log.warn("邮箱地址过长: " + email.length() + " chars");
+                return false;
+            }
+
+            // 校验邮箱格式
+            if (!EMAIL_PATTERN.matcher(email).matches()) {
+                log.warn("邮箱格式不合法: " + email);
+                return false;
+            }
+
+            // Rate Limiting：同一邮箱发送间隔校验
+            String rateKey = "captcha:rate:" + email;
+            Boolean canSend = redisTemplate.opsForValue()
+                    .setIfAbsent(rateKey, "1", captchaRateLimitSeconds, java.util.concurrent.TimeUnit.SECONDS);
+            if (!Boolean.TRUE.equals(canSend)) {
+                log.warn("验证码发送频率过快: " + email);
+                return false;
+            }
+
             // 校验配置参数
             Objects.requireNonNull(fromEmail, "fromEmail must not be null (check spring.mail.username config)");
             Objects.requireNonNull(fromName, "fromName must not be null (check spring.mail.from-name config)");

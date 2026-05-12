@@ -7,11 +7,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -21,17 +23,15 @@ public class ControllerExceptionHandler {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @ExceptionHandler(Exception.class)
-    private ModelAndView exceptionHandler(HttpServletRequest request, Exception e) throws Exception {
-//      记录异常信息
-//      存在指定状态则抛出异常
-        if (AnnotationUtils.findAnnotation(e.getClass(), ResponseStatus.class)!=null){
+    @ResponseBody
+    private ResponseEntity<Result<Void>> exceptionHandler(HttpServletRequest request, Exception e) throws Exception {
+        // 存在指定状态则抛出异常
+        if (AnnotationUtils.findAnnotation(e.getClass(), ResponseStatus.class) != null) {
             throw e;
         }
-        logger.error("Request URL : {}",request.getRequestURL(),e);
-        ModelAndView mv=new ModelAndView();
-        mv.addObject("url",request.getRequestURL());
-        mv.addObject("exception",e);
-        return mv;
+        logger.error("Request URL : {}", request.getRequestURL(), e);
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, "服务器内部错误", null);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
     }
 
     /**
@@ -67,5 +67,40 @@ public class ControllerExceptionHandler {
         logger.error("RuntimeException! Request URL: {}, Message: {}", request.getRequestURL(), e.getMessage(), e);
         Result<Void> result = new Result<>(false, StatusCode.ERROR, "服务器内部错误", null);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+    }
+
+    /**
+     * 处理 HTTP 方法不支持 — 405
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleMethodNotSupported(HttpServletRequest request,
+            HttpRequestMethodNotSupportedException e) {
+        logger.warn("Method not supported! URL: {}, Method: {}", request.getRequestURL(), request.getMethod());
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, "不支持的请求方法", null);
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(result);
+    }
+
+    /**
+     * 处理器未找到 — 404
+     */
+    @ExceptionHandler(NoHandlerFoundException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleNoHandlerFound(HttpServletRequest request, NoHandlerFoundException e) {
+        logger.warn("No handler found! URL: {}", request.getRequestURL());
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, "请求的资源不存在", null);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+    }
+
+    /**
+     * 静态资源未找到 — 404 (Spring Boot 3.x)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleNoResourceFound(HttpServletRequest request,
+            NoResourceFoundException e) {
+        logger.warn("No resource found! URL: {}", request.getRequestURL());
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, "请求的资源不存在", null);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
     }
 }

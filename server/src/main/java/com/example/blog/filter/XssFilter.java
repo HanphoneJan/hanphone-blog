@@ -32,6 +32,9 @@ public class XssFilter implements Filter {
         httpResponse.setHeader("X-Content-Type-Options", "nosniff");
         httpResponse.setHeader("X-XSS-Protection", "1; mode=block");
         httpResponse.setHeader("X-Frame-Options", "SAMEORIGIN");
+        httpResponse.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+        httpResponse.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+        httpResponse.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
         chain.doFilter(new XssHttpServletRequestWrapper(httpRequest), response);
     }

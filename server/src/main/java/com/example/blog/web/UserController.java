@@ -9,6 +9,7 @@ import com.example.blog.service.UserService;
 import com.example.blog.util.BcryptUtils;
 import com.example.blog.util.TokenUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,11 +18,19 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
+
 @RestController
 public class UserController {
 
     private final UserService userService;
     private final EmailCaptchaService emailCaptchaService;
+
+    @Value("${password.min-length:8}")
+    private int minPasswordLength;
+
+    // 密码至少包含字母和数字，最小长度由配置决定
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*\\d).+$");
 
     public UserController(UserService userService, EmailCaptchaService emailCaptchaService) {
         this.userService = userService;
@@ -61,6 +70,15 @@ public class UserController {
         }
         String username = u.getUsername().trim();
         String email = u.getEmail().trim();
+        String password = u.getPassword();
+
+        // 密码复杂度校验
+        if (password.length() < minPasswordLength) {
+            return new Result<>(false, StatusCode.ERROR, "密码长度不能少于" + minPasswordLength + "位", null);
+        }
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            return new Result<>(false, StatusCode.ERROR, "密码必须包含字母和数字", null);
+        }
 
         // 分别检查用户名和邮箱是否已被占用
         User existingUserByUsername = userService.findUserByUsername(username);
@@ -71,10 +89,11 @@ public class UserController {
             return new Result<>(false, StatusCode.ERROR, "邮箱已被绑定", null);
         }
 
-        String encryptPassword = BcryptUtils.encrypt(u.getPassword());
+        String encryptPassword = BcryptUtils.encrypt(password);
         u.setPassword(encryptPassword);
         u.setUsername(username);
         u.setEmail(email);
+        u.setType(UserType.NORMAL.getCode());
         User user = userService.save(u);
         userService.clearSensitiveFields(user);
         TokenUtil.TokenInfo tokenInfo = TokenUtil.sign(user);
@@ -92,6 +111,12 @@ public class UserController {
             String newPassword = para.get("newPassword");
             String captcha = para.get("captcha");
             String email = para.get("email");
+            if (newPassword == null || newPassword.length() < minPasswordLength) {
+                return new Result<>(false, StatusCode.ERROR, "密码长度不能少于" + minPasswordLength + "位", null);
+            }
+            if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
+                return new Result<>(false, StatusCode.ERROR, "密码必须包含字母和数字", null);
+            }
             if(emailCaptchaService.validateCaptcha(email,captcha)){
                 if(userService.resetPassword(newPassword,email)){
                     return new Result<>(true, StatusCode.OK, "重置密码成功", null);

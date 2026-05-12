@@ -53,24 +53,55 @@ public class CommentController {
 
     @PostMapping("/comments")
     public Result<Comment> post(@RequestBody Map<String, Object> para) {
-        String content = (String) para.get("content");
-        Long blogId = Long.parseLong(para.get("blogId").toString());
-        Long userId = Long.parseLong(para.get("userId").toString());
-        long parentId = Long.parseLong(para.get("parentId").toString());
-        User user = userService.findUserById(userId);
-        Comment comment = new Comment();
-        comment.setContent(content);
-        comment.setBlog(blogService.getBlog(blogId));
-        comment.setUserId(userId);
-        comment.setNickname(user.getNickname());
-        comment.setEmail(user.getEmail());
-        comment.setAvatar(user.getAvatar());
-        comment.setAdminComment(UserType.ADMIN.getCode().equals(user.getType()));
-        if (parentId != CommonConstants.DEFAULT_PARENT_ID) {
-            comment.setParentComment(commentService.getCommentById(parentId));
+        try {
+            String content = (String) para.get("content");
+            Long blogId = Long.parseLong(para.get("blogId").toString());
+
+            // 处理用户信息：优先用已登录用户的 userId，否则用请求中传入的
+            Long userId = para.get("userId") != null
+                    ? Long.parseLong(para.get("userId").toString())
+                    : null;
+
+            // parentId 可选，默认 -1 表示顶级评论
+            long parentId = para.get("parentId") != null
+                    ? Long.parseLong(para.get("parentId").toString())
+                    : CommonConstants.DEFAULT_PARENT_ID;
+
+            Comment comment = new Comment();
+            comment.setContent(content);
+            comment.setBlog(blogService.getBlog(blogId));
+
+            if (userId != null) {
+                User user = userService.findUserById(userId);
+                if (user != null) {
+                    comment.setUserId(userId);
+                    comment.setNickname(user.getNickname());
+                    comment.setEmail(user.getEmail());
+                    comment.setAvatar(user.getAvatar());
+                    comment.setAdminComment(UserType.ADMIN.getCode().equals(user.getType()));
+                }
+            } else {
+                // 未登录用户：从请求中获取昵称和邮箱
+                String nickname = para.get("nickname") != null ? para.get("nickname").toString().trim() : "";
+                String email = para.get("email") != null ? para.get("email").toString().trim() : "";
+                if (nickname.isEmpty() || email.isEmpty()) {
+                    return new Result<>(false, StatusCode.ERROR, "昵称和邮箱不能为空", null);
+                }
+                comment.setNickname(nickname);
+                comment.setEmail(email);
+                comment.setAvatar((String) para.getOrDefault("avatar", ""));
+            }
+
+            if (parentId != CommonConstants.DEFAULT_PARENT_ID) {
+                comment.setParentComment(commentService.getCommentById(parentId));
+            }
+            Comment newComment = commentService.saveComment(comment);
+            return new Result<>(true, StatusCode.OK, "评论发表成功！", newComment);
+        } catch (NumberFormatException e) {
+            return new Result<>(false, StatusCode.ERROR, "参数格式错误", null);
+        } catch (Exception e) {
+            return new Result<>(false, StatusCode.ERROR, "评论发表失败", null);
         }
-        Comment newComment = commentService.saveComment(comment);
-        return new Result<>(true, StatusCode.OK, "评论发表成功！", newComment);
     }
 
     //删除评论
