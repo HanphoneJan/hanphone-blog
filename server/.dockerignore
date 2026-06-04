@@ -1,0 +1,47 @@
+# 编译输出
+target/
+*.jar
+*.war
+
+# IDE 相关
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# 日志文件
+logs/
+*.log
+
+# 环境变量文件
+.env
+.env.local
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Git 相关
+.git/
+.gitignore
+.gitattributes
+
+# 文档
+README.md
+LICENSE
+*.md
+
+# Docker 相关
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# 其他
+node_modules/

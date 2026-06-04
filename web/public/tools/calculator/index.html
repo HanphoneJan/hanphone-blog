@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone风格计算器</title>
+    <meta name="description" content="仿 iPhone 风格的网页计算器，支持四则运算、百分比、小数，精准浮点处理，响应式设计。">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            background-color: #f5f5f7;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        /* 添加外层容器 */
+        .container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 320px;
+            background-color: #000;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .display-container {
+            height: 140px;
+            padding: 0 20px;
+            margin-bottom: 10px;
+            color: white;
+            overflow: hidden;
+        }
+
+        .display-history {
+            height: 40px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            font-size: 20px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .display {
+            height: 100px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            font-size: 60px;
+            font-weight: 300;
+            text-align: right;
+            overflow: hidden;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 10px;
+        }
+
+        .button {
+            border: none;
+            border-radius: 50%;
+            width: 100%;
+            aspect-ratio: 1/1;
+            font-size: 28px;
+            font-weight: 400;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.1s ease;
+        }
+
+        .button.number, .button.decimal {
+            background-color: #333;
+            color: white;
+        }
+
+        .button.number:active, .button.decimal:active {
+            background-color: #4d4d4d;
+        }
+
+        .button.function {
+            background-color: #a5a5a5;
+            color: black;
+        }
+
+        .button.function:active {
+            background-color: #bdbdbd;
+        }
+
+        .button.operator {
+            background-color: #f1a33c;
+            color: white;
+        }
+
+        .button.operator:active, .button.equals:active {
+            background-color: #f8c482;
+        }
+
+        .button.equals {
+            background-color: #f1a33c;
+            color: white;
+        }
+
+        .button.zero {
+            grid-column: span 2;
+            border-radius: 35px;
+            text-align: left;
+            padding-left: 28px;
+            aspect-ratio: unset;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 350px) {
+            .calculator {
+                padding: 15px;
+                border-radius: 20px;
+            }
+            
+            .display-container {
+                padding: 0 15px;
+                height: 120px;
+            }
+            
+            .display {
+                font-size: 50px;
+                height: 80px;
+            }
+            
+            .display-history {
+                font-size: 18px;
+                height: 35px;
+            }
+            
+            .button {
+                font-size: 24px;
+            }
+            
+            .button.zero {
+                padding-left: 24px;
+            }
+        }
+
+        @media (max-width: 300px) {
+            .calculator {
+                padding: 12px;
+                border-radius: 16px;
+            }
+            
+            .display-container {
+                padding: 0 12px;
+                height: 100px;
+            }
+            
+            .display {
+                font-size: 40px;
+                height: 60px;
+            }
+            
+            .display-history {
+                font-size: 16px;
+                height: 30px;
+            }
+            
+            .button {
+                font-size: 20px;
+            }
+            
+            .button.zero {
+                padding-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="calculator">
+            <div class="display-container">
+                <div class="display-history" id="displayHistory"></div>
+                <div class="display" id="display">0</div>
+            </div>
+            <div class="buttons-grid">
+                <button class="button function" data-action="clear">AC</button>
+                <button class="button function" data-action="sign">±</button>
+                <button class="button function" data-action="percent">%</button>
+                <button class="button operator" data-operator="÷">÷</button>
+
+                <button class="button number" data-number="7">7</button>
+                <button class="button number" data-number="8">8</button>
+                <button class="button number" data-number="9">9</button>
+                <button class="button operator" data-operator="×">×</button>
+
+                <button class="button number" data-number="4">4</button>
+                <button class="button number" data-number="5">5</button>
+                <button class="button number" data-number="6">6</button>
+                <button class="button operator" data-operator="-">−</button>
+
+                <button class="button number" data-number="1">1</button>
+                <button class="button number" data-number="2">2</button>
+                <button class="button number" data-number="3">3</button>
+                <button class="button operator" data-operator="+">+</button>
+
+                <button class="button number zero" data-number="0">0</button>
+                <button class="button decimal" data-decimal>.</button>
+                <button class="button equals" data-equals>=</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const display = document.getElementById('display');
+            const displayHistory = document.getElementById('displayHistory');
+            let currentInput = '0';
+            let previousInput = '';
+            let operator = null;
+            let shouldResetDisplay = false;
+            const MAX_DIGITS = 9; // 最大显示位数
+
+            // 更新显示内容，包括历史记录和当前值
+            function updateDisplay() {
+                // 更新当前值显示
+                let displayText = currentInput;
+                
+                // 处理整数显示（移除末尾的.0）
+                if (displayText.includes('.') && displayText.endsWith('.0')) {
+                    displayText = displayText.slice(0, -2);
+                }
+
+                // 处理科学计数法显示逻辑
+                const num = parseFloat(displayText);
+                if (!isNaN(num)) {
+                    // 大数字自动转换为科学计数法
+                    if (Math.abs(num) > 1e12 || (Math.abs(num) < 1e-6 && num !== 0)) {
+                        displayText = num.toExponential(6);
+                    } else {
+                        // 限制小数位数，避免过长
+                        const parts = displayText.split('.');
+                        if (parts.length > 1 && parts[1].length > MAX_DIGITS) {
+                            // 四舍五入处理
+                            displayText = num.toFixed(MAX_DIGITS).replace(/0+$/, '').replace(/\.$/, '');
+                        }
+                    }
+                }
+
+                // 限制显示长度
+                if (displayText.length > 12) {
+                    displayText = displayText.substring(0, 12) + '...';
+                }
+
+                display.textContent = displayText;
+
+                // 更新历史记录显示（包含运算符）
+                if (previousInput && operator) {
+                    let prevText = previousInput;
+                    // 格式化历史记录中的数字
+                    const prevNum = parseFloat(prevText);
+                    if (!isNaN(prevNum) && prevText.includes('.') && prevText.endsWith('.0')) {
+                        prevText = prevText.slice(0, -2);
+                    }
+                    displayHistory.textContent = `${prevText} ${operator}`;
+                } else {
+                    displayHistory.textContent = '';
+                }
+            }
+
+            // 数字输入处理
+            function inputNumber(number) {
+                if (currentInput === '0' || shouldResetDisplay) {
+                    currentInput = number;
+                    shouldResetDisplay = false;
+                } else {
+                    // 检查当前输入长度，防止溢出
+                    const parts = currentInput.split('.');
+                    const digitCount = parts[0].length + (parts[1]?.length || 0);
+                    
+                    if (digitCount < MAX_DIGITS) {
+                        currentInput += number;
+                    }
+                }
+            }
+
+            // 小数点输入处理
+            function inputDecimal() {
+                if (shouldResetDisplay) {
+                    currentInput = '0.';
+                    shouldResetDisplay = false;
+                    return;
+                }
+                if (!currentInput.includes('.')) {
+                    currentInput += '.';
+                }
+            }
+
+            // 运算符处理
+            function handleOperator(nextOperator) {
+                // 如果已有运算符且未重置显示，先计算结果
+                if (operator && !shouldResetDisplay) {
+                    calculate();
+                }
+                
+                // 保存当前值和新运算符
+                previousInput = currentInput;
+                operator = nextOperator;
+                shouldResetDisplay = true;
+            }
+
+            // 计算逻辑
+            function calculate() {
+                if (!operator || shouldResetDisplay) return;
+
+                const prev = parseFloat(previousInput);
+                const current = parseFloat(currentInput);
+                if (isNaN(prev) || isNaN(current)) return;
+
+                let result;
+                switch (operator) {
+                    case '+':
+                        result = add(prev, current);
+                        break;
+                    case '−':
+                        result = subtract(prev, current);
+                        break;
+                    case '×':
+                        result = multiply(prev, current);
+                        break;
+                    case '÷':
+                        if (current === 0) {
+                            showError("除数不能为零");
+                            return;
+                        }
+                        result = divide(prev, current);
+                        break;
+                    default:
+                        return;
+                }
+
+                // 处理计算结果
+                currentInput = formatNumber(result);
+                previousInput = ''; // 计算后清空历史记录
+                operator = null;
+                shouldResetDisplay = true;
+            }
+
+            // 精确加法
+            function add(a, b) {
+                return Number((a + b).toPrecision(12));
+            }
+
+            // 精确减法
+            function subtract(a, b) {
+                return Number((a - b).toPrecision(12));
+            }
+
+            // 精确乘法
+            function multiply(a, b) {
+                return Number((a * b).toPrecision(12));
+            }
+
+            // 精确除法
+            function divide(a, b) {
+                return Number((a / b).toPrecision(12));
+            }
+
+            // 格式化数字，移除不必要的小数位
+            function formatNumber(num) {
+                if (Number.isInteger(num)) {
+                    return num.toString();
+                }
+                // 保留最多9位小数
+                return num.toFixed(9).replace(/0+$/, '').replace(/\.$/, '');
+            }
+
+            // 显示错误信息
+            function showError(message) {
+                display.textContent = "错误";
+                displayHistory.textContent = "";
+                setTimeout(() => {
+                    clearAll();
+                    updateDisplay();
+                }, 1000);
+            }
+
+            // 清空所有数据
+            function clearAll() {
+                currentInput = '0';
+                previousInput = '';
+                operator = null;
+                shouldResetDisplay = false;
+            }
+
+            // 正负号切换
+            function toggleSign() {
+                if (currentInput === '0') return;
+                
+                currentInput = currentInput.charAt(0) === '-' 
+                    ? currentInput.slice(1) 
+                    : '-' + currentInput;
+            }
+
+            // 百分比计算
+            function calculatePercentage() {
+                const value = parseFloat(currentInput);
+                if (!isNaN(value)) {
+                    const percentValue = value / 100;
+                    currentInput = formatNumber(percentValue);
+                    shouldResetDisplay = false;
+                }
+            }
+
+            // 事件委托处理
+            document.querySelector('.buttons-grid').addEventListener('click', (event) => {
+                const { target } = event;
+                if (!target.classList.contains('button')) return;
+
+                if (target.dataset.number !== undefined) {
+                    inputNumber(target.dataset.number);
+                } else if (target.dataset.decimal !== undefined) {
+                    inputDecimal();
+                } else if (target.dataset.operator !== undefined) {
+                    handleOperator(target.dataset.operator);
+                } else if (target.dataset.equals !== undefined) {
+                    calculate();
+                } else if (target.dataset.action === 'clear') {
+                    clearAll();
+                } else if (target.dataset.action === 'sign') {
+                    toggleSign();
+                } else if (target.dataset.action === 'percent') {
+                    calculatePercentage();
+                }
+
+                updateDisplay();
+            });
+
+            updateDisplay();
+        });
+    </script>
+
+</body>
+</html>

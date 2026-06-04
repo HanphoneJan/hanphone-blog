@@ -1,0 +1,657 @@
+<!doctype html>
+<HTML>
+
+<HEAD>
+  <meta charset="UTF-8" />
+  <title>Hanphone's Lottery</title>
+  <meta name="description" content="This is Hanphone's personal Congratulation.Happy New Year!">
+  <meta name="keywords" content="Hanphone blog Congratulation Happy New Year!">
+  <link rel="shortcut icon" href="../../main/images/logo.ico" type="img/x-icon">
+  <!-- 新增viewport元标签，优化移动端显示 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="../../shared/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'electric-blue': '#00D9FF',
+            'deep-purple': '#6C5CE7',
+            'neon-pink': '#FF10F0',
+            'diamond': '#B9F2FF',
+            'gold': '#FFD700',
+            'silver': '#C0C0C0',
+            'bronze': '#CD7F32',
+            'success': '#00E676',
+            'warning': '#FF9500',
+            'error': '#FF1744',
+            'bg-dark': '#0F2027',
+            'bg-deeper': '#1a1a2e',
+            'bg-purple': '#2D1B69'
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+            notoSans: ['"Noto Sans SC"', 'sans-serif']
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'shine': 'shine 2s ease-in-out infinite',
+            'spin-slow': 'spin 8s linear infinite'
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' }
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 5px rgba(0, 217, 255, 0.5)' },
+              '100%': { boxShadow: '0 0 20px rgba(0, 217, 255, 0.8), 0 0 30px rgba(108, 92, 231, 0.6)' }
+            },
+            shine: {
+              '0%': { backgroundPosition: '-100px' },
+              '100%': { backgroundPosition: '200px' }
+            }
+          },
+          backgroundImage: {
+            'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+            'shine-effect': 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .text-shadow {
+        text-shadow: 0 0 10px currentColor;
+      }
+      .text-shadow-glow {
+        text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .neumorph {
+        box-shadow: 9px 9px 18px rgba(0, 0, 0, 0.2), 
+                   -9px -9px 18px rgba(255, 255, 255, 0.05);
+      }
+      .neumorph-inset {
+        box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.2), 
+                   inset -5px -5px 10px rgba(255, 255, 255, 0.05);
+      }
+      .cyber-border {
+        position: relative;
+      }
+      .cyber-border::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 2px solid #00D9FF;
+        animation: borderPulse 3s infinite;
+        pointer-events: none;
+      }
+      .prize-diamond {
+        background: linear-gradient(135deg, #B9F2FF 0%, #80DEEA 100%);
+        box-shadow: 0 0 15px #B9F2FF, 0 0 30px rgba(185, 242, 255, 0.5);
+      }
+      .prize-gold {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        box-shadow: 0 0 15px #FFD700, 0 0 30px rgba(255, 215, 0, 0.5);
+      }
+      .prize-silver {
+        background: linear-gradient(135deg, #C0C0C0 0%, #E0E0E0 100%);
+        box-shadow: 0 0 15px #C0C0C0, 0 0 30px rgba(192, 192, 192, 0.5);
+      }
+      .prize-bronze {
+        background: linear-gradient(135deg, #CD7F32 0%, #DAA520 100%);
+        box-shadow: 0 0 15px #CD7F32, 0 0 30px rgba(205, 127, 50, 0.5);
+      }
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .firework {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .countdown {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 30px;
+        height: 30px;
+        background-color: #FF1744;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        animation: pulse 1s infinite;
+      }
+      /* 移动端按钮触控优化 */
+      .touch-friendly {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+      }
+    }
+    
+    @keyframes borderPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; box-shadow: 0 0 20px rgba(0, 217, 255, 0.8); }
+    }
+    
+    @keyframes celebrateEntry {
+      0% { transform: scale(0) rotate(0deg); opacity: 0; }
+      70% { transform: scale(1.1) rotate(10deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    
+    @keyframes floatUp {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(-100vh); opacity: 0; }
+    }
+    
+    @keyframes explode {
+      0% { transform: scale(0); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+    
+    @keyframes confetti {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+  </style>
+
+  <!-- 引入字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+SC:wght@400;700;900&display=swap"
+    rel="stylesheet">
+
+  <SCRIPT LANGUAGE="JavaScript">
+    // 奖池数据
+    let punish = ["给你拍一张丑照", "给我拍一张美照", "运动半小时"];
+    let hPrize = ["一个电子产品", "k歌一小时", "自选外卖餐", "说一段情话", "吃KFC或M记",
+      "送一本书", "画一幅画", "请吃甜品", "送你一个生活小用品", "饮料自选",
+      "帮写半小时作业", "送一件衣服", "送一个搞怪礼物", "鲜花", "送一个周边", "请看一次电影"];
+    let yPrize = ["请吃寿司", "自选外卖餐", "自选一个周边", "请吃炸鸡", "送本书给你",
+      "送你一个随机礼物", "给写一首诗", "请吃蛋糕", "自选盲盒", "送一个生活小用品",
+      "请吃一个冰淇淋", "饮料自选", "帮写半小时作业", "送一件衣服", "送一个搞怪礼物",
+      "鲜花", "随机盲盒", "送一个周边", "请看一次电影"];
+    let wishes = [];
+
+    // 状态变量
+    let currentName;
+    let index = -1;
+    let time;
+    let isCelebrating = false;
+    let autoStopTimer = null; // 用于存储自动结束的计时器
+
+    // 添加心愿
+    function addWish() {
+      const wishInput = document.getElementById('wishInput');
+      const wishText = wishInput.value.trim();
+      if (wishText) {
+        wishes.push(wishText);
+        wishInput.value = '';
+
+        // 显示成功提示
+        showNotification('心愿添加成功！', 'success');
+      }
+    }
+
+    // 抽签通用函数
+    function startDraw(prizePool, resultId, btnId) {
+      if (isCelebrating) return;
+
+      // 清除之前的自动结束计时器
+      if (autoStopTimer) {
+        clearTimeout(autoStopTimer);
+        autoStopTimer = null;
+      }
+
+      const btnElement = document.getElementById(btnId);
+      btnElement.disabled = true;
+
+      // 创建倒计时元素
+      createCountdown(btnElement);
+
+      // 开始抽奖
+      draw(prizePool, resultId);
+
+      // 设置5秒后自动结束
+      autoStopTimer = setTimeout(() => {
+        stopDraw(btnId, prizePool, resultId);
+        autoStopTimer = null;
+      }, 2000);
+    }
+
+    // 创建倒计时显示
+    function createCountdown(buttonElement) {
+      // 移除已有的倒计时元素
+      const existingCountdown = buttonElement.parentNode.querySelector('.countdown');
+      if (existingCountdown) {
+        existingCountdown.remove();
+      }
+
+      // 创建新的倒计时元素
+      const countdown = document.createElement('div');
+      countdown.className = 'countdown';
+      countdown.textContent = '2';
+      buttonElement.parentNode.style.position = 'relative';
+      buttonElement.parentNode.appendChild(countdown);
+
+      // 更新倒计时
+      let seconds = 1;
+      const countdownInterval = setInterval(() => {
+        if (seconds > 0) {
+          countdown.textContent = seconds;
+          seconds--;
+        } else {
+          clearInterval(countdownInterval);
+          if (countdown.parentNode) {
+            countdown.remove();
+          }
+        }
+      }, 1000);
+    }
+
+    function draw(prizePool, resultId) {
+      if (prizePool.length > 0) {
+        index = Math.floor(Math.random() * prizePool.length);
+        currentName = prizePool[index];
+        document.getElementById(resultId).innerHTML = currentName;
+        time = window.setTimeout(() => draw(prizePool, resultId), 50);
+      } else {
+        document.getElementById(resultId).innerHTML = "~结束~";
+      }
+    }
+
+    function stopDraw(btnId, prizePool, resultId) {
+      if (isCelebrating) return;
+
+      // 清除自动结束计时器
+      if (autoStopTimer) {
+        clearTimeout(autoStopTimer);
+        autoStopTimer = null;
+      }
+
+      // 清除倒计时显示
+      const btnElement = document.getElementById(btnId);
+      const countdown = btnElement.parentNode.querySelector('.countdown');
+      if (countdown) {
+        countdown.remove();
+      }
+
+      window.clearTimeout(time);
+      document.getElementById(btnId).disabled = false;
+
+      // 如果还有奖品，触发庆祝效果
+      if (prizePool.length > 0) {
+        setTimeout(() => {
+          triggerCelebration(currentName, resultId);
+        }, 500);
+      }
+    }
+
+    // 庆祝效果 - 优化移动端显示
+    function triggerCelebration(prize, resultId) {
+      isCelebrating = true;
+
+      // 创建庆祝遮罩 - 优化移动端内边距
+      const celebration = document.createElement('div');
+      celebration.id = 'celebration';
+      celebration.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-bg-purple/80 to-bg-deeper/80 backdrop-blur-sm p-4';
+      celebration.innerHTML = `
+        <div class="absolute inset-0" id="particles-container"></div>
+        <div class="relative text-center p-6 sm:p-8 rounded-2xl glass neumorph max-w-md w-full mx-auto transform animate-[celebrateEntry_0.8s_ease-out]">
+          <h2 class="text-[clamp(1.8rem,8vw,3.5rem)] font-bold text-electric-blue text-shadow-glow mb-4">🎉 恭喜中奖！</h2>
+          <p class="text-[clamp(1rem,4vw,1.8rem)] text-white mb-6">✨ 好运降临的美妙时刻 ✨</p>
+          
+          <div class="my-6 sm:my-8 p-4 sm:p-6 rounded-xl prize-gold text-black font-bold text-[clamp(1.2rem,6vw,2.5rem)] animate-float overflow-auto max-h-32">
+            ${prize}
+          </div>
+          
+          <div class="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
+            <button id="replayBtn" class="px-5 py-3 sm:px-6 sm:py-3 bg-deep-purple hover:bg-deep-purple/80 text-white rounded-full font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+              <i class="fa fa-refresh mr-2"></i>再看一次
+            </button>
+            <button id="closeBtn" class="px-5 py-3 sm:px-6 sm:py-3 bg-electric-blue hover:bg-electric-blue/80 text-black rounded-full font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+              <i class="fa fa-times mr-2"></i>关闭
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(celebration);
+
+      // 触发粒子效果
+      createParticles();
+      createFireworks();
+      createConfetti();
+
+      // 移动端震动
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+
+      // 按钮事件
+      document.getElementById('closeBtn').addEventListener('click', () => {
+        document.getElementById('celebration').remove();
+        isCelebrating = false;
+      });
+
+      document.getElementById('replayBtn').addEventListener('click', () => {
+        const particlesContainer = document.getElementById('particles-container');
+        particlesContainer.innerHTML = '';
+        createParticles();
+        createFireworks();
+        createConfetti();
+      });
+    }
+
+    // 粒子效果
+    function createParticles() {
+      const container = document.getElementById('particles-container');
+      const particleCount = window.innerWidth < 640 ? 50 : 100; // 移动端减少粒子数量
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+
+        // 随机属性
+        const size = Math.random() * 5 + 1;
+        const color = i % 3 === 0 ? '#00D9FF' : i % 3 === 1 ? '#6C5CE7' : '#FF10F0';
+        const left = Math.random() * 100;
+        const top = Math.random() * 100;
+        const duration = Math.random() * 10 + 5;
+        const delay = Math.random() * 5;
+
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.backgroundColor = color;
+        particle.style.left = `${left}%`;
+        particle.style.top = `${top}%`;
+        particle.style.animation = `floatUp ${duration}s ease-in ${delay}s forwards`;
+
+        container.appendChild(particle);
+      }
+    }
+
+    // 烟花效果
+    function createFireworks() {
+      const container = document.getElementById('particles-container');
+      const fireworkCount = window.innerWidth < 640 ? 3 : 5; // 移动端减少烟花数量
+
+      for (let i = 0; i < fireworkCount; i++) {
+        setTimeout(() => {
+          const firework = document.createElement('div');
+          firework.className = 'firework';
+
+          // 随机属性
+          const size = Math.random() * 150 + 50;
+          const color = i % 3 === 0 ? '#00D9FF' : i % 3 === 1 ? '#6C5CE7' : '#FF10F0';
+          const left = Math.random() * 80 + 10;
+          const top = Math.random() * 60 + 20;
+
+          firework.style.width = `${size}px`;
+          firework.style.height = `${size}px`;
+          firework.style.backgroundColor = color;
+          firework.style.left = `${left}%`;
+          firework.style.top = `${top}%`;
+          firework.style.transform = 'translate(-50%, -50%)';
+          firework.style.opacity = '0.6';
+          firework.style.animation = 'explode 1s ease-out forwards';
+
+          container.appendChild(firework);
+
+          // 自动移除
+          setTimeout(() => firework.remove(), 1000);
+        }, i * 1000);
+      }
+    }
+
+    // 彩带效果
+    function createConfetti() {
+      const container = document.getElementById('particles-container');
+      const confettiCount = window.innerWidth < 640 ? 40 : 80; // 移动端减少彩带数量
+      const colors = ['#00D9FF', '#6C5CE7', '#FF10F0', '#00E676', '#FF9500', '#FF1744', '#B9F2FF', '#FFD700'];
+
+      for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'particle';
+
+        // 随机属性
+        const size = Math.random() * 10 + 5;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const left = Math.random() * 100;
+        const rotation = Math.random() * 360;
+        const duration = Math.random() * 8 + 5;
+        const delay = Math.random() * 5;
+        const isCircle = Math.random() > 0.5;
+
+        confetti.style.width = isCircle ? `${size}px` : `${size * 3}px`;
+        confetti.style.height = `${size}px`;
+        confetti.style.backgroundColor = color;
+        confetti.style.left = `${left}%`;
+        confetti.style.top = `-${size}px`;
+        confetti.style.transform = `rotate(${rotation}deg)`;
+        confetti.style.borderRadius = isCircle ? '50%' : '2px';
+        confetti.style.animation = `confetti ${duration}s linear ${delay}s forwards`;
+
+        container.appendChild(confetti);
+      }
+    }
+
+    // 通知提示 - 优化移动端显示
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      // 移动端调整通知大小和位置
+      notification.className = `fixed top-4 right-4 left-4 sm:left-auto sm:max-w-xs px-4 py-3 rounded-lg font-bold z-40 transform transition-all duration-300 translate-x-full`;
+
+      // 设置样式
+      switch (type) {
+        case 'success':
+          notification.classList.add('bg-success', 'text-black');
+          notification.innerHTML = `<i class="fa fa-check-circle mr-2"></i>${message}`;
+          break;
+        case 'warning':
+          notification.classList.add('bg-warning', 'text-black');
+          notification.innerHTML = `<i class="fa fa-exclamation-triangle mr-2"></i>${message}`;
+          break;
+        case 'error':
+          notification.classList.add('bg-error', 'text-white');
+          notification.innerHTML = `<i class="fa fa-times-circle mr-2"></i>${message}`;
+          break;
+        default:
+          notification.classList.add('bg-electric-blue', 'text-black');
+          notification.innerHTML = `<i class="fa fa-info-circle mr-2"></i>${message}`;
+      }
+
+      document.body.appendChild(notification);
+
+      // 显示通知
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+        notification.classList.add('translate-x-0');
+      }, 10);
+
+      // 自动关闭
+      setTimeout(() => {
+        notification.classList.remove('translate-x-0');
+        notification.classList.add('translate-x-full');
+
+        setTimeout(() => {
+          notification.remove();
+        }, 300);
+      }, 3000);
+    }
+
+    // 创建背景星空 - 移动端减少星星数量
+    function createStars() {
+      const starsContainer = document.getElementById('stars');
+      const starCount = window.innerWidth < 640 ? 100 : 200;
+
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        const size = Math.random() * 2 + 1;
+        const opacity = Math.random() * 0.8 + 0.2;
+        const left = Math.random() * 100;
+        const top = Math.random() * 100;
+        const delay = Math.random() * 5;
+
+        star.className = 'absolute rounded-full bg-white animate-pulse-slow';
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.opacity = opacity;
+        star.style.left = `${left}%`;
+        star.style.top = `${top}%`;
+        star.style.animationDelay = `${delay}s`;
+
+        starsContainer.appendChild(star);
+      }
+    }
+
+    // 页面加载完成后初始化
+    window.onload = function () {
+      createStars();
+      showNotification('欢迎来到幸运抽奖，好运即将降临！', 'success');
+    };
+  </SCRIPT>
+</HEAD>
+
+<body
+  class="font-notoSans bg-gradient-to-br from-bg-purple via-bg-dark to-bg-deeper min-h-screen text-white overflow-x-hidden">
+  <!-- 背景星空 -->
+  <div id="stars" class="fixed inset-0 z-0"></div>
+
+  <!-- 页面标题 - 优化移动端字体大小和内边距 -->
+  <header class="relative z-10 text-center py-6 sm:py-10 px-4">
+    <h1
+      class="text-[clamp(2rem,8vw,4rem)] font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-electric-blue via-deep-purple to-neon-pink animate-glow">
+      幸运抽签系统
+    </h1>
+    <p class="mt-3 sm:mt-4 text-[clamp(0.9rem,3vw,1.2rem)] text-gray-300 max-w-2xl mx-auto">
+      ✨ 输入参与者信息，让幸运女神眷顾每一个人 ✨
+    </p>
+  </header>
+
+  <!-- 心愿输入区 - 优化移动端布局 -->
+  <div class="relative z-10 max-w-3xl mx-auto px-4 mb-6 sm:mb-10">
+    <div class="glass neumorph rounded-2xl p-4 sm:p-6 cyber-border">
+      <h3 class="text-lg sm:text-xl font-bold text-electric-blue mb-3 sm:mb-4">添加心愿</h3>
+      <div class="flex flex-col gap-3 sm:gap-4">
+        <input type="text" id="wishInput" placeholder="输入你的心愿..."
+          class="flex-1 px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-transparent neumorph-inset focus:outline-none focus:ring-2 focus:ring-electric-blue text-white text-base sm:text-lg">
+        <button onclick="addWish()"
+          class="px-5 sm:px-6 py-3 sm:py-4 bg-electric-blue hover:bg-electric-blue/80 text-black rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow whitespace-nowrap touch-friendly">
+          <i class="fa fa-plus-circle mr-2"></i>添加心愿
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 抽签区域 - 优化移动端网格布局和内边距 -->
+  <main class="relative z-10 max-w-6xl mx-auto px-4 pb-10 sm:pb-20">
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-8">
+      <!-- 晴樨的奖池 -->
+      <div
+        class="glass neumorph rounded-2xl p-4 sm:p-6 transform transition-all duration-500 hover:scale-[1.02] hover:shadow-lg hover:shadow-electric-blue/10 cyber-border">
+        <h3 class="text-lg sm:text-xl font-bold text-electric-blue mb-3 sm:mb-4 flex items-center">
+          <i class="fa fa-gift mr-2"></i>晴樨的奖池
+        </h3>
+        <div id="result1"
+          class="h-28 sm:h-32 flex items-center justify-center rounded-xl neumorph-inset my-4 sm:my-6 text-[clamp(1.2rem,5vw,2.5rem)] font-bold text-white text-shadow overflow-auto px-2">
+          ^_^
+        </div>
+        <div class="flex gap-3 sm:gap-4 justify-center">
+          <input type="button" value="开始" id="btnBegin1" onclick="startDraw(yPrize, 'result1', 'btnBegin1')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-deep-purple hover:bg-deep-purple/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+          <input type="button" value="结束" id="btnEnd1" onclick="stopDraw('btnBegin1', yPrize, 'result1')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-neon-pink hover:bg-neon-pink/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+        </div>
+      </div>
+
+      <!-- 北泽的奖池 -->
+      <div
+        class="glass neumorph rounded-2xl p-4 sm:p-6 transform transition-all duration-500 hover:scale-[1.02] hover:shadow-lg hover:shadow-electric-blue/10 cyber-border">
+        <h3 class="text-lg sm:text-xl font-bold text-electric-blue mb-3 sm:mb-4 flex items-center">
+          <i class="fa fa-trophy mr-2"></i>北泽的奖池
+        </h3>
+        <div id="result2"
+          class="h-28 sm:h-32 flex items-center justify-center rounded-xl neumorph-inset my-4 sm:my-6 text-[clamp(1.2rem,5vw,2.5rem)] font-bold text-white text-shadow overflow-auto px-2">
+          ^_^
+        </div>
+        <div class="flex gap-3 sm:gap-4 justify-center">
+          <input type="button" value="开始" id="btnBegin2" onclick="startDraw(hPrize, 'result2', 'btnBegin2')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-deep-purple hover:bg-deep-purple/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+          <input type="button" value="结束" id="btnEnd2" onclick="stopDraw('btnBegin2', hPrize, 'result2')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-neon-pink hover:bg-neon-pink/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+        </div>
+      </div>
+
+      <!-- 惩罚池 -->
+      <div
+        class="glass neumorph rounded-2xl p-4 sm:p-6 transform transition-all duration-500 hover:scale-[1.02] hover:shadow-lg hover:shadow-electric-blue/10 cyber-border">
+        <h3 class="text-lg sm:text-xl font-bold text-electric-blue mb-3 sm:mb-4 flex items-center">
+          <i class="fa fa-bolt mr-2"></i>惩罚池
+        </h3>
+        <div id="result3"
+          class="h-28 sm:h-32 flex items-center justify-center rounded-xl neumorph-inset my-4 sm:my-6 text-[clamp(1.2rem,5vw,2.5rem)] font-bold text-white text-shadow overflow-auto px-2">
+          ^_^
+        </div>
+        <div class="flex gap-3 sm:gap-4 justify-center">
+          <input type="button" value="开始" id="btnBegin3" onclick="startDraw(punish, 'result3', 'btnBegin3')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-deep-purple hover:bg-deep-purple/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+          <input type="button" value="结束" id="btnEnd3" onclick="stopDraw('btnBegin3', punish, 'result3')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-neon-pink hover:bg-neon-pink/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+        </div>
+      </div>
+
+      <!-- 心愿池 -->
+      <div
+        class="glass neumorph rounded-2xl p-4 sm:p-6 transform transition-all duration-500 hover:scale-[1.02] hover:shadow-lg hover:shadow-electric-blue/10 cyber-border">
+        <h3 class="text-lg sm:text-xl font-bold text-electric-blue mb-3 sm:mb-4 flex items-center">
+          <i class="fa fa-heart mr-2"></i>心愿池
+        </h3>
+        <div id="result4"
+          class="h-28 sm:h-32 flex items-center justify-center rounded-xl neumorph-inset my-4 sm:my-6 text-[clamp(1.2rem,5vw,2.5rem)] font-bold text-white text-shadow overflow-auto px-2">
+          ^_^
+        </div>
+        <div class="flex gap-3 sm:gap-4 justify-center">
+          <input type="button" value="开始" id="btnBegin4" onclick="startDraw(wishes, 'result4', 'btnBegin4')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-deep-purple hover:bg-deep-purple/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+          <input type="button" value="结束" id="btnEnd4" onclick="stopDraw('btnBegin4', wishes, 'result4')"
+            class="px-5 sm:px-8 py-3 sm:py-4 bg-neon-pink hover:bg-neon-pink/80 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:animate-glow touch-friendly">
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="relative z-10 text-center py-4 sm:py-6 text-gray-400 px-4">
+    <p class="text-sm sm:text-base animate-pulse-slow">幸运抽奖 © 2025 ❤️ 祝您好运 ⭐</p>
+  </footer>
+</body>
+
+</HTML>

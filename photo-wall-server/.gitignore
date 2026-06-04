@@ -1,0 +1,27 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs
+*.log
+*.pid
+*.pid.lock
+
+# Environment files
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Dependencies and build output
+node_modules/
+coverage/
+dist/
+.nyc_output/
+
+# Runtime temp directories
+nodejs/tmp/*
+!nodejs/tmp/.gitkeep
+php/tmp/*
+!php/tmp/.gitkeep

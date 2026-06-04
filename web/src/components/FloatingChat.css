@@ -1,0 +1,39 @@
+/* FloatingChat 触发按钮重置 - 避免被主题全局 button 样式覆盖 */
+.floating-chat-trigger,
+.theme-macaron .floating-chat-trigger,
+.theme-cyber .floating-chat-trigger {
+  position: fixed !important;
+  border-radius: 50% !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+
+.floating-chat-trigger::before,
+.theme-macaron .floating-chat-trigger::before,
+.theme-cyber .floating-chat-trigger::before,
+.floating-chat-trigger::after,
+.theme-macaron .floating-chat-trigger::after,
+.theme-cyber .floating-chat-trigger::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Header 按钮同样避免主题 button 样式污染 */
+.floating-chat-header-btn,
+.theme-macaron .floating-chat-header-btn,
+.theme-cyber .floating-chat-header-btn {
+  border-radius: 50% !important;
+  overflow: visible !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.floating-chat-header-btn::before,
+.theme-macaron .floating-chat-header-btn::before,
+.theme-cyber .floating-chat-header-btn::before,
+.floating-chat-header-btn::after,
+.theme-macaron .floating-chat-header-btn::after,
+.theme-cyber .floating-chat-header-btn::after {
+  content: none !important;
+  display: none !important;
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简约贪吃蛇</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>简约贪吃蛇</h1>
+            <div class="score-container">
+                <span>分数: </span>
+                <span id="score">0</span>
+            </div>
+        </div>
+        <div class="game-settings">
+            <label for="grid-size">方格数量: </label>
+            <select id="grid-size">
+                <option value="10">10 x 10</option>
+                <option value="15">15 x 15</option>
+                <option value="20" selected>20 x 20</option>
+                <option value="25">25 x 25</option>
+                <option value="30">30 x 30</option>
+            </select>
+        </div>
+        <canvas id="game-canvas" width="400" height="400"></canvas>
+        <div class="game-controls">
+            <button id="start-btn">开始游戏</button>
+            <p class="instructions">使用 WASD | ↑ ↓ ← → 键 | 滑动控制蛇的移动</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

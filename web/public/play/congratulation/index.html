@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Hanphone's Congratulation</title>
+  <meta name="description" content="This is Hanphone's personal Congratulation.Happy New Year!">
+  <meta name="keywords" content="Hanphone blog Congratulation Happy New Year!">
+  <link rel="shortcut icon" href="../../main/images/logo.ico" type="img/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+    }
+
+    body {
+      background-color: #c6070c;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 227, 146, 0.1) 0%, transparent 20%),
+        radial-gradient(circle at 80% 70%, rgba(255, 227, 146, 0.1) 0%, transparent 20%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      color: #ffe392;
+      flex-direction: column;
+      padding: 1rem;
+      overflow-x: hidden;
+    }
+
+    /* 装饰元素 */
+    .decor {
+      position: fixed;
+      width: 80px;
+      height: 80px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffe39220'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-size: contain;
+      z-index: 0;
+    }
+
+    .decor.top-left {
+      top: 10px;
+      left: 10px;
+    }
+
+    .decor.top-right {
+      top: 10px;
+      right: 10px;
+      transform: rotate(90deg);
+    }
+
+    .decor.bottom-left {
+      bottom: 10px;
+      left: 10px;
+      transform: rotate(-90deg);
+    }
+
+    .decor.bottom-right {
+      bottom: 10px;
+      right: 10px;
+      transform: rotate(180deg);
+    }
+
+    #phrase {
+      margin-bottom: 1.5rem;
+      position: relative;
+      z-index: 1;
+      transition: all 0.5s ease-in-out;
+      padding: 1rem;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 90vw;
+    }
+
+    #phrase:hover {
+      transform: translateY(-5px);
+    }
+
+    /* 拼音与汉字对齐的关键样式 */
+    .char-group-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .char-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pinyin {
+      font-size: clamp(0.8em, 3vw, 1em);
+      opacity: 0.9;
+      text-transform: uppercase;
+      height: 1.2em;
+    }
+
+    .chinese-char {
+      font: 700 clamp(2em, 10vw, 8em) '';
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      line-height: 1.2;
+    }
+
+    #line3 {
+      font-size: clamp(1.2em, 4vw, 3em);
+      font-style: italic;
+      opacity: 0.9;
+      transition: all 0.4s ease 0.2s;
+      margin-top: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .input-container {
+      position: relative;
+      margin-bottom: 1.5rem;
+      width: 100%;
+      max-width: 300px;
+      z-index: 1;
+    }
+
+    .uinput {
+      font-size: clamp(1rem, 4vw, 1.5rem);
+      background-color: rgba(255, 227, 146, 0.15);
+      color: #ffe392;
+      border: 2px solid rgba(255, 227, 146, 0.5);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      width: 100%;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .uinput::placeholder {
+      color: rgba(255, 227, 146, 0.6);
+    }
+
+    .uinput:focus {
+      outline: none;
+      border-color: #ffe392;
+      background-color: rgba(255, 227, 146, 0.2);
+      box-shadow: 0 0 15px rgba(255, 227, 146, 0.3);
+    }
+
+    #btn {
+      padding: 0.8rem 2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1rem;
+      background-color: #ffe392;
+      font-size: clamp(1rem, 4vw, 1.5rem);
+      font-weight: bold;
+      color: #c6070c;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+
+    #btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      background-color: #fff4cc;
+    }
+
+    #btn:active {
+      transform: translateY(1px);
+    }
+
+    #sure {
+      margin-top: 1rem;
+      background-color: rgba(255, 227, 146, 0.2);
+      color: #ffe392;
+    }
+
+    #sure:hover {
+      background-color: rgba(255, 227, 146, 0.3);
+    }
+
+    /* 动画效果 */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+      .chinese-char {
+        font-size: clamp(1.8em, 12vw, 5em);
+      }
+
+      .decor {
+        width: 60px;
+        height: 60px;
+      }
+
+      #phrase {
+        padding: 0.5rem;
+      }
+    }
+
+    /* 超小屏幕适配 */
+    @media (max-width: 360px) {
+      .char-group-container {
+        gap: 0.3rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 装饰元素 -->
+  <div class="decor top-left"></div>
+  <div class="decor top-right"></div>
+  <div class="decor bottom-left"></div>
+  <div class="decor bottom-right"></div>
+
+  <div id="phrase" class="fade-in">
+    <!-- 拼音和汉字组容器 -->
+    <div class="char-group-container" id="pinyin-char-container"></div>
+    <span id="line3">HAPPY NEW YEAR</span>
+  </div>
+
+  <div class="input-container">
+    <input type="text" id="uname" placeholder="请输入你的名字" class="uinput"></input>
+    <button id="sure" class="uinput">确定</button>
+  </div>
+
+  <button id="btn">祝福++</button>
+
+  <script>
+    // 定义一个包含短语的数组，每个短语包含拼音数组、汉字数组和英文翻译
+    const phrases = [
+      [['xīn', 'nián', 'kuài', 'lè'], ['新', '年', '快', '樂'], 'HAPPY NEW YEAR'],
+      [['shēn', 'tǐ', 'jiàn', 'kāng'], ['身', '體', '健', '康'], '(GOOD HEALTH)'],
+      [['dà', 'jí', 'dà', 'lì'], ['大', '吉', '大', '利'], '(GREAT LUCK AND GREAT PROFIT)'],
+      [['cái', 'yuán', 'guǎng', 'jìn'], ['财', '源', '广', '进'], '(MAY WEALTH COME POURING IN)'],
+      [['wàn', 'shì', 'rú', 'yì'], ['万', '事', '如', '意'], '(MAY EVERYTHING GO WELL)'],
+      [['bù', 'bù', 'gāo', 'shēng'], ['步', '步', '高', '升'], '(CLIMB UP THE LADER OF SUCCESS)'],
+      [['gōng', 'hè', 'xīn', 'xǐ'], ['恭', '賀', '新', '禧'], '(WISHING YOU A HAPPY NEW YEAR)'],
+    ];
+
+    // 获取DOM元素
+    const generateBtn = document.getElementById('btn');
+    const nameInput = document.getElementById('uname');
+    const generateSure = document.getElementById('sure');
+    const line3 = document.getElementById('line3');
+    const phraseContainer = document.getElementById('phrase');
+    const charContainer = document.getElementById('pinyin-char-container');
+    let userName;
+
+    // 当前短语的索引
+    let currentIndex = 0;
+
+    // 添加动画效果的函数
+    function addAnimation() {
+      phraseContainer.classList.remove('fade-in');
+      // 触发重绘
+      void phraseContainer.offsetWidth;
+      phraseContainer.classList.add('fade-in');
+    }
+
+    // 渲染拼音和汉字的函数
+    function renderPhrase(pinyinArray, charArray, englishText) {
+      // 清空容器
+      charContainer.innerHTML = '';
+
+      // 为每个汉字-拼音对创建容器并添加到DOM
+      for (let i = 0; i < charArray.length; i++) {
+        const group = document.createElement('div');
+        group.className = 'char-group';
+
+        const pinyin = document.createElement('div');
+        pinyin.className = 'pinyin';
+        pinyin.textContent = pinyinArray[i] || '';
+
+        const char = document.createElement('div');
+        char.className = 'chinese-char';
+        char.textContent = charArray[i];
+
+        group.appendChild(pinyin);
+        group.appendChild(char);
+        charContainer.appendChild(group);
+      }
+
+      // 设置英文翻译
+      line3.textContent = englishText;
+    }
+
+    // 生成短语的函数
+    function generatePhrase() {
+      // 更新当前短语的索引
+      if (!userName) {
+        userName = '你';
+        // 添加个性化祝福
+        phrases.push([[], [`祝${userName}新年快乐!`], `Happy New Year To ${userName}`]);
+      }
+      currentIndex = (currentIndex + 1) % phrases.length;
+
+      // 添加动画效果
+      addAnimation();
+
+      // 渲染当前短语
+      const [pinyin, chars, english] = phrases[currentIndex];
+      renderPhrase(pinyin, chars, english);
+    }
+
+    function addName() {
+      userName = nameInput.value.trim() || '你';
+
+      // 添加个性化祝福
+      phrases.push([[], [`祝${userName}新年快乐!`], `Happy New Year To ${userName}`]);
+
+      // 隐藏输入框和确定按钮，显示祝福按钮
+      nameInput.style.display = 'none';
+      generateSure.style.display = 'none';
+      generateBtn.style.display = 'block';
+
+      // 显示个性化祝福
+      currentIndex = phrases.length - 1;
+      const [pinyin, chars, english] = phrases[currentIndex];
+      renderPhrase(pinyin, chars, english);
+      addAnimation();
+    }
+
+    // 初始渲染第一个短语
+    renderPhrase(phrases[0][0], phrases[0][1], phrases[0][2]);
+
+    // 为按钮添加点击事件监听器
+    generateBtn.addEventListener('click', generatePhrase);
+    generateSure.addEventListener('click', addName);
+
+    // 支持回车键确认姓名
+    nameInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        addName();
+      }
+    });
+  </script>
+</body>
+
+</html>

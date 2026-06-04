@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Hanphone给七米的情书页面">
+    <meta name="keywords" content="爱情,情书,纪念">
+    <title>致晴樨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="../../shared/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="./static/chart.umd.min.js"></script>
+    <script src="./static/particles.min.js"></script>
+
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    screens: {
+                        'sm': '640px',
+                        'md': '768px',
+                        'lg': '1024px',
+                        'xl': '1280px',
+                    },
+                    colors: {
+                        love: {
+                            light: '#ffccd5',
+                            DEFAULT: '#ff8fab',
+                            dark: '#c85589'
+                        },
+                        heart: {
+                            DEFAULT: '#ff3838'
+                        },
+                        soft: {
+                            blue: '#a8d1ff',
+                            purple: '#d4b5ff',
+                            green: '#b5ffd9'
+                        },
+                        neutral: {
+                            100: '#fefeff',
+                            200: '#f7f9fc',
+                            800: '#2d2343',
+                            900: '#1b1d2c'
+                        }
+                    },
+                    fontFamily: {
+                        romantic: ['"Dancing Script"', "SimSun", "Songti SC", "STSong", 'serif', 'cursive', 'sans-serif'],
+                        main: ['"Noto Serif SC"', "SimSun", "Songti SC", "STSong", 'serif', 'serif'],
+                        sans: ['"Noto Sans SC"', "SimSun", "Songti SC", "STSong", 'serif', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 50px -12px rgba(0, 0, 0, 0.1)',
+                        'glow': '0 0 25px rgba(255, 138, 171, 0.3)',
+                        'text': '0 2px 10px rgba(0, 0, 0, 0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+
+        html {
+        overflow-x: hidden;
+        width: 100%;
+    }
+    
+    body {
+        /* 确保body不超出视口宽度 */
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            }
+            .text-shadow-soft {
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            .bg-blur-xl {
+                backdrop-filter: blur(16px);
+            }
+            .writing-vertical {
+                writing-mode: vertical-rl;
+            }
+            .animate-float {
+                animation: float 6s ease-in-out infinite;
+            }
+            .animate-float-slow {
+                animation: float 8s ease-in-out infinite;
+            }
+            .animate-pulse-slow {
+                animation: pulse 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .animate-fade-in {
+                animation: fadeIn 1.8s ease-in forwards;
+            }
+            .animate-slide-up {
+                animation: slideUp 1.2s ease-out forwards;
+            }
+            .animate-heartbeat {
+                animation: heartbeat 1.8s ease-in-out infinite;
+            }
+            .animate-bloom {
+                animation: bloom 2s ease-out forwards;
+            }
+            .animate-envelope {
+                animation: envelope 0.6s ease-in-out forwards;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .timeline-item-hidden {
+                opacity: 0;
+                transform: translateY(30px);
+                transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            }
+            .timeline-item-visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            .letter-closed {
+                max-height: 0;
+                opacity: 0;
+                overflow: hidden;
+                transition: max-height 0.8s ease-out, opacity 0.6s ease-out;
+            }
+            .letter-open {
+                max-height: 2000px;
+                opacity: 1;
+                transition: max-height 1.2s ease-in, opacity 1s ease-in;
+            }
+            .touch-friendly {
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: rgba(255, 138, 171, 0.2);
+            }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.1); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.1); }
+            70% { transform: scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes bloom {
+            0% { transform: scale(0.8); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes envelope {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
+    </style>
+
+    <!-- 引入Google字体 -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body
+    class="bg-gradient-to-br from-neutral-900 via-neutral-800 to-[#2d2343] min-h-screen font-main text-neutral-200 overflow-x-hidden">
+    <!-- 粒子背景 -->
+    <div id="particles-js" class="fixed inset-0 z-0 opacity-60"></div>
+
+    <!-- 装饰元素 -->
+    <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+        <div class="absolute top-1/4 -left-20 w-64 h-64 bg-love/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div class="absolute bottom-1/3 -right-20 w-80 h-80 bg-soft-purple/20 rounded-full blur-3xl animate-pulse-slow"
+            style="animation-delay: 1s"></div>
+        <div class="absolute top-1/2 right-1/4 w-40 h-40 bg-soft-blue/20 rounded-full blur-3xl animate-pulse-slow"
+            style="animation-delay: 2s"></div>
+    </div>
+
+    <!-- 右上角控制区：信封按钮 + 音频控制 -->
+    <div class="top-3 right-2 z-50 flex gap-4 justify-end">
+        <!-- 信封按钮 -->
+        <button id="envelope-btn"
+            class="bg-neutral-800/50 hover:bg-love outline-none text-white p-3 sm:p-4 rounded-full shadow-soft transform transition-all duration-500 hover:scale-110 hover:shadow-glow touch-friendly">
+            <i class="fa fa-envelope text-base sm:text-xl"></i>
+        </button>
+
+        <!-- 音频控制 -->
+        <button id="audio-toggle"
+            class="bg-neutral-800/50 hover:bg-neutral-800/80 text-neutral-100 p-3 sm:p-4 rounded-full shadow-soft transform transition-all duration-500 hover:scale-110 hover:text-love touch-friendly">
+            <i class="fa fa-music text-base sm:text-xl"></i>
+            <audio id="background-music" loop>
+                <source src="./audio/One Last Kiss.mp3" type="audio/mpeg">
+            </audio>
+        </button>
+    </div>
+
+
+    <div id="main" class="relative z-10 container sm:mt-10 mx-auto px-4 pb-4 max-w-7xl">
+        <!-- 标题区域 -->
+        <header class="text-center md:mb-3 opacity-0 animate-fade-in" style="animation-delay: 0.5s;">
+            <div class="relative inline-block">
+                <h1
+                    class="font-romantic text-[clamp(2.8rem,8vw,4.5rem)] text-love font-bold text-shadow-lg mb-0 animate-float">
+                    Hanphone's Love</h1>
+            </div>
+            <p class="text-neutral-100/80 text-[clamp(1.1rem,2vw,1.35rem)] max-w-2xl mx-auto font-light italic">
+                一份真挚的爱意，跨越时空，直达心底</p>
+            <div
+                class="absolute left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-love to-transparent rounded-full">
+            </div>
+        </header>
+
+        <!-- 主要内容区 - 宽屏横版布局，移动竖版布局 -->
+        <div id="wrap" class="relative">
+            <div class="grid grid-cols-1 gap-8 mb-4 letter-closed" id="letter-content">
+                <!-- 情书内容 -->
+                <div id="text"
+                    class="bg-neutral-800/30 bg-blur-xl rounded-2xl p-6 md:p-10 shadow-soft transform transition-all duration-700 hover:shadow-glow hover:-translate-y-1 order-2 lg:order-1">
+                    <div id="code" class="max-w-2xl mx-auto opacity-0 h-full flex flex-col justify-center">
+                        <p
+                            class="font-romantic text-[clamp(1.8rem,4vw,3rem)] text-love text-center mb-10 animate-float-slow">
+                            To : 小七</p>
+
+                        <div class="space-y-5 text-[clamp(1.05rem,2vw,1.35rem)] leading-relaxed">
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700">
+                                春天适宜做梦</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.1s">梦里遇见绿色的惊喜</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.2s">嘀嗒的细雨与朦胧的黄昏</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.3s">在河边的小道上</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.35s">做着春天的梦</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.4s">梦里遇见清爽的晚风</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.5s">静静地赏花与发呆</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.6s">在河边的小道上</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.7s">遇见喜欢</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.75s">遇见爱</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.8s">遇见轮廓清晰的你</p>
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700"
+                                style="transition-delay: 0.9s">漫步在河边的小道上</p>
+
+                            <br class="opacity-0 transition-opacity duration-700" style="transition-delay: 1.2s">
+
+                            <p class="opacity-0 transform translate-y-4 transition-all duration-700 text-right font-romantic text-[clamp(1.5rem,3vw,2.5rem)] text-love"
+                                style="transition-delay: 1.4s">
+                                -- 爱你的, 寒枫
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 计时区域 -->
+            <div id="clock-box"
+                class="bg-neutral-800/30 bg-blur-xl rounded-2xl p-4 md:p-8 mb-6 shadow-soft text-center opacity-0 transition-opacity duration-1200 animate-bloom overflow-x-auto scrollbar-hide">
+                <div class="flex md:flex-row items-center justify-center gap-2 md:gap-4 mb-4 md:mb-8">
+                    <a href="https://www.hanphone.top/" target="_blank"
+                        class="text-love hover:text-love-dark transition-colors font-romantic text-[clamp(1.2rem,3vw,2rem)]">@寒枫</a>
+                    <span class="text-neutral-100/70">与</span>
+                    <a href="https://www.hanphone.top/" target="_blank"
+                        class="text-love hover:text-love-dark transition-colors font-romantic text-[clamp(1.2rem,3vw,2rem)]">@小七</a>
+                    <span class="text-neutral-100/70">在一起的</span>
+                </div>
+
+                <div id="clock" class="grid grid-cols-4 gap-2 md:gap-8 max-w-3xl mx-auto min-w-[320px]">
+                    <div
+                        class="bg-neutral-800/50 rounded-xl p-2 md:p-6 transform transition-all duration-500 hover:scale-105 hover:bg-love/10">
+                        <div id="days" class="text-[clamp(1.2rem,4vw,3rem)] font-bold text-love text-shadow-soft">0
+                        </div>
+                        <div class="text-xs md:text-base text-neutral-100/70 mt-1">天</div>
+                    </div>
+                    <div
+                        class="bg-neutral-800/50 rounded-xl p-2 md:p-6 transform transition-all duration-500 hover:scale-105 hover:bg-love/10">
+                        <div id="hours" class="text-[clamp(1.2rem,4vw,3rem)] font-bold text-love text-shadow-soft">0
+                        </div>
+                        <div class="text-xs md:text-base text-neutral-100/70 mt-1">时</div>
+                    </div>
+                    <div
+                        class="bg-neutral-800/50 rounded-xl p-2 md:p-6 transform transition-all duration-500 hover:scale-105 hover:bg-love/10">
+                        <div id="minutes" class="text-[clamp(1.2rem,4vw,3rem)] font-bold text-love text-shadow-soft">0
+                        </div>
+                        <div class="text-xs md:text-base text-neutral-100/70 mt-1">分</div>
+                    </div>
+                    <div
+                        class="bg-neutral-800/50 rounded-xl p-2 md:p-6 transform transition-all duration-500 hover:scale-105 hover:bg-love/10">
+                        <div id="seconds" class="text-[clamp(1.2rem,4vw,3rem)] font-bold text-love text-shadow-soft">0
+                        </div>
+                        <div class="text-xs md:text-base text-neutral-100/70 mt-1">秒</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- 爱情时间轴区域 -->
+            <div class="mb-16 relative z-10">
+                <h2 class="font-romantic text-[clamp(2rem,5vw,3rem)] text-love text-center animate-float">我们的爱情足迹
+                </h2>
+
+                <div class="relative pl-0 pr-2 md:px-8">
+                    <!-- 时间轴中心线 - 修复桌面端定位 -->
+                    <div
+                        class="absolute left-3 md:left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-love via-soft-purple to-soft-blue rounded-full transform md:-translate-x-1/2 z-0">
+                    </div>
+
+                    <!-- 时间轴内容容器 -->
+                    <div id="timeline-container" class="space-y-16 md:space-y-24 relative z-10">
+                        <!-- 时间轴内容将通过JS动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="mt-20 text-center text-neutral-100/50 text-sm p-6">
+            <p class="mb-4">用❤️制作 | 愿这份爱永恒</p>
+            <div class="flex justify-center gap-6 mt-3">
+                <a href="#"
+                    class="hover:text-love transition-colors duration-300 transform hover:scale-125 touch-friendly"><i
+                        class="fa fa-heart text-lg"></i></a>
+                <a href="#"
+                    class="hover:text-love transition-colors duration-300 transform hover:scale-125 touch-friendly"><i
+                        class="fa fa-star text-lg"></i></a>
+                <a href="#"
+                    class="hover:text-love transition-colors duration-300 transform hover:scale-125 touch-friendly"><i
+                        class="fa fa-moon-o text-lg"></i></a>
+            </div>
+            <p class="mt-6 text-xs">永恒不是一瞬间，而是日复一日的坚持</p>
+        </footer>
+    </div>
+
+    <script>
+
+        // 时间轴数据 - 提取到JS数组中管理
+        const timelineData = [
+            {
+                id: 1,
+                title: "确认关系",
+                description: "在跨年的氛围下，我鼓起勇气向你表白。当你同意的那一刻，我的天空都亮了。",
+                date: "2024年1月1日",
+                imageUrl: "./images/确认关系.jpg",
+                imageAlt: "我们关系的开始",
+                isEven: false,
+                isFuture: false
+            },
+            {
+                id: 2,
+                title: "远行旅游",
+                description: "难得离开成都，去都江堰游玩。有你在身边，哪里都是风景。",
+                date: "2024年7月8日",
+                imageUrl: "./images/第一次旅游.jpg",
+                imageAlt: "都江堰旅游",
+                isEven: true,
+                isFuture: false
+            },
+            {
+                id: 3,
+                title: "暑期生活",
+                description: "暑假分隔在两地，可是我的心仍旧被你牵引。",
+                date: "2024年8月7日",
+                imageUrl: "./images/分离但在一起.jpg",
+                imageAlt: "都江堰旅游",
+                isEven: false,
+                isFuture: false
+            },
+            {
+                id: 4,
+                title: "一周年纪念日",
+                description: "一周年纪念日，未来我们会继续走下去。",
+                date: "2025年1月1日",
+                imageUrl: "./images/一周年纪念日.jpg",
+                imageAlt: "第一次旅行的海边风景",
+                isEven: true,
+                isFuture: false
+            },
+            {
+                id: 5,
+                title: "未来的我们",
+                description: "我期待着与你一起走过更多的春夏秋冬，经历更多的美好瞬间。往后余生，风雪是你，平淡是你，目光所至，满心欢喜。",
+                date: "未来可期",
+                imageUrl: null,
+                imageAlt: "",
+                isEven: false,
+                isFuture: true
+            }
+        ];
+
+        // 初始化粒子背景
+        document.addEventListener('DOMContentLoaded', function () {
+            // 渲染时间轴
+            renderTimeline();
+
+            // 强制触发重绘
+            setTimeout(() => {
+                setupTimelineAnimation();
+            }, 100);
+
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 120,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": ["#ff8fab", "#a8d1ff", "#d4b5ff"]
+                    },
+                    "shape": {
+                        "type": "circle"
+                    },
+                    "opacity": {
+                        "value": 0.6,
+                        "random": true
+                    },
+                    "size": {
+                        "value": 2,
+                        "random": true
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#d4b5ff",
+                        "opacity": 0.1,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 0.8,
+                        "direction": "none",
+                        "random": true,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 0.3
+                            }
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+        });
+
+        // 渲染时间轴函数 - 修复圆点定位
+        function renderTimeline() {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = ''; // 清空容器，避免重复渲染
+
+            timelineData.forEach(item => {
+                // 创建时间轴项容器
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item timeline-item-hidden opacity-0 transition-all duration-1000 relative';
+                timelineItem.dataset.id = item.id;
+
+                // 确定时间点颜色
+                const dotColor = 'bg-love';
+
+                // 生成内容HTML - 改进圆点定位，确保移动端和桌面端都在中线上
+                let contentHtml = `
+                    <!-- 时间点 - 绝对定位确保始终在中线上 -->
+                    <div class="absolute md:left-1/2 w-6 h-6 rounded-full ${dotColor} border-4 border-neutral-800 z-10 animate-pulse-slow transform md:-translate-x-1/2 top-1/2 -translate-y-1/2"></div>
+                    
+                    <div class="flex flex-col md:flex-row items-start md:items-center">
+                `;
+
+                // 根据是否为偶数项调整布局
+                if (item.isEven) {
+                    contentHtml += `
+                        <div class="ml-5 md:ml-0 w-full md:w-1/2 md:pr-12 order-1 md:order-1 px-2">
+                            <div class="rounded-xl overflow-hidden shadow-soft transform transition-transform hover:scale-105 touch-friendly">
+                                ${item.isFuture ?
+                            `<div class="rounded-xl overflow-hidden shadow-soft transform transition-transform hover:scale-105 bg-neutral-800/50 p-8 flex items-center justify-center touch-friendly">
+                                    <i class="fa fa-heart text-6xl text-soft-green animate-heartbeat"></i>
+                                </div>` :
+                            `<img src="${item.imageUrl}" alt="${item.imageAlt}" class="w-full h-auto object-cover max-w-full">`
+                        }
+                            </div>
+                            <p class="text-sm text-neutral-100/60 mt-2 text-left md:text-right">${item.date}</p>
+                        </div>
+                        
+                        <div class="ml-5 md:ml-0 w-full md:w-1/2 md:pl-12 mt-4 md:mt-0 order-2 md:order-2 px-2">
+                            <h3 class="font-romantic text-2xl text-love mb-2">${item.title}</h3>
+                            <p class="text-neutral-100/80">${item.description}</p>
+                        </div>
+                    `;
+                } else {
+                    contentHtml += `
+                        <div class="ml-5 md:ml-0 w-full md:w-1/2 md:pr-12 md:text-right px-2">
+                            <h3 class="font-romantic text-2xl text-love mb-2">${item.title}</h3>
+                            <p class="text-neutral-100/80">${item.description}</p>
+                        </div>
+                        
+                        <div class="ml-5 md:ml-0 mt-4 md:mt-0 w-full md:w-1/2 md:pl-12 px-2">
+                            <div class="rounded-xl overflow-hidden shadow-soft transform transition-transform hover:scale-105 touch-friendly">
+                                ${item.isFuture ?
+                            `<div class="rounded-xl overflow-hidden shadow-soft transform transition-transform hover:scale-105 bg-neutral-800/50 p-8 flex items-center justify-center touch-friendly">
+                                    <i class="fa fa-heart text-6xl text-heart animate-heartbeat"></i>
+                                </div>` :
+                            `<img src="${item.imageUrl}" alt="${item.imageAlt}" class="w-full h-auto object-cover max-w-full">`
+                        }
+                            </div>
+                            <p class="text-sm text-neutral-100/60 mt-2 text-left md:text-left">${item.date}</p>
+                        </div>
+                    `;
+                }
+
+                contentHtml += `</div>`;
+                timelineItem.innerHTML = contentHtml;
+                container.appendChild(timelineItem);
+            });
+        }
+
+        // 音频控制 - 支持一次点击播放
+        const audioToggle = document.getElementById('audio-toggle');
+        const backgroundMusic = document.getElementById('background-music');
+        let audioPlaying = false; // 跟踪播放状态而非初始化状态
+
+        // 尝试自动播放的函数
+        function tryPlayAudio() {
+            backgroundMusic.play().then(() => {
+                audioPlaying = true;
+                audioToggle.innerHTML = '<i class="fa fa-volume-up text-xl"></i>';
+            }).catch(e => {
+                console.log('自动播放需要用户交互，等待用户操作:', e);
+                // 自动播放失败时保持初始状态
+                audioPlaying = false;
+                audioToggle.innerHTML = '<i class="fa fa-music text-xl"></i>';
+            });
+        }
+
+        // 监听页面的点击和触摸事件，触发首次播放
+        document.addEventListener('click', tryPlayAudio, { once: true });
+        document.addEventListener('touchstart', tryPlayAudio, { once: true });
+
+        // 音频控制按钮点击事件 - 修复为一次点击播放
+        audioToggle.addEventListener('click', () => {
+            if (audioPlaying) {
+                // 如果正在播放，则暂停
+                backgroundMusic.pause();
+                audioPlaying = false;
+                audioToggle.innerHTML = '<i class="fa fa-volume-off text-xl"></i>';
+            } else {
+                // 如果未播放，则尝试播放
+                backgroundMusic.play().then(() => {
+                    audioPlaying = true;
+                    audioToggle.innerHTML = '<i class="fa fa-volume-up text-xl"></i>';
+                }).catch(e => {
+                    console.log('播放失败:', e);
+                    // 即使失败也更新状态，确保下次点击能正确触发
+                    audioPlaying = false;
+                    audioToggle.innerHTML = '<i class="fa fa-music text-xl"></i>';
+                });
+            }
+        });
+
+        // 页面加载完成后尝试自动播放
+        window.addEventListener('load', tryPlayAudio);
+
+        // 信封按钮控制信件显示/隐藏
+        const envelopeBtn = document.getElementById('envelope-btn');
+        const letterContent = document.getElementById('letter-content');
+        let letterOpen = false;
+
+        envelopeBtn.addEventListener('click', () => {
+            // 信封按钮动画
+            envelopeBtn.classList.add('animate-envelope');
+            setTimeout(() => {
+                envelopeBtn.classList.remove('animate-envelope');
+            }, 600);
+
+            // 切换信件状态
+            letterOpen = !letterOpen;
+            if (letterOpen) {
+                letterContent.classList.remove('letter-closed');
+                letterContent.classList.add('letter-open');
+                envelopeBtn.innerHTML = '<i class="fa fa-envelope-open text-xl md:text-3xl"></i><span class="hidden md:inline ml-5 font-romantic text-xl">收起情书</span>';
+
+                // 显示情书时启动打字效果
+                setTimeout(setupTypewriterEffect, 500);
+            } else {
+                letterContent.classList.remove('letter-open');
+                letterContent.classList.add('letter-closed');
+                envelopeBtn.innerHTML = '<i class="fa fa-envelope text-xl md:text-3xl"></i><span class="hidden md:inline ml-5 font-romantic text-xl">打开情书</span>';
+            }
+        });
+
+        // 打字机效果
+        function setupTypewriterEffect() {
+            const codeElement = document.getElementById('code');
+            const textElements = codeElement.querySelectorAll('p, br');
+
+            // 先显示code容器
+            setTimeout(() => {
+                codeElement.style.opacity = '1';
+
+                // 逐个显示文本元素
+                textElements.forEach((el, index) => {
+                    setTimeout(() => {
+                        el.style.opacity = '1';
+                        el.style.transform = 'translateY(0)';
+                    }, 300 * index);
+                });
+            }, 300);
+        }
+
+        // 时间轴滚动动画 - 修复桌面端显示问题
+        function setupTimelineAnimation() {
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            const isMobile = window.innerWidth < 768;
+
+            // 调整观察器配置，确保桌面端元素能被正确检测
+            const observerOptions = {
+                root: null,
+                rootMargin: isMobile ? '0px 0px -50px 0px' : '0px 0px -100px 0px',
+                threshold: 0.01
+            };
+
+            // 先清除已有的观察器
+            if (window.timelineObserver) {
+                window.timelineObserver.disconnect();
+            }
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('timeline-item-visible');
+                        entry.target.style.opacity = '1';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            // 保存观察器引用
+            window.timelineObserver = observer;
+
+            timelineItems.forEach(item => {
+                observer.observe(item);
+
+                // 强制检查首屏元素，确保初始可见元素能显示
+                setTimeout(() => {
+                    const rect = item.getBoundingClientRect();
+                    const isVisible = (
+                        rect.top >= 0 &&
+                        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+                    );
+                    if (isVisible) {
+                        item.classList.add('timeline-item-visible');
+                        item.style.opacity = '1';
+                        observer.unobserve(item);
+                    }
+                }, 300);
+            });
+        }
+
+        // 时间计算函数
+        function timeElapse(start) {
+            const now = new Date();
+            const elapsed = now - start;
+
+            // 计算天、时、分、秒
+            const days = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((elapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+
+            // 更新DOM
+            document.getElementById('days').textContent = days;
+            document.getElementById('hours').textContent = hours;
+            document.getElementById('minutes').textContent = minutes;
+            document.getElementById('seconds').textContent = seconds;
+        }
+
+        // 主函数
+        (function () {
+            // 设置在一起的日期
+            const together = new Date(2024, 0, 1); // 2024年1月1日
+            together.setHours(0, 0, 0, 0);
+
+            // 显示时钟
+            setTimeout(() => {
+                document.getElementById('clock-box').style.opacity = '1';
+            }, 1000);
+
+            // 启动计时器
+            setInterval(() => {
+                timeElapse(together);
+            }, 1000);
+
+            // 初始计算一次
+            timeElapse(together);
+
+            // 确保时间轴动画正确初始化
+            window.addEventListener('load', () => {
+                setTimeout(setupTimelineAnimation, 500);
+            });
+
+            // 监听窗口大小变化，重新初始化时间轴动画
+            window.addEventListener('resize', setupTimelineAnimation);
+        })();
+    </script>
+</body>
+
+</html>
