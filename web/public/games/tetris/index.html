@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现代俄罗斯方块</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="../../shared/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        dark: '#1E293B',
+                        light: '#F8FAFC',
+                        tetris: {
+                            i: '#06B6D4',
+                            j: '#2563EB',
+                            l: '#F59E0B',
+                            o: '#FBBF24',
+                            s: '#10B981',
+                            t: '#8B5CF6',
+                            z: '#EF4444'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'game': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                        'piece': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .grid-board {
+                display: grid;
+                grid-template-columns: repeat(10, minmax(0, 1fr));
+                grid-template-rows: repeat(20, minmax(0, 1fr));
+            }
+            .piece-visible {
+                opacity: 1;
+                transform: scale(1);
+            }
+            .animate-clear {
+                animation: clear 0.25s ease-out forwards;
+            }
+            @keyframes clear {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.1); opacity: 0.5; }
+                100% { transform: scale(0); opacity: 0; }
+            }
+            .difficulty-btn.active {
+                transform: translateY(-3px);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            }
+            .game-over-overlay {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark to-slate-800 min-h-screen text-light font-sans p-4 flex flex-col items-center justify-start">
+    <!-- 主网格容器 -->
+    <div class="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-2 max-h-90vh">
+    
+<!-- 游戏信息和控制区域 - 侧边栏（增强响应式） -->
+<div class="lg:col-span-4 flex flex-col gap-1">
+    <!-- 游戏状态面板：核心优化响应式内边距、字体适配 -->
+                 <div class="text-center">
+                <h1 class="text-[clamp(0.8rem,5vw,2.5rem)] font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary text-shadow">俄罗斯方块</h1>
+            </div>
+    <div class="bg-slate-900/40 backdrop-blur-sm border border-slate-700 rounded-lg shadow-game 
+                p-2 sm:p-4 md:p-5 flex flex-col gap-3 sm:gap-4">
+        <!-- 标题：适配小屏字体，避免溢出 -->
+        <h3 class="text-[clamp(0.8rem,2vw,1.4rem)]  font-semibold text-center 
+                   text-slate-100 tracking-tight hidden lg:block">游戏信息</h3>
+        
+        <div class="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
+            <!-- 分数面板：优化小屏内边距，确保数字不挤压 -->
+            <div class="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-lg 
+                        px-3 py-1 lg:p-4 shadow-sm transition-all duration-200 hover:shadow-md
+                        min-h-[10px] sm:min-h-[30px]"> <!-- 1. 加最小高度，给居中提供基准 -->
+                <div class="flex items-center justify-between h-full"> <!-- 2. 加h-full，让flex占满容器高度 -->
+                    <!-- 3. 修正clamp()语法：min=0.8rem，动态=2vw，max=1.1rem（适配不同屏幕） -->
+                    <h4 class="text-[clamp(0.8rem,2vw,1.1rem)] uppercase tracking-wider m-0 text-slate-300">分数</h4>
+                    <!-- 分数数字适当放大，与标题区分层级 -->
+                    <p id="score" class="text-[clamp(1rem,2.5vw,1.4rem)] font-bold text-accent m-0">0</p>
+                </div>
+            </div>
+            
+            <!-- 难度选择下拉框：解决小屏点击区域、图标位置问题 -->
+            <div class="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-lg 
+                        px-3 py-1 lg:p-3 shadow-sm transition-all duration-200 hover:shadow-md min-h-[10px] sm:min-h-[30px]">
+                <div class="flex items-center justify-between h-full">
+                    <h4 class="text-[clamp(0.8rem,2vw,1.1rem)] uppercase tracking-wider m-0">难度</h4>
+                    <!-- 下拉框容器：确保相对定位生效，小屏增加点击区域 -->
+                    <div class="relative w-2/3 sm:w-auto">
+                        <select id="difficulty-select" class="bg-transparent text-[clamp(0.8rem,2vw,1.1rem)]  font-bold 
+                                                            text-secondary border-none focus:ring-2 focus:ring-accent/50 
+                                                            pr-6 sm:pr-8 appearance-none cursor-pointer 
+                                                            w-full sm:w-auto py-1">
+                            <option value="1000" data-color="text-green-500">简单</option>
+                            <option value="600" data-color="text-yellow-500" selected>中等</option>
+                            <option value="300" data-color="text-red-500">困难</option>
+                        </select>
+                        <!-- 下拉图标：适配小屏位置，避免偏移 -->
+                        <i class="fa fa-chevron-down absolute right-2 top-1/2 transform -translate-y-1/2 
+                                 text-xs sm:text-sm text-slate-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- 操作按钮：核心优化小屏布局（从并列到垂直）和点击体验 -->
+        <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            <!-- 开始/暂停按钮：小屏放大点击区域，优化图标文字适配 -->
+            <button id="start-pause-button" class="bg-primary hover:bg-primary/90 text-white 
+                                                  py-2.5 sm:py-2 px-3 sm:px-4 rounded-lg 
+                                                  transition-all duration-200 flex items-center justify-center gap-1.5">
+                <i class="fa fa-play text-sm sm:text-base"></i>
+                <span class="text-sm sm:text-base">开始</span>
+            </button>
+            <!-- 重置按钮：同上述按钮优化逻辑 -->
+            <button id="reset-button" class="bg-slate-700 hover:bg-slate-600 text-white 
+                                            py-2.5 sm:py-2 px-3 sm:px-4 rounded-lg 
+                                            transition-all duration-200 flex items-center justify-center gap-1.5">
+                <i class="fa fa-refresh text-sm sm:text-base"></i>
+                <span class="text-sm sm:text-base">重置</span>
+            </button>
+        </div>
+    </div>
+</div>
+        <!-- 游戏区域和信息区域布局调整 -->
+        <div class="lg:col-span-8 flex ">
+            <!-- 游戏容器 -->
+            <div class="relative w-full max-w-md scale-90 origin-top -mb-20">
+                <!-- 游戏板 -->
+                <div id="game-board" class="grid-board bg-slate-900/60 backdrop-blur-sm border-2 border-slate-700 rounded-lg shadow-game w-full max-w-xs sm:max-w-sm lg:max-w-sm mx-auto overflow-hidden" style="aspect-ratio: 1/2;">
+                    <!-- 方块将通过JS动态生成 -->
+                </div>
+                
+                <!-- 游戏结束遮罩层 - 初始状态设置为完全隐藏（display: none） -->
+                <div id="game-over" class="hidden absolute inset-0 bg-dark/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg game-over-overlay" style="display: none;">
+                    <h2 class="text-3xl font-bold text-accent mb-4">游戏结束</h2>
+                    <p class="text-xl mb-6">最终得分: <span id="final-score" class="font-bold">0</span></p>
+                    <button id="play-again" class="bg-primary hover:bg-primary/90 text-white py-2 px-6 rounded-lg transition-all duration-200">
+                        再来一局
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 移动端控制按钮区域 -->
+        <div class="lg:hidden lg:col-span-12 mt-2">
+            <div class="grid grid-cols-3 gap-2 w-full max-w-md mx-auto">
+                <div></div>
+                <button id="mobile-rotate" class="bg-slate-800/80 hover:bg-slate-700/80 text-white p-3 rounded-lg flex items-center justify-center">
+                    <i class="fa fa-rotate-right text-xl"></i>
+                </button>
+                <div></div>
+                
+                <button id="mobile-left" class="bg-slate-800/80 hover:bg-slate-700/80 text-white p-3 rounded-lg flex items-center justify-center">
+                    <i class="fa fa-arrow-left text-xl"></i>
+                </button>
+                <button id="mobile-down" class="bg-slate-800/80 hover:bg-slate-700/80 text-white p-3 rounded-lg flex items-center justify-center">
+                    <i class="fa fa-arrow-down text-xl"></i>
+                </button>
+                <button id="mobile-right" class="bg-slate-800/80 hover:bg-slate-700/80 text-white p-3 rounded-lg flex items-center justify-center">
+                    <i class="fa fa-arrow-right text-xl"></i>
+                </button>
+                
+                <div></div>
+                <button id="mobile-drop" class="bg-accent/80 hover:bg-accent text-white p-3 rounded-lg flex items-center justify-center">
+                    <i class="fa fa-level-down text-xl"></i>
+                    <span class="ml-1">下落</span>
+                </button>
+                <div></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 游戏配置
+        const config = {
+            rows: 20,
+            cols: 10,
+            // 基础分数，根据连续消除行数进行调整
+            basePoints: { 1: 100, 2: 300, 3: 500, 4: 800 },
+            difficulties: {
+                1000: { name: "简单", color: "text-green-500" },
+                600: { name: "中等", color: "text-yellow-500" },
+                300: { name: "困难", color: "text-red-500" }
+            }
+        };
+        
+        // 方块形状定义
+        const shapes = [
+            [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
+            [[1,0,0],[1,1,1],[0,0,0]], // J
+            [[0,0,1],[1,1,1],[0,0,0]], // L
+            [[1,1],[1,1]], // O
+            [[0,1,1],[1,1,0],[0,0,0]], // S
+            [[0,1,0],[1,1,1],[0,0,0]], // T
+            [[1,1,0],[0,1,1],[0,0,0]]  // Z
+        ];
+        
+        // 方块颜色映射
+        const colors = [
+            'tetris-i', 'tetris-j', 'tetris-l', 
+            'tetris-o', 'tetris-s', 'tetris-t', 'tetris-z'
+        ];
+        
+        // 游戏状态管理
+        class GameState {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.board = Array(config.rows).fill().map(() => Array(config.cols).fill(0));
+                this.currentPiece = null; // 初始时不创建方块
+                this.score = 0;
+                this.gameOver = true;
+                this.isPaused = false;
+                this.lastDropTime = 0;
+                this.dropSpeed = 600; // 默认中等难度
+                this.animationFrameId = null;
+                this.firstGame = true; // 添加标志位记录是否是首次游戏
+                return this;
+            }
+            
+            setDifficulty(speed) {
+                this.dropSpeed = speed;
+                return this;
+            }
+            
+            createPiece() {
+                const type = Math.floor(Math.random() * shapes.length);
+                const shape = JSON.parse(JSON.stringify(shapes[type]));
+                const color = colors[type];
+                
+                return {
+                    shape,
+                    color,
+                    x: Math.floor((config.cols - shape[0].length) / 2),
+                    y: 0,
+                    type
+                };
+            }
+            
+            updateScore(linesCleared) {
+                // 计算得分：基础分数
+                const pointsEarned = config.basePoints[linesCleared];
+                this.score += pointsEarned;
+                return pointsEarned;
+            }
+        }
+        
+        // DOM管理器
+        class DOMManager {
+            constructor() {
+                // 缓存DOM元素
+                this.elements = {
+                    gameBoard: document.getElementById('game-board'),
+                    scoreDisplay: document.getElementById('score'),
+                    difficultySelect: document.getElementById('difficulty-select'),
+                    startPauseButton: document.getElementById('start-pause-button'),
+                    resetButton: document.getElementById('reset-button'),
+                    mobileLeft: document.getElementById('mobile-left'),
+                    mobileRight: document.getElementById('mobile-right'),
+                    mobileDown: document.getElementById('mobile-down'),
+                    mobileRotate: document.getElementById('mobile-rotate'),
+                    mobileDrop: document.getElementById('mobile-drop'),
+                    gameOver: document.getElementById('game-over'),
+                    finalScore: document.getElementById('final-score'),
+                    playAgain: document.getElementById('play-again')
+                };
+                
+                // 单元格缓存
+                this.boardCells = [];
+                
+                // 初始化游戏板
+                this.initializeBoard();
+                
+                // 监听窗口大小变化
+                window.addEventListener('resize', () => this.initializeBoard());
+            }
+            
+            initializeBoard() {
+                // 清空游戏板
+                this.elements.gameBoard.innerHTML = '';
+                this.boardCells = [];
+                
+                // 创建游戏板单元格并缓存引用
+                for (let y = 0; y < config.rows; y++) {
+                    this.boardCells[y] = [];
+                    for (let x = 0; x < config.cols; x++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('border', 'border-slate-800');
+                        cell.dataset.x = x;
+                        cell.dataset.y = y;
+                        this.elements.gameBoard.appendChild(cell);
+                        this.boardCells[y][x] = cell;
+                    }
+                }
+            }
+            
+            // 渲染游戏状态
+             render(state) {
+                // 渲染游戏板和当前方块
+                this.renderBoard(state);
+                
+                // 更新分数显示
+                if (this.elements.scoreDisplay.textContent !== state.score.toString()) {
+                    this.elements.scoreDisplay.textContent = state.score;
+                }
+                
+                // 更新开始/暂停按钮状态
+                if (state.gameOver) {
+                    this.elements.startPauseButton.innerHTML = '<i class="fa fa-play text-sm sm:text-base"></i><span class="text-sm sm:text-base">开始</span>';
+                } else if (state.isPaused) {
+                    this.elements.startPauseButton.innerHTML = '<i class="fa fa-play text-sm sm:text-base"></i><span class="text-sm sm:text-base">继续</span>';
+                } else {
+                    this.elements.startPauseButton.innerHTML = '<i class="fa fa-pause text-sm sm:text-base"></i><span class="text-sm sm:text-base">暂停</span>';
+                }
+                
+                // 设置难度选择框样式
+                const option = this.elements.difficultySelect.querySelector(`option[value="${state.dropSpeed}"]`);
+                if (option) {
+                    this.elements.difficultySelect.className = `bg-transparent text-[clamp(0.8rem,2vw,1.1rem)] font-bold ${option.dataset.color} border-none focus:ring-2 focus:ring-accent/50 pr-6 sm:pr-8 appearance-none cursor-pointer w-full sm:w-auto py-1`;
+                }
+                
+                // 显示或隐藏游戏结束界面：首次游戏或重置后不显示
+                if (state.gameOver && !state.firstGame) {
+                    this.elements.finalScore.textContent = state.score;
+                    this.elements.gameOver.classList.remove('hidden');
+                    this.elements.gameOver.style.display = 'flex';
+                } else {
+                    this.elements.gameOver.classList.add('hidden');
+                    this.elements.gameOver.style.display = 'none';
+                }
+            }
+            
+            // 渲染游戏板和当前方块
+            renderBoard(state) {
+                // 先清除整个游戏板
+                for (let y = 0; y < config.rows; y++) {
+                    for (let x = 0; x < config.cols; x++) {
+                        this.resetCell(x, y);
+                    }
+                }
+                
+                // 绘制固定在游戏板上的方块
+                for (let y = 0; y < config.rows; y++) {
+                    for (let x = 0; x < config.cols; x++) {
+                        if (state.board[y][x]) {
+                            this.setCellColor(x, y, state.board[y][x]);
+                        }
+                    }
+                }
+                
+                // 只有在游戏进行中才绘制当前移动的方块
+                if (!state.gameOver && state.currentPiece) {
+                    const { shape, x: pieceX, y: pieceY, color } = state.currentPiece;
+                    for (let y = 0; y < shape.length; y++) {
+                        for (let x = 0; x < shape[y].length; x++) {
+                            if (shape[y][x]) {
+                                const boardX = pieceX + x;
+                                const boardY = pieceY + y;
+                                if (boardY >= 0 && boardY < config.rows && boardX >= 0 && boardX < config.cols) {
+                                    this.setCellColor(boardX, boardY, color);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 重置单元格样式
+            resetCell(x, y) {
+                if (this.boardCells[y] && this.boardCells[y][x]) {
+                    this.boardCells[y][x].className = 'border border-slate-800';
+                }
+            }
+            
+            // 设置单元格颜色
+            setCellColor(x, y, color) {
+                if (this.boardCells[y] && this.boardCells[y][x]) {
+                    this.boardCells[y][x].className = `bg-${color} border-0 shadow-piece piece-visible`;
+                }
+            }
+            
+            // 添加行清除动画
+            animateLines(lines, callback) {
+                lines.forEach(y => {
+                    for (let x = 0; x < config.cols; x++) {
+                        this.boardCells[y][x].classList.add('animate-clear');
+                    }
+                });
+                
+                setTimeout(() => {
+                    // 清除动画类
+                    lines.forEach(y => {
+                        for (let x = 0; x < config.cols; x++) {
+                            this.boardCells[y][x].classList.remove('animate-clear');
+                        }
+                    });
+                    callback();
+                }, 250);
+            }
+            
+            // 添加得分动画
+            showPointsAnimation(points, x, y) {
+                const pointsElement = document.createElement('div');
+                pointsElement.textContent = `+${points}`;
+                pointsElement.classList.add(
+                    'absolute', 'text-accent', 'font-bold', 'text-lg',
+                    'pointer-events-none', 'transition-all', 'duration-700',
+                    'opacity-0', 'transform', 'translate-y-0'
+                );
+                pointsElement.style.left = `${(x * 10)}%`;
+                pointsElement.style.top = `${(y * 5)}%`;
+                
+                this.elements.gameBoard.parentNode.appendChild(pointsElement);
+                
+                // 触发动画
+                setTimeout(() => {
+                    pointsElement.classList.remove('opacity-0', 'translate-y-0');
+                    pointsElement.classList.add('opacity-100', 'translate-y-[-20px]');
+                }, 10);
+                
+                // 移除元素
+                setTimeout(() => {
+                    pointsElement.remove();
+                }, 700);
+            }
+        }
+        
+        // 游戏逻辑控制器
+        class GameController {
+            constructor() {
+                this.state = new GameState();
+                this.dom = new DOMManager();
+                this.lastRenderedState = null;
+                this.setupEventListeners();
+                // 初始渲染 - 确保游戏结束界面不显示
+                this.dom.render(this.state);
+            }
+            
+            // 开始游戏
+            start() {
+                // 重置游戏状态
+                this.state.reset();
+                this.state.gameOver = false;
+                this.state.isPaused = false;
+                this.state.firstGame = false; // 首次游戏标志设为false
+                this.state.currentPiece = this.state.createPiece(); // 创建第一个方块
+                
+                if (this.state.animationFrameId) {
+                    cancelAnimationFrame(this.state.animationFrameId);
+                }
+                
+                this.state.lastDropTime = performance.now();
+                this.gameLoop(performance.now());
+                this.dom.render(this.state);
+            }
+            
+            // 游戏主循环
+            gameLoop(timestamp) {
+                if (this.state.gameOver || this.state.isPaused) {
+                    return;
+                }
+                
+                const elapsed = timestamp - this.state.lastDropTime;
+                
+                // 自动下落逻辑
+                if (elapsed > this.state.dropSpeed) {
+                    this.movePiece(0, 1);
+                    this.state.lastDropTime = timestamp;
+                }
+                
+                // 渲染更新
+                const stateString = JSON.stringify(this.state);
+                if (stateString !== this.lastRenderedState) {
+                    this.dom.render(this.state);
+                    this.lastRenderedState = stateString;
+                }
+                
+                this.state.animationFrameId = requestAnimationFrame((t) => this.gameLoop(t));
+            }
+            
+            // 检查碰撞
+            checkCollision(piece, offsetX = 0, offsetY = 0) {
+                const { shape, x: pieceX, y: pieceY } = piece;
+                
+                for (let y = 0; y < shape.length; y++) {
+                    for (let x = 0; x < shape[y].length; x++) {
+                        if (shape[y][x]) {
+                            const newX = pieceX + x + offsetX;
+                            const newY = pieceY + y + offsetY;
+                            
+                            // 检查是否超出边界
+                            if (newX < 0 || newX >= config.cols || newY >= config.rows) {
+                                return true;
+                            }
+                            
+                            // 检查是否与已有方块碰撞
+                            if (newY >= 0 && this.state.board[newY][newX]) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                
+                return false;
+            }
+            
+            // 移动方块
+            movePiece(dx, dy) {
+                if (this.state.gameOver || this.state.isPaused) return false;
+                
+                const piece = this.state.currentPiece;
+                if (!piece) return false;
+                
+                if (!this.checkCollision(piece, dx, dy)) {
+                    piece.x += dx;
+                    piece.y += dy;
+                    return true;
+                }
+                
+                // 如果是向下移动并且碰撞，固定方块
+                if (dy > 0) {
+                    this.lockPiece();
+                    return false;
+                }
+                
+                return false;
+            }
+            
+            // 旋转方块
+            rotatePiece() {
+                if (this.state.gameOver || this.state.isPaused) return;
+                
+                const piece = this.state.currentPiece;
+                if (!piece) return;
+                
+                // 保存原始形状用于恢复
+                const originalShape = JSON.parse(JSON.stringify(piece.shape));
+                const originalX = piece.x;
+                const originalY = piece.y;
+                
+                // 创建旋转后的形状（顺时针旋转90度）
+                const rotatedShape = [];
+                for (let x = 0; x < piece.shape[0].length; x++) {
+                    const row = [];
+                    for (let y = piece.shape.length - 1; y >= 0; y--) {
+                        row.push(piece.shape[y][x]);
+                    }
+                    rotatedShape.push(row);
+                }
+                
+                // 尝试应用旋转
+                piece.shape = rotatedShape;
+                
+                // 墙踢逻辑
+                if (this.checkCollision(piece)) {
+                    // 尝试向左移动
+                    if (!this.checkCollision(piece, -1, 0)) {
+                        piece.x--;
+                    } 
+                    // 尝试向右移动
+                    else if (!this.checkCollision(piece, 1, 0)) {
+                        piece.x++;
+                    } 
+                    // 尝试向上移动
+                    else if (!this.checkCollision(piece, 0, -1)) {
+                        piece.y--;
+                    } 
+                    // 尝试向右移动两步
+                    else if (!this.checkCollision(piece, 2, 0)) {
+                        piece.x += 2;
+                    }
+                    // 尝试向左移动两步
+                    else if (!this.checkCollision(piece, -2, 0)) {
+                        piece.x -= 2;
+                    }
+                    // 所有尝试都失败，恢复原始形状
+                    else {
+                        piece.shape = originalShape;
+                        piece.x = originalX;
+                        piece.y = originalY;
+                    }
+                }
+            }
+            
+            // 快速下落
+            dropPiece() {
+                if (this.state.gameOver || this.state.isPaused) return;
+                
+                let dropDistance = 0;
+                while (this.movePiece(0, 1)) {
+                    dropDistance++;
+                }
+                
+                if (dropDistance > 0) {
+                    // 每下落一行得2分
+                    const dropPoints = dropDistance * 2;
+                    this.state.score += dropPoints;
+                    // 显示下落得分动画
+                    this.dom.showPointsAnimation(dropPoints, 5, 5);
+                }
+            }
+            
+            // 固定方块到游戏板
+            lockPiece() {
+                const { shape, x: pieceX, y: pieceY, color } = this.state.currentPiece;
+                
+                for (let y = 0; y < shape.length; y++) {
+                    for (let x = 0; x < shape[y].length; x++) {
+                        if (shape[y][x]) {
+                            const boardX = pieceX + x;
+                            const boardY = pieceY + y;
+                            
+                            // 检查游戏是否结束
+                            if (boardY < 0) {
+                                this.endGame();
+                                return;
+                            }
+                            
+                            // 将方块固定到游戏板上
+                            this.state.board[boardY][boardX] = color;
+                        }
+                    }
+                }
+                
+                // 检查并清除完整的行
+                this.clearLines();
+            }
+            
+            // 检查并清除完整的行
+            clearLines() {
+                let linesCleared = 0;
+                const linesToClear = [];
+                
+                // 找出所有要消除的行
+                for (let y = config.rows - 1; y >= 0; y--) {
+                    if (this.state.board[y].every(cell => cell !== 0)) {
+                        linesCleared++;
+                        linesToClear.push(y);
+                    }
+                }
+                
+                if (linesCleared > 0) {
+                    // 添加清除动画
+                    this.dom.animateLines(linesToClear, () => {
+                        // 从下往上清除行
+                        linesToClear.sort((a, b) => b - a).forEach(y => {
+                            // 移除当前行，并将上方所有行下移
+                            for (let yy = y; yy > 0; yy--) {
+                                this.state.board[yy] = [...this.state.board[yy - 1]];
+                            }
+                            // 在顶部添加新行
+                            this.state.board[0] = Array(config.cols).fill(0);
+                        });
+                        
+                        // 更新分数并获取本次得分
+                        const pointsEarned = this.state.updateScore(linesCleared);
+                        
+                        // 显示得分动画
+                        this.dom.showPointsAnimation(pointsEarned, 5, 5);
+                        
+                        // 创建新的方块
+                        this.state.currentPiece = this.state.createPiece();
+                        
+                        // 检查新方块是否与已有方块碰撞
+                        if (this.checkCollision(this.state.currentPiece)) {
+                            this.endGame();
+                        }
+                    });
+                } else {
+                    // 没有消除行，直接创建新方块
+                    this.state.currentPiece = this.state.createPiece();
+                    
+                    // 检查新方块是否与已有方块碰撞
+                    if (this.checkCollision(this.state.currentPiece)) {
+                        this.endGame();
+                    }
+                }
+            }
+            
+            // 暂停游戏
+            pause() {
+                if (this.state.gameOver) return;
+                
+                this.state.isPaused = true;
+                if (this.state.animationFrameId) {
+                    cancelAnimationFrame(this.state.animationFrameId);
+                    this.state.animationFrameId = null;
+                }
+                this.dom.render(this.state);
+            }
+            
+            // 继续游戏
+            resume() {
+                if (this.state.gameOver) return;
+                
+                this.state.isPaused = false;
+                this.state.lastDropTime = performance.now();
+                this.gameLoop(performance.now());
+                this.dom.render(this.state);
+            }
+            
+            // 结束游戏
+            endGame() {
+                this.state.gameOver = true;
+                if (this.state.animationFrameId) {
+                    cancelAnimationFrame(this.state.animationFrameId);
+                    this.state.animationFrameId = null;
+                }
+                this.dom.render(this.state);
+            }
+            
+            // 重置游戏
+            reset() {
+                if (this.state.animationFrameId) {
+                    cancelAnimationFrame(this.state.animationFrameId);
+                    this.state.animationFrameId = null;
+                }
+                // 完全重置状态，不创建新方块
+                this.state.reset();
+                this.dom.render(this.state);
+            }
+            
+            // 切换开始/暂停状态
+            toggleStartPause() {
+                if (this.state.gameOver) {
+                    this.start();
+                } else if (this.state.isPaused) {
+                    this.resume();
+                } else {
+                    this.pause();
+                }
+            }
+            
+            // 设置事件监听器
+            setupEventListeners() {
+                // 开始/暂停按钮
+                this.dom.elements.startPauseButton.addEventListener('click', () => this.toggleStartPause());
+                
+                // 重置按钮
+                this.dom.elements.resetButton.addEventListener('click', () => this.reset());
+                
+                // 再来一局按钮
+                this.dom.elements.playAgain.addEventListener('click', () => this.start());
+                
+                // 难度选择
+                this.dom.elements.difficultySelect.addEventListener('change', (e) => {
+                    const speed = parseInt(e.target.value);
+                    if (speed) {
+                        this.state.setDifficulty(speed);
+                        this.dom.render(this.state);
+                    }
+                });
+                
+                // 键盘控制
+                document.addEventListener('keydown', (e) => {
+                    if (this.state.gameOver) return;
+                    
+                    switch (e.key) {
+                        // 方向键控制
+                        case 'ArrowLeft':
+                        // A键控制向左
+                        case 'a':
+                        case 'A':
+                            if (!this.state.isPaused) this.movePiece(-1, 0);
+                            break;
+                        // 方向键控制
+                        case 'ArrowRight':
+                        // D键控制向右
+                        case 'd':
+                        case 'D':
+                            if (!this.state.isPaused) this.movePiece(1, 0);
+                            break;
+                        // 方向键控制
+                        case 'ArrowDown':
+                        // S键控制向下
+                        case 's':
+                        case 'S':
+                            if (!this.state.isPaused) this.movePiece(0, 1);
+                            break;
+                        // 方向键控制
+                        case 'ArrowUp':
+                        // W键控制旋转
+                        case 'w':
+                        case 'W':
+                            if (!this.state.isPaused) this.rotatePiece();
+                            break;
+                        // 空格键控制快速下落
+                        case ' ':
+                            if (!this.state.isPaused) this.dropPiece();
+                            break;
+                        // P键控制暂停/继续
+                        case 'p':
+                        case 'P':
+                            this.toggleStartPause();
+                            break;
+                    }
+                });
+                
+                // 移动端控制
+                this.dom.elements.mobileLeft.addEventListener('click', () => {
+                    if (!this.state.gameOver && !this.state.isPaused) this.movePiece(-1, 0);
+                });
+                this.dom.elements.mobileRight.addEventListener('click', () => {
+                    if (!this.state.gameOver && !this.state.isPaused) this.movePiece(1, 0);
+                });
+                this.dom.elements.mobileDown.addEventListener('click', () => {
+                    if (!this.state.gameOver && !this.state.isPaused) this.movePiece(0, 1);
+                });
+                this.dom.elements.mobileRotate.addEventListener('click', () => {
+                    if (!this.state.gameOver && !this.state.isPaused) this.rotatePiece();
+                });
+                this.dom.elements.mobileDrop.addEventListener('click', () => {
+                    if (!this.state.gameOver && !this.state.isPaused) this.dropPiece();
+                });
+            }
+        }
+        
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            const game = new GameController();
+        });
+    </script>
+</body>
+</html>

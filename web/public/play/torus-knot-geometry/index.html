@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL 赛博核心展示 | Three.js Demo</title>
+    <style>
+        /* 基础重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden; /* 防止滚动条 */
+            background-color: #050505;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+        }
+
+        /* 画布容器 */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI 覆盖层 */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none; /* 让鼠标事件穿透到 Canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+        }
+
+        header {
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #00f260, #0575e6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(5, 117, 230, 0.5);
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #aaa;
+            max-width: 600px;
+        }
+
+        /* 交互提示卡片 */
+        .interaction-hint {
+            align-self: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            pointer-events: auto; /* 允许点击 */
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .interaction-hint:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+            border-color: rgba(0, 242, 96, 0.5);
+            box-shadow: 0 0 15px rgba(0, 242, 96, 0.2);
+        }
+
+        .interaction-hint p {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .interaction-hint span {
+            display: block;
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* 加载指示器 */
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; text-shadow: 0 0 10px #fff; }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .subtitle { font-size: 0.8rem; }
+            #ui-layer { padding: 1.5rem; }
+        }
+    </style>
+    
+    <!-- 引入 Three.js 和必要组件 (使用 ES Modules) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="loader">SYSTEM INITIALIZING...</div>
+
+    <div id="ui-layer">
+        <header>
+            <h1>CYBER CORE</h1>
+            <div class="subtitle">基于 WebGL 的程序化几何体生成与动态光照渲染演示。</div>
+        </header>
+
+        <div class="interaction-hint" id="boost-btn">
+            <p>点击这里激活超频模式</p>
+            <span>或者按住鼠标左键</span>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // --- 全局变量 ---
+        let scene, camera, renderer, composer, controls;
+        let coreGroup, outerShell, particles;
+        let isBoosting = false;
+        let time = 0;
+        
+        // 鼠标位置 (归一化 -1 到 1)
+        const mouse = new THREE.Vector2();
+        const targetRotation = new THREE.Vector2();
+
+        // --- 初始化场景 ---
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. 场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+            scene.fog = new THREE.FogExp2(0x050505, 0.02); // 添加雾气增加深邃感
+
+            // 2. 相机
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 18);
+
+            // 3. 渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.toneMapping = THREE.ReinhardToneMapping; // 色调映射
+            container.appendChild(renderer.domElement);
+
+            // 4. 后期处理 (Bloom/辉光效果) - 这是"花活"的关键
+            const renderScene = new RenderPass(scene, camera);
+            
+            // UnrealBloomPass参数: resolution, strength, radius, threshold
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.1; // 亮度阈值
+            bloomPass.strength = 1.2;  // 辉光强度
+            bloomPass.radius = 0.5;    // 辉光扩散半径
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            // 5. 创建物体
+            createObjects();
+
+            // 6. 灯光
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            const pointLight1 = new THREE.PointLight(0x00f260, 2, 50); // 绿色
+            pointLight1.position.set(5, 5, 5);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0x0575e6, 2, 50); // 蓝色
+            pointLight2.position.set(-5, -5, 5);
+            scene.add(pointLight2);
+
+            // 7. 事件监听
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mousedown', () => { isBoosting = true; });
+            document.addEventListener('mouseup', () => { isBoosting = false; });
+            
+            // 移除 loading
+            const loader = document.getElementById('loader');
+            if(loader) loader.style.display = 'none';
+
+            // 开始循环
+            animate();
+        }
+
+        // --- 创建核心物体 ---
+        function createObjects() {
+            coreGroup = new THREE.Group();
+            scene.add(coreGroup);
+
+            // A. 内部核心
+            const coreGeo = new THREE.IcosahedronGeometry(2, 0);
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                emissive: 0x00f260,
+                emissiveIntensity: 0.8,
+                wireframe: true,
+                roughness: 0,
+                metalness: 1
+            });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            coreGroup.add(core);
+
+            // 内部实心球体 (遮挡背景)
+            const innerCore = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(1.8, 2),
+                new THREE.MeshBasicMaterial({ color: 0x000000 })
+            );
+            coreGroup.add(innerCore);
+
+            // B. 中层环 (线框)
+            const ringGeo = new THREE.TorusGeometry(3.5, 0.05, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x0575e6 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            coreGroup.add(ring);
+
+            // C. 外部护盾 (动态几何体)
+            const shieldGeo = new THREE.TorusKnotGeometry(5, 0.2, 100, 16);
+            const shieldMat = new THREE.MeshPhysicalMaterial({
+                color: 0x222222,
+                emissive: 0x001133,
+                metalness: 0.9,
+                roughness: 0.1,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1,
+                wireframe: true
+            });
+            outerShell = new THREE.Mesh(shieldGeo, shieldMat);
+            coreGroup.add(outerShell);
+
+            // D. 背景粒子场
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1500;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                // 随机分布在 -40 到 40 的空间内
+                posArray[i] = (Math.random() - 0.5) * 80; 
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.05,
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+        }
+
+        // --- 窗口调整 ---
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- 鼠标移动处理 ---
+        function onMouseMove(event) {
+            // 计算归一化坐标
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        // --- 动画循环 ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            time += 0.005;
+
+            // 1. 基础自转
+            let rotationSpeed = isBoosting ? 0.05 : 0.002;
+            
+            // 核心反转旋转
+            coreGroup.children[0].rotation.y -= rotationSpeed;
+            coreGroup.children[0].rotation.z -= rotationSpeed;
+
+            // 环形摆动
+            coreGroup.children[2].rotation.x = Math.sin(time) * 0.5 + (Math.PI/2);
+            coreGroup.children[2].rotation.y += rotationSpeed;
+
+            // 外壳复杂旋转
+            outerShell.rotation.x += rotationSpeed * 0.5;
+            outerShell.rotation.y += rotationSpeed;
+
+            // 2. 交互反馈 (基于鼠标位置)
+            // 使用 lerp (线性插值) 让旋转平滑过渡
+            targetRotation.x = mouse.y * 0.5;
+            targetRotation.y = mouse.x * 0.5;
+
+            coreGroup.rotation.x += 0.05 * (targetRotation.x - coreGroup.rotation.x);
+            coreGroup.rotation.y += 0.05 * (targetRotation.y - coreGroup.rotation.y);
+
+            // 3. "超频"模式特效
+            if (isBoosting) {
+                // 缩放外壳
+                outerShell.scale.setScalar(1 + Math.sin(time * 20) * 0.05);
+                // 加速粒子
+                particles.rotation.y -= 0.01;
+                // 颜色变红/紫警告色
+                outerShell.material.emissive.setHex(0xff0055);
+            } else {
+                // 恢复正常
+                outerShell.scale.setScalar(1);
+                particles.rotation.y -= 0.001;
+                outerShell.material.emissive.setHex(0x001133);
+            }
+
+            // 粒子波浪运动
+            const positions = particles.geometry.attributes.position.array;
+            for(let i=1; i<positions.length; i+=3) {
+                // 稍微扰动 Y 轴
+                positions[i] += Math.sin(time + positions[i-1]) * 0.01;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            // 4. 渲染
+            // renderer.render(scene, camera); // 普通渲染
+            composer.render(); // 使用后期处理渲染
+        }
+
+        // 启动
+        init();
+
+    </script>
+</body>
+</html>

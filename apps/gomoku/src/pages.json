@@ -1,0 +1,39 @@
+{
+	"pages": [ 
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/aigomoku/aigomoku",
+			"style": {
+				"navigationBarTitleText": "人机对战五子棋",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/gomoku/gomoku",
+			"style": {
+				"navigationBarTitleText": "本地对战五子棋",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
+		}
+
+
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "古韵五子棋",
+		"navigationBarBackgroundColor": "#8B4513",
+		"backgroundColor": "#F5DEB3",
+		"app-plus": {
+			"background": "#F5DEB3"
+		}
+	}
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>URL跳转确认</title>
+    <style>
+        body {
+            width: 250px;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+        }
+        .status {
+            margin-bottom: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .domain-info {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="status">
+        <span id="status-text">扩展已启用</span>
+    </div>
+    <button id="toggle-button">禁用扩展</button>
+    
+    <div class="domain-info">
+        <span id="domain-mode">模式: 所有域名</span>
+    </div>
+    
+    <script>
+        // 加载当前状态
+        document.addEventListener('DOMContentLoaded', () => {
+            chrome.storage.sync.get(['config'], (result) => {
+                const config = result.config || { enabled: true, mode: 'all' };
+                updateStatus(config.enabled);
+                updateDomainMode(config.mode);
+                
+                // 添加按钮点击事件
+                document.getElementById('toggle-button').addEventListener('click', () => {
+                    config.enabled = !config.enabled;
+                    chrome.storage.sync.set({ config }, () => {
+                        updateStatus(config.enabled);
+                    });
+                });
+            });
+        });
+        
+        // 更新状态显示
+        function updateStatus(enabled) {
+            const statusText = document.getElementById('status-text');
+            const toggleButton = document.getElementById('toggle-button');
+            
+            if (enabled) {
+                statusText.textContent = '扩展已启用';
+                statusText.style.color = 'green';
+                toggleButton.textContent = '禁用扩展';
+            } else {
+                statusText.textContent = '扩展已禁用';
+                statusText.style.color = 'red';
+                toggleButton.textContent = '启用扩展';
+            }
+        }
+        
+        // 更新域名模式显示
+        function updateDomainMode(mode) {
+            const domainMode = document.getElementById('domain-mode');
+            domainMode.textContent = `模式: ${mode === 'all' ? '所有域名' : '自定义域名'}`;
+        }
+    </script>
+</body>
+</html>
+    

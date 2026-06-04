@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "types": ["vite/client"],
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "module": "esnext",
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+     "useDefineForClassFields":true,
+    /* Bundler mode */
+    "moduleResolution": "node",
+    //"allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    //"noEmit": true,
+    // "noEmit": false,
+    // "emitDeclarationOnly": true,
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+/**
+ * TypeScript 配置文件，用于项目的编译选项设置。
+ * @compilerOptions - 编译器选项配置。
+ * @include - 指定要包含在编译中的文件。
+ * 
+ * 主要配置项说明：
+ * - composite: 启用项目的复合模式。
+ * - types: 指定要包含的类型定义。
+ * - tsBuildInfoFile: 指定 TypeScript 构建信息文件的位置。
+ * - target: 指定 ECMAScript 目标版本。
+ * - lib: 指定要包含的库文件。
+ * - module: 指定模块系统。
+ * - skipLibCheck: 跳过库文件的类型检查。
+ * - allowSyntheticDefaultImports: 允许从没有默认导出的模块中默认导入。
+ * - useDefineForClassFields: 使用定义类字段的方式。
+ * - moduleResolution: 指定模块解析策略。
+ * - isolatedModules: 启用孤立模块。
+ * - moduleDetection: 指定模块检测策略。
+ * - strict: 启用所有严格类型检查选项。
+ * - noUnusedLocals: 禁止未使用的局部变量。
+ * - noUnusedParameters: 禁止未使用的函数参数。
+ * - noFallthroughCasesInSwitch: 禁止 switch 语句中的 fallthrough 情况。
+ * - noUncheckedSideEffectImports: 禁止未检查的副作用导入。
+ */

@@ -1,0 +1,32 @@
+{
+  "name": "admin-file",
+  "version": "1.0.0",
+  "description": "文件管理服务器",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HanphoneJan/admin-file.git"
+  },
+  "author": "hanphone",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HanphoneJan/admin-file/issues"
+  },
+  "homepage": "https://github.com/HanphoneJan/admin-file#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  }
+}

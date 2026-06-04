@@ -1,0 +1,12 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.AtlasApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color for night mode. -->
+        <item name="colorPrimary">@color/blue_500</item>
+        <item name="colorPrimaryVariant">@color/dark_blue_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <!-- Status bar color for night mode. -->
+        <item name="android:statusBarColor">@color/navy_blue_800</item>
+        <!-- Customize your theme here. -->
+    </style>
+</resources>

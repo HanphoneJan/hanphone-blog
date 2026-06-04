@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易钢琴键盘</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="../../shared/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#FF7D00',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .key-shadow {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 -4px 0 0 rgba(0, 0, 0, 0.1);
+            }
+            .key-shadow-active {
+                box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1), inset 0 -2px 0 0 rgba(0, 0, 0, 0.1);
+            }
+            .black-key-shadow {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1), inset 0 -2px 0 0 rgba(255, 255, 255, 0.1);
+            }
+            .black-key-shadow-active {
+                box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), inset 0 -1px 0 0 rgba(255, 255, 255, 0.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-inter flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-dark mb-2">简易钢琴键盘</h1>
+            <p class="text-gray-600 text-lg">点击琴键演奏音乐，感受音符的魅力</p>
+        </header>
+        
+        <main class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+            <div class="relative w-full aspect-[8/3] max-w-3xl mx-auto">
+                <div id="keyboard" class="relative w-full h-full flex rounded-lg overflow-hidden shadow-lg">
+                    <!-- 琴键将通过JavaScript动态生成 -->
+                </div>
+                
+                <div id="note-display" class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 bg-primary text-white px-6 py-3 rounded-lg shadow-lg text-xl font-semibold transition-all duration-300 opacity-0">
+                    <span id="note-name">C</span>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                <div class="inline-flex items-center gap-4 bg-gray-100 rounded-xl p-4">
+                    <i class="fa fa-info-circle text-primary text-xl"></i>
+                    <p class="text-gray-700">点击白色琴键 (C, D, E, F, G, A, B, C1) 演奏对应的音符</p>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>🎹 简易钢琴键盘 | 享受音乐的乐趣</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 定义音符和对应的音频文件
+            const notes = [
+                { name: 'C', key: 'C', frequency: 261.63 },
+                { name: 'D', key: 'D', frequency: 293.66 },
+                { name: 'E', key: 'E', frequency: 329.63 },
+                { name: 'F', key: 'F', frequency: 349.23 },
+                { name: 'G', key: 'G', frequency: 392.00 },
+                { name: 'A', key: 'A', frequency: 440.00 },
+                { name: 'B', key: 'B', frequency: 493.88 },
+                { name: 'C1', key: 'C1', frequency: 523.25 }
+            ];
+            
+            // 获取键盘和音符显示元素
+            const keyboard = document.getElementById('keyboard');
+            const noteDisplay = document.getElementById('note-display');
+            const noteName = document.getElementById('note-name');
+            
+            // 创建琴键
+            notes.forEach((note, index) => {
+                const key = document.createElement('div');
+                key.className = 'white-key flex-1 relative bg-white border-r border-gray-300 cursor-pointer transition-all duration-150 key-shadow flex flex-col items-center justify-end pb-4';
+                key.dataset.note = note.name;
+                key.dataset.frequency = note.frequency;
+                key.innerHTML = `
+                    <span class="text-lg font-semibold text-gray-800">${note.name}</span>
+                    <span class="text-xs text-gray-500 mt-1">${note.frequency.toFixed(2)}Hz</span>
+                `;
+                
+                // 为琴键添加事件监听
+                key.addEventListener('mousedown', () => playNote(key));
+                key.addEventListener('mouseup', () => releaseNote(key));
+                key.addEventListener('mouseleave', () => releaseNote(key));
+                
+                keyboard.appendChild(key);
+            });
+            
+            // 音频上下文
+            let audioContext;
+            
+            // 播放音符
+            function playNote(key) {
+                // 初始化音频上下文
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // 获取音符信息
+                const note = key.dataset.note;
+                const frequency = parseFloat(key.dataset.frequency);
+                
+                // 显示当前音符
+                noteName.textContent = note;
+                noteDisplay.style.opacity = '1';
+                noteDisplay.style.transform = 'translate(-50%, -10px)';
+                
+                // 改变琴键样式
+                key.classList.remove('key-shadow');
+                key.classList.add('key-shadow-active', 'bg-gray-100');
+                
+                // 创建振荡器播放音符
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.5);
+                
+                // 存储当前的音频节点，以便后续可以停止它们
+                key.currentOscillator = oscillator;
+                key.currentGainNode = gainNode;
+            }
+            
+            // 释放音符
+            function releaseNote(key) {
+                // 恢复琴键样式
+                key.classList.remove('key-shadow-active', 'bg-gray-100');
+                key.classList.add('key-shadow');
+                
+                // 隐藏音符显示（延迟一点时间）
+                setTimeout(() => {
+                    noteDisplay.style.opacity = '0';
+                    noteDisplay.style.transform = 'translate(-50%, 0)';
+                }, 300);
+            }
+        });
+    </script>
+</body>
+</html>

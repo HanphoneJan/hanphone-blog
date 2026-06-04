@@ -1,0 +1,30 @@
+{
+  "manifest_version": 2,
+  "name": "跳转拦截器",
+  "version": "1.0",
+  "description": "在网页跳转时弹出确认框，避免误操作",
+  "author": "Hanphone",
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "storage",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "options_page": "options.html",
+  "icons": {
+    "16": "zhuxun.png",
+     "32": "zhuxun.png",
+    "48": "zhuxun.png",
+    "128": "zhuxun.png"
+  }
+}

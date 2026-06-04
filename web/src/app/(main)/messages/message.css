@@ -1,0 +1,637 @@
+/* ============================================
+   留言板样式 - 仿B站评论布局
+   浅色主题：卡片风格
+   暗色主题：黑板报手绘风格
+   ============================================ */
+
+/* 导入 @fontsource 字体 */
+@import '@fontsource/ma-shan-zheng/400.css';
+@import '@fontsource/comic-neue/400.css';
+@import '@fontsource/comic-neue/700.css';
+@import '@fontsource/kalam/400.css';
+
+/* ============================================
+   CSS 变量定义
+   ============================================ */
+
+:root {
+  /* 手绘风格字体 */
+  --msg-font: 'Ma Shan Zheng', 'Kalam', 'Comic Neue', 'PingFang SC', 'Microsoft YaHei', cursive;
+  --msg-font-casual: 'Comic Neue', 'Kalam', 'PingFang SC', cursive;
+  --msg-font-decorative: 'Ma Shan Zheng', cursive;
+  
+  /* 浅色主题 - 卡片风格（更白的配色） */
+  --msg-bg: 255 255 255;
+  --msg-surface: 255 255 255;
+  --msg-border: 235 237 240;
+  --msg-text: 24 25 28;
+  --msg-muted: 120 128 140;
+  --msg-accent: 23 152 127;
+  --msg-line: 220 222 226;
+}
+
+/* 暗色主题 - 黑板报风格 */
+.dark {
+  --msg-bg: 25 35 45;
+  --msg-surface: 35 45 55;
+  --msg-border: 55 65 75;
+  --msg-text: 245 245 240;
+  --msg-muted: 160 170 180;
+  --msg-accent: 100 220 160;
+  --msg-line: 180 180 175;
+}
+
+/* ============================================
+   容器
+   ============================================ */
+
+/* 浅色主题：简洁背景 */
+.msg-container {
+  background: transparent;
+  min-height: 100vh;
+}
+
+/* 暗色主题：黑板背景 */
+.dark .msg-container {
+  background: 
+    radial-gradient(circle at 20% 50%, rgb(35 45 55 / 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgb(25 35 45 / 0.3) 0%, transparent 40%),
+    linear-gradient(180deg, rgb(var(--msg-bg)) 0%, rgb(var(--msg-surface)) 100%);
+  position: relative;
+}
+
+/* 黑板纹理（仅暗色） */
+.dark .msg-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgb(255 255 255 / 0.01) 2px,
+      rgb(255 255 255 / 0.01) 4px
+    );
+  pointer-events: none;
+}
+
+/* ============================================
+   输入区域
+   ============================================ */
+
+/* 浅色：白色卡片 */
+.msg-input-area {
+  background: rgb(var(--msg-surface));
+  border: 1px solid rgb(var(--msg-border));
+  border-radius: 8px;
+  position: relative;
+}
+
+/* 暗色：黑板风格 */
+.dark .msg-input-area {
+  background: rgb(var(--msg-surface) / 0.6);
+  border: 2px dashed rgb(var(--msg-line) / 0.65);
+  border-radius: 4px;
+}
+
+.dark .msg-input-area::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgb(var(--msg-line) / 0.35);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* ============================================
+   输入框
+   ============================================ */
+
+.msg-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: var(--msg-font);
+  font-size: var(--text-base);
+  line-height: 1.7;
+  color: rgb(var(--msg-text));
+  resize: none;
+  position: relative;
+}
+
+.msg-textarea:focus {
+  outline: none;
+}
+
+.msg-textarea::placeholder {
+  color: rgb(var(--msg-muted) / 0.7);
+  font-style: italic;
+}
+
+.dark .msg-textarea::placeholder {
+  color: rgb(var(--msg-muted) / 0.85);
+}
+
+/* ============================================
+   按钮
+   ============================================ */
+
+.msg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  font-family: var(--msg-font);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: rgb(255 255 255);
+  background: rgb(var(--msg-accent));
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.msg-btn:hover:not(:disabled) {
+  background: rgb(var(--msg-accent) / 0.85);
+  transform: translateY(-1px);
+}
+
+.msg-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 次要按钮 */
+.msg-btn-secondary {
+  background: transparent;
+  color: rgb(var(--msg-muted));
+  border: 1px solid rgb(var(--msg-border));
+}
+
+.msg-btn-secondary:hover:not(:disabled) {
+  color: rgb(var(--msg-text));
+  background: rgb(var(--msg-border) / 0.3);
+  border-color: rgb(var(--msg-border) / 0.5);
+}
+
+/* 暗色主题按钮 */
+.dark .msg-btn {
+  background: rgb(var(--msg-accent) / 0.25);
+  border: 2px solid rgb(var(--msg-accent) / 0.7);
+  color: rgb(var(--msg-text));
+}
+
+.dark .msg-btn:hover:not(:disabled) {
+  background: rgb(var(--msg-accent) / 0.4);
+}
+
+.dark .msg-btn-secondary {
+  background: transparent;
+  border-color: rgb(var(--msg-line) / 0.6);
+  color: rgb(var(--msg-muted));
+}
+
+.dark .msg-btn-secondary:hover:not(:disabled) {
+  border-color: rgb(var(--msg-line) / 0.8);
+  color: rgb(var(--msg-text));
+  background: rgb(var(--msg-line) / 0.15);
+}
+
+/* ============================================
+   头像
+   ============================================ */
+
+.msg-avatar {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgb(var(--msg-border));
+  transition: all 0.2s ease;
+}
+
+.msg-avatar:hover {
+  box-shadow: 0 0 0 2px rgb(var(--msg-accent) / 0.5);
+}
+
+.dark .msg-avatar {
+  box-shadow: 
+    0 0 0 2px rgb(var(--msg-line) / 0.5),
+    inset 0 0 0 1px rgb(var(--msg-line) / 0.35);
+}
+
+.dark .msg-avatar:hover {
+  box-shadow: 
+    0 0 0 2px rgb(var(--msg-accent) / 0.6),
+    inset 0 0 0 1px rgb(var(--msg-accent) / 0.4);
+}
+
+.msg-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ============================================
+   留言项 - B站风格紧凑布局
+   ============================================ */
+
+/* 根留言 */
+.msg-root {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgb(var(--msg-border));
+}
+
+.dark .msg-root {
+  border-bottom: 1px dashed rgb(var(--msg-border) / 0.7);
+}
+
+.msg-root:last-child {
+  border-bottom: none;
+}
+
+/* 子回复 */
+.msg-reply {
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+/* 回复缩进线 */
+.msg-reply-indent {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.msg-reply-indent::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgb(var(--msg-border));
+}
+
+.dark .msg-reply-indent::before {
+  width: 1.5px;
+  background: repeating-linear-gradient(
+    180deg,
+    rgb(var(--msg-line) / 0.5),
+    rgb(var(--msg-line) / 0.5) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+/* ============================================
+   文字样式
+   ============================================ */
+
+.msg-nickname {
+  font-family: var(--msg-font);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: rgb(var(--msg-accent));
+  cursor: pointer;
+}
+
+.msg-nickname:hover {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: rgb(var(--msg-accent) / 0.5);
+}
+
+.msg-content {
+  font-family: var(--msg-font);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: rgb(var(--msg-text));
+  margin-top: 0.25rem;
+}
+
+.msg-meta {
+  font-family: var(--msg-font-casual);
+  font-size: var(--text-xs);
+  color: rgb(var(--msg-muted));
+}
+
+.msg-action {
+  font-family: var(--msg-font);
+  font-size: var(--text-xs);
+  color: rgb(var(--msg-muted));
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.msg-action:hover {
+  color: rgb(var(--msg-accent));
+  background: rgb(var(--msg-accent) / 0.1);
+}
+
+/* UP主标识 */
+.msg-up-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.05rem 0.35rem;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: rgb(var(--msg-accent));
+  border: 1px solid rgb(var(--msg-accent) / 0.3);
+  border-radius: 2px;
+  background: rgb(var(--msg-accent) / 0.08);
+}
+
+.dark .msg-up-badge {
+  border-color: rgb(var(--msg-accent) / 0.4);
+  background: rgb(var(--msg-accent) / 0.1);
+}
+
+/* ============================================
+   回复展开按钮
+   ============================================ */
+
+.msg-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--msg-font);
+  font-size: var(--text-xs);
+  color: rgb(var(--msg-muted));
+  cursor: pointer;
+  padding: 0.2rem 0.2rem;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.msg-expand-btn:hover {
+  color: rgb(var(--msg-accent));
+  background: rgb(var(--msg-accent) / 0.1);
+}
+
+/* ============================================
+   回复输入框
+   ============================================ */
+
+.msg-reply-box {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgb(var(--msg-surface));
+  border: 1px solid rgb(var(--msg-border));
+  border-radius: 8px;
+}
+
+.dark .msg-reply-box {
+  background: rgb(var(--msg-bg) / 0.7);
+  border: 1px dashed rgb(var(--msg-line) / 0.55);
+  border-radius: 4px;
+}
+
+/* ============================================
+   空状态
+   ============================================ */
+
+.msg-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: rgb(var(--msg-muted));
+}
+
+.msg-empty-icon {
+  font-size: var(--text-2xl);
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+}
+
+.dark .msg-empty-icon {
+  opacity: 0.85;
+}
+
+.msg-empty-text {
+  font-family: var(--msg-font);
+  font-size: var(--text-base);
+}
+
+/* ============================================
+   骨架屏
+   ============================================ */
+
+.msg-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--msg-border) / 0.5) 25%,
+    rgb(var(--msg-border) / 0.2) 50%,
+    rgb(var(--msg-border) / 0.5) 75%
+  );
+  background-size: 200% 100%;
+  animation: msg-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.dark .msg-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--msg-border) / 0.3) 25%,
+    rgb(var(--msg-border) / 0.1) 50%,
+    rgb(var(--msg-border) / 0.3) 75%
+  );
+}
+
+@keyframes msg-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ============================================
+   标题装饰
+   ============================================ */
+
+.msg-title-line {
+  position: relative;
+  display: inline-block;
+}
+
+.dark .msg-title-line::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(var(--msg-line) / 0.75),
+    rgb(var(--msg-line) / 0.75) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+  transform: rotate(-0.5deg);
+}
+
+/* ============================================
+   列表头部
+   ============================================ */
+
+.msg-header {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgb(var(--msg-border));
+  margin-bottom: 0.25rem;
+}
+
+.dark .msg-header {
+  border-bottom: 2px solid rgb(var(--msg-line) / 0.5);
+}
+
+/* ============================================
+   角落装饰（仅暗色主题）
+   ============================================ */
+
+.msg-corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.msg-corner svg {
+  width: 100%;
+  height: 100%;
+  stroke: rgb(var(--msg-line));
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* ============================================
+   主题适配
+   ============================================ */
+
+/* 马卡龙主题 */
+.theme-macaron {
+  --msg-accent: 255 130 170;
+}
+
+/* 赛博朋克主题 - 霓虹黑板风格 */
+.theme-cyber {
+  --msg-bg: 10 15 25;
+  --msg-surface: 18 28 45;
+  --msg-border: 34 211 238;
+  --msg-text: 241 245 249;
+  --msg-muted: 148 163 184;
+  --msg-accent: 6 182 212;
+  --msg-line: 34 211 238;
+}
+
+/* 赛博朋克主题容器背景 */
+.theme-cyber .msg-container {
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 0, 128, 0.05) 0%, transparent 40%),
+    linear-gradient(180deg, rgb(var(--msg-bg)) 0%, rgb(var(--msg-surface)) 100%);
+}
+
+/* 赛博朋克输入区域 - 霓虹边框 */
+.theme-cyber .msg-input-area {
+  background: rgb(var(--msg-surface) / 0.7);
+  border: 1px solid rgb(var(--msg-accent) / 0.5);
+  box-shadow: 
+    0 0 15px -5px rgb(var(--msg-accent) / 0.3),
+    inset 0 0 20px -10px rgb(var(--msg-accent) / 0.1);
+}
+
+.theme-cyber .msg-input-area:focus-within {
+  border-color: rgb(var(--msg-accent));
+  box-shadow: 
+    0 0 20px -5px rgb(var(--msg-accent) / 0.5),
+    inset 0 0 20px -10px rgb(var(--msg-accent) / 0.15);
+}
+
+/* 赛博朋克按钮 - 霓虹发光 */
+.theme-cyber .msg-btn {
+  background: rgb(var(--msg-accent) / 0.2);
+  border: 1px solid rgb(var(--msg-accent) / 0.6);
+  color: rgb(var(--msg-accent));
+  box-shadow: 0 0 10px -3px rgb(var(--msg-accent) / 0.4);
+}
+
+.theme-cyber .msg-btn:hover:not(:disabled) {
+  background: rgb(var(--msg-accent) / 0.35);
+  border-color: rgb(var(--msg-accent));
+  box-shadow: 0 0 15px -3px rgb(var(--msg-accent) / 0.6);
+}
+
+/* 赛博朋克头像 - 霓虹光环 */
+.theme-cyber .msg-avatar {
+  box-shadow: 
+    0 0 0 2px rgb(var(--msg-accent) / 0.4),
+    0 0 10px -2px rgb(var(--msg-accent) / 0.5);
+}
+
+.theme-cyber .msg-avatar:hover {
+  box-shadow: 
+    0 0 0 2px rgb(var(--msg-accent) / 0.7),
+    0 0 15px -2px rgb(var(--msg-accent) / 0.8);
+}
+
+/* 赛博朋克留言项 - 霓虹分隔线 */
+.theme-cyber .msg-root {
+  border-bottom: 1px solid rgb(var(--msg-accent) / 0.2);
+}
+
+/* 赛博朋克回复缩进线 */
+.theme-cyber .msg-reply-indent::before {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--msg-accent) / 0.5),
+    rgb(255 0 128 / 0.3) 50%,
+    transparent
+  );
+}
+
+/* 赛博朋克UP标识 */
+.theme-cyber .msg-up-badge {
+  border-color: rgb(255 0 128 / 0.5);
+  color: rgb(255 0 128);
+  background: rgb(255 0 128 / 0.1);
+  box-shadow: 0 0 8px -2px rgb(255 0 128 / 0.3);
+}
+
+/* 赛博朋克列表头部 */
+.theme-cyber .msg-header {
+  border-bottom: 1px solid rgb(var(--msg-accent) / 0.3);
+}
+
+/* 赛博朋克回复框 */
+.theme-cyber .msg-reply-box {
+  background: rgb(var(--msg-surface) / 0.6);
+  border: 1px solid rgb(var(--msg-accent) / 0.3);
+  box-shadow: inset 0 0 15px -5px rgb(var(--msg-accent) / 0.1);
+}
+
+/* 赛博朋克角落装饰 */
+.theme-cyber .msg-corner svg {
+  stroke: rgb(var(--msg-accent) / 0.5);
+  filter: drop-shadow(0 0 3px rgb(var(--msg-accent) / 0.5));
+}
+
+/* ============================================
+   响应式
+   ============================================ */
+
+@media (max-width: 768px) {
+  .msg-reply-indent {
+    padding-left: 1.5rem;
+  }
+  
+  .msg-reply-indent::before {
+    left: 0.375rem;
+  }
+  
+  .msg-root {
+    padding: 0.625rem 0;
+  }
+}

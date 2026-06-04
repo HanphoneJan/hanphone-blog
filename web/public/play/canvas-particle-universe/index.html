@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas炫彩粒子系统</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">Canvas炫彩粒子系统 - 点击或拖拽鼠标创造粒子</div>
+    <div class="controls">
+        粒子数量: <span id="countDisplay">100</span><br>
+        <button onclick="addParticles()">增加粒子</button>
+        <button onclick="clearParticles()">清空粒子</button>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // 获取canvas元素和上下文
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置canvas大小为窗口大小
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // 粒子数组
+        let particles = [];
+        const maxParticles = 500;
+        const countDisplay = document.getElementById('countDisplay');
+        
+        // 粒子类
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 5 + 2;
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+                this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                this.life = 100; // 生命值
+                this.decay = Math.random() * 0.2 + 0.05; // 衰减速度
+            }
+            
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // 添加重力效果
+                this.speedY += 0.05;
+                
+                // 边界检测 - 反弹
+                if (this.x <= 0 || this.x >= canvas.width) {
+                    this.speedX *= -0.8;
+                    this.x = this.x <= 0 ? 0 : canvas.width;
+                }
+                if (this.y <= 0 || this.y >= canvas.height) {
+                    this.speedY *= -0.8;
+                    this.y = this.y <= 0 ? 0 : canvas.height;
+                }
+                
+                // 减少生命值
+                this.life -= this.decay;
+                
+                // 随机改变速度以产生更自然的效果
+                if (Math.random() < 0.05) {
+                    this.speedX += Math.random() * 0.4 - 0.2;
+                    this.speedY += Math.random() * 0.4 - 0.2;
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life / 100;
+                ctx.fill();
+                ctx.closePath();
+                
+                // 绘制光晕效果
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, this.size,
+                    this.x, this.y, this.size * 2
+                );
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.globalAlpha = this.life / 200;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+        
+        // 创建粒子函数
+        function createParticles(x, y, count = 5) {
+            for (let i = 0; i < count && particles.length < maxParticles; i++) {
+                particles.push(new Particle(x, y));
+            }
+            updateCountDisplay();
+        }
+        
+        // 更新粒子计数显示
+        function updateCountDisplay() {
+            countDisplay.textContent = particles.length;
+        }
+        
+        // 增加粒子
+        function addParticles() {
+            for (let i = 0; i < 20; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                createParticles(x, y, 1);
+            }
+        }
+        
+        // 清空粒子
+        function clearParticles() {
+            particles = [];
+            updateCountDisplay();
+        }
+        
+        // 连接相邻粒子形成线条
+        function connectParticles() {
+            for (let a = 0; a < particles.length; a++) {
+                for (let b = a; b < particles.length; b++) {
+                    const dx = particles[a].x - particles[b].x;
+                    const dy = particles[a].y - particles[b].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 100) {
+                        const opacity = 1 - distance / 100;
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.3})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[a].x, particles[a].y);
+                        ctx.lineTo(particles[b].x, particles[b].y);
+                        ctx.stroke();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+        
+        // 动画循环
+        function animate() {
+            // 半透明覆盖层实现轨迹效果
+            ctx.fillStyle = 'rgba(30, 60, 114, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 更新和绘制所有粒子
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                
+                // 移除生命值耗尽的粒子
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+            
+            // 连接粒子
+            if (particles.length > 1) {
+                connectParticles();
+            }
+            
+            // 继续动画循环
+            requestAnimationFrame(animate);
+        }
+        
+        // 鼠标事件处理
+        let mouseDown = false;
+        
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            createParticles(e.clientX, e.clientY, 10);
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (mouseDown) {
+                createParticles(e.clientX, e.clientY, 3);
+            }
+        });
+        
+        // 触摸事件支持
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            mouseDown = true;
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            mouseDown = false;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (mouseDown) {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            }
+        });
+        
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        // 启动动画
+        animate();
+        
+        // 初始创建一些粒子
+        for (let i = 0; i < 50; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            particles.push(new Particle(x, y));
+        }
+        updateCountDisplay();
+    </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:14-alpine
+    container_name: blog-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: blog
+      POSTGRES_USER: bloguser
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-your_postgres_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bloguser -d blog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-your_redis_password}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Blog 后端应用
+  blog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blog-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Spring Profile 环境
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+
+      # 数据库配置
+      PG_USERNAME: bloguser
+      PG_PASSWORD: ${PG_PASSWORD:-your_postgres_password}
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DATABASE: blog
+
+      # JWT 配置
+      TOKEN_SECRET: ${TOKEN_SECRET:-your_secret_key}
+      JWT_ISSUER: auth0
+      JWT_EXPIRE_TIME: 604800000
+
+      # 邮箱配置
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-管理员}
+      EMAIL_USERNAME: ${EMAIL_USERNAME:-your_email@163.com}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-your_email_password}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.163.com}
+
+      # Redis 配置
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-your_redis_password}
+
+      # 服务器配置
+      SERVER_PORT: 8090
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  blog-network:
+    driver: bridge

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCADE ZONE - 街机游戏厅</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff00ff;
+            --neon-cyan: #00ffff;
+            --neon-yellow: #ffff00;
+            --neon-green: #00ff00;
+            --dark-bg: #0a0a0f;
+            --darker-bg: #050508;
+            --grid-color: rgba(0, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background: var(--dark-bg);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* CRT Scanline Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1000;
+            animation: scanline 8s linear infinite;
+        }
+
+        /* CRT Flicker */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(18, 16, 16, 0.02);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1001;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.02; }
+            50% { opacity: 0.05; }
+            100% { opacity: 0.02; }
+        }
+
+        /* Background Grid */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            perspective: 500px;
+            transform-style: preserve-3d;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(50px); }
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+        }
+
+        .arcade-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            color: var(--neon-yellow);
+            text-shadow:
+                0 0 10px var(--neon-yellow),
+                0 0 20px var(--neon-yellow),
+                0 0 40px var(--neon-yellow),
+                4px 4px 0px var(--neon-pink);
+            animation: titleGlow 2s ease-in-out infinite alternate;
+            letter-spacing: 4px;
+            line-height: 1.5;
+        }
+
+        @keyframes titleGlow {
+            from {
+                text-shadow:
+                    0 0 10px var(--neon-yellow),
+                    0 0 20px var(--neon-yellow),
+                    0 0 40px var(--neon-yellow),
+                    4px 4px 0px var(--neon-pink);
+            }
+            to {
+                text-shadow:
+                    0 0 20px var(--neon-yellow),
+                    0 0 40px var(--neon-yellow),
+                    0 0 60px var(--neon-yellow),
+                    4px 4px 0px var(--neon-pink),
+                    0 0 80px var(--neon-yellow);
+            }
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            margin-top: 20px;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            animation: blink 1.5s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Coin Insert Animation */
+        .coin-slot {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 30px;
+            border: 3px solid var(--neon-green);
+            color: var(--neon-green);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            text-shadow: 0 0 10px var(--neon-green);
+            box-shadow:
+                0 0 10px var(--neon-green),
+                inset 0 0 10px rgba(0, 255, 0, 0.2);
+            animation: coinPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes coinPulse {
+            0%, 100% { box-shadow: 0 0 10px var(--neon-green), inset 0 0 10px rgba(0, 255, 0, 0.2); }
+            50% { box-shadow: 0 0 20px var(--neon-green), inset 0 0 20px rgba(0, 255, 0, 0.4); }
+        }
+
+        /* Main Container */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Game Grid */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        /* Arcade Cabinet Card */
+        .game-cabinet {
+            position: relative;
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+            border-radius: 20px 20px 10px 10px;
+            padding: 4px;
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.8),
+                0 0 0 2px #333;
+            transition: transform 0.3s ease;
+        }
+
+        .game-cabinet::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 20px;
+            background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .cabinet-screen {
+            background: var(--darker-bg);
+            border-radius: 16px 16px 8px 8px;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        /* Neon Border Colors for each card */
+        .game-cabinet:nth-child(4n+1) .cabinet-screen { border-color: var(--neon-pink); }
+        .game-cabinet:nth-child(4n+2) .cabinet-screen { border-color: var(--neon-cyan); }
+        .game-cabinet:nth-child(4n+3) .cabinet-screen { border-color: var(--neon-yellow); }
+        .game-cabinet:nth-child(4n) .cabinet-screen { border-color: var(--neon-green); }
+
+        .game-cabinet:hover {
+            transform: translateY(-10px) scale(1.02);
+        }
+
+        .game-cabinet:nth-child(4n+1):hover .cabinet-screen {
+            box-shadow:
+                0 0 20px var(--neon-pink),
+                inset 0 0 30px rgba(255, 0, 255, 0.1);
+        }
+        .game-cabinet:nth-child(4n+2):hover .cabinet-screen {
+            box-shadow:
+                0 0 20px var(--neon-cyan),
+                inset 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+        .game-cabinet:nth-child(4n+3):hover .cabinet-screen {
+            box-shadow:
+                0 0 20px var(--neon-yellow),
+                inset 0 0 30px rgba(255, 255, 0, 0.1);
+        }
+        .game-cabinet:nth-child(4n):hover .cabinet-screen {
+            box-shadow:
+                0 0 20px var(--neon-green),
+                inset 0 0 30px rgba(0, 255, 0, 0.1);
+        }
+
+        /* Screen Glow Effect */
+        .cabinet-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .game-icon {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px currentColor);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .game-name {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            line-height: 1.6;
+        }
+
+        /* Arcade Button */
+        .play-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            text-decoration: none;
+            border-radius: 50px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Button colors matching border */
+        .game-cabinet:nth-child(4n+1) .play-btn {
+            background: linear-gradient(180deg, var(--neon-pink) 0%, #cc00cc 100%);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-pink), 0 5px 0 #990099;
+        }
+        .game-cabinet:nth-child(4n+2) .play-btn {
+            background: linear-gradient(180deg, var(--neon-cyan) 0%, #00cccc 100%);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan), 0 5px 0 #009999;
+        }
+        .game-cabinet:nth-child(4n+3) .play-btn {
+            background: linear-gradient(180deg, var(--neon-yellow) 0%, #cccc00 100%);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-yellow), 0 5px 0 #999900;
+        }
+        .game-cabinet:nth-child(4n) .play-btn {
+            background: linear-gradient(180deg, var(--neon-green) 0%, #00cc00 100%);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-green), 0 5px 0 #009900;
+        }
+
+        .play-btn:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.2);
+        }
+
+        .play-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 15px currentColor, 0 2px 0 currentColor;
+        }
+
+        /* Joystick Decoration */
+        .joystick {
+            position: absolute;
+            bottom: -15px;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #ff0000 0%, #990000 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff0000, 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .joystick::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 40px;
+            background: linear-gradient(90deg, #888 0%, #ccc 50%, #888 100%);
+            border-radius: 6px;
+            margin-top: -20px;
+        }
+
+        /* Decorative Buttons */
+        .cabinet-buttons {
+            position: absolute;
+            bottom: -10px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .cab-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.5);
+        }
+
+        .cab-btn:nth-child(1) { background: #ff0000; box-shadow: 0 0 5px #ff0000; }
+        .cab-btn:nth-child(2) { background: #00ff00; box-shadow: 0 0 5px #00ff00; }
+        .cab-btn:nth-child(3) { background: #0000ff; box-shadow: 0 0 5px #0000ff; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            position: relative;
+        }
+
+        .footer-text {
+            font-size: 1.2rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .footer-text a {
+            color: var(--neon-yellow);
+            text-decoration: none;
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .arcade-title {
+                font-size: 1.2rem;
+                letter-spacing: 2px;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .game-grid {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                gap: 40px;
+            }
+
+            .game-name {
+                font-size: 0.75rem;
+            }
+
+            .play-btn {
+                padding: 12px 30px;
+                font-size: 0.6rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-text {
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            color: var(--neon-cyan);
+            padding: 50px;
+            animation: loadingPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes loadingPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* High Score Decoration */
+        .high-score {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 5px var(--neon-yellow);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <header>
+        <h1 class="arcade-title">ARCADE ZONE</h1>
+        <p class="subtitle">◄ INSERT COIN TO PLAY ►</p>
+        <div class="coin-slot">CREDITS: ∞</div>
+    </header>
+
+    <main>
+        <div class="game-grid" id="gameGrid">
+            <div class="loading-text">LOADING GAMES...</div>
+        </div>
+    </main>
+
+    <footer>
+        <p class="footer-text">
+            [ MADE WITH <span style="color: #ff00ff;">♥</span> BY <a href="https://github.com/HanphoneJan">HANPHONE</a> ]<br>
+            <span style="font-size: 0.8rem; opacity: 0.7;">LICENSE: MIT</span>
+        </p>
+    </footer>
+
+    <script>
+        const games = [
+            { id: '2048', name: '2048', icon: '🔢', color: 'cyan' },
+            { id: 'blackblocks', name: 'BLACK BLOCKS', icon: '⬛', color: 'pink' },
+            { id: 'breakout-bricks', name: 'BREAKOUT', icon: '🧱', color: 'yellow' },
+            { id: 'crossy-road', name: 'CROSSY ROAD', icon: '🐔', color: 'green' },
+            { id: 'gomoku', name: 'GOMOKU', icon: '⚫', color: 'cyan' },
+            { id: 'minesweeper', name: 'MINESWEEPER', icon: '💣', color: 'pink' },
+            { id: 'ping-pong', name: 'PONG', icon: '🏓', color: 'yellow' },
+            { id: 'shudu', name: 'SUDOKU', icon: '📝', color: 'green' },
+            { id: 'snake', name: 'SNAKE', icon: '🐍', color: 'cyan' },
+            { id: 'tetris', name: 'TETRIS', icon: '🎮', color: 'pink' },
+            { id: 'tower-blocks', name: 'TOWER', icon: '🏗️', color: 'yellow' },
+            { id: 'toy-claw', name: 'CLAW', icon: '🧸', color: 'green' }
+        ];
+
+        const gameGrid = document.getElementById('gameGrid');
+
+        function renderGames() {
+            gameGrid.innerHTML = '';
+
+            games.forEach((game, index) => {
+                const cabinet = document.createElement('div');
+                cabinet.className = 'game-cabinet';
+                cabinet.style.animationDelay = `${index * 0.1}s`;
+
+                cabinet.innerHTML = `
+                    <div class="cabinet-screen">
+                        <span class="high-score">HI: 99999</span>
+                        <span class="game-icon">${game.icon}</span>
+                        <h3 class="game-name">${game.name}</h3>
+                        <a href="${game.id}/index.html" class="play-btn">PLAY NOW</a>
+                    </div>
+                    <div class="joystick"></div>
+                    <div class="cabinet-buttons">
+                        <div class="cab-btn"></div>
+                        <div class="cab-btn"></div>
+                        <div class="cab-btn"></div>
+                    </div>
+                `;
+
+                gameGrid.appendChild(cabinet);
+
+                // Entrance animation
+                cabinet.style.opacity = '0';
+                cabinet.style.transform = 'translateY(50px)';
+                setTimeout(() => {
+                    cabinet.style.transition = 'all 0.5s ease';
+                    cabinet.style.opacity = '1';
+                    cabinet.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+
+        // Simulate loading delay for retro effect
+        setTimeout(renderGames, 800);
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const firstGame = document.querySelector('.play-btn');
+                if (firstGame) firstGame.click();
+            }
+        });
+
+        // Random flicker effect on title
+        setInterval(() => {
+            const title = document.querySelector('.arcade-title');
+            if (Math.random() > 0.95) {
+                title.style.opacity = '0.8';
+                setTimeout(() => {
+                    title.style.opacity = '1';
+                }, 50);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

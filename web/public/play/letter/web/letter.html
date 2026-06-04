@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>来自寒枫的信</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="letter.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000; /* 确保弹出框置于页面顶层 */
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 6vh;
+            position: relative;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 4vh auto;
+            padding: 2vh;
+            border: 0.1vh solid #888;
+            width: 60vmin;
+            box-shadow: 0 0.5vh 1.5vh rgba(0,0,0,0.3);
+            border-radius: 1.5vh;
+            position: relative;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 2.8vh;
+            font-weight: bold;
+            margin:0;
+            padding: 0;
+            position: relative;
+            font-family: 'Pangolin', 'KaiTi', cursive;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+      
+        .cover{
+          pointer-events: none;
+        }
+        .close:hover{
+          pointer-events: auto;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label, input {
+            width: 100%;
+            margin: 1vh 0;
+            font-size: 2.5vmin; /* 放大字体 */
+            font-family: 'KaiTi',serif, cursive;
+        }
+        input[type="text"] {
+            padding: 1vh;
+            border: 0.1vh solid #ccc;
+            border-radius: 0.5vh;
+        }
+        input[type="submit"] {
+            padding: 1vh 2vh;
+            border: none;
+            border-radius: 0.5vh;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 2.5vmin; /* 放大字体 */
+            font-family: serif, cursive;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        textarea {
+            width: 100%;
+            height: 30vh;
+            margin: 1vh auto;
+            font-size: 2.5vmin; /* 放大字体 */
+            font-family: 'KaiTi', serif, cursive;
+            padding: 1vh;
+            border: 0.1vh solid #ccc;
+            border-radius: 0.5vh;
+            resize: vertical; /* 仅允许垂直调整大小 */
+            display: block;
+        }
+
+        #thanks {
+            margin:1vh auto;
+            font-size: 6vmin;
+            font-family: 'KaiTi', serif, cursive;
+            position: relative;
+        }
+        @media screen and (max-width: 600px) {
+            label, input {
+                font-size: 4vmin;
+            }
+            input[type=submit] {
+                font-size: 4vmin;
+            }
+            textarea {
+                font-size: 4vmin;
+                height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="name">
+         <h2 id="letterName">To YOU:</h2>
+    </div>
+    <div class="letter">
+        <p id="letterContent">祝你新年快乐！
+            </p>
+        </div>
+
+    <div class="pikachu" id="pikachu">
+        <div class="head">
+            <div class="ears left brown"><div class="ears-inside yellow"></div></div>
+            <div class="ears right brown"><div class="ears-inside yellow"></div></div>
+            <div class="face yellow">
+                <span class="eye left brown"></span>
+                <span class="eye right brown"></span>
+                <span class="mouth">w</span>
+                <span class="cachete left"></span>
+                <span class="cachete right"></span>
+            </div>
+        </div>
+        <div class="body yellow">
+            <div class="heart"></div>
+            <div class="paw left yellow"></div>
+            <div class="paw right yellow"></div>
+        </div>
+        <div class="leg left yellow-dark"></div>
+        <div class="leg right yellow-dark"></div>
+        <div class="tail yellow-dark"></div>
+    </div>
+
+</div>
+
+<!-- Modal -->
+<div id="myModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeResponse">&times;</span>
+      <form id="infoForm">
+        <label for="userResponse">寒枫：<br>&nbsp;&nbsp;&nbsp;&nbsp;期待你在这里给我写下新年的寄语！</label>
+        <textarea id="userResponse" name="userResponse" required></textarea>
+        <input type="submit" value="提交">
+      </form>
+    </div>
+</div>
+
+
+<div id="myModal2" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeThanks">&times;</span>
+        <div id="thanks">发送成功！</div>
+    </div>
+</div>
+
+<script>
+  window.onload = function () {
+    let content = sessionStorage.getItem('content') || '祝你新年快乐！';
+    let nickname = sessionStorage.getItem('nickname') || 'YOU';
+    document.getElementById('letterContent').innerText = content;
+    document.getElementById('letterName').innerText = "TO "+nickname+"：";
+
+    var modal = document.getElementById("myModal");
+    var btn = document.getElementById("pikachu");
+    var closeResponse = document.getElementById("closeResponse");
+    let closeThanks = document.getElementById("closeThanks");
+    var form = document.getElementById("infoForm");
+    let modal2 = document.getElementById("myModal2");
+
+
+    /**
+     * 点击事件处理函数集合，用于控制模态窗口的显示与隐藏。
+     * - 当点击 `btn` 元素时，显示 `modal` 模态窗口。
+     * - 当点击 `closeResponse` 或 `closeThanks` 元素时，隐藏 `modal2` 模态窗口。
+     */
+    btn.onclick = function () {
+      modal.style.display = "block";
+    }
+
+
+    closeResponse.onclick = function () {
+      modal2.style.display = "none";
+    }
+    
+
+    closeThanks.onclick = function () {
+      modal2.style.display = "none";
+    }
+
+
+    /**
+     * 点击窗口时触发的事件处理函数。
+     * 如果点击的目标元素是模态框（modal），则将模态框的显示样式设置为“none”，即隐藏模态框。
+     */
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    }
+
+
+    /**
+     * 处理表单提交事件，将用户的响应和名字发送到服务器，并处理服务器的响应。
+     * @param {Event} event - 表单提交事件对象。
+     * - 阻止表单的默认提交行为。
+     * - 获取用户在输入框中的响应和存储在会话存储中的名字（如果存在），否则名字默认为“游客”。
+     * - 如果用户响应和名字都存在，则创建一个新的XMLHttpRequest对象，设置请求方法为POST，URL为指定的服务器端点，并设置请求头为JSON格式。
+     * - 当请求完成且状态码为200时，解析服务器的响应文本，显示一个模态框，并在控制台打印服务器返回的消息。
+     * - 将用户的响应和名字转换为JSON字符串，并通过XMLHttpRequest对象发送到服务器。
+     */
+    form.onsubmit = function (event) {
+      event.preventDefault();
+      let userResponse = document.getElementById("userResponse").value;
+      let name = sessionStorage.getItem("name") || "游客"; // 获取用户的名字
+      if (userResponse && name) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://www.hanphone.top/letter/upload", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            let response = JSON.parse(xhr.responseText);
+            modal.style.display = "none";
+            modal2.style.display = "block";
+            console.log("Response received:", response.message); // 打印返回的内容
+          }
+        };
+        var data = JSON.stringify({ userResponse: userResponse, name: name });
+        console.log("Data sent:", data); // 打印发送的内容
+        xhr.send(data);
+      }
+    }
+
+  };
+</script>
+</body>
+</html>

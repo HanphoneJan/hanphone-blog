@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGB调色板</title>
+    <meta name="description" content="交互式 RGB 颜色选择器，滑块实时调色，HEX 双向同步，随机颜色生成，一键复制颜色代码。">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="../../shared/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        neutral: '#F3F4F6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .slider-thumb {
+                @apply appearance-none w-5 h-5 rounded-full cursor-pointer transition-all duration-200;
+            }
+            .slider-track {
+                @apply appearance-none h-2 rounded-full outline-none;
+            }
+            .invalid-hex {
+                @apply border-red-500 focus:ring-red-500/50;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl">
+        <!-- 颜色展示区域 -->
+        <div id="color-display" class="h-48 w-full bg-black transition-all duration-300"></div>
+        
+        <!-- 颜色信息区域 -->
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-xl font-bold text-gray-800">RGB调色板</h1>
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="hex-code" value="#000000" class="bg-neutral px-3 py-2 rounded-lg text-gray-800 font-mono text-sm w-32 text-center focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="#RRGGBB">
+                    <button id="copy-btn" class="bg-primary hover:bg-primary/90 text-white p-2 rounded-lg transition-all">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- RGB滑块控制区 -->
+            <div class="space-y-6">
+                <!-- 红色滑块 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label for="red" class="text-red-500 font-medium">红色</label>
+                        <span id="red-value" class="text-gray-600 font-mono">0</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        id="red" 
+                        min="0" 
+                        max="255" 
+                        value="0"
+                        class="w-full slider-track bg-red-100"
+                        style="accent-color: #EF4444;"
+                    >
+                </div>
+                
+                <!-- 绿色滑块 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label for="green" class="text-green-500 font-medium">绿色</label>
+                        <span id="green-value" class="text-gray-600 font-mono">0</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        id="green" 
+                        min="0" 
+                        max="255" 
+                        value="0"
+                        class="w-full slider-track bg-green-100"
+                        style="accent-color: #10B981;"
+                    >
+                </div>
+                
+                <!-- 蓝色滑块 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label for="blue" class="text-blue-500 font-medium">蓝色</label>
+                        <span id="blue-value" class="text-gray-600 font-mono">0</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        id="blue" 
+                        min="0" 
+                        max="255" 
+                        value="0"
+                        class="w-full slider-track bg-blue-100"
+                        style="accent-color: #3B82F6;"
+                    >
+                </div>
+            </div>
+            
+            <!-- 功能按钮 -->
+            <div class="mt-8 flex space-x-3">
+                <button id="random-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-all">
+                    <i class="fa fa-random mr-2"></i>随机颜色
+                </button>
+                <button id="reset-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-all">
+                    <i class="fa fa-refresh mr-2"></i>重置
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 复制提示 -->
+    <div id="copy-toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none">
+        已复制到剪贴板
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 获取DOM元素
+            const redSlider = document.getElementById('red');
+            const greenSlider = document.getElementById('green');
+            const blueSlider = document.getElementById('blue');
+            const redValue = document.getElementById('red-value');
+            const greenValue = document.getElementById('green-value');
+            const blueValue = document.getElementById('blue-value');
+            const colorDisplay = document.getElementById('color-display');
+            const hexCode = document.getElementById('hex-code');
+            const copyBtn = document.getElementById('copy-btn');
+            const copyToast = document.getElementById('copy-toast');
+            const randomBtn = document.getElementById('random-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            
+            // 标记是否正在更新，防止双向更新循环
+            let isUpdating = false;
+            
+            // 更新颜色显示
+            function updateColor() {
+                if (isUpdating) return;
+                isUpdating = true;
+                
+                const r = parseInt(redSlider.value);
+                const g = parseInt(greenSlider.value);
+                const b = parseInt(blueSlider.value);
+                
+                // 更新数值显示
+                redValue.textContent = r;
+                greenValue.textContent = g;
+                blueValue.textContent = b;
+                
+                // 更新颜色显示区
+                colorDisplay.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                
+                // 转换为HEX格式并更新
+                const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+                hexCode.value = hex;
+                hexCode.classList.remove('invalid-hex');
+                
+                // 根据颜色亮度调整文字颜色
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                colorDisplay.style.color = brightness > 125 ? 'black' : 'white';
+                
+                isUpdating = false;
+            }
+            
+            // 从HEX代码更新RGB滑块
+            function updateFromHex() {
+                if (isUpdating) return;
+                isUpdating = true;
+                
+                let hex = hexCode.value.trim();
+                // 验证HEX格式
+                const hexRegex = /^#?([0-9A-Fa-f]{6})$/;
+                const match = hex.match(hexRegex);
+                
+                if (match) {
+                    // 提取RGB值
+                    const hexValue = match[1];
+                    const r = parseInt(hexValue.substring(0, 2), 16);
+                    const g = parseInt(hexValue.substring(2, 4), 16);
+                    const b = parseInt(hexValue.substring(4, 6), 16);
+                    
+                    // 更新滑块
+                    redSlider.value = r;
+                    greenSlider.value = g;
+                    blueSlider.value = b;
+                    
+                    // 更新显示值
+                    redValue.textContent = r;
+                    greenValue.textContent = g;
+                    blueValue.textContent = b;
+                    
+                    // 更新颜色显示区
+                    colorDisplay.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                    
+                    // 确保HEX格式正确（带#号且大写）
+                    hexCode.value = `#${hexValue.toUpperCase()}`;
+                    hexCode.classList.remove('invalid-hex');
+                    
+                    // 根据颜色亮度调整文字颜色
+                    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                    colorDisplay.style.color = brightness > 125 ? 'black' : 'white';
+                } else {
+                    // 无效的HEX代码
+                    hexCode.classList.add('invalid-hex');
+                }
+                
+                isUpdating = false;
+            }
+            
+            // 复制HEX代码到剪贴板
+            function copyToClipboard() {
+                // 只在HEX代码有效时复制
+                if (!hexCode.classList.contains('invalid-hex')) {
+                    hexCode.select();
+                    document.execCommand('copy');
+                    
+                    // 显示复制提示
+                    copyToast.style.opacity = '1';
+                    setTimeout(() => {
+                        copyToast.style.opacity = '0';
+                    }, 2000);
+                }
+            }
+            
+            // 生成随机颜色
+            function randomColor() {
+                const r = Math.floor(Math.random() * 256);
+                const g = Math.floor(Math.random() * 256);
+                const b = Math.floor(Math.random() * 256);
+                
+                redSlider.value = r;
+                greenSlider.value = g;
+                blueSlider.value = b;
+                
+                updateColor();
+            }
+            
+            // 重置颜色
+            function resetColor() {
+                redSlider.value = 0;
+                greenSlider.value = 0;
+                blueSlider.value = 0;
+                updateColor();
+            }
+            
+            // 事件监听
+            redSlider.addEventListener('input', updateColor);
+            greenSlider.addEventListener('input', updateColor);
+            blueSlider.addEventListener('input', updateColor);
+            // 为HEX输入框添加事件监听，支持输入完成后更新
+            hexCode.addEventListener('input', updateFromHex);
+            hexCode.addEventListener('blur', () => {
+                // 如果输入无效，恢复到之前的有效值
+                if (hexCode.classList.contains('invalid-hex')) {
+                    updateColor();
+                }
+            });
+            copyBtn.addEventListener('click', copyToClipboard);
+            randomBtn.addEventListener('click', randomColor);
+            resetBtn.addEventListener('click', resetColor);
+            
+            // 初始化显示
+            updateColor();
+        });
+    </script>
+</body>
+</html>

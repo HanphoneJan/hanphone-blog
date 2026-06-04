@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>寒枫小工具 · HanPhone Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@300;400;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #0e0e16;
+      --bg3: #141420;
+      --surface: #1a1a2e;
+      --border: #2a2a45;
+      --border-bright: #3d3d65;
+      --accent: #e8c547;
+      --accent2: #c4a832;
+      --accent-dim: rgba(232, 197, 71, 0.12);
+      --accent-glow: rgba(232, 197, 71, 0.25);
+      --text: #e8e8f0;
+      --text-dim: #8888aa;
+      --text-muted: #4a4a6a;
+      --green: #4ade80;
+      --blue: #60a5fa;
+      --purple: #a78bfa;
+      --pink: #f472b6;
+      --orange: #fb923c;
+      --teal: #2dd4bf;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', 'Noto Serif SC', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE TEXTURE ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── GRID BACKGROUND ─── */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(232, 197, 71, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232, 197, 71, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── AMBIENT GLOW ─── */
+    .ambient {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ambient-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(232, 197, 71, 0.06) 0%, transparent 70%);
+      top: -200px; right: -100px;
+    }
+    .ambient-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.04) 0%, transparent 70%);
+      bottom: 0; left: -150px;
+    }
+
+    /* ─── LAYOUT ─── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      padding: 80px 0 60px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    .tag-dim {
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 14px;
+      background: var(--border);
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.1s forwards;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.7;
+      max-width: 520px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.2s forwards;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 36px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.3s forwards;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-num {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ─── SECTION ─── */
+    section {
+      padding: 64px 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .section-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: var(--text);
+    }
+
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── TOOLS GRID ─── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 2px;
+    }
+
+    /* ─── TOOL CARD ─── */
+    .tool-card {
+      position: relative;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 32px 28px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      transition: border-color 0.25s ease, background 0.25s ease;
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .tool-card:hover {
+      border-color: var(--accent);
+      background: var(--bg3);
+    }
+
+    .tool-card:hover::before {
+      opacity: 1;
+    }
+
+    .tool-card-corner {
+      position: absolute;
+      top: 0; right: 0;
+      width: 0; height: 0;
+      border-style: solid;
+      border-width: 0 28px 28px 0;
+      border-color: transparent var(--border) transparent transparent;
+      transition: border-color 0.25s ease;
+    }
+
+    .tool-card:hover .tool-card-corner {
+      border-color: transparent var(--accent2) transparent transparent;
+    }
+
+    .tool-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
+      transition: transform 0.25s ease;
+    }
+
+    .tool-card:hover .tool-icon {
+      transform: scale(1.1) rotate(-3deg);
+    }
+
+    .tool-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem;
+      font-weight: 400;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+      transition: color 0.25s ease;
+    }
+
+    .tool-card:hover .tool-name {
+      color: var(--accent);
+    }
+
+    .tool-dir {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tool-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.65;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tool-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tool-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 2px;
+      letter-spacing: 0.05em;
+    }
+
+    .tool-arrow {
+      position: absolute;
+      bottom: 28px;
+      right: 28px;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-bright);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: all 0.25s ease;
+      z-index: 1;
+    }
+
+    .tool-card:hover .tool-arrow {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translate(2px, -2px);
+    }
+
+    /* ─── EXTENSION CARD (special) ─── */
+    .card-full {
+      grid-column: 1 / -1;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-brand {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .footer-brand span {
+      color: var(--accent);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-link {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 0.05em;
+      transition: color 0.2s;
+    }
+
+    .footer-link:hover { color: var(--accent); }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── CURSOR HIGHLIGHT ─── */
+    .cursor-dot {
+      position: fixed;
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.15s ease, opacity 0.3s ease;
+      transform: translate(-50%, -50%);
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 640px) {
+      .tools-grid { grid-template-columns: 1fr; gap: 1px; }
+      .header-stats { gap: 20px; }
+      .card-full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
+<div class="cursor-dot" id="cursor"></div>
+
+<div class="wrapper">
+
+  <!-- ─── HEADER ─── -->
+  <header>
+    <div class="header-meta">
+      <span class="tag">Open Source</span>
+      <div class="header-divider"></div>
+      <span class="tag tag-dim">MIT License</span>
+      <div class="header-divider"></div>
+      <span class="tag tag-dim">HanphoneJan</span>
+    </div>
+
+    <h1>寒枫<em>小工具</em></h1>
+
+    <p class="subtitle">
+      一组轻量、开箱即用的实用工具集合。<br>
+      纯前端实现，无需服务器，保护隐私，即开即用。
+    </p>
+
+    <div class="header-stats" id="stats-bar">
+      <!-- 由 JS 动态填充 -->
+    </div>
+  </header>
+
+  <!-- ─── TOOLS ─── -->
+  <section>
+    <div class="section-header">
+      <span class="section-label">01</span>
+      <h2 class="section-title">工具列表</h2>
+      <div class="section-line"></div>
+      <span class="section-label" id="tool-count"></span>
+    </div>
+
+    <div class="tools-grid" id="tools-grid">
+      <!-- 由 JS 动态渲染 -->
+    </div>
+  </section>
+
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="wrapper">
+    <div class="footer-inner">
+      <div class="footer-brand" id="footer-brand"></div>
+      <div class="footer-links">
+        <a href="https://github.com/hanphonejan/hanphone-tool" class="footer-link" target="_blank">GitHub</a>
+        <a href="https://github.com/hanphonejan/hanphone-tool/issues" class="footer-link" target="_blank">反馈问题</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /**
+   * ═══════════════════════════════════════════════════
+   *  工具配置列表（由 scripts/generate-tools.js 自动维护）
+   *  新增工具：在子目录放 index.html，设置 <title> 和
+   *  <meta name="description">，push 后 Action 自动同步。
+   * ═══════════════════════════════════════════════════
+   */
+  // <!-- TOOLS_START -->
+  const TOOLS = [
+  {
+    name: "跳转拦截器",
+    dir: "browser-extension-intercept/",
+    href: "browser-extension-intercept/",
+    icon: "🛡️",
+    iconBg: "rgba(45, 212, 191, 0.15)",
+    iconColor: "#2dd4bf",
+    desc: "在网页跳转时弹出确认框，避免误操作",
+    tags: [],
+    wide: true,
+  },
+  {
+    name: "iPhone风格计算器",
+    dir: "calculator/",
+    href: "calculator/index.html",
+    icon: "🔍",
+    iconBg: "rgba(74, 222, 128, 0.15)",
+    iconColor: "#4ade80",
+    desc: "仿 iPhone 风格的网页计算器，支持四则运算、百分比、小数，精准浮点处理，响应式设计。",
+    tags: [],
+  },
+  {
+    name: "Markdown 转换器",
+    dir: "markdown-converter/",
+    href: "markdown-converter/index.html",
+    icon: "🗂️",
+    iconBg: "rgba(251, 146, 60, 0.15)",
+    iconColor: "#fb923c",
+    desc: "实时 Markdown 预览与富文本复制，支持 LaTeX 数学公式，一键复制到剪贴板，双栏响应式布局。",
+    tags: [],
+  },
+  {
+    name: "高效照片压缩工具",
+    dir: "photo-compressor/",
+    href: "photo-compressor/index.html",
+    icon: "🗂️",
+    iconBg: "rgba(74, 222, 128, 0.15)",
+    iconColor: "#4ade80",
+    desc: "浏览器端图片压缩，支持 JPG / PNG / WebP，可调节质量，实时预览对比，文件不上传服务器，保护隐私。",
+    tags: [],
+  },
+  {
+    name: "RGB调色板",
+    dir: "rgb-color-picker/",
+    href: "rgb-color-picker/index.html",
+    icon: "🖼️",
+    iconBg: "rgba(244, 114, 182, 0.15)",
+    iconColor: "#f472b6",
+    desc: "交互式 RGB 颜色选择器，滑块实时调色，HEX 双向同步，随机颜色生成，一键复制颜色代码。",
+    tags: [],
+  },
+  ];
+// <!-- TOOLS_END -->
+
+  /* ─── 渲染统计 ─── */
+  const statsBar = document.getElementById('stats-bar');
+  const webTools = TOOLS.filter(t => !t.dir.includes('extension'));
+  statsBar.innerHTML = `
+    <div class="stat"><span class="stat-num">${TOOLS.length}</span><span class="stat-label">工具总数</span></div>
+    <div class="stat"><span class="stat-num">${webTools.length}</span><span class="stat-label">网页工具</span></div>
+    <div class="stat"><span class="stat-num">1</span><span class="stat-label">浏览器扩展</span></div>
+    <div class="stat"><span class="stat-num">MIT</span><span class="stat-label">开源协议</span></div>
+  `;
+
+  document.getElementById('tool-count').textContent = `${TOOLS.length} tools`;
+
+  /* ─── 渲染工具卡片 ─── */
+  const grid = document.getElementById('tools-grid');
+  TOOLS.forEach((tool, i) => {
+    const tagsHtml = tool.tags.map(t =>
+      `<span class="tool-tag" style="background:${t.color};color:${t.text}">${t.label}</span>`
+    ).join('');
+
+    const card = document.createElement('a');
+    card.href = tool.href;
+    card.className = 'tool-card' + (tool.wide ? ' card-full' : '');
+    card.style.animationDelay = `${0.05 * i + 0.3}s`;
+    card.innerHTML = `
+      <div class="tool-card-corner"></div>
+      <div class="tool-icon" style="background:${tool.iconBg};color:${tool.iconColor}">${tool.icon}</div>
+      <div class="tool-name">${tool.name}</div>
+      <div class="tool-dir">📁 ${tool.dir}</div>
+      <div class="tool-desc">${tool.desc}</div>
+      <div class="tool-tags">${tagsHtml}</div>
+      <div class="tool-arrow">→</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  /* ─── 版权年份 ─── */
+  document.getElementById('footer-brand').innerHTML =
+    `&copy; ${new Date().getFullYear()} <span>HanphoneJan</span> · MIT License`;
+
+  /* ─── 自定义光标 ─── */
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top  = e.clientY + 'px';
+  });
+  document.addEventListener('mouseenter', () => cursor.style.opacity = '1');
+  document.addEventListener('mouseleave', () => cursor.style.opacity = '0');
+
+  /* ─── 卡片悬停光标放大 ─── */
+  document.querySelectorAll('.tool-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+      cursor.style.transform = 'translate(-50%, -50%) scale(3)';
+      cursor.style.opacity = '0.4';
+    });
+    card.addEventListener('mouseleave', () => {
+      cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+      cursor.style.opacity = '1';
+    });
+  });
+</script>
+
+</body>
+</html>

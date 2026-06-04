@@ -1,0 +1,231 @@
+/* ==================== 文档中心页面主题适配 ==================== */
+
+/* 字体大小统一使用 Tailwind 类，不再通过 CSS 覆盖 Tailwind 任意值 */
+
+/* 文档卡片基础动画 */
+@keyframes doc-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.docs-grid-item {
+  animation: doc-fade-in 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+/* macaron主题 - 文档卡片 */
+.theme-macaron .docs-grid-item > div {
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-macaron .docs-grid-item:hover > div {
+  box-shadow:
+    0 8px 30px -10px rgb(219 39 119 / 0.2),
+    0 0 0 1px rgb(219 39 119 / 0.1);
+  transform: translateY(-4px);
+}
+
+/* cyber主题 - 文档卡片 */
+.theme-cyber .docs-grid-item > div {
+  background: rgba(18, 28, 45, 0.6);
+  backdrop-filter: blur(10px);
+  border-color: rgba(34, 211, 238, 0.2);
+}
+
+.theme-cyber .docs-grid-item:hover > div {
+  box-shadow:
+    0 0 30px -10px rgb(6 182 212 / 0.4),
+    inset 0 0 20px -10px rgb(6 182 212 / 0.05);
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+/* 暗色主题 */
+.dark .docs-grid-item > div {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.dark .docs-grid-item:hover > div {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+/* 白日主题 */
+.light .docs-grid-item > div {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.light .docs-grid-item:hover > div {
+  box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.15);
+}
+
+/* 过滤器按钮样式增强 */
+.docs-filter-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.docs-filter-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.docs-filter-btn:hover::before {
+  left: 100%;
+}
+
+/* 搜索框聚焦效果 */
+.docs-search:focus {
+  box-shadow: 0 0 0 3px rgba(var(--primary), 0.15);
+}
+
+/* macaron主题搜索框 */
+.theme-macaron .docs-search {
+  border-radius: 12px;
+}
+
+.theme-macaron .docs-search:focus {
+  box-shadow:
+    0 0 0 3px rgb(219 39 119 / 0.1),
+    0 0 0 6px rgb(251 146 60 / 0.05);
+}
+
+/* cyber主题搜索框 */
+.theme-cyber .docs-search {
+  background: rgba(15, 25, 40, 0.8);
+  border-color: rgba(34, 211, 238, 0.3);
+}
+
+.theme-cyber .docs-search:focus {
+  box-shadow:
+    0 0 0 2px rgb(6 182 212 / 0.3),
+    0 0 20px -5px rgb(6 182 212 / 0.4);
+  border-color: rgb(6 182 212 / 0.6);
+}
+
+/* ==================== 文档中心页面主题适配（旧版兼容） ==================== */
+
+/* 基础样式 - 文档卡片悬停效果 */
+.docs-page .group:hover {
+  transform: translateX(4px);
+}
+
+/* macaron主题 - 文档卡片可爱效果 */
+.theme-macaron .docs-page .group > div {
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-macaron .docs-page .group:hover > div {
+  box-shadow:
+    0 4px 15px -3px rgb(219 39 119 / 0.15),
+    0 0 30px -10px rgb(251 146 60 / 0.1);
+  border-color: rgb(219 39 119 / 0.4) !important;
+}
+
+.theme-macaron .docs-page .bg-blue-500\/10 {
+  background: rgba(147, 197, 253, 0.2);
+  border-color: rgba(147, 197, 253, 0.4);
+}
+.theme-macaron .docs-page .bg-red-500\/10 {
+  background: rgba(252, 165, 165, 0.2);
+  border-color: rgba(252, 165, 165, 0.4);
+}
+.theme-macaron .docs-page .bg-emerald-500\/10 {
+  background: rgba(167, 243, 208, 0.2);
+  border-color: rgba(167, 243, 208, 0.4);
+}
+.theme-macaron .docs-page .bg-orange-500\/10 {
+  background: rgba(253, 186, 116, 0.2);
+  border-color: rgba(253, 186, 116, 0.4);
+}
+
+/* cyber主题 - 文档卡片霓虹效果 */
+.theme-cyber .docs-page .group > div {
+  background: rgba(18, 28, 45, 0.8);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.theme-cyber .docs-page .group:hover > div {
+  box-shadow:
+    0 0 20px -5px rgb(6 182 212 / 0.4),
+    0 0 40px -10px rgb(255 0 128 / 0.2),
+    inset 0 0 20px -10px rgb(6 182 212 / 0.05);
+  border-color: rgb(6 182 212 / 0.6) !important;
+}
+
+.theme-cyber .docs-page .bg-blue-500\/10 {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 10px -3px rgb(6 182 212 / 0.3);
+}
+.theme-cyber .docs-page .bg-red-500\/10 {
+  background: rgba(255, 0, 128, 0.15);
+  border-color: rgba(255, 0, 128, 0.5);
+  box-shadow: 0 0 10px -3px rgb(255 0 128 / 0.3);
+}
+.theme-cyber .docs-page .bg-emerald-500\/10 {
+  background: rgba(0, 255, 127, 0.15);
+  border-color: rgba(0, 255, 127, 0.5);
+  box-shadow: 0 0 10px -3px rgb(0 255 127 / 0.3);
+}
+.theme-cyber .docs-page .bg-orange-500\/10 {
+  background: rgba(250, 204, 21, 0.15);
+  border-color: rgba(250, 204, 21, 0.5);
+  box-shadow: 0 0 10px -3px rgb(250 204 21 / 0.3);
+}
+
+/* 暗色主题 - 文档卡片微光效果 */
+.dark .docs-page .group > div {
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.dark .docs-page .group:hover > div {
+  background: rgba(30, 41, 59, 0.8);
+  box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* 白日主题 - 文档卡片简洁效果 */
+.light .docs-page .group > div {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.light .docs-page .group:hover > div {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* 确保移动端导航按钮在所有主题下正确定位 */
+.theme-macaron button[aria-label="打开目录"],
+.theme-cyber button[aria-label="打开目录"] {
+  position: fixed !important;
+  bottom: 1.5rem !important;
+  left: 1.5rem !important;
+  z-index: 9999 !important;
+}
+
+/* macaron主题移动端导航按钮特殊样式 */
+.theme-macaron button[aria-label="打开目录"] {
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  width: 56px !important;
+  height: 56px !important;
+  padding: 0 !important;
+}

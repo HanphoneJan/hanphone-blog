@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head></head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高级待办应用</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="todo-container">
+    <header>
+      <h1>我的待办事项</h1>
+      <button id="manage-categories" class="manage-btn">管理分类</button>
+    </header>
+
+    <form id="todo-form">
+      <input type="text" id="todo-input" placeholder="添加新任务..." required>
+
+      <select id="todo-category">
+        <option value="work">工作</option>
+        <option value="personal">个人</option>
+        <option value="shopping">购物</option>
+        <option value="other">其他</option>
+      </select>
+
+      <input type="datetime-local" id="todo-due">
+
+      <button type="submit">添加</button>
+    </form>
+
+    <div class="filter-controls">
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="work">工作</button>
+      <button class="filter-btn" data-filter="personal">个人</button>
+      <button class="filter-btn" data-filter="shopping">购物</button>
+    </div>
+
+    <ul id="todo-list"></ul>
+  </div>
+
+  <!-- 分类管理模态窗口 -->
+  <div id="category-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h2>分类管理</h2>
+      <div class="category-controls">
+        <input type="text" id="new-category" placeholder="新分类名称">
+        <button id="add-category">添加分类</button>
+      </div>
+      <ul id="category-list"></ul>
+    </div>
+  </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+
+</html>
