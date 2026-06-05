@@ -26,10 +26,10 @@ export function FlagDialog({
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
       <ModalOverlay onClick={onClose} />
       <div className="relative z-10 bg-[rgb(var(--card)/0.9)] border-[rgb(var(--border))]  rounded-xl border w-full max-w-md p-6 shadow-2xl dark:bg-[rgb(var(--card)/0.9)] dark:border-[rgb(var(--border))]">
-        <h3 className="text-xl font-semibold mb-4 text-[rgb(var(--text))] dark:text-[rgb(var(--text))]">修改文章类型</h3>
+        <h3 className="text-xl font-semibold mb-4 text-[rgb(var(--text))] dark:text-[rgb(var(--text))]">修改博客类型</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2 text-[rgb(var(--text))] dark:text-[rgb(var(--text))]">选择文章类型</label>
+            <label className="block text-sm font-medium mb-2 text-[rgb(var(--text))] dark:text-[rgb(var(--text))]">选择博客类型</label>
             <select
               value={selectedFlag}
               onChange={e => onSelect(e.target.value)}
