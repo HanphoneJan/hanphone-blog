@@ -33,6 +33,7 @@ export interface FriendLink {
   editingRss?: boolean
   editingNickname?: boolean
   editingUrl?: boolean
+  editingLinkUrl?: boolean
   editingColor?: boolean
   // 临时字段
   tempName?: string
@@ -42,6 +43,7 @@ export interface FriendLink {
   tempRss?: string
   tempNickname?: string
   tempUrl?: string
+  tempLinkUrl?: string
   tempColor?: string
 }
 
@@ -77,6 +79,7 @@ export interface LocalInputValues {
     rss?: string
     nickname?: string
     url?: string
+    link_url?: string
     color?: string
   }
 }

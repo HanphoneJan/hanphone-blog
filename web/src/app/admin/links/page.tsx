@@ -87,7 +87,10 @@ export default function FriendLinkManagement() {
     handleCancelEditUrl,
     handleEditColor,
     handleSaveColor,
-    handleCancelEditColor
+    handleCancelEditColor,
+    handleEditLinkUrl,
+    handleSaveLinkUrl,
+    handleCancelEditLinkUrl
   } = useInlineEdit({
     friendLinkList,
     updateLocalList,
@@ -188,6 +191,9 @@ export default function FriendLinkManagement() {
             onEditColor={handleEditColor}
             onSaveColor={handleSaveColor}
             onCancelEditColor={handleCancelEditColor}
+            onEditLinkUrl={handleEditLinkUrl}
+            onSaveLinkUrl={handleSaveLinkUrl}
+            onCancelEditLinkUrl={handleCancelEditLinkUrl}
             onTypeChange={handleTypeChange}
             onLocalInputChange={handleLocalInputChange}
             onImageFileChange={handleImageFileChange}

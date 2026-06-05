@@ -12,7 +12,7 @@ interface ModalOverlayProps {
 }
 
 export default function ModalOverlay({
-  opacity = 0.6,
+  opacity = 0.5,
   blur = false,
   zIndex,
   onClick,
@@ -20,7 +20,7 @@ export default function ModalOverlay({
 }: ModalOverlayProps) {
   return (
     <div
-      className={`fixed inset-0 ${blur ? 'backdrop-blur-sm' : ''} ${className}`}
+      className={`fixed inset-0 ${blur ? 'backdrop-blur-xs' : ''} ${className}`}
       style={{
         backgroundColor: `rgb(var(--overlay) / ${opacity})`,
         zIndex,
