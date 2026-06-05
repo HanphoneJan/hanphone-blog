@@ -645,9 +645,9 @@ const Header: React.FC = () => {
                 <span className="hidden text-md lg:inline">Hanphone&apos;s Blog</span>
               </div>
 
-              {/* 移动端/中等屏搜索按钮：<1100px 显示，与主题按钮同尺寸 */}
+              {/* 移动端/中等屏搜索按钮：<xl 时显示，与主题按钮同尺寸 */}
               <button
-                className={`min-[1100px]:hidden w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
+                className={`xl:hidden w-10 h-10 flex items-center justify-center shrink-0 rounded-full transition-none ${
                   isTransparent
                     ? 'hover:bg-[rgb(var(--bg)/0.2)]'
                     : 'bg-[rgb(var(--card))] hover:bg-[rgb(var(--hover))] border border-[rgb(var(--border))]'
@@ -690,10 +690,10 @@ const Header: React.FC = () => {
               })}
             </nav>
 
-            {/* 搜索和用户区域：min-[1100px] 避免中等宽度时搜索栏遮挡登录 */}
+            {/* 搜索和用户区域：xl 以下使用搜索按钮避免拥挤 */}
             <div className="flex items-center gap-2 flex-1 justify-end md:flex-initial min-w-0">
-              {/* 桌面端搜索框：1100px+ 显示，确保 nav+search+auth 有足够空间 */}
-              <div className="hidden min-[1100px]:block relative w-full min-w-0 max-w-[16rem]">
+              {/* 桌面端搜索框：xl+ 显示，确保 nav+search+auth 有足够空间 */}
+              <div className="hidden xl:block relative w-full min-w-0 max-w-[16rem]">
                 <div className="relative flex items-center">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(var(--text-muted))] pointer-events-none shrink-0" />
                   <input

@@ -102,7 +102,7 @@ export const LINK_TYPES: FriendLinkType[] = [
   { id: 'friend', name: '朋友' },
   { id: 'resource', name: '资源' },
   { id: 'tool', name: '工具' },
-  { id: 'blog', name: '文章' },
+  { id: 'blog', name: '博客' },
   { id: 'other', name: '其他' }
 ]
 

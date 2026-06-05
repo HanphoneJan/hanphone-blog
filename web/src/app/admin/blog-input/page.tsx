@@ -307,13 +307,13 @@ export default function BlogEditorPage() {
     }
 
     if (!selectedTypeId) {
-      errors.type = '请选择文章分类！'
+      errors.type = '请选择博客分类！'
     }
 
     // 标签改为可选，不再验证必填
 
     if (!blog.flag) {
-      errors.flag = '请选择文章类型！'
+      errors.flag = '请选择博客类型！'
     }
 
     setFormErrors(errors)
@@ -489,7 +489,7 @@ export default function BlogEditorPage() {
           <div className="flex-1 min-w-0 ml-2">
             <input
               type="text"
-              placeholder="请输入文章标题"
+              placeholder="请输入博客标题"
               value={blog.title}
               onChange={e => setBlog(prev => ({ ...prev, title: e.target.value }))}
               className={`w-full px-3 py-2 rounded-lg border ${
@@ -575,7 +575,7 @@ export default function BlogEditorPage() {
                 <div className="px-5 py-3 border-b border-[rgb(var(--border))] flex justify-between items-center shrink-0" style={{ backgroundColor: 'rgb(var(--muted))' }}>
                   <h3 className="text-lg font-semibold text-[rgb(var(--primary))] flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    发布文章
+                    发布博客
                   </h3>
                   <button
                     onClick={() => setPublishModalVisible(false)}
@@ -592,10 +592,10 @@ export default function BlogEditorPage() {
                         <span className="bg-teal-600/20 p-1 rounded mr-2">
                           <Info className="h-4 w-4 text-teal-600" />
                         </span>
-                        文章描述
+                        博客描述
                       </label>
                       <textarea
-                        placeholder="请输入文章描述（用于展示在文章列表，不超过200字）"
+                        placeholder="请输入博客描述（用于展示在博客列表，不超过200字）"
                         value={blog.description}
                         onChange={e => setBlog(prev => ({ ...prev, description: e.target.value }))}
                         className={`w-full px-4 py-2 rounded-lg border ${
@@ -620,7 +620,7 @@ export default function BlogEditorPage() {
                         <span className="bg-blue-600/20 p-1 rounded mr-2">
                           <ChevronRight className="h-4 w-4 text-blue-600" />
                         </span>
-                        文章分类
+                        博客分类
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {typeList.length > 0 ? (
@@ -657,7 +657,7 @@ export default function BlogEditorPage() {
                         <span className="bg-purple-600/20 p-1 rounded mr-2">
                           <Tag className="h-4 w-4 text-purple-600" />
                         </span>
-                        文章标签
+                        博客标签
                       </label>
                       <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 bg-[rgb(var(--muted))] rounded-lg border border-[rgb(var(--border))]">
                         {tagList.length > 0 ? (
@@ -694,7 +694,7 @@ export default function BlogEditorPage() {
                         <span className="bg-amber-600/20 p-1 rounded mr-2">
                           <Type className="h-4 w-4 text-amber-600" />
                         </span>
-                        文章类型
+                        博客类型
                       </label>
                       <div className="flex flex-wrap gap-3">
                         {flags.map(flag => (
@@ -725,7 +725,7 @@ export default function BlogEditorPage() {
                         <span className="bg-rose-600/20 p-1 rounded mr-2">
                           <ImageIcon className="h-4 w-4 text-rose-600" />
                         </span>
-                        文章首图
+                        博客首图
                       </label>
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div
@@ -816,7 +816,7 @@ export default function BlogEditorPage() {
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4" />
-                        <span>发布文章</span>
+                        <span>发布博客</span>
                       </>
                     )}
                   </button>
