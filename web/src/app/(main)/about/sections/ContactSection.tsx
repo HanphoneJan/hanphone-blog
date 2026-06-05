@@ -2,23 +2,25 @@
 
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
-import { MessageCircle, BookImage } from 'lucide-react'
+import { MessageCircle, BookImage, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
 interface ContactSectionProps {
+  externalLinks?: Record<string, { href: string; text: string }>
   internalLinks: {
     atlas?: { href: string; text: string }
     privateChat?: { href: string; text: string }
   }
 }
 
-export default function ContactSection({ internalLinks }: ContactSectionProps) {
+export default function ContactSection({ externalLinks, internalLinks }: ContactSectionProps) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-50px" })
 
   const items = [
     ...(internalLinks.atlas ? [{ icon: <BookImage className="w-4 h-4" />, label: internalLinks.atlas.text, href: internalLinks.atlas.href, external: false }] : []),
     ...(internalLinks.privateChat ? [{ icon: <MessageCircle className="w-4 h-4" />, label: internalLinks.privateChat.text, href: internalLinks.privateChat.href, external: false }] : []),
+    ...(externalLinks ? Object.entries(externalLinks).map(([, v]) => ({ icon: <ExternalLink className="w-4 h-4" />, label: v.text, href: v.href, external: true })) : []),
   ]
 
   const containerVariants = {
