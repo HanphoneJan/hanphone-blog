@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
   Menu,
@@ -24,6 +25,9 @@ import {
   ImageIcon,
   BookOpen,
   Archive,
+  Share2,
+  ChevronDown,
+  Send,
   LogIn
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
@@ -44,6 +48,8 @@ interface MenuItem {
   authName: string
   path: string
   enName: string
+  children?: MenuItem[]
+  newTab?: boolean
 }
 
 interface SearchResult {
@@ -94,6 +100,7 @@ const Header: React.FC = () => {
   const [searchList, setSearchList] = useState<SearchResult[]>([])
   const [activeIndex, setActiveIndex] = useState<string>(pathname)
   const [menuHiddenVisible, setMenuHiddenVisible] = useState<boolean>(false)
+  const [expandedMobileMenu, setExpandedMobileMenu] = useState<number | null>(null)
   const [userOptionVisible, setUserOptionVisible] = useState<boolean>(false)
   const [mobileSearchVisible, setMobileSearchVisible] = useState<boolean>(false)
   const [isClient, setIsClient] = useState<boolean>(false)
@@ -143,8 +150,15 @@ const Header: React.FC = () => {
     { id: 2, authName: '归档', enName: 'archive', path: 'blog' },
     { id: 3, authName: '项目', enName: 'projects', path: 'projects' },
     { id: 4, authName: '随笔', enName: 'essays', path: 'essays' },
-    { id: 5, authName: '文库', enName: 'docs', path: 'docs' },
-    { id: 6, authName: '留言', enName: 'messages', path: 'messages' },
+    { id: 5, authName: '分享', enName: 'share', path: '', children: [
+      { id: 51, authName: '文库', enName: 'docs', path: 'docs' },
+      { id: 52, authName: '照片墙', enName: 'photo-wall', path: 'atlas', newTab: true }
+    ]},
+    { id: 6, authName: '交流', enName: 'community', path: '', children: [
+      { id: 61, authName: '留言', enName: 'messages', path: 'messages' },
+      { id: 62, authName: '聊天室', enName: 'chat', path: 'chat/public', newTab: true },
+      { id: 63, authName: '私信', enName: 'private-messages', path: 'chat', newTab: true }
+    ]},
     { id: 7, authName: '友链', enName: 'links', path: 'links' },
     { id: 8, authName: '关于', enName: 'about', path: 'about' }
   ]
@@ -160,9 +174,19 @@ const Header: React.FC = () => {
       case 4:
         return <FileText className="w-4 h-4" />
       case 5:
+        return <Share2 className="w-4 h-4" />
+      case 51:
         return <BookOpen className="w-4 h-4" />
+      case 52:
+        return <ImageIcon className="w-4 h-4" />
       case 6:
+        return <MessageCircle className="w-4 h-4" />
+      case 61:
         return <MessageSquare className="w-4 h-4" />
+      case 62:
+        return <MessageCircle className="w-4 h-4" />
+      case 63:
+        return <Send className="w-4 h-4" />
       case 7:
         return <Link className="w-4 h-4" />
       case 8:
@@ -269,12 +293,31 @@ const Header: React.FC = () => {
     }
   }
 
+  const isMenuActive = (item: MenuItem) => {
+    const routePath = `/${item.path}`
+    if (activeIndex === routePath) return true
+    if (item.children) {
+      return item.children.some(child => activeIndex === `/${child.path}`)
+    }
+    return false
+  }
+
   const changePage = (path: string) => {
     const routePath = `/${path}`
     setActiveIndex(routePath)
     navigateWithTransition(routePath)
     setMenuHiddenVisible(false) // 关闭侧边栏
     setMobileSearchVisible(false)
+    setExpandedMobileMenu(null)
+  }
+
+  const handleMenuClick = (path: string, newTab?: boolean) => {
+    if (newTab) {
+      window.open(`/${path}`, '_blank')
+      setMenuHiddenVisible(false)
+      return
+    }
+    changePage(path)
   }
 
   const navigateToResult = (result: SearchResult, event?: React.MouseEvent) => {
@@ -578,34 +621,65 @@ const Header: React.FC = () => {
         ></div>
         <nav className="p-2">
           {menuList.map(item => {
-            const routePath = `/${item.path}`
+            const hasChildren = !!item.children?.length
+            const isExpanded = expandedMobileMenu === item.id
             return (
-              <button
-                key={item.id}
-                onClick={() => changePage(item.path)}
-                className={`flex items-center w-full px-4 py-3 rounded-md mb-1 transition-none ${
-                  activeIndex === routePath
-                    ? 'bg-[rgb(var(--primary))] text-white font-semibold'
-                    : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
-                }`}
-              >
-                {getMenuIcon(item.id)}
-                <span className="ml-3 font-medium">{item.authName}</span>
-              </button>
+              <div key={item.id}>
+                <button
+                  onClick={() => {
+                    if (hasChildren) {
+                      setExpandedMobileMenu(isExpanded ? null : item.id)
+                    } else {
+                      changePage(item.path)
+                    }
+                  }}
+                  className={`flex items-center w-full px-4 py-3 rounded-md mb-1 transition-none ${
+                    isMenuActive(item)
+                      ? 'bg-[rgb(var(--primary))] text-white font-semibold'
+                      : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                  }`}
+                >
+                  {getMenuIcon(item.id)}
+                  <span className="ml-3 font-medium">{item.authName}</span>
+                  {hasChildren && (
+                    <ChevronDown className={`w-4 h-4 ml-auto transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {hasChildren && isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
+                      className="overflow-hidden pl-4"
+                    >
+                      {item.children!.map((child, childIndex) => {
+                        const childPath = `/${child.path}`
+                        return (
+                          <motion.button
+                            key={child.id}
+                            onClick={() => handleMenuClick(child.path, child.newTab)}
+                            initial={{ opacity: 0, x: -12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.2, delay: childIndex * 0.05 }}
+                            className={`flex items-center w-full px-4 py-2.5 rounded-md mb-0.5 transition-none ${
+                              activeIndex === childPath
+                                ? 'bg-[rgb(var(--primary)/0.15)] text-[rgb(var(--primary))] font-medium'
+                                : 'text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
+                            }`}
+                          >
+                            {getMenuIcon(child.id)}
+                            <span className="ml-3 font-medium">{child.authName}</span>
+                          </motion.button>
+                        )
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )
           })}
-
-          {/* 公共聊天室入口 */}
-          <button
-            onClick={() => {
-              router.push('/chat/public')
-              setMenuHiddenVisible(false)
-            }}
-            className="flex items-center w-full px-4 py-3 rounded-md mb-1 transition-none text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span className="ml-3 font-medium">公共聊天室</span>
-          </button>
 
           {/* 移动端注册按钮 */}
           {!userInfo && (
@@ -666,8 +740,53 @@ const Header: React.FC = () => {
               }`}
             >
               {menuList.map(item => {
-                const routePath = `/${item.path}`
-                const isActive = activeIndex === routePath
+                const hasChildren = !!item.children?.length
+                const isActive = isMenuActive(item)
+                if (hasChildren) {
+                  return (
+                    <div key={item.id} className="relative group">
+                      <button
+                        title={item.authName}
+                        className={`flex items-center shrink-0 rounded-lg transition-none whitespace-nowrap ${
+                          isActive
+                            ? isTransparent
+                              ? 'text-white font-semibold'
+                              : 'bg-[rgb(var(--primary))] text-white shadow-md font-semibold'
+                            : isTransparent
+                              ? 'hover:bg-[rgb(var(--bg)/0.15)] text-white'
+                              : 'hover:bg-[rgb(var(--hover))] text-[rgb(var(--text))]'
+                        } min-[1100px]:px-2.5 min-[1100px]:py-1.5 px-2 py-1.5 ${item.enName}`}
+                      >
+                        {getMenuIcon(item.id)}
+                        <span className="ml-1.5 font-medium text-sm hidden min-[1100px]:inline">{item.authName}</span>
+                        <ChevronDown className="w-3 h-3 ml-0.5 hidden min-[1100px]:inline opacity-70" />
+                      </button>
+                      <div className="absolute top-full left-0 mt-1 py-1.5 px-1.5 rounded-xl bg-[rgb(var(--bg))] border border-[rgb(var(--border))] shadow-xl opacity-0 invisible -translate-y-1 scale-[0.97] transition-all duration-200 ease-out group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:scale-100 min-w-[140px] z-50 origin-top-left">
+                        {item.children!.map((child, childIndex) => {
+                          const childActive = activeIndex === `/${child.path}`
+                          return (
+                            <motion.button
+                              key={child.id}
+                              onClick={() => handleMenuClick(child.path, child.newTab)}
+                              title={child.authName}
+                              initial={{ opacity: 0, x: -8 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.2, delay: childIndex * 0.04 }}
+                              className={`flex items-center w-full px-3 py-2 rounded-lg text-sm transition-none whitespace-nowrap ${
+                                childActive
+                                  ? 'bg-[rgb(var(--primary)/0.12)] text-[rgb(var(--primary))] font-medium'
+                                  : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                              }`}
+                            >
+                              {getMenuIcon(child.id)}
+                              <span className="ml-2">{child.authName}</span>
+                            </motion.button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                }
                 return (
                   <button
                     key={item.id}
