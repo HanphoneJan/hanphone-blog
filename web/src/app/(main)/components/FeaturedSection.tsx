@@ -19,10 +19,7 @@ export function FeaturedSection({ recommendList }: FeaturedSectionProps) {
   return (
     <section className="py-8 content-fade-in relative z-10">
       <div className="flex items-center gap-2 mb-5">
-        <div
-          className="w-1 h-5 rounded-full"
-          style={{ background: 'linear-gradient(to bottom, rgb(var(--color-7)), rgb(var(--color-4)))' }}
-        />
+        <div className="w-1 h-5 rounded-full bg-[rgb(var(--primary))]" />
         <h2 className="text-lg font-bold" style={{ color: 'rgb(var(--text))' }}>推荐博客</h2>
         <span
           className="text-xs px-2 py-0.5 rounded-full ml-2"
