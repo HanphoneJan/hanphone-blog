@@ -17,6 +17,12 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  /* 字体栈 */
+  /* 衬线字体 */
+  --font-body: "Times New Roman", Georgia, "Noto Serif SC", "Songti SC", SimSun, serif;
+  /* 无衬线 */
+  --vp-font:--apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif;
+
   /* 字号体系（rem 基准，正文 1rem = 16px，思源宋体小号更清晰可适当缩小） */
   --text-base: 1rem;
   --text-sm: 1rem;
@@ -675,7 +681,7 @@ html {
 
 body {
   font-size: var(--text-base);
-  font-family: "Noto Serif SC", "Songti SC", "Times New Roman",SimSun, "STSong",  serif;
+  font-family: var(--font-body);
   line-height: 1.75;
   background: rgb(var(--bg));
   color: rgb(var(--text));
@@ -685,6 +691,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+}
+
+/* 低分辨率设备使用 vp-font */
+@media (max-resolution: 191dpi), (-webkit-max-device-pixel-ratio: 1.99) {
+  body {
+    font-family: var(--vp-font);
+  }
 }
 
 /* 小字号使用 Medium 字重，避免宋体类字体笔画过细 */

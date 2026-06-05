@@ -1,0 +1,165 @@
+/* 文档阅读页三栏独立滚动 */
+.scrollbar-thin::-webkit-scrollbar { width: 5px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgb(var(--border)); border-radius: 3px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgb(var(--text-muted)); }
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: rgb(var(--border)) transparent; }
+
+/* 文档阅读区通用 prose 样式 */
+.doc-read-prose {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: rgb(var(--text));
+  line-height: 1.75;
+}
+
+/* 低分辨率设备使用 vp-font */
+@media (max-resolution: 191dpi), (-webkit-max-device-pixel-ratio: 1.99) {
+  .doc-read-prose {
+    font-family: var(--vp-font);
+  }
+}
+
+.doc-read-prose h1 {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgb(var(--border) / 0.4);
+  color: rgb(var(--text));
+}
+.doc-read-prose h2 {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  margin-top: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: rgb(var(--text));
+  scroll-margin-top: 80px;
+}
+.doc-read-prose h3 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin-top: 1.4rem;
+  margin-bottom: 0.4rem;
+  color: rgb(var(--text));
+  scroll-margin-top: 80px;
+}
+.doc-read-prose h4 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.3rem;
+  color: rgb(var(--text));
+}
+.doc-read-prose h5, .doc-read-prose h6 {
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin-top: 0.8rem;
+  margin-bottom: 0.3rem;
+  color: rgb(var(--text));
+}
+.doc-read-prose p { margin-bottom: 1rem; }
+.doc-read-prose a { color: rgb(var(--primary)); text-decoration: none; transition: color 0.2s; }
+.doc-read-prose a:hover { color: rgb(var(--primary-hover)); text-decoration: underline; }
+.doc-read-prose strong { font-weight: 600; color: rgb(var(--text)); }
+.doc-read-prose em { font-style: italic; }
+.doc-read-prose code {
+  font-family: "Fira Code", "Source Code Pro", Consolas, monospace;
+  font-size: 0.875em;
+  background: rgb(var(--code-bg));
+  color: rgb(var(--code-text));
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  border: 1px solid rgb(var(--border) / 0.3);
+}
+.doc-read-prose pre {
+  background: rgb(var(--code-bg));
+  border: 1px solid rgb(var(--border));
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1.2rem 0;
+}
+.doc-read-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--text-sm);
+  color: rgb(var(--code-text));
+}
+.doc-read-prose blockquote {
+  border-left: 4px solid rgb(var(--primary));
+  background: rgb(var(--hover));
+  padding: 0.75rem 1.25rem;
+  margin: 1.2rem 0;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  color: rgb(var(--text-secondary));
+}
+.doc-read-prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.doc-read-prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.doc-read-prose li { margin-bottom: 0.3rem; }
+.doc-read-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: var(--text-table);
+}
+.doc-read-prose th {
+  background: rgb(var(--hover));
+  border: 1px solid rgb(var(--border));
+  padding: 0.6rem 0.9rem;
+  font-weight: 600;
+  text-align: left;
+}
+.doc-read-prose td {
+  border: 1px solid rgb(var(--border));
+  padding: 0.6rem 0.9rem;
+}
+.doc-read-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid rgb(var(--border));
+  margin: 0.8rem 0;
+}
+.doc-read-prose hr {
+  border: none;
+  border-top: 1px solid rgb(var(--border));
+  margin: 2rem 0;
+}
+
+/* 文档侧边栏列表项 */
+.doc-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  color: rgb(var(--text-secondary));
+  transition: all 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.doc-sidebar-item:hover {
+  background: rgb(var(--hover));
+  color: rgb(var(--text));
+}
+.doc-sidebar-item.active {
+  background: rgb(var(--primary) / 0.12);
+  color: rgb(var(--primary));
+  font-weight: 600;
+}
+.doc-sidebar-item.active .doc-sidebar-icon { color: rgb(var(--primary)); }
+.doc-sidebar-icon { color: rgb(var(--text-muted)); transition: color 0.2s; flex-shrink: 0; }
