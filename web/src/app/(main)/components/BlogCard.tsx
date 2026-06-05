@@ -39,7 +39,6 @@ export function BlogCard({ blog, index = 0 }: BlogCardProps) {
                 className="img-bg absolute inset-0"
                 style={{ backgroundImage: `url(${blog.firstPicture || blog.type?.pic_url})` }}
               />
-              <div className="img-zoom-overlay" />
               {/* 推荐标记 */}
               {blog.recommend && (
                 <div

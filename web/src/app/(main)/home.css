@@ -345,18 +345,6 @@
   transform: scale(1.08);
 }
 
-.img-zoom-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.2) 40%, transparent 70%);
-  opacity: 0.6;
-  transition: opacity 0.4s ease;
-}
-
-.img-zoom-container:hover .img-zoom-overlay {
-  opacity: 1;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.35) 50%, transparent 100%);
-}
 
 /* ---------- 3D卡片悬浮效果 ---------- */
 .card-3d {
