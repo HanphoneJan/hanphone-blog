@@ -17,7 +17,7 @@ interface TagCloudProps {
 }
 
 export function TagCloud({ tags, maxDisplay = 15, selectedTagId, onTagClick }: TagCloudProps) {
-  // 按文章数量排序，取前 maxDisplay 个
+  // 按博客数量排序，取前 maxDisplay 个
   const displayTags = tags
     .sort((a, b) => (b.blogCount || 0) - (a.blogCount || 0))
     .slice(0, maxDisplay)

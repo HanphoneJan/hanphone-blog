@@ -22,9 +22,9 @@ public enum ContentType {
     PROJECT("项目"),
 
     /**
-     * 文章
+     * 文件
      */
-    DOC("文章");
+    DOC("文件");
 
     private final String label;
 

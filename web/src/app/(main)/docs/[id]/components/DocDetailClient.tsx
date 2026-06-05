@@ -128,7 +128,7 @@ interface TreeNode {
 // ============ 构建树（与 DocsClient 一致） ============
 
 function buildTree(docs: DocMeta[]): TreeNode {
-  const root: TreeNode = { name: '文档中心', path: '', isFolder: true, children: [] }
+  const root: TreeNode = { name: '文库', path: '', isFolder: true, children: [] }
 
   for (const doc of docs) {
     const parts = doc.filename.split('/')
@@ -164,7 +164,7 @@ function sortChildren(children: TreeNode[]): TreeNode[] {
   })
 }
 
-// 获取文档所在文件夹路径
+// 获取文件所在文件夹路径
 function getDocFolderPaths(filename: string): string[] {
   const parts = filename.split('/')
   if (parts.length <= 1) return []
@@ -324,7 +324,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
 
   const tree = useMemo(() => buildTree(docList), [docList])
 
-  // 获取当前文档的 meta
+  // 获取当前文件的 meta
   const currentMeta = useMemo(() => docList.find(d => {
     if (d.id === docId) return true
     if (d.docId === docId) return true
@@ -339,7 +339,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
     return DOMPurify.sanitize(doc.html, { USE_PROFILES: { html: true } })
   }, [doc?.html])
 
-  // 初始化：展开当前文档所在的所有父文件夹
+  // 初始化：展开当前文件所在的所有父文件夹
   useEffect(() => {
     if (currentMeta) {
       const folderPaths = getDocFolderPaths(currentMeta.filename)
@@ -353,7 +353,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
     }
   }, [currentMeta])
 
-  // 通过 API 获取文档内容（仅当 SSR 未提供时作为回退）
+  // 通过 API 获取文件内容（仅当 SSR 未提供时作为回退）
   useEffect(() => {
     if (initialDoc) return
     fetch(`/api/docs/${encodeURIComponent(docId)}`)
@@ -416,7 +416,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
   if (!doc) {
     return (
       <div className="flex-1 flex items-center justify-center text-[rgb(var(--text-muted))]">
-        <p>文档未找到</p>
+        <p>文件未找到</p>
       </div>
     )
   }
@@ -467,7 +467,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
             <div className="sticky top-0 z-10 bg-[rgb(var(--bg))] border-b border-[rgb(var(--border))] px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2 font-semibold text-[rgb(var(--text))]">
                 <BookOpen className="w-4 h-4 text-[rgb(var(--primary))]" />
-                文档中心
+                文库
               </div>
               <motion.button
                 onClick={closeSidebar}
@@ -503,7 +503,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
             }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            aria-label="打开文档目录"
+            aria-label="打开文件目录"
           >
             <List className="w-5 h-5 text-[rgb(var(--text))]" />
           </motion.button>
@@ -513,7 +513,7 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
       {/* 主体内容区 */}
       <main className="flex-1 w-full relative z-30 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-0 h-full">
-          {/* 左侧：文档树（桌面端固定侧边栏） */}
+          {/* 左侧：文件树（桌面端固定侧边栏） */}
           <motion.aside
             className="hidden lg:flex flex-col h-full overflow-y-auto scrollbar-thin border-r border-[rgb(var(--border))] py-6"
             variants={desktopSidebarVariants}
@@ -530,14 +530,14 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
                   className="inline-flex items-center gap-1.5 text-sm text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--primary))] transition-colors"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  返回文档列表
+                  返回文库
                 </Link>
               </motion.div>
             </div>
             {sidebarContent}
           </motion.aside>
 
-          {/* 右侧：文档阅读区 */}
+          {/* 右侧：文件阅读区 */}
           <motion.div
             ref={contentRef}
             className="h-full overflow-y-auto scrollbar-thin py-6 px-4 sm:px-8 lg:px-10 xl:px-14"

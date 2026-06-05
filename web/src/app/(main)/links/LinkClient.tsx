@@ -479,7 +479,7 @@ const BrutalistToolCard = ({
   )
 }
 
-// 野兽派文章列表项
+// 野兽派博客列表项
 const BrutalistBlogItem = ({
   link,
   fetchingUrls,
@@ -856,13 +856,13 @@ export default function LinkClient({ initialLinks }: LinkClientProps) {
               </section>
             )}
 
-            {/* ========== 文章 & 资源 并排布局 ========== */}
+            {/* ========== 博客 & 资源 并排布局 ========== */}
             {(blogLinks.length > 0 || resourceLinks.length > 0) && (
               <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* 文章区域 */}
+                {/* 博客区域 */}
                 {blogLinks.length > 0 && (
                   <div className="border-2 border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4">
-                    <SectionTitle title="文章" count={blogLinks.length} icon="◈" />
+                    <SectionTitle title="博客" count={blogLinks.length} icon="◈" />
                     <div className="space-y-0">
                       {blogLinks.map((link, index) => (
                         <BrutalistBlogItem

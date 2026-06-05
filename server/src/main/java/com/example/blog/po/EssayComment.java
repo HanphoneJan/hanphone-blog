@@ -25,7 +25,7 @@ public class EssayComment {
     @Column(name = "create_time")
     private Date createTime;
 
-    // 多对一关联：多个评论属于一篇文章
+    // 多对一关联：多个评论属于一篇随笔
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "essay_id", nullable = false)
     @JsonIgnoreProperties("essayComments")

@@ -176,7 +176,7 @@ export default function BlogListClient({
     }
   }, [getPageSize, pageInfo.current, selectedTypeId, selectedTagId])
 
-  // 获取各分类下的文章标题（用于左侧二级导航）
+  // 获取各分类下的博客标题（用于左侧二级导航）
   const fetchBlogsByType = useCallback(async () => {
     if (typeList.length === 0) return
     try {
@@ -199,7 +199,7 @@ export default function BlogListClient({
       )
       setBlogsByType(map)
     } catch (error) {
-      console.error('获取分类文章失败:', error)
+      console.error('获取分类博客失败:', error)
     }
   }, [typeList])
 
@@ -474,7 +474,7 @@ export default function BlogListClient({
                 </button>
               </div>
             ) : (
-              /* 文章列表 */
+              /* 博客列表 */
               <div className="space-y-8">
                 <section>
                   <div className="space-y-2">

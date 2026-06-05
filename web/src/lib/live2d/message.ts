@@ -113,11 +113,11 @@ const PAGE_WELCOME_MESSAGES: Record<string, string[]> = {
     '关于我的故事，都在这里了！',
   ],
   blogList: [
-    '这里有很多有趣的文章，慢慢看~',
+    '这里有很多有趣的博客，慢慢看~',
     '博客列表在此，挑一篇感兴趣的吧！',
   ],
   blogDetail: [
-    '这篇文章看起来不错呢~慢慢阅读吧！',
+    '这篇博客看起来不错呢~慢慢阅读吧！',
     '好好享受阅读的时光~',
   ],
   essays: [
@@ -166,7 +166,7 @@ export function getPageSpecificWelcome(): string {
 const PAGE_DEFAULT_MESSAGES: Record<string, string[]> = {
   home: [
     '首页内容很丰富，慢慢逛逛吧~',
-    '看看推荐的文章，说不定有你感兴趣的！',
+    '看看推荐的博客，说不定有你感兴趣的！',
     '往下翻翻，还有项目展示哦~',
   ],
   about: [
@@ -174,14 +174,14 @@ const PAGE_DEFAULT_MESSAGES: Record<string, string[]> = {
     '这些技术方向都是热爱的领域~',
   ],
   blogList: [
-    '文章列表在这里，挑一篇看看吧~',
-    '用分类和标签可以快速筛选文章哦~',
+    '博客列表在这里，挑一篇看看吧~',
+    '用分类和标签可以快速筛选博客哦~',
     '左侧的目录树可以帮助你浏览~',
   ],
   blogDetail: [
     '慢慢阅读，注意休息眼睛哦~',
     '读完别忘了点赞和评论呀~',
-    '右侧有文章目录，可以快速跳转~',
+    '右侧有博客目录，可以快速跳转~',
   ],
   essays: [
     '随笔记录了生活的点滴~',
@@ -256,12 +256,12 @@ export function welcomeMessage(
 }
 
 /**
- * 从文章页 DOM 中提取文章标题和标签
+ * 从博客页 DOM 中提取博客标题和标签
  */
 export function extractArticleInfo(): { title: string; tags: string[] } | null {
   if (typeof window === 'undefined') return null;
 
-  // 只在文章详情页提取
+  // 只在博客详情页提取
   const path = location.pathname;
   if (!path.match(/^\/blog\/[^/]+$/)) return null;
 
@@ -282,16 +282,16 @@ export function extractArticleInfo(): { title: string; tags: string[] } | null {
 }
 
 /**
- * 获取文章上下文消息（仅在文章详情页生效）
+ * 获取博客上下文消息（仅在博客详情页生效）
  * @param template 消息模板，{title} 替换为标题，{tags} 替换为标签
- * @returns 格式化后的消息，非文章页或无内容时返回 null
+ * @returns 格式化后的消息，非博客页或无内容时返回 null
  */
 export function getArticleContextMessage(template?: string): string | null {
   if (!template) return null;
   const info = extractArticleInfo();
   if (!info || (!info.title && info.tags.length === 0)) return null;
 
-  let msg = template.replace('{title}', info.title || '这篇文章');
+  let msg = template.replace('{title}', info.title || '这篇博客');
 
   if (info.tags.length > 0) {
     const tagStr = info.tags.slice(0, 3).join('、');

@@ -108,15 +108,15 @@ const DEFAULT_TIPS: TipsConfig = {
     { selector: '#about-evaluations', pages: ['/about'], text: '这是大家的评价哦~', oncePerElement: true },
     { selector: '#about-contact', pages: ['/about'], text: '想联系寒枫吗？这里可以找到他~', oncePerElement: true },
     // ===== 全局配置（所有页面生效，兜底） =====
-    { selector: '.blog-card', text: '要看看文章吗？' },
+    { selector: '.blog-card', text: '要看看博客吗？' },
     { selector: '.project-card', text: '要看看项目吗？' },
     { selector: '[aria-label="搜索"]', text: '想要查找点什么？' },
     { selector: 'a[href^="/admin"]', text: '这里是管理后台入口' },
     { selector: '#parallaxHero', text: '欢迎来到云林有风，这里是我的小世界~' },
     { selector: '#scrollIndicator', text: '向下滚动，探索更多内容吧~' },
-    { selector: 'nav.blog-nav-sidebar', text: '按分类浏览文章更高效哦~' },
+    { selector: 'nav.blog-nav-sidebar', text: '按分类浏览博客更高效哦~' },
     { selector: '.blog-filter-sidebar', text: '用标签筛选你感兴趣的内容吧~' },
-    { selector: '.blog-content-prose', text: '这篇文章写得很用心呢~' },
+    { selector: '.blog-content-prose', text: '这篇博客写得很用心呢~' },
     { selector: 'input[placeholder*="搜索项目"]', text: '搜一搜感兴趣的项目吧~' },
     { selector: 'textarea.msg-textarea', text: '有什么想说的就写下来吧~' },
     { selector: 'input[placeholder*="搜索文档"]', text: '找找需要的文档资料吧~' },
@@ -127,7 +127,7 @@ const DEFAULT_TIPS: TipsConfig = {
     { selector: '.blog-card', text: '点击了博客链接呢' },
     { selector: 'button[type="submit"]', text: '提交表单要小心哦' },
     { selector: '#scrollIndicator', text: '好，我们往下看看~' },
-    { selector: 'nav.blog-nav-sidebar a', text: '选择一个分类来筛选文章~' },
+    { selector: 'nav.blog-nav-sidebar a', text: '选择一个分类来筛选博客~' },
     { selector: 'textarea.msg-textarea', text: '写下来吧，我会认真看的~' },
     { selector: '.comment-textarea', text: '期待看到你的评论~' },
   ],
@@ -183,7 +183,7 @@ export function Live2DWidget({ config = {}, tips, models }: Live2DWidgetProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  // 模型加载完成后，发送页面特定欢迎消息 + 文章上下文消息
+  // 模型加载完成后，发送页面特定欢迎消息 + 博客上下文消息
   useEffect(() => {
     if (!isLoaded || isHidden) return;
     const timer = setTimeout(() => {
@@ -192,7 +192,7 @@ export function Live2DWidget({ config = {}, tips, models }: Live2DWidgetProps) {
       if (welcome) {
         showMessage(welcome, LIVE2D.MESSAGE_DURATION, LIVE2D.PRIORITY.PAGE_WELCOME);
       }
-      // 文章页上下文消息（比欢迎消息稍晚显示）
+      // 博客页上下文消息（比欢迎消息稍晚显示）
       const contextMsg = getArticleContextMessage(finalTips.message.articleContext);
       if (contextMsg) {
         setTimeout(() => {

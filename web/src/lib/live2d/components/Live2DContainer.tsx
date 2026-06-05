@@ -298,7 +298,7 @@ export function Live2DContainer({ config, tips, models, onClose }: Live2DContain
     };
     document.addEventListener('focusin', handleFocusIn);
 
-    // 滚动深度感知：仅在文章详情页生效
+    // 滚动深度感知：仅在博客详情页生效
     let scrollCleanup: (() => void) | null = null;
     if (window.location.pathname.match(/^\/blog\/[^/]+$/)) {
       const findScrollContainer = (): HTMLElement | null => {

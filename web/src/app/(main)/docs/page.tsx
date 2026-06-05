@@ -57,8 +57,8 @@ export default async function DocsPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": "文档中心",
-    "description": "值得保存分享的文档，包括作品、教程和参考资料",
+    "name": "文库",
+    "description": "值得保存分享的文件，包括作品、教程和参考资料",
     "numberOfItems": docs.length,
   }
 

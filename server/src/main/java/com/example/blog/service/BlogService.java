@@ -57,8 +57,8 @@ public interface BlogService {
     Long countComment();
 
     /**
-     * 更新文章点赞数
-     * @return 更新后的文章
+     * 更新博客点赞数
+     * @return 更新后的博客
      */
     Boolean updateLikes(Long userId, Long blogId, boolean isLike);
 

@@ -263,7 +263,7 @@ export default function BlogDetailClient({
 
       <main className="blog-main-prose flex-1 w-full relative z-30 page-blog bg-[rgb(var(--bg)/0.8)] overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0 min-w-0 max-w-[100vw] h-full">
-          {/* 左侧：返回链接 + 同分类文章 - 独立滚动 */}
+          {/* 左侧：返回链接 + 同分类博客 - 独立滚动 */}
           <aside className="hidden lg:block py-6 pl-4 xl:pl-6 min-w-0 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[rgb(var(--border))] scrollbar-track-transparent">
             <motion.div
               variants={sidebarItemVariants}

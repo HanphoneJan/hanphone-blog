@@ -36,7 +36,7 @@ public class EssayFileUrl {
     @Column(name = "create_time")
     private Date createTime;
 
-    // 多对一关联：多个文件URL属于一篇文章
+    // 多对一关联：多个文件URL属于一篇随笔
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "essay_id", nullable = false) // 外键字段对应t_essay表的id
     @JsonIgnoreProperties("essayFileUrls") // 避免循环引用

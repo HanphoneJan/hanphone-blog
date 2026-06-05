@@ -107,8 +107,8 @@ export default async function BlogListPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": "博客文章",
-    "description": "浏览寒枫的个人博客文章，涵盖技术、生活、思考等多个领域的原创内容。",
+    "name": "博客",
+    "description": "浏览寒枫的个人博客，涵盖技术、生活、思考等多个领域的原创内容。",
     "url": `${SITE_URL}/blog`,
     "isPartOf": {
       "@type": "WebSite",

@@ -20,8 +20,8 @@ public interface EssayService {
     Essay updateEssay(Long id,Essay essay);
 
     /**
-     * 更新文章点赞数
-     * @return 更新后的文章
+     * 更新随笔点赞数
+     * @return 更新后的随笔
      */
     Essay updateLikes(Long userId,Long essayId, boolean isLike);
     Boolean changeRecommend(Long essayId, Boolean recommend);

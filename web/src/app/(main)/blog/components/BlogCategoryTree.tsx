@@ -148,7 +148,7 @@ export function BlogCategoryTree({
               </button>
             </div>
 
-            {/* 子文章列表 */}
+            {/* 子博客列表 */}
             <AnimatePresence>
               {isExpanded && subBlogs.length > 0 && (
                 <motion.div

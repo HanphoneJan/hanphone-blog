@@ -27,7 +27,7 @@ export interface MessageConfig {
   scrollDepth: string[];
   /** 评论框获得焦点时显示的消息 */
   commentFocus: string | string[];
-  /** 文章上下文消息模板，{title} 替换为标题, {tags} 替换为标签 */
+  /** 博客上下文消息模板，{title} 替换为标题, {tags} 替换为标签 */
   articleContext: string;
 }
 

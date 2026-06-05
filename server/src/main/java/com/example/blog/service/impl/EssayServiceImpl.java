@@ -50,9 +50,9 @@ public class EssayServiceImpl implements EssayService {
         Objects.requireNonNull(id, "essay id must not be null");
         try {
             return essayRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("文章不存在，ID: " + id));
+                    .orElseThrow(() -> new EntityNotFoundException("随笔不存在，ID: " + id));
         } catch (Exception e) {
-            throw new RuntimeException("获取文章失败，ID: " + id, e);
+            throw new RuntimeException("获取随笔失败，ID: " + id, e);
         }
     }
 
@@ -63,7 +63,7 @@ public class EssayServiceImpl implements EssayService {
             fillEssayRelations(essays, userId);
             return essays;
         } catch (Exception e) {
-            throw new RuntimeException("获取文章列表失败", e);
+            throw new RuntimeException("获取随笔列表失败", e);
         }
     }
 
@@ -129,7 +129,7 @@ public class EssayServiceImpl implements EssayService {
                 return essay;
             });
         } catch (Exception e) {
-            throw new RuntimeException("获取文章列表失败", e);
+            throw new RuntimeException("获取随笔列表失败", e);
         }
     }
 
@@ -138,16 +138,16 @@ public class EssayServiceImpl implements EssayService {
     public void deleteEssay(Long id) {
         Objects.requireNonNull(id, "essay id must not be null");
         try {
-            // 先检查文章是否存在
+            // 先检查随笔是否存在
             if (!essayRepository.existsById(id)) {
-                throw new EntityNotFoundException("文章不存在，ID: " + id);
+                throw new EntityNotFoundException("随笔不存在，ID: " + id);
             }
             essayFileUrlRepository.deleteByEssay_Id(id);
             essayRepository.deleteById(id);
         } catch (EntityNotFoundException e) {
             throw e; // 保留原始业务异常
         } catch (Exception e) {
-            throw new RuntimeException("删除文章失败，ID: " + id, e);
+            throw new RuntimeException("删除随笔失败，ID: " + id, e);
         }
     }
 
@@ -170,7 +170,7 @@ public class EssayServiceImpl implements EssayService {
             }
             return savedEssay;
         } catch (Exception e) {
-            throw new RuntimeException("保存文章失败", e);
+            throw new RuntimeException("保存随笔失败", e);
         }
     }
 
@@ -181,7 +181,7 @@ public class EssayServiceImpl implements EssayService {
         Objects.requireNonNull(essay, "essay must not be null");
         try {
             Essay existingEssay = essayRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("文章不存在，ID: " + id));
+                    .orElseThrow(() -> new EntityNotFoundException("随笔不存在，ID: " + id));
 
             Date now = new Date();
             if (essay.getTitle() != null) {
@@ -205,7 +205,7 @@ public class EssayServiceImpl implements EssayService {
         } catch (EntityNotFoundException e) {
             throw e; // 保留原始业务异常
         } catch (Exception e) {
-            throw new RuntimeException("更新文章失败，ID: " + id, e);
+            throw new RuntimeException("更新随笔失败，ID: " + id, e);
         }
     }
 
@@ -218,7 +218,7 @@ public class EssayServiceImpl implements EssayService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new EntityNotFoundException("用户不存在，ID: " + userId));
             Essay essay = essayRepository.findById(essayId)
-                    .orElseThrow(() -> new EntityNotFoundException("文章不存在，ID: " + essayId));
+                    .orElseThrow(() -> new EntityNotFoundException("随笔不存在，ID: " + essayId));
 
             Optional<UserEssayLike> existingLike = userEssayLikeRepository.findByUserIdAndEssayId(userId, essayId);
 
@@ -243,11 +243,11 @@ public class EssayServiceImpl implements EssayService {
             }
 
             return essayRepository.findById(essayId)
-                    .orElseThrow(() -> new EntityNotFoundException("更新点赞后文章不存在，ID: " + essayId));
+                    .orElseThrow(() -> new EntityNotFoundException("更新点赞后随笔不存在，ID: " + essayId));
         } catch (EntityNotFoundException e) {
             throw e; // 保留原始业务异常
         } catch (Exception e) {
-            throw new RuntimeException("更新点赞状态失败，用户ID: " + userId + ", 文章ID: " + essayId, e);
+            throw new RuntimeException("更新点赞状态失败，用户ID: " + userId + ", 随笔ID: " + essayId, e);
         }
     }
 
@@ -353,7 +353,7 @@ public class EssayServiceImpl implements EssayService {
         Objects.requireNonNull(id, "essay id must not be null");
         try {
             Essay essay = essayRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("文章不存在，ID: " + id));
+                    .orElseThrow(() -> new EntityNotFoundException("随笔不存在，ID: " + id));
             List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(id);
             Optional<UserEssayLike> existingLike = userId != null
                     ? userEssayLikeRepository.findByUserIdAndEssayId(userId, id)
@@ -365,7 +365,7 @@ public class EssayServiceImpl implements EssayService {
         } catch (EntityNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("获取文章详情失败，ID: " + id, e);
+            throw new RuntimeException("获取随笔详情失败，ID: " + id, e);
         }
     }
 
@@ -423,7 +423,7 @@ public class EssayServiceImpl implements EssayService {
             });
             return essays;
         } catch (Exception e) {
-            throw new RuntimeException("获取推荐文章列表失败", e);
+            throw new RuntimeException("获取推荐随笔列表失败", e);
         }
     }
 

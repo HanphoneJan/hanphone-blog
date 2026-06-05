@@ -311,7 +311,7 @@ const Header: React.FC = () => {
       case 'PROJECT':
         return '项目'
       case 'DOC':
-        return '文章'
+        return '文库'
       default:
         return ''
     }
