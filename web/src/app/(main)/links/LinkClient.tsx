@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import {
   Loader2,
@@ -77,6 +76,22 @@ async function fetchWebsiteMetadata(url: string) {
 }
 
 // 获取友链数据的函数
+// 解码 HTML 实体（&amp; → & 等）
+function decodeHtmlEntities(raw?: string): string | undefined {
+  if (!raw) return raw
+  const txt = document.createElement('textarea')
+  txt.innerHTML = raw
+  return txt.value
+}
+
+function decodeFriendLink(link: FriendLink): FriendLink {
+  return {
+    ...link,
+    avatar: decodeHtmlEntities(link.avatar) || link.avatar,
+    url: decodeHtmlEntities(link.url) || link.url,
+  }
+}
+
 async function fetchFriendLinks(): Promise<FriendLink[]> {
   try {
     const response = await fetch(ENDPOINTS.FRIENDLINKS, {})
@@ -91,7 +106,7 @@ async function fetchFriendLinks(): Promise<FriendLink[]> {
       throw new Error(data.message || 'Failed to fetch friend links')
     }
 
-    return data.data || []
+    return (data.data || []).map(decodeFriendLink)
   } catch (error) {
     console.error('Error fetching friend links:', error)
     return []
@@ -290,91 +305,6 @@ const BrutalistGallery = ({ links, fetchingUrls }: { links: FriendLink[]; fetchi
         </div>
       </div>
     </div>
-  )
-}
-
-// 野兽派帮助提示
-const BrutalistHelp = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  
-  useEffect(() => { setMounted(true) }, [])
-
-  const linkData = `申请友链前请添加本站为友链，要求网站无违法违规内容、无强制广告和恶意信息，推荐使用HTTPS。
-  有问题欢迎在我的留言板留言或者私信！以下是本站信息：
-  {
-    名称: "云林有风",
-    昵称："寒枫"
-    描述: "不骛于虚声",
-    链接: "${SITE_URL}",
-    回访地址："${SITE_URL}/links",
-    RSS："${SITE_URL}/rss.xml",
-    头像: "${SITE_URL}/avatar.png",
-    截图："${SITE_URL}/og-image.png",
-    装饰色: "#1890ff"  /* 用于卡片边框、标题颜色等 */
-  }`
-
-
-  const modal = isOpen && mounted && (
-    <div 
-      className="fixed inset-0 z-[9999] bg-[rgb(var(--overlay))]/50 flex items-center justify-center p-4"
-      onClick={() => setIsOpen(false)}
-    >
-      <div 
-        className="relative w-full max-w-md bg-[rgb(var(--bg))] border-2 border-[rgb(var(--text))] p-6"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* 阴影层 */}
-        <div 
-          className="absolute inset-0 bg-[rgb(var(--primary))] -z-10"
-          style={{ transform: 'translate(6px, 6px)' }}
-        />
-        
-        {/* 关闭按钮 */}
-        <button
-          onClick={() => setIsOpen(false)}
-          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] font-bold hover:bg-[rgb(var(--primary))] transition-colors"
-        >
-          ×
-        </button>
-        
-        {/* 标题 */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[16px] border-b-[rgb(var(--primary))]" />
-          <h3
-            className="text-xl font-black"
-            style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-          >
-            添加友链须知
-          </h3>
-        </div>
-        <div 
-          className="border-2 border-[rgb(var(--text))] p-4 bg-[rgb(var(--muted))] overflow-x-auto"
-        >
-          <pre className="text-xs font-mono whitespace-pre-wrap break-all">
-            {linkData}
-          </pre>
-        </div>
-      </div>
-    </div>
-  )
-
-  return (
-    <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="relative group"
-      >
-        <div 
-          className="absolute inset-0 bg-[rgb(var(--text))]"
-          style={{ transform: 'translate(2px, 2px)' }}
-        />
-        <div className="relative w-8 h-8 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] flex items-center justify-center hover:bg-[rgb(var(--primary))] transition-colors">
-          <span className="text-lg font-bold">?</span>
-        </div>
-      </button>
-      {modal && createPortal(modal, document.body)}
-    </>
   )
 }
 
@@ -736,6 +666,7 @@ export default function LinkClient({ initialLinks }: LinkClientProps) {
   const [fetchingUrls, setFetchingUrls] = useState<Set<number>>(new Set())
   const [apiError, setApiError] = useState<string | null>(null)
   const [applyModalOpen, setApplyModalOpen] = useState(false)
+  const [modalDefaultTab, setModalDefaultTab] = useState<'form' | 'text' | 'copy'>('form')
 
   // 初始化时使用服务端传入的数据
   useEffect(() => {
@@ -745,7 +676,7 @@ export default function LinkClient({ initialLinks }: LinkClientProps) {
 
       try {
         // 优先使用服务端传入的初始数据，如果为空则客户端重新请求
-        let links = initialLinks || []
+        let links = (initialLinks || []).map(decodeFriendLink)
 
         if (links.length === 0) {
           console.log('[Client] initialLinks is empty, fetching from client...')
@@ -855,12 +786,13 @@ export default function LinkClient({ initialLinks }: LinkClientProps) {
       <BgOverlay />
       <main className="relative z-10 w-full max-w-7xl mx-auto px-4 pb-16 page-transition">
         {/* 野兽派标题 */}
-        <BrutalistTitle onApply={() => setApplyModalOpen(true)} />
-        
-        {/* 申请模态框 */}
-        <ApplyModal 
-          isOpen={applyModalOpen} 
-          onClose={() => setApplyModalOpen(false)} 
+        <BrutalistTitle onApply={() => { setModalDefaultTab('copy'); setApplyModalOpen(true) }} />
+
+        {/* 友链模态框 */}
+        <ApplyModal
+          isOpen={applyModalOpen}
+          onClose={() => setApplyModalOpen(false)}
+          defaultTab={modalDefaultTab}
         />
         
         {/* 错误提示 */}
@@ -889,11 +821,6 @@ export default function LinkClient({ initialLinks }: LinkClientProps) {
             {/* 友链滚动区域 */}
             {friendLinks.length > 0 ? (
               <section className="relative">
-                {/* 帮助按钮 */}
-                <div className="absolute top-4 right-4 z-10">
-                  <BrutalistHelp />
-                </div>
-
                 {/* 野兽派画廊 */}
                 <div className="border-2 border-[rgb(var(--border))] bg-[rgb(var(--card))]">
                   <BrutalistGallery links={friendLinks} fetchingUrls={fetchingUrls} />

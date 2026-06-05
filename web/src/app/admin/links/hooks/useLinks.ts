@@ -9,6 +9,14 @@ import { showAlert } from '@/lib/Alert'
 import { parseApplyText } from '../utils/parseApplyText'
 import type { FriendLink, ParsedApplyText } from '../types'
 
+// 解码 HTML 实体（&amp; → & 等）
+function decodeHtmlEntities(raw?: string): string | undefined {
+  if (!raw) return raw
+  const txt = document.createElement('textarea')
+  txt.innerHTML = raw
+  return txt.value
+}
+
 // API调用函数
 const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
   try {
@@ -40,10 +48,10 @@ export function useLinks() {
       name: item.name || '',
       type: item.type || 'other',
       description: item.description || '暂无描述',
-      url: item.url || '',
-      avatar: item.avatar || ASSETS.DEFAULT_AVATAR,
-      siteshot: item.siteshot || '',
-      rss: item.rss || '',
+      url: decodeHtmlEntities(item.url) || item.url || '',
+      avatar: decodeHtmlEntities(item.avatar) || item.avatar || ASSETS.DEFAULT_AVATAR,
+      siteshot: decodeHtmlEntities(item.siteshot) || item.siteshot || '',
+      rss: decodeHtmlEntities(item.rss) || item.rss || '',
       nickname: item.nickname || '',
       color: item.color || '#1890ff',
       recommend: item.recommend || false,
@@ -62,11 +70,11 @@ export function useLinks() {
       editingColor: false,
       tempName: item.name || '',
       tempDescription: item.description || '暂无描述',
-      tempAvatar: item.avatar || ASSETS.DEFAULT_AVATAR,
-      tempSiteshot: item.siteshot || '',
-      tempRss: item.rss || '',
+      tempAvatar: decodeHtmlEntities(item.avatar) || item.avatar || ASSETS.DEFAULT_AVATAR,
+      tempSiteshot: decodeHtmlEntities(item.siteshot) || item.siteshot || '',
+      tempRss: decodeHtmlEntities(item.rss) || item.rss || '',
       tempNickname: item.nickname || '',
-      tempUrl: item.url || '',
+      tempUrl: decodeHtmlEntities(item.url) || item.url || '',
       tempColor: item.color || '#1890ff'
     }))
   }
