@@ -480,10 +480,7 @@ export default function HomeClient({
                     transition={{ duration: 0.3 }}
                   >
                     {selectMethod}
-                    <span
-                      className="absolute -bottom-0.5 left-0 h-0.5 w-0 rounded-full transition-all duration-300 group-hover:w-full"
-                      style={{ background: 'linear-gradient(to right, rgb(var(--color-7)), rgb(var(--color-4)))' }}
-                    />
+                    <span className="absolute -bottom-0.5 left-0 h-px w-full bg-[rgb(var(--primary))]" />
                   </motion.span>
                 </AnimatePresence>
                 <ArrowRight className="w-4 h-4 ml-1.5 text-[rgb(var(--primary))] opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />

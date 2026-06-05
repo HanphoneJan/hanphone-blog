@@ -17,7 +17,7 @@ export const PROFILE = {
   /** 个人描述 */
   description: '一个焦虑于找工作的大学生',
   /** 技术方向（顿号分隔） */
-  techDirection: 'Agent开发、RAG应用、多模态大模型、全栈开发',
+  techDirection: 'Agent应用、全栈开发',
   /** 个性签名 */
   signature: '不鹜于虚声'
 } as const

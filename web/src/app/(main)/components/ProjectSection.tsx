@@ -44,10 +44,7 @@ export function ProjectSection({ projects }: ProjectSectionProps) {
     <section className="py-4 content-fade-in">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <div
-            className="w-1 h-5 rounded-full"
-            style={{ background: 'linear-gradient(to bottom, rgb(var(--color-6)), rgb(var(--color-3)))' }}
-          />
+   <div className="w-1 h-5 rounded-full bg-[rgb(var(--primary))]" />
           <h2 className="text-lg font-bold" style={{ color: 'rgb(var(--text))' }}>项目作品</h2>
         </div>
         <Link

@@ -23,6 +23,7 @@ import {
   UserPen,
   ImageIcon,
   BookOpen,
+  Archive,
   LogIn
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
@@ -139,12 +140,13 @@ const Header: React.FC = () => {
   // 菜单列表数据
   const menuList: MenuItem[] = [
     { id: 1, authName: '首页', enName: 'home', path: '' },
-    { id: 2, authName: '项目', enName: 'projects', path: 'projects' },
-    { id: 3, authName: '随笔', enName: 'essays', path: 'essays' },
-    { id: 4, authName: '留言', enName: 'messages', path: 'messages' },
-    { id: 5, authName: '文章', enName: 'docs', path: 'docs' },
-    { id: 6, authName: '友链', enName: 'links', path: 'links' },
-    { id: 7, authName: '关于', enName: 'about', path: 'about' }
+    { id: 2, authName: '归档', enName: 'archive', path: 'blog' },
+    { id: 3, authName: '项目', enName: 'projects', path: 'projects' },
+    { id: 4, authName: '随笔', enName: 'essays', path: 'essays' },
+    { id: 5, authName: '文库', enName: 'docs', path: 'docs' },
+    { id: 6, authName: '留言', enName: 'messages', path: 'messages' },
+    { id: 7, authName: '友链', enName: 'links', path: 'links' },
+    { id: 8, authName: '关于', enName: 'about', path: 'about' }
   ]
 
   const getMenuIcon = (id: number) => {
@@ -152,16 +154,18 @@ const Header: React.FC = () => {
       case 1:
         return <Home className="w-4 h-4" />
       case 2:
-        return <Github className="w-4 h-4" />
+        return <Archive className="w-4 h-4" />
       case 3:
-        return <FileText className="w-4 h-4" />
+        return <Github className="w-4 h-4" />
       case 4:
-        return <MessageSquare className="w-4 h-4" />
+        return <FileText className="w-4 h-4" />
       case 5:
         return <BookOpen className="w-4 h-4" />
       case 6:
-        return <Link className="w-4 h-4" />
+        return <MessageSquare className="w-4 h-4" />
       case 7:
+        return <Link className="w-4 h-4" />
+      case 8:
         return <UserCircle className="w-4 h-4" />
       default:
         return <User className="w-4 h-4" />
