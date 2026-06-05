@@ -187,6 +187,19 @@ export function useInlineEdit({
     cancelEdit(friendLinkId, 'editingColor')
   }, [cancelEdit])
 
+  // 编辑回访地址
+  const handleEditLinkUrl = useCallback((friendLinkId: number | null) => {
+    startEdit(friendLinkId, 'editingLinkUrl', 'link_url')
+  }, [startEdit])
+
+  const handleSaveLinkUrl = useCallback((friendLinkId: number | null) => {
+    saveEdit(friendLinkId, 'link_url', 'link_url', 'editingLinkUrl')
+  }, [saveEdit])
+
+  const handleCancelEditLinkUrl = useCallback((friendLinkId: number | null) => {
+    cancelEdit(friendLinkId, 'editingLinkUrl')
+  }, [cancelEdit])
+
   return {
     localInputValues,
     handleLocalInputChange,
@@ -213,6 +226,9 @@ export function useInlineEdit({
     handleCancelEditUrl,
     handleEditColor,
     handleSaveColor,
-    handleCancelEditColor
+    handleCancelEditColor,
+    handleEditLinkUrl,
+    handleSaveLinkUrl,
+    handleCancelEditLinkUrl
   }
 }

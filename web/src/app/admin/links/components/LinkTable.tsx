@@ -38,6 +38,9 @@ interface LinkTableProps {
   onEditColor: (id: number | null) => void
   onSaveColor: (id: number | null) => void
   onCancelEditColor: (id: number | null) => void
+  onEditLinkUrl: (id: number | null) => void
+  onSaveLinkUrl: (id: number | null) => void
+  onCancelEditLinkUrl: (id: number | null) => void
   onTypeChange: (id: number | null, type: string) => void
   onLocalInputChange: (id: number, field: string, value: string) => void
   onImageFileChange: (e: React.ChangeEvent<HTMLInputElement>, id: number | null) => void
@@ -79,6 +82,9 @@ export function LinkTable({
   onEditColor,
   onSaveColor,
   onCancelEditColor,
+  onEditLinkUrl,
+  onSaveLinkUrl,
+  onCancelEditLinkUrl,
   onTypeChange,
   onLocalInputChange,
   onImageFileChange,
@@ -359,9 +365,9 @@ export function LinkTable({
             </div>
           </div>
 
-          {/* 第二行：URL + 描述 同一行 */}
+          {/* 第二行：URL + 回访地址 + 描述 同一行 */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-1 text-xs">
-            <div className="flex items-center min-w-0 flex-1" style={{ minWidth: '120px' }}>
+            <div className="flex items-center min-w-0 flex-1" style={{ minWidth: '100px' }}>
               <span className="text-[rgb(var(--muted))] shrink-0">URL: </span>
               {link.url ? (
                 renderEditableField(
@@ -378,7 +384,20 @@ export function LinkTable({
                 <span className="text-yellow-600 dark:text-yellow-400 text-xs">待补充</span>
               )}
             </div>
-            <div className="flex items-center min-w-0 flex-1" style={{ minWidth: '120px' }}>
+            <div className="flex items-center min-w-0 flex-1" style={{ minWidth: '100px' }}>
+              <span className="text-[rgb(var(--muted))] shrink-0">回访: </span>
+              {renderEditableField(
+                link,
+                'link_url',
+                link.editingLinkUrl || false,
+                () => onEditLinkUrl(link.id),
+                () => onSaveLinkUrl(link.id),
+                () => onCancelEditLinkUrl(link.id),
+                link.link_url || '',
+                '回访地址'
+              )}
+            </div>
+            <div className="flex items-center min-w-0 flex-1" style={{ minWidth: '100px' }}>
               <span className="text-[rgb(var(--muted))] shrink-0">描述: </span>
               {renderEditableField(
                 link,

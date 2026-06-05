@@ -43,6 +43,9 @@ interface ListTabProps {
   onEditColor: (id: number | null) => void
   onSaveColor: (id: number | null) => void
   onCancelEditColor: (id: number | null) => void
+  onEditLinkUrl: (id: number | null) => void
+  onSaveLinkUrl: (id: number | null) => void
+  onCancelEditLinkUrl: (id: number | null) => void
   onTypeChange: (id: number | null, type: string) => void
   onLocalInputChange: (id: number, field: string, value: string) => void
   onImageFileChange: (e: React.ChangeEvent<HTMLInputElement>, id: number | null) => void
@@ -91,6 +94,9 @@ export function ListTab({
   onEditColor,
   onSaveColor,
   onCancelEditColor,
+  onEditLinkUrl,
+  onSaveLinkUrl,
+  onCancelEditLinkUrl,
   onTypeChange,
   onLocalInputChange,
   onImageFileChange,
@@ -151,6 +157,9 @@ export function ListTab({
         onEditColor={onEditColor}
         onSaveColor={onSaveColor}
         onCancelEditColor={onCancelEditColor}
+        onEditLinkUrl={onEditLinkUrl}
+        onSaveLinkUrl={onSaveLinkUrl}
+        onCancelEditLinkUrl={onCancelEditLinkUrl}
         onTypeChange={onTypeChange}
         onLocalInputChange={onLocalInputChange}
         onImageFileChange={onImageFileChange}

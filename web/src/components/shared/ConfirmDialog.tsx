@@ -48,12 +48,12 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <ModalOverlay onClick={onCancel} />
-      <div className="relative z-10 bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6 animate-in fade-in zoom-in duration-200">
+      <div className="relative z-10 bg-[rgb(var(--card))] rounded-xl shadow-xl max-w-md w-full mx-4 p-6 animate-in fade-in zoom-in duration-200 border border-[rgb(var(--border))]">
         <button
           onClick={onCancel}
-          className="absolute right-4 top-4 p-1 hover:bg-gray-100 rounded-full transition-colors"
+          className="absolute right-4 top-4 p-1 hover:bg-[rgb(var(--hover))] rounded-full transition-colors"
         >
-          <X className="w-5 h-5 text-gray-400" />
+          <X className="w-5 h-5 text-[rgb(var(--muted))]" />
         </button>
 
         <div className="flex items-start gap-4">
@@ -61,17 +61,17 @@ export function ConfirmDialog({
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-[rgb(var(--text))] mb-2">
               {title}
             </h3>
-            <p className="text-gray-600 text-sm leading-relaxed">{message}</p>
+            <p className="text-[rgb(var(--muted))] text-sm leading-relaxed">{message}</p>
           </div>
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-[rgb(var(--text))] bg-[rgb(var(--bg))] hover:bg-[rgb(var(--hover))] rounded-lg transition-colors"
           >
             {cancelText}
           </button>
