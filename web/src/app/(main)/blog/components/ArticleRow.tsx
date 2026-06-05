@@ -41,14 +41,14 @@ export function ArticleRow({ blog, index = 0 }: ArticleRowProps) {
       >
         <div className="flex gap-4 p-4 rounded-xl border border-transparent hover:border-[rgb(var(--border))] hover:bg-[rgb(var(--card))] transition-all duration-300">
           {/* 缩略图 - 移动端适当放大 */}
-          <div className="relative w-28 h-20 sm:w-32 sm:h-24 md:w-36 md:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-[rgb(var(--muted))]">
+          <div className="relative w-40 h-28 sm:w-52 sm:h-32 md:w-64 md:h-40 flex-shrink-0 rounded-lg overflow-hidden bg-[rgb(var(--muted))]">
             {blog.firstPicture || blog.type?.pic_url ? (
               <Image
                 src={blog.firstPicture || blog.type?.pic_url}
                 alt={blog.title}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
-                sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, 144px"
+                sizes="(max-width: 640px) 160px, (max-width: 768px) 208px, 256px"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[rgb(var(--primary)/0.8)] to-[rgb(var(--primary-hover)/0.8)] flex items-center justify-center">

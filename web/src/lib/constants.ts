@@ -471,7 +471,7 @@ export const PAGINATION = {
   DEFAULT_PAGE_SIZE: 10,
   HOME_BLOG_PAGE_SIZE: 5,
   // 博客列表页每页数量
-  BLOG_PAGE_SIZE: 8,
+  BLOG_PAGE_SIZE: 12,
   // 博客列表页后续页每页数量（更大的 pageSize）
   BLOG_PAGE_SIZE_LARGE: 12,
   // 分页器显示省略号阈值（少于等于该数量时显示全部页码）
