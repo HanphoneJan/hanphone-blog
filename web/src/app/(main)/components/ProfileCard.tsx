@@ -83,7 +83,7 @@ export function ProfileCard({ stats, inline = false }: ProfileCardProps) {
     <div className="mt-3 flex items-center justify-between gap-2 text-center">
       <div className="flex-1">
         <div className="text-base font-bold stat-number" style={{ color: 'rgb(var(--primary))' }}>{stats.blogCount}</div>
-        <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>文章</div>
+        <div className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>博客</div>
       </div>
       <div className="w-px h-6" style={{ background: 'rgb(var(--border))' }} />
       <div className="flex-1">

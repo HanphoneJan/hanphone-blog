@@ -69,7 +69,7 @@ public class EssayShowController {
     }
 
     /**
-     * 处理文章点赞/取消点赞请求
+     * 处理随笔点赞/取消点赞请求
      * 接收包含userId、essayId和isLike字段的JSON数据
      */
     @PostMapping("/essays/{id}/like")

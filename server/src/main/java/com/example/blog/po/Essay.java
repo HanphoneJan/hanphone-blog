@@ -48,7 +48,7 @@ public class Essay {
     @Column(name = "create_time")
     private Date createTime;
 
-    // 修正为一对多关联：一篇文章对应多个文件URL
+    // 修正为一对多关联：一篇随笔对应多个文件URL
     @OneToMany(mappedBy = "essay", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("essay") // 避免JSON序列化循环引用
     private List<EssayFileUrl> essayFileUrls = new ArrayList<>();

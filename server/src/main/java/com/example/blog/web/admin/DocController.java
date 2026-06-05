@@ -21,12 +21,12 @@ public class DocController {
 
     @GetMapping("/docs")
     public Result<List<Doc>> listDocs() {
-        return new Result<>(true, StatusCode.OK, "获取文档列表成功", docService.listDoc());
+        return new Result<>(true, StatusCode.OK, "获取文件列表成功", docService.listDoc());
     }
 
     @GetMapping("/docs/{id}")
     public Result<Doc> getDoc(@PathVariable Long id) {
-        return new Result<>(true, StatusCode.OK, "获取文档成功", docService.getDoc(id));
+        return new Result<>(true, StatusCode.OK, "获取文件成功", docService.getDoc(id));
     }
 
     @PostMapping("/doc")
@@ -50,7 +50,7 @@ public class DocController {
     @DeleteMapping("/doc/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         docService.deleteDoc(id);
-        return new Result<>(true, StatusCode.OK, "删除文档成功");
+        return new Result<>(true, StatusCode.OK, "删除文件成功");
     }
 
     @PostMapping("/docs/recommend")

@@ -34,7 +34,7 @@ export default function DocsFilter({
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[rgb(var(--text-muted))/0.5]" />
         <input
           type="text"
-          placeholder="搜索文档…"
+          placeholder="搜索文件…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full pl-8 pr-8 py-1.5 bg-[rgb(var(--hover))] border border-transparent rounded-md text-[13px] text-[rgb(var(--text))] placeholder:text-[rgb(var(--text-muted))/0.4] focus:outline-none focus:border-[rgb(var(--border))] focus:bg-[rgb(var(--card))] transition-all"

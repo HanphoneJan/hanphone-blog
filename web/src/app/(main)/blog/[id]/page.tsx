@@ -144,8 +144,8 @@ export async function generateMetadata({ params }: BlogDetailPageProps) {
 
   if (!blog) {
     return createMetadata(
-      '文章未找到',
-      '抱歉，您访问的文章不存在或已被删除。',
+      '博客未找到',
+      '抱歉，您访问的博客不存在或已被删除。',
       { noIndex: true }
     )
   }

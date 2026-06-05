@@ -362,7 +362,7 @@ export default function DocsClient({ initialDocs }: { initialDocs: DocMeta[] }) 
             whileTap={{ scale: 0.98 }}
           >
             <FolderOpen className="w-4 h-4 text-[rgb(var(--primary))]" />
-            <span className="whitespace-nowrap">文档中心</span>
+            <span className="whitespace-nowrap">文库</span>
           </motion.button>
           <motion.button
             onClick={() => setSidebarCollapsed(true)}
@@ -440,7 +440,7 @@ export default function DocsClient({ initialDocs }: { initialDocs: DocMeta[] }) 
             animate={{ opacity: 1 }}
             className="text-xs text-[rgb(var(--text-muted))/0.5] whitespace-nowrap"
           >
-            {docs.length} 篇文档
+            {docs.length} 篇文件
           </motion.span>
         </div>
       </motion.aside>
@@ -459,7 +459,7 @@ export default function DocsClient({ initialDocs }: { initialDocs: DocMeta[] }) 
             >
               <div className="flex items-center justify-between px-3 py-3 border-b border-[rgb(var(--border))]">
                 <span className="text-sm font-medium text-[rgb(var(--text))]">
-                  文档中心
+                  文库
                 </span>
                 <motion.button
                   onClick={() => setMobileDrawer(false)}
@@ -644,7 +644,7 @@ export default function DocsClient({ initialDocs }: { initialDocs: DocMeta[] }) 
                   exit={{ opacity: 0 }}
                 >
                   <EmptyState
-                    message="未找到匹配的文档"
+                    message="未找到匹配的文件"
                     onClear={() => {
                       setSearchQuery('')
                       setSelectedType('all')
@@ -661,7 +661,7 @@ export default function DocsClient({ initialDocs }: { initialDocs: DocMeta[] }) 
                 exit={{ opacity: 0 }}
               >
                 {folders.length === 0 && files.length === 0 && (
-                  <EmptyState message="暂无文档" />
+                  <EmptyState message="暂无文件" />
                 )}
                 {folders.map((f) => (
                   <motion.div key={f.path} variants={fileRowVariants}>
@@ -850,7 +850,7 @@ function FileRow({ node }: { node: TreeNode }) {
       <span className="flex-1 min-w-0 text-sm text-[rgb(var(--text))] truncate group-hover:text-[rgb(var(--primary))] transition-colors flex items-center gap-1.5">
         {name}
         {doc.recommend && (
-          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" title="推荐文档" />
+          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" title="推荐文件" />
         )}
       </span>
       <span

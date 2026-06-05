@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * SpringDoc OpenAPI 文档配置
+ * SpringDoc OpenAPI 接口文档配置
  */
 @Configuration
 public class SwaggerConfig {
@@ -28,8 +28,8 @@ public class SwaggerConfig {
 
     private Info apiInfo() {
         return new Info()
-                .title("Hanphone Blog API 文档")
-                .description("基于 Spring Boot 的个人博客后端系统 API 文档")
+                .title("Hanphone Blog API 接口文档")
+                .description("基于 Spring Boot 的个人博客后端系统 API 接口文档")
                 .contact(new Contact()
                         .name("Hanphone")
                         .url("https://github.com/HanphoneJan")

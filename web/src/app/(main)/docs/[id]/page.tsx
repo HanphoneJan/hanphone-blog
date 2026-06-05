@@ -75,8 +75,8 @@ export async function generateMetadata({ params }: DocPageProps) {
 
   if (!docMeta) {
     return createMetadata(
-      '文档未找到',
-      '抱歉，您访问的文档不存在或已被删除。',
+      '文件未找到',
+      '抱歉，您访问的文件不存在或已被删除。',
       { noIndex: true }
     )
   }

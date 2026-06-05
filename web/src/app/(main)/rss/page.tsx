@@ -10,7 +10,7 @@ export const metadata = createMetadata(
 )
 
 const CONTENT_TYPES = [
-  { icon: FileText, name: '博客文章', desc: '技术文章、学习笔记、经验分享', color: 'text-[rgb(var(--color-7))]', bgColor: 'bg-[rgb(var(--color-7)/0.1)]' },
+  { icon: FileText, name: '博客', desc: '技术文章、学习笔记、经验分享', color: 'text-[rgb(var(--color-7))]', bgColor: 'bg-[rgb(var(--color-7)/0.1)]' },
   { icon: StickyNote, name: '随笔随想', desc: '生活感悟、日常记录、碎碎念', color: 'text-[rgb(var(--color-8))]', bgColor: 'bg-[rgb(var(--color-8)/0.1)]' },
   { icon: Briefcase, name: '项目展示', desc: '开源项目、个人作品、技术实践', color: 'text-[rgb(var(--color-6))]', bgColor: 'bg-[rgb(var(--color-6)/0.1)]' },
   { icon: FolderOpen, name: '技术文档', desc: '教程文档、参考资料、知识库', color: 'text-[rgb(var(--color-3))]', bgColor: 'bg-[rgb(var(--color-3)/0.1)]' },
@@ -123,7 +123,7 @@ export default function RssPage() {
                   享受阅读
                 </h3>
                 <p className="text-[rgb(var(--text-muted))] text-sm leading-relaxed">
-                  每当有新文章发布，你都会在阅读器中收到更新通知，不错过任何精彩内容。
+                  每当有新博客发布，你都会在阅读器中收到更新通知，不错过任何精彩内容。
                 </p>
               </div>
             </div>

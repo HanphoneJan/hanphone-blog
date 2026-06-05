@@ -208,14 +208,14 @@ export function buildDocFileUrl(docNamespace: string | undefined, filename: stri
 export async function getDocMeta(): Promise<{ title: string; description: string; docs: DocMeta[] }> {
   const docs = await fetchDocsFromBackend()
   return {
-    title: '文档中心',
-    description: '技术文档、教程和参考资料',
+    title: '文库',
+    description: '技术文件、教程和参考资料',
     docs,
   }
 }
 
 export async function getDocById(id: string): Promise<DocData | null> {
-  // 优先从后端获取单个文档详情
+  // 优先从后端获取单个文件详情
   const backendDoc = await fetchDocFromBackend(id)
 
   let finalMeta: DocMeta | undefined

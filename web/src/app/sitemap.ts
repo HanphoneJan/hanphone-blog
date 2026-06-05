@@ -86,7 +86,7 @@ interface BlogListResponse {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // 动态获取博客文章列表
+  // 动态获取博客列表
   let blogPages: MetadataRoute.Sitemap = []
 
   try {
@@ -100,9 +100,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const blogs = data.data?.content || []
 
       blogPages = blogs.map((blog) => {
-        // 根据是否有 updateTime 判断文章是否可能继续更新
-        // 有 updateTime 说明文章曾被编辑过，设为 monthly
-        // 无 updateTime 说明文章发布后未修改，设为 yearly
+        // 根据是否有 updateTime 判断博客是否可能继续更新
+        // 有 updateTime 说明博客曾被编辑过，设为 monthly
+        // 无 updateTime 说明博客发布后未修改，设为 yearly
         const hasBeenUpdated = !!blog.updateTime
 
         return {

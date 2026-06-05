@@ -95,7 +95,7 @@ public class EssayController {
         essay.setEssayFileUrls(fileUrls);
         essay.setLikes(0);
 
-        // 保存或更新文章
+        // 保存或更新随笔
         Essay e;
         if (essay.getId() == null) {
             e = essayService.saveEssay(essay);

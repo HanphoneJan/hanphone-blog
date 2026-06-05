@@ -136,7 +136,7 @@ const tips: TipsConfig = {
     // ...
   },
   mouseover: [
-    { selector: 'a[href^="/post"]', text: ['查看文章'] }
+    { selector: 'a[href^="/post"]', text: ['查看博客'] }
   ],
   click: [
     { selector: '.theme-toggle', text: ['切换主题'] }

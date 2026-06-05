@@ -149,7 +149,7 @@ export const LIVE2D = {
   // 欢迎消息延迟
   WELCOME_DELAY: 2500,
 
-  // 文章上下文消息延迟
+  // 博客上下文消息延迟
   ARTICLE_CONTEXT_DELAY: 3500,
 
   // 消息优先级（数值越大优先级越高）
@@ -514,9 +514,9 @@ export const HOME_CONFIG = {
 export const BLOG_LIST_CONFIG = {
   // 加载骨架屏数量
   SKELETON_COUNT: 6,
-  // 侧栏二级导航最多展示文章数
+  // 侧栏二级导航最多展示博客数
   SUB_NAV_LIMIT: 10,
-  // 获取分类下文章时的每页数量
+  // 获取分类下博客时的每页数量
   TYPE_BLOGS_PAGE_SIZE: 12
 } as const
 

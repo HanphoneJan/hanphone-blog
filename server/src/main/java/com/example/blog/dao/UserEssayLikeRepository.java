@@ -11,14 +11,14 @@ import java.util.Optional;
 
 public interface UserEssayLikeRepository extends JpaRepository<UserEssayLike, Long> {
 
-    // 根据用户ID和文章ID查询点赞记录
+    // 根据用户ID和随笔ID查询点赞记录
     Optional<UserEssayLike> findByUserIdAndEssayId(Long userId, Long essayId);
 
-    // 批量查询用户对多篇文章的点赞记录，避免 N+1
+    // 批量查询用户对多篇随笔的点赞记录，避免 N+1
     @Query("SELECT uel FROM UserEssayLike uel WHERE uel.user.id = :userId AND uel.essay.id IN :essayIds")
     List<UserEssayLike> findByUserIdAndEssayIdIn(@Param("userId") Long userId, @Param("essayIds") List<Long> essayIds);
 
-    // 删除用户对文章的点赞记录
+    // 删除用户对随笔的点赞记录
     @Modifying
     @Query("DELETE FROM UserEssayLike uel WHERE uel.user.id = :userId AND uel.essay.id = :essayId")
     void deleteByUserIdAndEssayId(@Param("userId") Long userId, @Param("essayId") Long essayId);

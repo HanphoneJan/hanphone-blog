@@ -76,7 +76,7 @@ function getDocFullPath(doc: DocItem): string {
 
 function buildTree(docs: DocItem[]): TreeNode {
   const root: TreeNode = {
-    name: '全部文档',
+    name: '全部文件',
     path: '',
     isFolder: true,
     children: [],
@@ -206,7 +206,7 @@ export default function DocManagementPage() {
   // 树形结构
   const tree = useMemo(() => buildTree(docs), [docs])
 
-  // 获取文档列表
+  // 获取文件列表
   const fetchDocs = async () => {
     try {
       setLoading(true)
@@ -215,10 +215,10 @@ export default function DocManagementPage() {
       if (result.flag && Array.isArray(result.data)) {
         setDocs(result.data)
       } else {
-        throw new Error(result.message || '获取文档列表失败')
+        throw new Error(result.message || '获取文件列表失败')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取文档列表时发生错误')
+      setError(err instanceof Error ? err.message : '获取文件列表时发生错误')
     } finally {
       setLoading(false)
     }
@@ -311,7 +311,7 @@ export default function DocManagementPage() {
     }
 
     if (newQueue.length === 0) {
-      showAlert('仅支持上传 .docx, .md, .html, .pdf 格式的文档')
+      showAlert('仅支持上传 .docx, .md, .html, .pdf 格式的文件')
       return
     }
 
@@ -396,12 +396,12 @@ export default function DocManagementPage() {
           updateFileStatus(queueItem.id, 'success')
           successCount++
         } else {
-          updateFileStatus(queueItem.id, 'failed', saveResult.message || '保存文档信息失败')
+          updateFileStatus(queueItem.id, 'failed', saveResult.message || '保存文件信息失败')
         }
       }
 
       if (successCount > 0) {
-        showAlert(`成功上传 ${successCount} 个文档`)
+        showAlert(`成功上传 ${successCount} 个文件`)
         fetchDocs()
       }
     } catch (err) {
@@ -429,11 +429,11 @@ export default function DocManagementPage() {
     ))
   }
 
-  // 编辑文档
+  // 编辑文件
   const handleEdit = async () => {
     if (!editingDoc) return
     if (!formTitle.trim()) {
-      setError('文档标题不能为空')
+      setError('文件标题不能为空')
       return
     }
 
@@ -659,7 +659,7 @@ export default function DocManagementPage() {
           className="flex items-center gap-1 text-[rgb(var(--primary))] font-medium"
         >
           <FolderOpen className="w-3.5 h-3.5" />
-          全部文档
+          全部文件
         </button>
       )
     }
@@ -671,7 +671,7 @@ export default function DocManagementPage() {
           className="flex items-center gap-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]"
         >
           <FolderOpen className="w-3.5 h-3.5" />
-          全部文档
+          全部文件
         </button>
         {folderBreadcrumbs.map((folder, idx) => {
           const path = folderBreadcrumbs.slice(0, idx + 1).join('/')
@@ -704,7 +704,7 @@ export default function DocManagementPage() {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-[rgb(var(--text))] truncate flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-[rgb(var(--primary))]" />
-                文档管理
+                文库管理
               </h1>
 
               <div className="flex items-center gap-2">
@@ -715,7 +715,7 @@ export default function DocManagementPage() {
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="搜索文档..."
+                    placeholder="搜索文件..."
                     className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))] w-40 sm:w-56"
                   />
                 </div>
@@ -742,7 +742,7 @@ export default function DocManagementPage() {
                   className="inline-flex items-center px-3 py-1.5 bg-[rgb(var(--primary))] hover:opacity-90 text-white rounded-lg shadow transition-opacity text-sm"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  新增文档
+                  新增文件
                 </button>
               </div>
             </div>
@@ -793,7 +793,7 @@ export default function DocManagementPage() {
                 <div className="bg-[rgb(var(--card))]/60 rounded-lg shadow overflow-hidden border border-[rgb(var(--border))] mt-3" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
                   <div className="p-4 text-center text-[rgb(var(--text-muted))]">
                     <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    未找到匹配的文档
+                    未找到匹配的文件
                   </div>
                 </div>
               ) : (
@@ -802,7 +802,7 @@ export default function DocManagementPage() {
                     <table className="min-w-full divide-y divide-slate-200/50" style={{ borderColor: 'rgb(var(--border))' }}>
                       <thead className="bg-[rgb(var(--muted))]/60">
                         <tr>
-                          <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider">文档</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider">文件</th>
                           <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider hidden sm:table-cell">类型</th>
                           <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">访问量</th>
                           <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider">推荐</th>
@@ -885,7 +885,7 @@ export default function DocManagementPage() {
               <div className="bg-[rgb(var(--card))]/60 rounded-lg shadow overflow-hidden border border-[rgb(var(--border))] mt-3" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
                 <div className="p-4 text-center text-[rgb(var(--text-muted))]">
                   <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  当前目录暂无文档
+                  当前目录暂无文件
                 </div>
               </div>
             ) : (
@@ -941,7 +941,7 @@ export default function DocManagementPage() {
                           </tr>
                         )
                       })}
-                      {/* 再显示文档（以文件系统为准，包含未注册的文件） */}
+                      {/* 再显示文件（以文件系统为准，包含未注册的文件） */}
                       {filesWithDoc.map(({ fsItem, doc }) => {
                         const ext = fsItem.name.slice(fsItem.name.lastIndexOf('.')).toLowerCase()
                         return (
@@ -1033,7 +1033,7 @@ export default function DocManagementPage() {
         </div>
       </main>
 
-      {/* 新增文档模态框（批量上传） */}
+      {/* 新增文件模态框（批量上传） */}
       {showAddModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <ModalOverlay onClick={closeAddModal} />
@@ -1095,7 +1095,7 @@ export default function DocManagementPage() {
                 >
                   <div className="text-center">
                     <Upload className="w-5 h-5 mx-auto mb-1.5 text-[rgb(var(--text-muted))]" />
-                    <p className="text-sm text-[rgb(var(--text-muted))]">点击选择文档，支持多选</p>
+                    <p className="text-sm text-[rgb(var(--text-muted))]">点击选择文件，支持多选</p>
                     <p className="text-xs text-[rgb(var(--text-muted))/0.7]">支持 .docx, .md, .html, .pdf，最多 20 个</p>
                   </div>
                   <input
@@ -1200,14 +1200,14 @@ export default function DocManagementPage() {
           <ModalOverlay onClick={() => setShowEditModal(false)} />
           <div className="relative z-10 bg-[rgb(var(--card))] rounded-xl shadow-2xl border border-[rgb(var(--border))] w-full max-w-md">
             <div className="p-4 border-b border-[rgb(var(--border))] flex justify-between items-center">
-              <h3 className="text-base font-semibold">编辑文档</h3>
+              <h3 className="text-base font-semibold">编辑文件</h3>
               <button onClick={() => { setShowEditModal(false); setEditingDoc(null); }}>
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-xs font-medium mb-1">文档标题</label>
+                <label className="block text-xs font-medium mb-1">文件标题</label>
                 <input
                   type="text"
                   value={formTitle}
@@ -1266,7 +1266,7 @@ export default function DocManagementPage() {
             </div>
             <div className="p-4">
               <p className="text-sm">
-                确定要删除文档 <span className="font-medium">{currentDeleteItem?.title}</span> 吗？此操作不可撤销。
+                确定要删除文件 <span className="font-medium">{currentDeleteItem?.title}</span> 吗？此操作不可撤销。
               </p>
             </div>
             <div className="p-3 border-t border-[rgb(var(--border))] flex justify-end gap-2">

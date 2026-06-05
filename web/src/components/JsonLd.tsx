@@ -61,7 +61,7 @@ export function PersonJsonLd() {
   return <JsonLd data={data} />
 }
 
-// ============ 博客文章结构化数据 ============
+// ============ 博客结构化数据 ============
 
 interface BlogPostJsonLdProps {
   title: string
