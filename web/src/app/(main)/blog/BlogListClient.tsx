@@ -339,12 +339,12 @@ export default function BlogListClient({
   const hasActiveFilter = selectedTypeId !== null || selectedTagId !== null || selectedYear !== null
 
   return (
-    <div className="min-h-screen z-1 flex flex-col bg-[rgb(var(--bg)/0.8)] text-[rgb(var(--text))]">
+    <div className="min-h-screen flex flex-col z-1 bg-[rgb(var(--bg)/0.8)] text-[rgb(var(--text))]">
       <BgOverlay />
 
-      <main className="blog-main-prose w-full bg-[rgb(var(--bg)/0.8)] px-4 sm:px-6 lg:px-8 py-6 relative z-10 page-blog">
+      <main className="blog-main-prose flex-1 flex flex-col min-h-0 w-full bg-[rgb(var(--bg)/0.8)] px-4 sm:px-6 lg:px-8 py-6 relative z-10 page-blog">
         {/* 三栏布局 - 固定高度，支持独立滚动 */}
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_240px] gap-6 lg:h-[calc(100vh-120px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_240px] gap-6 h-full lg:h-[calc(100vh-56px)]">
 
           {/* 左侧目录树 - 桌面端 */}
           <aside className="hidden lg:block shrink-0 lg:overflow-y-auto lg:blog-page-scrollbar pr-2">
