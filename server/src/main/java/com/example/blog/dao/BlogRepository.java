@@ -76,6 +76,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long>, JpaSpecificat
             "order by function('to_char', b.createTime, 'YYYY-MM') desc")
     List<String> likesCountByMonth();
 
+    @Query("select b from Blog b where b.id <> :excludeId and b.published = true order by function('random')")
+    List<Blog> findRandomBlogs(@Param("excludeId") Long excludeId, Pageable pageable);
+
     @Modifying
     @Query("UPDATE Blog e SET e.likes = e.likes + :delta WHERE e.id = :id")
     int updateLikes(@Param("id") Long id, @Param("delta") int delta);

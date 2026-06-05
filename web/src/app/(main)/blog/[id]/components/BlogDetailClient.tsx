@@ -18,9 +18,9 @@ import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
 
 import { useBlogDetail, useComments, useToc, useReadingProgress, useScrollSpy } from '../hooks'
-import { CommentList, CommentForm, TableOfContents, MobileToc } from './'
+import { CommentList, CommentForm, TableOfContents, MobileToc, RecommendedBlogs } from './'
 import { CodeBlock, CustomHeading, CustomImage, CustomLink } from './markdown'
-import type { Blog, RelatedBlog } from '../types'
+import type { Blog, RelatedBlog, RecommendedBlog } from '../types'
 
 // 动画变体定义
 const pageVariants: Variants = {
@@ -93,6 +93,7 @@ const sidebarItemVariants = {
 interface BlogDetailClientProps {
   initialBlog: Blog
   initialRelatedBlogs: RelatedBlog[]
+  initialRecommendedBlogs: RecommendedBlog[]
   blogId: string
 }
 
@@ -142,20 +143,26 @@ const handleCopyContent = (title: string, content: string) => {
   }
 }
 
-export default function BlogDetailClient({ initialBlog, initialRelatedBlogs, blogId }: BlogDetailClientProps) {
+export default function BlogDetailClient({
+  initialBlog,
+  initialRelatedBlogs,
+  initialRecommendedBlogs,
+  blogId
+}: BlogDetailClientProps) {
   const {
     state,
     dispatch,
     userInfo,
     administrator,
     relatedBlogs,
+    recommendedBlogs,
     wordCount,
     readingTimeMinutes,
     fetchBlogInfo,
     fetchRelatedBlogs,
     handleLike,
     onShowLogin
-  } = useBlogDetail(blogId, initialBlog, initialRelatedBlogs)
+  } = useBlogDetail(blogId, initialBlog, initialRelatedBlogs, initialRecommendedBlogs)
 
   const {
     content,
@@ -475,7 +482,7 @@ export default function BlogDetailClient({ initialBlog, initialRelatedBlogs, blo
                   />
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   className={`space-y-3 pt-4 ${state.isMobile ? 'mb-4' : 'mb-10'}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -493,6 +500,9 @@ export default function BlogDetailClient({ initialBlog, initialRelatedBlogs, blo
                     handleDeleteComment={handleDeleteComment}
                   />
                 </motion.div>
+
+                {/* 推荐博客区域 */}
+                <RecommendedBlogs blogs={recommendedBlogs} />
               </div>
             </article>
           </div>

@@ -452,6 +452,28 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
+    public List<Blog> listRandomBlogs(Long excludeId, Integer size) {
+        requireNonNull(size, "size must not be null");
+        if (size <= 0) {
+            throw new IllegalArgumentException("size must be greater than 0");
+        }
+
+        try {
+            // excludeId 为 null 时使用 -1（通常不存在该ID）
+            Long actualExcludeId = excludeId != null ? excludeId : -1L;
+            Pageable pageable = PageRequest.of(0, size);
+            List<Blog> blogs = blogRepository.findRandomBlogs(actualExcludeId, pageable);
+            blogs.forEach(blog -> {
+                blog.setContent("");
+                blog.setComments(null);
+            });
+            return blogs;
+        } catch (Exception e) {
+            throw new RuntimeException("Error listing random blogs excluding id: " + excludeId, e);
+        }
+    }
+
+    @Override
     public Blog getPreviousBlog(Long id) {
         requireNonNull(id, "blog id must not be null");
         try {

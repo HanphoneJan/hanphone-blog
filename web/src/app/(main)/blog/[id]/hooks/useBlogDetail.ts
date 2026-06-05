@@ -7,7 +7,7 @@ import {  STORAGE_KEYS, ASSETS , API_CODE } from '@/lib/constants'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
-import type { Blog, CommentItem, RelatedBlog, UserInfo, BlogState, BlogAction } from '../types'
+import type { Blog, CommentItem, RelatedBlog, RecommendedBlog, UserInfo, BlogState, BlogAction } from '../types'
 
 // 初始状态
 const initialState: BlogState = {
@@ -95,9 +95,15 @@ const blogReducer = (state: BlogState, action: BlogAction): BlogState => {
   }
 }
 
-export function useBlogDetail(blogId: string, initialBlog?: Blog, initialRelatedBlogs?: RelatedBlog[]) {
+export function useBlogDetail(
+  blogId: string,
+  initialBlog?: Blog,
+  initialRelatedBlogs?: RelatedBlog[],
+  initialRecommendedBlogs?: RecommendedBlog[]
+) {
   const [state, dispatch] = useReducer(blogReducer, initialBlog ? { ...initialState, blog: initialBlog } : initialState)
   const [relatedBlogs, setRelatedBlogs] = useState<RelatedBlog[]>(initialRelatedBlogs || [])
+  const [recommendedBlogs, setRecommendedBlogs] = useState<RecommendedBlog[]>(initialRecommendedBlogs || [])
   const { userInfo: contextUserInfo, administrator, onShowLogin } = useUser()
 
   // 本地用户信息
@@ -240,6 +246,79 @@ export function useBlogDetail(blogId: string, initialBlog?: Blog, initialRelated
     }
   }, [state.blog.id, state.blog.type?.id, initialRelatedBlogs])
 
+  // 获取推荐博客（基于标签相关，不足用随机博客补充，最多3篇）
+  const fetchRecommendedBlogs = useCallback(async () => {
+    // 如果已有初始推荐博客，不需要重新获取
+    if (initialRecommendedBlogs && initialRecommendedBlogs.length > 0) {
+      return
+    }
+
+    const currentId = state.blog.id
+    const tags = state.blog.tags || []
+    const seen = new Map<number, RecommendedBlog>()
+
+    // 基于标签获取
+    if (tags.length > 0) {
+      for (const tag of tags.slice(0, 3)) {
+        try {
+          const res = await apiClient.get(`${ENDPOINTS.TAG_BLOGS(tag.id)}?pagenum=1&pagesize=10`)
+          const content = res.data?.data?.content ?? res.data?.content ?? []
+          const list = Array.isArray(content) ? content : []
+          for (const b of list) {
+            if (b.id !== currentId && !seen.has(b.id)) {
+              seen.set(b.id, {
+                id: b.id,
+                title: b.title,
+                firstPicture: b.firstPicture || '',
+                createTime: b.createTime || '',
+                views: b.views ?? 0,
+                description: b.description || '',
+                user: {
+                  avatar: b.user?.avatar || '',
+                  nickname: b.user?.nickname || ''
+                }
+              })
+            }
+          }
+        } catch {
+          // 忽略单个标签请求失败
+        }
+      }
+    }
+
+    // 如果标签相关不足3篇，从随机博客补充
+    const tagCount = seen.size
+    if (tagCount < 3) {
+      try {
+        const need = 3 - tagCount
+        const res = await apiClient.get(`${ENDPOINTS.RANDOM_BLOGS}?excludeId=${currentId}&size=${need}`)
+        const list = res.data?.data ?? []
+        if (Array.isArray(list)) {
+          for (const b of list) {
+            if (b.id !== currentId && !seen.has(b.id)) {
+              seen.set(b.id, {
+                id: b.id,
+                title: b.title,
+                firstPicture: b.firstPicture || '',
+                createTime: b.createTime || '',
+                views: b.views ?? 0,
+                description: b.description || '',
+                user: {
+                  avatar: b.user?.avatar || '',
+                  nickname: b.user?.nickname || ''
+                }
+              })
+            }
+          }
+        }
+      } catch {
+        // 忽略随机博客获取失败
+      }
+    }
+
+    setRecommendedBlogs(Array.from(seen.values()).slice(0, 3))
+  }, [state.blog.id, state.blog.tags, initialRecommendedBlogs])
+
   // 点赞
   const handleLike = useCallback(async () => {
     if (!userInfo) {
@@ -274,10 +353,12 @@ export function useBlogDetail(blogId: string, initialBlog?: Blog, initialRelated
     userInfo,
     administrator,
     relatedBlogs,
+    recommendedBlogs,
     wordCount,
     readingTimeMinutes,
     fetchBlogInfo,
     fetchRelatedBlogs,
+    fetchRecommendedBlogs,
     handleLike,
     onShowLogin
   }

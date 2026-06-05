@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ChevronUp, FolderTree, Tag as TagIcon, Hash, X } from 'lucide-react'
-import type { Type, Tag, BlogsByType } from '../types'
+import { ChevronDown, ChevronUp, FolderTree, Tag as TagIcon, Hash, Calendar, ArrowUpDown } from 'lucide-react'
+import type { Type, Tag, BlogsByType, BlogArchive } from '../types'
+
+type SortOption = 'newest' | 'oldest' | 'mostViewed' | 'leastViewed' | 'recommend'
 
 interface BlogFilterPanelProps {
   types: Type[]
@@ -13,7 +15,20 @@ interface BlogFilterPanelProps {
   selectedTagId: number | null
   onSelectType: (id: number | null) => void
   onSelectTag: (id: number | null) => void
+  archives?: BlogArchive
+  selectedYear: string | null
+  onSelectYear: (year: string | null) => void
+  sortBy: SortOption
+  onSortChange: (sort: SortOption) => void
 }
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'newest', label: '最新发布' },
+  { value: 'oldest', label: '最早发布' },
+  { value: 'recommend', label: '推荐优先' },
+  { value: 'mostViewed', label: '最多阅读' },
+  { value: 'leastViewed', label: '最少阅读' }
+]
 
 export function BlogFilterPanel({
   types,
@@ -22,10 +37,16 @@ export function BlogFilterPanel({
   tags,
   selectedTagId,
   onSelectType,
-  onSelectTag
+  onSelectTag,
+  archives = {},
+  selectedYear,
+  onSelectYear,
+  sortBy,
+  onSortChange
 }: BlogFilterPanelProps) {
   const [showTypes, setShowTypes] = useState(true)
   const [showTags, setShowTags] = useState(true)
+  const [showArchives, setShowArchives] = useState(true)
 
   const handleTypeClick = (typeId: number) => {
     if (selectedTypeId === typeId) {
@@ -43,8 +64,108 @@ export function BlogFilterPanel({
     }
   }
 
+  const handleYearClick = (year: string) => {
+    if (selectedYear === year) {
+      onSelectYear(null)
+    } else {
+      onSelectYear(year)
+    }
+  }
+
+  // 按年份降序排列
+  const archiveYears = Object.keys(archives)
+    .filter(y => y !== 'null' && y !== 'undefined')
+    .sort((a, b) => parseInt(b) - parseInt(a))
+
   return (
     <div className="space-y-5">
+      {/* 排序方式 */}
+      <div>
+        <div className="w-full flex items-center gap-2 mb-3 text-sm font-semibold text-[rgb(var(--text))]">
+          <ArrowUpDown className="h-4 w-4 text-[rgb(var(--primary))]" />
+          排序方式
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {SORT_OPTIONS.map(option => {
+            const isSelected = sortBy === option.value
+            return (
+              <button
+                key={option.value}
+                onClick={() => onSortChange(option.value)}
+                className={`text-left px-2.5 py-1.5 rounded-lg text-xs transition-all duration-200 ${
+                  isSelected
+                    ? 'bg-[rgb(var(--primary)/0.12)] text-[rgb(var(--primary))] font-medium'
+                    : 'text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
+                }`}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 时间归档 */}
+      {archiveYears.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowArchives(!showArchives)}
+            className="w-full flex items-center justify-between mb-3 text-sm font-semibold text-[rgb(var(--text))] hover:text-[rgb(var(--primary))] transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-[rgb(var(--indigo))]" />
+              时间归档
+            </span>
+            {showArchives ? (
+              <ChevronUp className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showArchives && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div className="space-y-1">
+                  {archiveYears.map(year => {
+                    const count = archives[year]?.length ?? 0
+                    const isSelected = selectedYear === year
+                    return (
+                      <button
+                        key={year}
+                        onClick={() => handleYearClick(year)}
+                        className={`w-full text-left flex items-center justify-between py-2 px-3 rounded-lg text-sm transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-[rgb(var(--primary)/0.12)] text-[rgb(var(--primary))] font-medium shadow-sm'
+                            : 'text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
+                        }`}
+                      >
+                        <span>{year} 年</span>
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${
+                            isSelected
+                              ? 'bg-[rgb(var(--primary)/0.15)] text-[rgb(var(--primary))]'
+                              : 'bg-[rgb(var(--muted))] text-[rgb(var(--text-muted))]'
+                          }`}
+                        >
+                          {count} 篇
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* 分类筛选 */}
       <div>
         <button
@@ -76,7 +197,7 @@ export function BlogFilterPanel({
                 <button
                   onClick={() => onSelectType(null)}
                   className={`w-full text-left flex items-center justify-between py-2 px-3 rounded-lg text-sm transition-all duration-200 ${
-                    selectedTypeId === null
+                    selectedTypeId === null && !selectedYear
                       ? 'bg-[rgb(var(--primary)/0.12)] text-[rgb(var(--primary))] font-medium shadow-sm'
                       : 'text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
                   }`}
@@ -84,7 +205,7 @@ export function BlogFilterPanel({
                   <span>全部</span>
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded ${
-                      selectedTypeId === null
+                      selectedTypeId === null && !selectedYear
                         ? 'bg-[rgb(var(--primary)/0.15)] text-[rgb(var(--primary))]'
                         : 'bg-[rgb(var(--muted))] text-[rgb(var(--text-muted))]'
                     }`}

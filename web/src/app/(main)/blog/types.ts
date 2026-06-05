@@ -43,3 +43,8 @@ export interface PageInfo {
 export interface BlogsByType {
   [typeId: number]: { id: number; title: string }[]
 }
+
+// 按年份分组的归档数据
+export interface BlogArchive {
+  [year: string]: Blog[]
+}

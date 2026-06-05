@@ -83,6 +83,17 @@ public class IndexController {
         return new Result<>(true, StatusCode.OK, "获取推荐博客成功", blogService.listRecommendBlogTop(PaginationConstants.RECOMMEND_BLOG_SIZE));
     }
 
+    @GetMapping("/blogs/random")
+    public Result<List<Blog>> getRandomBlogs(@RequestParam(required = false) Long excludeId, @RequestParam(defaultValue = "3") int size) {
+        if (size < 1) {
+            size = 3;
+        }
+        if (size > 10) {
+            size = 10;
+        }
+        return new Result<>(true, StatusCode.OK, "获取随机博客成功", blogService.listRandomBlogs(excludeId, size));
+    }
+
     // 搜索参数最大长度限制
     private static final int MAX_SEARCH_QUERY_LENGTH = 100;
     private static final int DEFAULT_SEARCH_LIMIT = 20;
