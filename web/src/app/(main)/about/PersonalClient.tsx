@@ -33,7 +33,7 @@ const sortByRank = (items: Item[]): Item[] => {
 }
 
 export default function PersonalClient({ initialData }: PersonalClientProps) {
-  const { profile, socialLinks, internalLinks } = usePersonalProfile()
+  const { profile, socialLinks, externalLinks, internalLinks } = usePersonalProfile()
 
   const data = {
     skills: sortByRank(initialData.filter(item => item.category === 'skill')),
@@ -51,7 +51,7 @@ export default function PersonalClient({ initialData }: PersonalClientProps) {
         <WorksSection works={data.works} />
         <HobbiesSection hobbies={data.hobbies} />
         <EvaluationsSection evaluations={data.evaluations} />
-        <ContactSection internalLinks={internalLinks} />
+        <ContactSection internalLinks={internalLinks} externalLinks={externalLinks} />
       </main>
     </div>
   )

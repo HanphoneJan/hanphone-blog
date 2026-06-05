@@ -4,18 +4,21 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   PROFILE as DEFAULT_PROFILE,
   SOCIAL_LINKS as DEFAULT_SOCIAL_LINKS,
+  EXTERNAL_LINKS as DEFAULT_EXTERNAL_LINKS,
   INTERNAL_LINKS as DEFAULT_INTERNAL_LINKS
 } from '@/lib/personal-profile'
 
 export interface PersonalProfileData {
   profile: typeof DEFAULT_PROFILE
-  socialLinks: typeof DEFAULT_SOCIAL_LINKS
+  socialLinks: { platform: string; url: string; label: string }[]
+  externalLinks: typeof DEFAULT_EXTERNAL_LINKS
   internalLinks: typeof DEFAULT_INTERNAL_LINKS
 }
 
 const FALLBACK: PersonalProfileData = {
   profile: DEFAULT_PROFILE,
   socialLinks: DEFAULT_SOCIAL_LINKS,
+  externalLinks: DEFAULT_EXTERNAL_LINKS,
   internalLinks: DEFAULT_INTERNAL_LINKS
 }
 
@@ -43,16 +46,20 @@ export function usePersonalProfile(): PersonalProfileData & { refresh: () => voi
       const profile = json.profile && typeof json.profile === 'object'
         ? { ...FALLBACK.profile, ...json.profile }
         : FALLBACK.profile
-      const socialLinks = json.socialLinks && typeof json.socialLinks === 'object'
-        ? { ...FALLBACK.socialLinks, ...json.socialLinks }
+      const socialLinks = Array.isArray(json.socialLinks)
+        ? json.socialLinks as PersonalProfileData['socialLinks']
         : FALLBACK.socialLinks
+      const externalLinks = json.externalLinks && typeof json.externalLinks === 'object'
+        ? { ...FALLBACK.externalLinks, ...json.externalLinks }
+        : FALLBACK.externalLinks
       const internalLinks = json.internalLinks && typeof json.internalLinks === 'object'
         ? { ...FALLBACK.internalLinks, ...json.internalLinks }
         : FALLBACK.internalLinks
 
       setData({
         profile: profile as PersonalProfileData['profile'],
-        socialLinks: socialLinks as PersonalProfileData['socialLinks'],
+        socialLinks,
+        externalLinks: externalLinks as PersonalProfileData['externalLinks'],
         internalLinks: internalLinks as PersonalProfileData['internalLinks']
       })
     } catch {

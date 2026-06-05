@@ -3,7 +3,9 @@
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faGithub, faBilibili } from '@fortawesome/free-brands-svg-icons'
+import { faGithub, faBilibili, faXTwitter, faYoutube } from '@fortawesome/free-brands-svg-icons'
+import { Mail } from 'lucide-react'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
 interface HeroSectionProps {
   profile: {
@@ -13,11 +15,19 @@ interface HeroSectionProps {
     techDirection: string
     signature: string
   }
-  socialLinks: {
-    bilibili?: { url: string; displayName: string }
-    github?: { url: string; displayName: string }
-    email?: { address: string }
-  }
+  socialLinks: { platform: string; url: string; label: string }[]
+}
+
+const PLATFORM_ICONS: Record<string, IconDefinition> = {
+  github: faGithub,
+  bilibili: faBilibili,
+  x: faXTwitter,
+  youtube: faYoutube,
+}
+
+const PLATFORM_ICON_COLORS: Record<string, string> = {
+  bilibili: '#FB7299',
+  youtube: '#ef4444',
 }
 
 const containerVariants = {
@@ -55,7 +65,7 @@ export default function HeroSection({ profile, socialLinks }: HeroSectionProps) 
       >
         {/* 头像 */}
         <motion.div variants={itemVariants} className="mb-4">
-          <motion.div 
+          <motion.div
             className="w-20 h-20 md:w-24 md:h-24 mx-auto rounded-full p-1 bg-linear-to-br from-[rgb(var(--primary))] to-[rgb(var(--primary)/0.3)]"
             animate={{
               boxShadow: [
@@ -70,7 +80,7 @@ export default function HeroSection({ profile, socialLinks }: HeroSectionProps) 
               ease: "easeInOut"
             }}
           >
-            <motion.div 
+            <motion.div
               className="w-full h-full rounded-full overflow-hidden bg-[rgb(var(--bg))]"
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 300 }}
@@ -88,7 +98,7 @@ export default function HeroSection({ profile, socialLinks }: HeroSectionProps) 
         </motion.div>
 
         {/* 名字 */}
-        <motion.h1 
+        <motion.h1
           variants={itemVariants}
           className="text-2xl md:text-3xl font-bold mb-2 text-[rgb(var(--card-foreground))]"
         >
@@ -96,7 +106,7 @@ export default function HeroSection({ profile, socialLinks }: HeroSectionProps) 
         </motion.h1>
 
         {/* 描述 */}
-        <motion.p 
+        <motion.p
           variants={itemVariants}
           className="text-sm text-[rgb(var(--muted-foreground))] mb-3"
         >
@@ -104,7 +114,7 @@ export default function HeroSection({ profile, socialLinks }: HeroSectionProps) 
         </motion.p>
 
         {/* 技术标签 */}
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="flex flex-wrap justify-center gap-1.5 mb-3"
         >
@@ -123,7 +133,7 @@ export default function HeroSection({ profile, socialLinks }: HeroSectionProps) 
         </motion.div>
 
         {/* 签名 */}
-        <motion.p 
+        <motion.p
           variants={itemVariants}
           className="text-xs text-[rgb(var(--muted-foreground))] italic mb-4"
         >
@@ -131,49 +141,39 @@ export default function HeroSection({ profile, socialLinks }: HeroSectionProps) 
         </motion.p>
 
         {/* 社交链接 */}
-        <motion.div 
+        <motion.div
           variants={itemVariants}
-          className="flex justify-center gap-2"
+          className="flex flex-wrap justify-center gap-2"
         >
-          {socialLinks.github && (
-            <motion.a
-              href={socialLinks.github.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors text-xs"
-            >
-              <FontAwesomeIcon icon={faGithub} className="text-sm" />
-              <span>GitHub</span>
-            </motion.a>
-          )}
-          {socialLinks.bilibili && (
-            <motion.a
-              href={socialLinks.bilibili.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors text-xs"
-            >
-              <FontAwesomeIcon icon={faBilibili} className="text-sm text-[#FB7299]" />
-              <span>Bilibili</span>
-            </motion.a>
-          )}
-          {socialLinks.email && (
-            <motion.a
-              href={`mailto:${socialLinks.email.address}`}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors text-xs"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span>Email</span>
-            </motion.a>
-          )}
+          {socialLinks.map((link) => {
+            const isEmail = link.platform === 'email'
+            const isExternal = !isEmail && !link.url.startsWith('/')
+            const icon = PLATFORM_ICONS[link.platform]
+            const iconColor = PLATFORM_ICON_COLORS[link.platform]
+
+            return (
+              <motion.a
+                key={link.platform}
+                href={link.url}
+                target={isExternal ? '_blank' : undefined}
+                rel={isExternal ? 'noopener noreferrer' : undefined}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--muted))] hover:bg-[rgb(var(--primary)/0.1)] transition-colors text-xs"
+              >
+                {isEmail ? (
+                  <Mail className="w-3.5 h-3.5" />
+                ) : icon ? (
+                  <FontAwesomeIcon
+                    icon={icon}
+                    className="text-sm"
+                    style={iconColor ? { color: iconColor } : undefined}
+                  />
+                ) : null}
+                <span>{link.label}</span>
+              </motion.a>
+            )
+          })}
         </motion.div>
       </motion.div>
     </section>

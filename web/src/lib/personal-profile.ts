@@ -23,17 +23,19 @@ export const PROFILE = {
 } as const
 
 // ==================== 社交媒体与链接 ====================
-export const SOCIAL_LINKS = {
-  bilibili: {
-    url: 'https://space.bilibili.com/649062555/',
-    displayName: '寒枫君'
-  },
-  github: {
-    url: 'https://github.com/HanphoneJan/',
-    displayName: 'HanphoneJan'
-  },
-  email: {
-    address: 'janhizian@qq.com'
+export const SOCIAL_LINKS = [
+  { platform: 'github', url: 'https://github.com/HanphoneJan/', label: 'GitHub' },
+  { platform: 'bilibili', url: 'https://space.bilibili.com/649062555/', label: 'Bilibili' },
+  { platform: 'email', url: 'mailto:janhizian@qq.com', label: 'Email' },
+  { platform: 'x', url: 'https://x.com/hanphonejan', label: 'X' },
+  { platform: 'youtube', url: 'https://youtube.com/@Hanphone', label: 'YouTube' }
+] as const
+
+// ==================== 外部链接 ====================
+export const EXTERNAL_LINKS = {
+  docs: {
+    href: 'https://www.hanphone.top/',
+    text: '技术文档站'
   }
 } as const
 

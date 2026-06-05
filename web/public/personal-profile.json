@@ -6,17 +6,37 @@
     "techDirection": "Agent开发、RAG应用、多模态大模型、全栈开发",
     "signature": "不鹜于虚声"
   },
-  "socialLinks": {
-    "bilibili": {
-      "url": "https://space.bilibili.com/649062555/",
-      "displayName": "寒枫君"
+  "socialLinks": [
+    {
+      "platform": "email",
+      "url": "mailto:janhizian@qq.com",
+      "label": "Email"
     },
-    "github": {
+    {
+      "platform": "github",
       "url": "https://github.com/HanphoneJan/",
-      "displayName": "HanphoneJan"
+      "label": "GitHub"
     },
-    "email": {
-      "address": "janhizian@qq.com"
+    {
+      "platform": "bilibili",
+      "url": "https://space.bilibili.com/649062555/",
+      "label": "Bilibili"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/hanphonejan",
+      "label": "X"
+    },
+    {
+      "platform": "youtube",
+      "url": "https://youtube.com/@HanphoneJan",
+      "label": "YouTube"
+    }
+  ],
+  "externalLinks": {
+    "docs": {
+      "href": "https://www.hanphone.top/",
+      "text": "技术文档站"
     }
   },
   "internalLinks": {
