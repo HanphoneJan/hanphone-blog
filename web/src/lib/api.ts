@@ -35,6 +35,8 @@ export const ENDPOINTS = {
   ESSAY_COMMENTS: (id: number) => `${API_BASE_URL}/essays/${id}/comments`,
   ESSAY_SEARCH: `${API_BASE_URL}/essays/search`,
   RECOMMEND_BLOGS: `${API_BASE_URL}/getRecommendBlogList`,
+  RANDOM_BLOGS: `${API_BASE_URL}/blogs/random`,
+  ARCHIVE_BLOGS: `${API_BASE_URL}/archiveBlog`,
   BLOG_PREV: (id: number) => `${API_BASE_URL}/blog/${id}/prev`,
   BLOG_NEXT: (id: number) => `${API_BASE_URL}/blog/${id}/next`,
   UPLOAD_BLOG_IMAGE: `${API_BASE_URL}/upload/blogs`,

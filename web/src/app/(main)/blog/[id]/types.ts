@@ -27,10 +27,24 @@ export interface Blog {
   comments: CommentItem[];
 }
 
-// 相关博客
+// 相关博客（侧边栏同分类）
 export interface RelatedBlog {
   id: number;
   title: string;
+}
+
+// 推荐博客（评论区下方标签相关/随机推荐）
+export interface RecommendedBlog {
+  id: number;
+  title: string;
+  firstPicture: string;
+  createTime: string;
+  views: number;
+  description?: string;
+  user: {
+    avatar: string;
+    nickname: string;
+  };
 }
 
 // 评论项

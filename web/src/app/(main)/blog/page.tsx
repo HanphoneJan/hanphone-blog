@@ -2,7 +2,22 @@ import { ENDPOINTS } from '@/lib/api'
 import {  PAGINATION , API_CODE } from '@/lib/constants'
 import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import BlogListClient from './BlogListClient'
-import type { Blog, Type, Tag, PageInfo } from './types'
+import type { Blog, Type, Tag, PageInfo, BlogArchive } from './types'
+
+// 获取归档数据（服务端）
+async function fetchArchives(): Promise<BlogArchive> {
+  try {
+    const res = await fetch(`${ENDPOINTS.ARCHIVE_BLOGS}`, {})
+    const data = await res.json()
+    if (data.code === API_CODE.SUCCESS && data.data) {
+      return data.data
+    }
+    return {}
+  } catch (error) {
+    console.error('Failed to fetch archives:', error)
+    return {}
+  }
+}
 
 // 获取博客列表（服务端）
 async function fetchBlogs(): Promise<{ blogs: Blog[]; pageInfo: PageInfo }> {
@@ -80,11 +95,12 @@ async function fetchTags(): Promise<Tag[]> {
 
 // 服务端组件
 export default async function BlogListPage() {
-  const [{ blogs, pageInfo }, recommendBlogs, types, tags] = await Promise.all([
+  const [{ blogs, pageInfo }, recommendBlogs, types, tags, archives] = await Promise.all([
     fetchBlogs(),
     fetchRecommendBlogs(),
     fetchTypes(),
-    fetchTags()
+    fetchTags(),
+    fetchArchives()
   ])
 
   // 结构化数据 - CollectionPage
@@ -120,6 +136,7 @@ export default async function BlogListPage() {
         initialTypes={types}
         initialPageInfo={pageInfo}
         initialTags={tags}
+        initialArchives={archives}
       />
     </>
   )

@@ -21,6 +21,14 @@ public interface BlogService {
 
     List<Blog> listRecommendBlogTop(Integer size);
 
+    /**
+     * 随机获取已发布的博客（可选排除指定ID）
+     * @param excludeId 要排除的博客ID，为 null 时不排除任何博客
+     * @param size 获取数量
+     * @return 随机博客列表
+     */
+    List<Blog> listRandomBlogs(Long excludeId, Integer size);
+
     Blog saveBlog(Blog blog);
 
     Blog updateBlog(Long id, Blog blog);

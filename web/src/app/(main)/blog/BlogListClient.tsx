@@ -18,12 +18,11 @@ import {
 , API_CODE } from '@/lib/constants'
 import { BLOG_LABELS } from '@/lib/labels'
 import { ENDPOINTS } from '@/lib/api'
-import { FeaturedCard } from './components/FeaturedCard'
 import { ArticleRow } from './components/ArticleRow'
 import { BlogCategoryTree } from './components/BlogCategoryTree'
 import { BlogFilterPanel } from './components/BlogFilterPanel'
 import { Pagination } from '../components/Pagination'
-import type { Blog, Type, Tag, PageInfo, BlogsByType } from './types'
+import type { Blog, Type, Tag, PageInfo, BlogsByType, BlogArchive } from './types'
 
 interface BlogListClientProps {
   initialBlogs: Blog[]
@@ -31,14 +30,18 @@ interface BlogListClientProps {
   initialTypes: Type[]
   initialPageInfo: PageInfo
   initialTags?: Tag[]
+  initialArchives?: BlogArchive
 }
+
+type SortOption = 'newest' | 'oldest' | 'mostViewed' | 'leastViewed' | 'recommend'
 
 export default function BlogListClient({
   initialBlogs,
   initialRecommendBlogs,
   initialTypes,
   initialPageInfo,
-  initialTags = []
+  initialTags = [],
+  initialArchives = {}
 }: BlogListClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -60,34 +63,56 @@ export default function BlogListClient({
     const id = searchParams.get('tagId')
     return id ? parseInt(id, 10) : null
   })
+  const [selectedYear, setSelectedYear] = useState<string | null>(() => {
+    return searchParams.get('year')
+  })
+  const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [loading, setLoading] = useState(false)
   const [pageInfo, setPageInfo] = useState<PageInfo>(initialPageInfo)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [inputPage, setInputPage] = useState(pageInfo.current)
 
-  // 是否展示推荐博客：仅第一页且无筛选条件
-  const showRecommendBlogs = useMemo(() => {
-    return pageInfo.current === 1 &&
-      selectedTypeId === null &&
-      selectedTagId === null
-  }, [pageInfo.current, selectedTypeId, selectedTagId])
+  // 归档模式：选中某一年份
+  const archiveMode = selectedYear !== null
 
   // 获取当前筛选状态文本
   const filterStatusText = useMemo(() => {
-    if (selectedTypeId !== null && selectedTagId !== null) {
-      const typeName = typeList.find(t => t.id === selectedTypeId)?.name
-      const tagName = tagList.find(t => t.id === selectedTagId)?.name
-      return `分类: ${typeName} · 标签: ${tagName}`
-    }
-    if (selectedTypeId !== null) {
-      return typeList.find(t => t.id === selectedTypeId)?.name
-    }
-    if (selectedTagId !== null) {
-      return `标签: ${tagList.find(t => t.id === selectedTagId)?.name}`
-    }
-    return null
-  }, [selectedTypeId, selectedTagId, typeList, tagList])
+    const parts: string[] = []
+    if (selectedYear !== null) parts.push(`${selectedYear} 年`)
+    if (selectedTypeId !== null) parts.push(typeList.find(t => t.id === selectedTypeId)?.name || '')
+    if (selectedTagId !== null) parts.push(`标签: ${tagList.find(t => t.id === selectedTagId)?.name || ''}`)
+    return parts.length > 0 ? parts.join(' · ') : null
+  }, [selectedYear, selectedTypeId, selectedTagId, typeList, tagList])
+
+  // 排序 + 归档后的博客列表
+  const displayBlogs = useMemo(() => {
+    let list: Blog[] = archiveMode && initialArchives[selectedYear!]
+      ? initialArchives[selectedYear!]
+      : [...blogList]
+
+    // 排序
+    list.sort((a, b) => {
+      switch (sortBy) {
+        case 'recommend':
+          // 推荐优先，然后按阅读量
+          if (a.recommend !== b.recommend) return b.recommend ? 1 : -1
+          return b.views - a.views
+        case 'newest':
+          return new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
+        case 'oldest':
+          return new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+        case 'mostViewed':
+          return b.views - a.views
+        case 'leastViewed':
+          return a.views - b.views
+        default:
+          return 0
+      }
+    })
+
+    return list
+  }, [archiveMode, selectedYear, sortBy, blogList, initialArchives])
 
   // 获取当前页应使用的 pageSize
   const getPageSize = useCallback((page: number) => {
@@ -219,20 +244,26 @@ export default function BlogListClient({
   useEffect(() => {
     const typeIdParam = searchParams.get(API_PARAMS.TYPE_ID)
     const tagIdParam = searchParams.get('tagId')
+    const yearParam = searchParams.get('year')
     const typeId = typeIdParam ? parseInt(typeIdParam, 10) : null
     const tagId = tagIdParam ? parseInt(tagIdParam, 10) : null
     setSelectedTypeId(typeId)
     setSelectedTagId(tagId)
+    setSelectedYear(yearParam)
     setPageInfo(prev => ({ ...prev, current: 1 }))
     if (typeId !== null) {
       setExpandedTypes(prev => new Set(prev).add(typeId))
     }
-    fetchBlogList(1)
+    // 非归档模式才请求列表
+    if (!yearParam) {
+      fetchBlogList(1)
+    }
   }, [searchParams])
 
   const handleTypeSelect = (typeId: number | null) => {
     setSelectedTypeId(typeId)
     setSelectedTagId(null)
+    setSelectedYear(null)
     setPageInfo(prev => ({ ...prev, current: 1 }))
     if (typeId !== null) {
       setExpandedTypes(prev => new Set(prev).add(typeId))
@@ -245,10 +276,25 @@ export default function BlogListClient({
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId)
     setSelectedTypeId(null)
+    setSelectedYear(null)
     setPageInfo(prev => ({ ...prev, current: 1 }))
     const url = tagId ? `${ROUTES.BLOG_LIST}?tagId=${tagId}` : ROUTES.BLOG_LIST
     router.push(url)
     setMobileFilterOpen(false)
+  }
+
+  const handleYearSelect = (year: string | null) => {
+    setSelectedYear(year)
+    setSelectedTypeId(null)
+    setSelectedTagId(null)
+    setPageInfo(prev => ({ ...prev, current: 1 }))
+    const url = year ? `${ROUTES.BLOG_LIST}?year=${year}` : ROUTES.BLOG_LIST
+    router.push(url)
+    setMobileFilterOpen(false)
+  }
+
+  const handleSortChange = (sort: SortOption) => {
+    setSortBy(sort)
   }
 
   const toggleTypeExpand = (typeId: number) => {
@@ -266,6 +312,7 @@ export default function BlogListClient({
   const resetFilters = () => {
     setSelectedTypeId(null)
     setSelectedTagId(null)
+    setSelectedYear(null)
     setPageInfo(prev => ({ ...prev, current: 1 }))
     router.push(ROUTES.BLOG_LIST)
     setMobileNavOpen(false)
@@ -289,7 +336,7 @@ export default function BlogListClient({
     return typeof window !== 'undefined' && window.innerWidth < 640
   }
 
-  const hasActiveFilter = selectedTypeId !== null || selectedTagId !== null
+  const hasActiveFilter = selectedTypeId !== null || selectedTagId !== null || selectedYear !== null
 
   return (
     <div className="min-h-screen z-1 flex flex-col bg-[rgb(var(--bg)/0.8)] text-[rgb(var(--text))]">
@@ -429,36 +476,16 @@ export default function BlogListClient({
             ) : (
               /* 文章列表 */
               <div className="space-y-8">
-                {/* 推荐博客区域 - 仅第一页且无筛选时显示 */}
-                {showRecommendBlogs && initialRecommendBlogs.length > 0 && (
-                  <section>
-                    <h3 className="text-sm font-medium text-[rgb(var(--text-muted))] uppercase tracking-wider mb-4">
-                      推荐阅读
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {initialRecommendBlogs.map((blog, index) => (
-                        <FeaturedCard key={blog.id} blog={blog} index={index} />
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* 普通文章列表 */}
                 <section>
-                  {showRecommendBlogs && initialRecommendBlogs.length > 0 && (
-                    <h3 className="text-sm font-medium text-[rgb(var(--text-muted))] uppercase tracking-wider mb-4">
-                      最新博客
-                    </h3>
-                  )}
                   <div className="space-y-2">
-                    {blogList.map((blog, index) => (
+                    {displayBlogs.map((blog, index) => (
                       <ArticleRow key={blog.id} blog={blog} index={index} />
                     ))}
                   </div>
                 </section>
 
-                {/* 分页 */}
-                {pageInfo.totalPages > 1 && (
+                {/* 分页 - 归档模式下隐藏 */}
+                {!archiveMode && pageInfo.totalPages > 1 && (
                   <Pagination
                     totalcount={pageInfo.total}
                     currentPage={pageInfo.current}
@@ -483,6 +510,11 @@ export default function BlogListClient({
                 selectedTagId={selectedTagId}
                 onSelectType={handleTypeSelect}
                 onSelectTag={handleTagSelect}
+                archives={initialArchives}
+                selectedYear={selectedYear}
+                onSelectYear={handleYearSelect}
+                sortBy={sortBy}
+                onSortChange={handleSortChange}
               />
             </div>
           </aside>
@@ -512,6 +544,11 @@ export default function BlogListClient({
                   selectedTagId={selectedTagId}
                   onSelectType={handleTypeSelect}
                   onSelectTag={handleTagSelect}
+                  archives={initialArchives}
+                  selectedYear={selectedYear}
+                  onSelectYear={handleYearSelect}
+                  sortBy={sortBy}
+                  onSortChange={handleSortChange}
                 />
               </aside>
             </>

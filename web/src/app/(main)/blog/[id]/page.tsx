@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { ENDPOINTS } from '@/lib/api'
 import { createMetadata } from '@/lib/seo-config'
 import BlogDetailClient from './components/BlogDetailClient'
-import type { Blog, RelatedBlog } from './types'
+import type { Blog, RelatedBlog, RecommendedBlog } from './types'
 
 import { API_CODE } from '@/lib/constants'
 
@@ -63,6 +63,80 @@ async function fetchRelatedBlogs(typeId: number, currentBlogId: number): Promise
   }
 }
 
+// 获取推荐博客（基于标签相关，不足用随机博客补充，最多3篇）
+async function fetchRecommendedBlogs(blog: Blog): Promise<RecommendedBlog[]> {
+  const currentId = blog.id
+  const tags = blog.tags || []
+  const seen = new Map<number, RecommendedBlog>()
+
+  // 基于标签获取相关博客（取前3个标签，避免过多请求）
+  if (tags.length > 0) {
+    const tagPromises = tags.slice(0, 3).map(async (tag) => {
+      try {
+        const res = await fetch(`${ENDPOINTS.TAG_BLOGS(tag.id)}?pagenum=1&pagesize=10`)
+        const data = await res.json()
+        const content = data.data?.content ?? data.content ?? []
+        return Array.isArray(content) ? content : []
+      } catch {
+        return []
+      }
+    })
+
+    const tagResults = await Promise.all(tagPromises)
+    for (const list of tagResults) {
+      for (const b of list) {
+        if (b.id !== currentId && !seen.has(b.id)) {
+          seen.set(b.id, {
+            id: b.id,
+            title: b.title,
+            firstPicture: b.firstPicture || '',
+            createTime: b.createTime || '',
+            views: b.views ?? 0,
+            description: b.description || '',
+            user: {
+              avatar: b.user?.avatar || '',
+              nickname: b.user?.nickname || ''
+            }
+          })
+        }
+      }
+    }
+  }
+
+  // 如果标签相关不足3篇，从随机博客补充
+  const tagCount = seen.size
+  if (tagCount < 3) {
+    try {
+      const need = 3 - tagCount
+      const res = await fetch(`${ENDPOINTS.RANDOM_BLOGS}?excludeId=${currentId}&size=${need}`)
+      const data = await res.json()
+      const list = data.data ?? []
+      if (Array.isArray(list)) {
+        for (const b of list) {
+          if (b.id !== currentId && !seen.has(b.id)) {
+            seen.set(b.id, {
+              id: b.id,
+              title: b.title,
+              firstPicture: b.firstPicture || '',
+              createTime: b.createTime || '',
+              views: b.views ?? 0,
+              description: b.description || '',
+              user: {
+                avatar: b.user?.avatar || '',
+                nickname: b.user?.nickname || ''
+              }
+            })
+          }
+        }
+      }
+    } catch {
+      // 忽略随机博客获取失败
+    }
+  }
+
+  return Array.from(seen.values()).slice(0, 3)
+}
+
 // 生成元数据
 export async function generateMetadata({ params }: BlogDetailPageProps) {
   const { id } = await params
@@ -101,15 +175,17 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     notFound()
   }
 
-  // 获取相关博客
-  const relatedBlogs = blog.type?.id
-    ? await fetchRelatedBlogs(blog.type.id, blog.id)
-    : []
+  // 并行获取同分类相关博客和标签推荐博客
+  const [relatedBlogs, recommendedBlogs] = await Promise.all([
+    blog.type?.id ? fetchRelatedBlogs(blog.type.id, blog.id) : Promise.resolve([]),
+    fetchRecommendedBlogs(blog)
+  ])
 
   return (
     <BlogDetailClient
       initialBlog={blog}
       initialRelatedBlogs={relatedBlogs}
+      initialRecommendedBlogs={recommendedBlogs}
       blogId={id}
     />
   )
