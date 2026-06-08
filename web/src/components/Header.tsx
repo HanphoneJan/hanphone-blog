@@ -294,12 +294,14 @@ const Header: React.FC = () => {
   }
 
   const isMenuActive = (item: MenuItem) => {
-    const routePath = `/${item.path}`
-    if (activeIndex === routePath) return true
-    if (item.children) {
-      return item.children.some(child => activeIndex === `/${child.path}`)
+    if (item.children?.length) {
+      return item.children.some(child => {
+        const childPath = `/${child.path}`
+        return activeIndex === childPath || activeIndex.startsWith(childPath + '/')
+      })
     }
-    return false
+    const routePath = `/${item.path}`
+    return activeIndex === routePath || (routePath !== '/' && activeIndex.startsWith(routePath + '/'))
   }
 
   const changePage = (path: string) => {
