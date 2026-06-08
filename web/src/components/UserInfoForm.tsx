@@ -83,6 +83,16 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ visible, onClose }) => {
     }
   }, [visible])
 
+  // Esc 关闭弹窗
+  useEffect(() => {
+    if (!visible) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [visible, onClose])
+
   // 倒计时效果
   useEffect(() => {
     if (countdown > 0) {
@@ -666,27 +676,26 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ visible, onClose }) => {
               )}
             </div>
           </div>
-        </form>
 
-        <div className="px-6 py-3 bg-[rgb(var(--card))] flex justify-end rounded-b-xl">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-[rgb(var(--border))] rounded-md hover:bg-[rgb(var(--hover))] mr-2 transition-colors text-[rgb(var(--text))]"
-            disabled={submitting}
-          >
-            取消
-          </button>
-          <button
-            type="submit"
-            onClick={e => handleSubmit(e)}
-            disabled={uploading || submitting}
-            className="px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
-          >
-            {submitting && <Loader2 className="h-4 w-4 animate-spin inline mr-2" />}
-            保存
-          </button>
-        </div>
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-[rgb(var(--border))] rounded-md hover:bg-[rgb(var(--hover))] mr-2 transition-colors text-[rgb(var(--text))]"
+              disabled={submitting}
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={uploading || submitting}
+              className="px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin inline mr-2" />}
+              保存
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
