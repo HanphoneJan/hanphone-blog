@@ -11,6 +11,7 @@ const getTagController = require('../controller/getTag');
 // 基础路由
 router.get('/visitCount', visitCountController.visitCount);
 router.get('/show', showController.show);
+router.get('/random', showController.random);
 router.post('/upload', uploadController.upload);
 router.post('/likes', likesController.likes);
 router.get('/userLikes', likesController.getUserLikes);
