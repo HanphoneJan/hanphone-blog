@@ -19,19 +19,39 @@ async function show(req, res) {
   try {
     // 获取当前用户（如果已登录）
     const userId = req.user?.username || req.headers['x-user-id'];
+    const page = parseInt(req.query.page) || null;
+    const limit = parseInt(req.query.limit) || null;
+    if (limit) limit = Math.min(limit, 100);
 
     // 仅使用外部提供的连接函数（config/db.js）
     client = await getDbConnection();
 
-    // 一次性查询文件与其标签
-    const result = await client.query(`
+    // 先查总数（仅在分页时查）
+    let total = 0;
+    if (page > 0 && limit > 0) {
+      const countResult = await client.query(
+        'SELECT COUNT(*) FROM atlas_files WHERE type != 0'
+      );
+      total = parseInt(countResult.rows[0].count);
+    }
+
+    let query = `
       SELECT f.*, t.id AS tag_id, t.name AS tag_name
       FROM atlas_files f
       LEFT JOIN atlas_files_tag ft ON f.id = ft.files_id
       LEFT JOIN atlas_tag t ON ft.tag_id = t.id
       WHERE f.type != 0
       ORDER BY f.id
-    `);
+    `;
+
+    const params = [];
+    if (page > 0 && limit > 0) {
+      const offset = (page - 1) * limit;
+      query += ` LIMIT $1 OFFSET $2`;
+      params.push(limit, offset);
+    }
+
+    const result = await client.query(query, params);
 
     const rows = result.rows;
     const map = new Map();
@@ -50,8 +70,8 @@ async function show(req, res) {
       const fid = row.id;
       if (!map.has(fid)) {
         const { tag_id, tag_name, ...fileFields } = row;
-        map.set(fid, { 
-          ...fileFields, 
+        map.set(fid, {
+          ...fileFields,
           tags: [],
           isLiked: userLikes.has(fid) // 添加用户点赞状态
         });
@@ -63,11 +83,18 @@ async function show(req, res) {
 
     const data = Array.from(map.values());
 
-    if (data.length > 0) {
-      res.json({ message: '查询成功', status: 830, data });
-    } else {
-      res.json({ message: '没有数据', status: 0, data: [] });
+    const response = {
+      message: data.length > 0 ? '查询成功' : '没有数据',
+      status: data.length > 0 ? 830 : 0,
+      data
+    };
+    if (page > 0 && limit > 0) {
+      response.total = total;
+      response.page = page;
+      response.limit = limit;
     }
+
+    res.json(response);
   } catch (error) {
     res.status(500).json({ message: error.message, status: 0 });
   } finally {
