@@ -105,4 +105,69 @@ async function show(req, res) {
   }
 }
 
-module.exports = { show };
+async function random(req, res) {
+  let client;
+  try {
+    const userId = req.user?.username || req.headers['x-user-id'];
+    let limit = parseInt(req.query.limit) || 12;
+    if (limit < 1) limit = 12;
+    limit = Math.min(limit, 50);
+
+    client = await getDbConnection();
+
+    const result = await client.query(
+      `SELECT f.*, t.id AS tag_id, t.name AS tag_name
+       FROM atlas_files f
+       LEFT JOIN atlas_files_tag ft ON f.id = ft.files_id
+       LEFT JOIN atlas_tag t ON ft.tag_id = t.id
+       WHERE f.type != 0 AND f.id IN (
+         SELECT id FROM atlas_files WHERE type != 0 ORDER BY RANDOM() LIMIT $1
+       )
+       ORDER BY f.id`,
+      [limit]
+    );
+
+    const rows = result.rows;
+    const map = new Map();
+
+    let userLikes = new Set();
+    if (userId) {
+      const likesResult = await client.query(
+        'SELECT photo_id FROM user_likes WHERE user_id = $1',
+        [userId]
+      );
+      userLikes = new Set(likesResult.rows.map(row => row.photo_id));
+    }
+
+    for (const row of rows) {
+      const fid = row.id;
+      if (!map.has(fid)) {
+        const { tag_id, tag_name, ...fileFields } = row;
+        map.set(fid, {
+          ...fileFields,
+          tags: [],
+          isLiked: userLikes.has(fid)
+        });
+      }
+      if (row.tag_id) {
+        map.get(fid).tags.push({ id: row.tag_id, name: row.tag_name });
+      }
+    }
+
+    const data = Array.from(map.values());
+
+    res.json({
+      message: data.length > 0 ? '查询成功' : '没有数据',
+      status: data.length > 0 ? 830 : 0,
+      data
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message, status: 0 });
+  } finally {
+    if (client && typeof client.release === 'function') {
+      client.release();
+    }
+  }
+}
+
+module.exports = { show, random };
