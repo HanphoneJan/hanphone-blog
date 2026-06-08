@@ -19,8 +19,8 @@ async function show(req, res) {
   try {
     // 获取当前用户（如果已登录）
     const userId = req.user?.username || req.headers['x-user-id'];
-    const page = parseInt(req.query.page) || null;
-    const limit = parseInt(req.query.limit) || null;
+    let page = parseInt(req.query.page) || null;
+    let limit = parseInt(req.query.limit) || null;
     if (limit) limit = Math.min(limit, 100);
 
     // 仅使用外部提供的连接函数（config/db.js）
