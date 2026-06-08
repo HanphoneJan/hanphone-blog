@@ -63,44 +63,17 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      // 处理 /games 和 /games/
-      {
-        source: '/games',
-        destination: '/games/index.html',
-      },
-      {
-        source: '/games/',
-        destination: '/games/index.html',
-      },
-      // 处理 /games/子路径
+      // 处理 /games 子路径（静态游戏文件）
       {
         source: '/games/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
         destination: '/games/:path/index.html',
       },
-      // 处理 /tools 和 /tools/
-      {
-        source: '/tools',
-        destination: '/tools/index.html',
-      },
-      {
-        source: '/tools/',
-        destination: '/tools/index.html',
-      },
-      // 处理 /tools/子路径
+      // 处理 /tools 子路径（静态工具文件）
       {
         source: '/tools/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
         destination: '/tools/:path/index.html',
       },
-      // 处理 /play 和 /play/
-      {
-        source: '/play',
-        destination: '/play/index.html',
-      },
-      {
-        source: '/play/',
-        destination: '/play/index.html',
-      },
-      // 处理 /play/子路径
+      // 处理 /play 子路径（静态练习文件）
       {
         source: '/play/:path((?!.*\\.)[^/]+(?:/[^/]+)*)',
         destination: '/play/:path/index.html',
