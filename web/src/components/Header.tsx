@@ -110,7 +110,19 @@ const Header: React.FC = () => {
   const [userInfoFormVisible, setUserInfoFormVisible] = useState<boolean>(false)
   const [backgroundSettingsOpen, setBackgroundSettingsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const lastHeaderTap = useRef(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 双击/双触 Header 回到顶部（兼容桌面鼠标 + 移动端触屏）
+  const handleHeaderDoubleTap = () => {
+    const now = Date.now()
+    if (now - lastHeaderTap.current < 350) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      lastHeaderTap.current = 0
+    } else {
+      lastHeaderTap.current = now
+    }
+  }
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
 
   const isHomePage = pathname === '/'
@@ -720,7 +732,8 @@ const Header: React.FC = () => {
       )}
 
       <header
-        className={`site-header w-full h-14 fixed top-0 left-0 right-0 z-1000 text-[rgb(var(--text))] transition-all duration-300 ${
+        onClick={handleHeaderDoubleTap}
+        className={`site-header w-full h-14 fixed top-0 left-0 right-0 z-1000 text-[rgb(var(--text))] transition-all duration-300 select-none ${
           isTransparent
             ? 'header-transparent bg-transparent border-0'
             : 'backdrop-blur-sm bg-[rgb(var(--bg))]/95 border-b border-[rgb(var(--border))]/30'

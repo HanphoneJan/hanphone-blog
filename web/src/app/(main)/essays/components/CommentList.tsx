@@ -1,8 +1,11 @@
 'use client'
 
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import EmojiPicker from '@/components/shared/EmojiPicker'
 import type { Essay, UserInfo } from '../types'
+
+const INITIAL_COMMENTS = 3
 
 interface CommentListProps {
   essay: Essay
@@ -32,6 +35,11 @@ export function CommentList({
   const replyInputRefs = useRef<Record<number, HTMLTextAreaElement | null>>({})
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const isLongPress = useRef(false)
+  const [expanded, setExpanded] = useState(false)
+
+  const hasCollapse = essay.comments.length > INITIAL_COMMENTS
+  const visibleComments = expanded ? essay.comments : essay.comments.slice(0, INITIAL_COMMENTS)
+  const hiddenCount = essay.comments.length - INITIAL_COMMENTS
 
   // 处理长按开始
   const handleTouchStart = useCallback((commentId: number) => {
@@ -63,7 +71,7 @@ export function CommentList({
     <div>
       {essay.comments.length > 0 ? (
         <div>
-          {essay.comments.map((comment) => {
+          {visibleComments.map((comment) => {
             return (
               <div key={comment.id} className="px-3 py-1.5">
                 <div
@@ -129,6 +137,26 @@ export function CommentList({
               </div>
             )
           })}
+
+          {/* 展开/收起按钮 */}
+          {hasCollapse && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="w-full mt-1 py-1.5 text-xs text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--primary))] transition-colors flex items-center justify-center gap-1"
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5" />
+                  收起评论
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  展开更多评论 ({hiddenCount})
+                </>
+              )}
+            </button>
+          )}
         </div>
       ) : null}
     </div>
