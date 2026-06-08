@@ -266,6 +266,16 @@ export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProp
     setIsOpen(false)
   }, [])
 
+  // Esc 关闭聊天窗口
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, handleClose])
+
   // Calculate positions: constrainedAnchor is the bottom-right corner of the component
   const buttonLeft = constrainedAnchor.x - BUTTON_SIZE
   const buttonTop = constrainedAnchor.y - BUTTON_SIZE

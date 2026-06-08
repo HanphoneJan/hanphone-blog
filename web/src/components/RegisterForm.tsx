@@ -70,6 +70,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
     }
   }, [visible])
 
+  // Esc 关闭弹窗
+  useEffect(() => {
+    if (!visible) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [visible, onClose])
+
   // 修复Headers类型错误的API请求函数
   const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
     try {
@@ -415,26 +425,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
               图片将自动压缩为JPEG格式，最大尺寸{IMAGE.MAX_WIDTH}x{IMAGE.MAX_HEIGHT}px，保持原始文件名
             </p>
           </div>
-        </form>
 
-        <div className="px-6 py-3 bg-[rgb(var(--card))] flex justify-end rounded-b-xl">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-[rgb(var(--border))] rounded-md hover:bg-[rgb(var(--hover))] mr-2 transition-colors text-[rgb(var(--text))]"
-          >
-            取消
-          </button>
-          <button
-            type="submit"
-            onClick={e => handleSubmit(e)}
-            disabled={uploading}
-            className="px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
-          >
-            {uploading && <Loader2 className="h-4 w-4 animate-spin inline mr-2" />}
-            注册
-          </button>
-        </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-[rgb(var(--border))] rounded-md hover:bg-[rgb(var(--hover))] mr-2 transition-colors text-[rgb(var(--text))]"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={uploading}
+              className="px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
+            >
+              {uploading && <Loader2 className="h-4 w-4 animate-spin inline mr-2" />}
+              注册
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

@@ -49,6 +49,21 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
   const { theme } = useTheme()
   const [isResetMode, setIsResetMode] = useState(false)
 
+  // Esc 关闭弹窗
+  useEffect(() => {
+    if (!visible) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [visible, onClose])
+
+  // 弹窗关闭时重置模式
+  useEffect(() => {
+    if (!visible) setIsResetMode(false)
+  }, [visible])
+
   // 明确声明loginData的类型
   const [loginData, setLoginData] = useState<LoginFormData>({
     username: '',
@@ -565,11 +580,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
               </button>
             </>
           )}
-        </form>
-        <div className="px-6 py-3 rounded-b-xl">
+
           <button
             type="submit"
-            onClick={e => (isResetMode ? handleResetSubmit(e) : handleLoginSubmit(e))}
             disabled={loading}
             className="w-full py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors mb-3 font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
           >
@@ -581,6 +594,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
               ? '重置密码'
               : '登录'}
           </button>
+        </form>
+        <div className="px-6 py-3 rounded-b-xl">
 
           {isResetMode ? (
             <p className="text-sm text-[rgb(var(--text-muted))] text-center">
