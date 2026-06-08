@@ -28,7 +28,10 @@ import {
   Share2,
   ChevronDown,
   Send,
-  LogIn
+  LogIn,
+  Wrench,
+  Gamepad2,
+  Code
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import RegisterForm from './RegisterForm'
@@ -148,7 +151,12 @@ const Header: React.FC = () => {
   const menuList: MenuItem[] = [
     { id: 1, authName: '首页', enName: 'home', path: '' },
     { id: 2, authName: '归档', enName: 'archive', path: 'blog' },
-    { id: 3, authName: '项目', enName: 'projects', path: 'projects' },
+    { id: 3, authName: '项目', enName: 'projects', path: 'projects', children: [
+      { id: 31, authName: '完整项目', enName: 'full-projects', path: 'projects' },
+      { id: 32, authName: '工具箱', enName: 'tools', path: 'tools' },
+      { id: 33, authName: '小游戏', enName: 'games', path: 'games' },
+      { id: 34, authName: '小练习', enName: 'play', path: 'play' }
+    ]},
     { id: 4, authName: '随笔', enName: 'essays', path: 'essays' },
     { id: 5, authName: '分享', enName: 'share', path: '', children: [
       { id: 51, authName: '文库', enName: 'docs', path: 'docs' },
@@ -171,6 +179,14 @@ const Header: React.FC = () => {
         return <Archive className="w-4 h-4" />
       case 3:
         return <Github className="w-4 h-4" />
+      case 31:
+        return <Github className="w-4 h-4" />
+      case 32:
+        return <Wrench className="w-4 h-4" />
+      case 33:
+        return <Gamepad2 className="w-4 h-4" />
+      case 34:
+        return <Code className="w-4 h-4" />
       case 4:
         return <FileText className="w-4 h-4" />
       case 5:
