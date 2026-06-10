@@ -1,9 +1,5 @@
 /* 博客模块专用样式（列表页 + 详情页）*/
 
-.blog-main-prose {
-  font-family: var(--font-body);
-}
-
 .blog-header-prose {
   border-bottom: 1px solid rgb(var(--blog-header-border)) !important;
 }
@@ -164,14 +160,6 @@
   .blog-text-sm { font-size: 0.9375rem; }
 }
 
-/* 低分辨率设备使用 vp-font */
-@media (max-resolution: 191dpi), (-webkit-max-device-pixel-ratio: 1.99) {
-  .blog-main-prose,
-  .blog-content-prose {
-    font-family: var(--vp-font);
-  }
-}
-
 /* ==================== 博客详情页样式 ==================== */
 
 /* 滚动条样式 */
@@ -195,7 +183,6 @@
 
 /* 博客正文样式 */
 .blog-content-prose {
-  font-family: var(--font-body);
   font-size: var(--text-base);
   color: rgb(var(--text));
   line-height: 1.65;
