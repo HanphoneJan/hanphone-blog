@@ -200,7 +200,6 @@ function ArcadeCard({ project, index, neonThemes }: { project: Project; index: n
               fontSize: '0.6rem'
             }}
           >
-            <ExternalLink className="h-3 w-3" />
             开始游戏
           </Link>
         </div>
@@ -341,18 +340,6 @@ export default function GamesClient({ initialProjects }: GamesClientProps) {
             ))}
           </motion.div>
         )}
-
-        {/* 底部 */}
-        <motion.div
-          className="text-center mt-16 pb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-        >
-          <p className="text-sm text-[rgb(var(--muted-foreground))]">
-            [ 由 <span style={{ color: '#ff00ff' }}>♥</span> HANPHONE 制作 ]
-          </p>
-        </motion.div>
       </div>
 
       {/* 注入 keyframes 动画 */}

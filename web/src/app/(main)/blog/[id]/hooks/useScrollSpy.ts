@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Heading } from '../types'
 
 interface UseScrollSpyOptions {
@@ -12,73 +12,78 @@ interface UseScrollSpyOptions {
 
 export function useScrollSpy({ headings, headerHeight, dispatch, containerRef }: UseScrollSpyOptions) {
   const activeHeadingRef = useRef('')
+  // 缓存 heading DOM 元素，避免每帧 document.getElementById
+  const elementCache = useRef<Map<string, HTMLElement>>(new Map())
+
+  // headings 变化时重建缓存
+  useEffect(() => {
+    const cache = new Map<string, HTMLElement>()
+    for (const h of headings) {
+      const el = document.getElementById(h.originalId)
+      if (el) cache.set(h.originalId, el)
+    }
+    elementCache.current = cache
+  }, [headings])
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     let rafId: number | null = null
+    // 缓存 TOC 容器引用，避免 querySelector
+    let navContainer: HTMLElement | null = null
 
     const handleScroll = () => {
-      if (rafId !== null) cancelAnimationFrame(rafId)
-
+      if (rafId !== null) return // 跳过，已有待处理的帧
       rafId = requestAnimationFrame(() => {
         rafId = null
-        if (headings.length === 0) return
+        const cache = elementCache.current
+        if (cache.size === 0) return
 
         const headerOffset = headerHeight + 100
         const containerTop = container.getBoundingClientRect().top
-        const visibleHeadings: { id: string; top: number }[] = []
+        let bestId = ''
+        let bestTop = -Infinity
 
-        for (const heading of headings) {
-          const element = document.getElementById(heading.originalId)
-          if (!element) continue
-
-          const rect = element.getBoundingClientRect()
-          const elementTop = rect.top - containerTop
-
-          if (rect.top <= containerTop + headerOffset) {
-            visibleHeadings.push({ id: heading.originalId, top: elementTop })
+        for (const [id, el] of cache) {
+          const rect = el.getBoundingClientRect()
+          const elTop = rect.top - containerTop
+          if (rect.top <= containerTop + headerOffset && elTop > bestTop) {
+            bestTop = elTop
+            bestId = id
           }
         }
 
-        if (visibleHeadings.length > 0) {
-          visibleHeadings.sort((a, b) => a.top - b.top)
-          const newActiveHeading = visibleHeadings[visibleHeadings.length - 1].id
-          if (newActiveHeading !== activeHeadingRef.current) {
-            activeHeadingRef.current = newActiveHeading
-            dispatch({ type: 'SET_ACTIVE_HEADING', payload: newActiveHeading })
+        const newActive = bestId || [...cache.keys()][0]
+        if (!newActive) return
 
-            // 更新 URL hash（不触发页面跳转）
-            if (typeof window !== 'undefined') {
-              const newUrl = `${window.location.pathname}#${encodeURIComponent(newActiveHeading)}`
-              window.history.replaceState(null, '', newUrl)
-            }
+        if (newActive !== activeHeadingRef.current) {
+          activeHeadingRef.current = newActive
+          dispatch({ type: 'SET_ACTIVE_HEADING', payload: newActive })
+
+          // URL hash 同步
+          if (typeof window !== 'undefined') {
+            const newUrl = `${window.location.pathname}#${encodeURIComponent(newActive)}`
+            window.history.replaceState(null, '', newUrl)
           }
 
-          // 自动滚动目录到可视区域
-          const navContainer = document.querySelector('.sidebar-container,.blog-nav-prose')
-          const activeNavItem = document.querySelector(
-            `button[data-heading-id="${CSS.escape(newActiveHeading)}"]`
-          )
-
-          if (navContainer && activeNavItem) {
-            const containerRect = navContainer.getBoundingClientRect()
-            const itemRect = activeNavItem.getBoundingClientRect()
-            const containerUpperHeight = containerRect.height * 0.5
-            const itemRelativeTop = itemRect.top - containerRect.top
-
-            if (itemRelativeTop > containerUpperHeight) {
-              (navContainer as HTMLElement).scrollTop += itemRelativeTop - containerUpperHeight
-            } else if (itemRelativeTop < 0) {
-              ;(navContainer as HTMLElement).scrollTop += itemRelativeTop
-            }
+          // TOC 自动滚动 — 仅在 heading 变化时执行
+          if (!navContainer) {
+            navContainer = document.querySelector<HTMLElement>('.sidebar-container,.blog-nav-prose')
           }
-        } else {
-          const firstId = headings[0]?.originalId ?? ''
-          if (firstId && activeHeadingRef.current !== firstId) {
-            activeHeadingRef.current = firstId
-            dispatch({ type: 'SET_ACTIVE_HEADING', payload: firstId })
+          if (navContainer) {
+            const activeItem = navContainer.querySelector<HTMLElement>(
+              `button[data-heading-id="${CSS.escape(newActive)}"]`
+            )
+            if (activeItem) {
+              const containerRect = navContainer.getBoundingClientRect()
+              const itemRect = activeItem.getBoundingClientRect()
+              const threshold = containerRect.height * 0.5
+              const relativeTop = itemRect.top - containerRect.top
+              if (relativeTop > threshold || relativeTop < 0) {
+                navContainer.scrollTop += relativeTop - (relativeTop > threshold ? threshold : 0)
+              }
+            }
           }
         }
       })

@@ -27,7 +27,12 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   text: 'plain text', plaintext: 'plain text',
 }
 
-/** 递归提取 React children 中的纯文本 */
+/**
+ * 递归提取 React children 中的纯文本
+ * react-markdown 配合 rehype-raw 时，代码块 children 可能是
+ * string | string[] | ReactElement | (string | ReactElement)[]
+ * String() 对数组会插入逗号，导致正则失效，所以必须递归拼接。
+ */
 function extractText(node: React.ReactNode): string {
   if (typeof node === 'string') return node
   if (typeof node === 'number' || typeof node === 'boolean') return String(node)
@@ -37,17 +42,6 @@ function extractText(node: React.ReactNode): string {
     return extractText((node as any).props.children)
   }
   return ''
-}
-
-/** 移除 react-markdown 代码块首尾的换行 */
-function normalizeCodeText(children: React.ReactNode): string {
-  const raw = extractText(children)
-  const lines = raw.split('\n')
-  // 去掉首行空行（markdown 代码块 ``` 后的第一个换行）
-  if (lines.length > 0 && lines[0].trim() === '') lines.shift()
-  // 去掉尾行空行
-  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop()
-  return lines.join('\n')
 }
 
 export function CodeBlock({ node, className, children, ...props }: CodeBlockProps) {
@@ -72,7 +66,7 @@ export function CodeBlock({ node, className, children, ...props }: CodeBlockProp
   useEffect(() => {
     if (inline) return
     const clipboard = new ClipboardJS(`#${copyId}`, {
-      text: () => normalizeCodeText(children)
+      text: () => extractText(children)
     })
     clipboard.on('success', handleCopied)
     return () => clipboard.destroy()
@@ -90,7 +84,8 @@ export function CodeBlock({ node, className, children, ...props }: CodeBlockProp
   const langKey = match ? match[1] : 'text'
   const language = LANGUAGE_ALIASES[langKey] || langKey
 
-  const codeStr = normalizeCodeText(children)
+  // 递归提取纯文本后去除首尾换行
+  const codeStr = extractText(children).replace(/^\n+/, '').replace(/\n+$/, '')
   const lineCount = codeStr === '' ? 0 : codeStr.split('\n').length
 
   return (
