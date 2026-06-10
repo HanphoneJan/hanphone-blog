@@ -32,12 +32,10 @@ const initialState: BlogState = {
   loading: false,
   likeLoading: false,
   headings: [],
-  activeHeading: '',
   isMobile: false,
   sidebarOpen: false,
   headerHeight: 0,
   commentsLoaded: false,
-  readingProgress: 0
 }
 
 // Reducer函数
@@ -57,8 +55,6 @@ const blogReducer = (state: BlogState, action: BlogAction): BlogState => {
       return { ...state, likeLoading: action.payload }
     case 'SET_HEADINGS':
       return { ...state, headings: action.payload }
-    case 'SET_ACTIVE_HEADING':
-      return { ...state, activeHeading: action.payload }
     case 'SET_IS_MOBILE':
       return { ...state, isMobile: action.payload }
     case 'SET_SIDEBAR_OPEN':
@@ -88,8 +84,6 @@ const blogReducer = (state: BlogState, action: BlogAction): BlogState => {
       }
     case 'SET_COMMENTS_LOADED':
       return { ...state, commentsLoaded: action.payload }
-    case 'SET_READING_PROGRESS':
-      return { ...state, readingProgress: action.payload }
     default:
       return state
   }

@@ -1,14 +1,14 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface UseReadingProgressOptions {
-  dispatch: React.Dispatch<any>
   containerRef: React.RefObject<HTMLDivElement | null>
 }
 
-export function useReadingProgress({ dispatch, containerRef }: UseReadingProgressOptions) {
-  const prevProgress = useRef(-1)
+export function useReadingProgress({ containerRef }: UseReadingProgressOptions) {
+  const [progress, setProgress] = useState(0)
+  const prevRef = useRef(-1)
 
   useEffect(() => {
     const container = containerRef.current
@@ -22,13 +22,11 @@ export function useReadingProgress({ dispatch, containerRef }: UseReadingProgres
         rafId = null
         const scrollTop = container.scrollTop
         const scrollHeight = container.scrollHeight - container.clientHeight
-        const progress = scrollHeight > 0 ? Math.min((scrollTop / scrollHeight) * 100, 100) : 0
-
-        // 仅在变化超过 1% 时才更新，减少无效渲染
-        if (Math.abs(progress - prevProgress.current) < 1) return
-        prevProgress.current = progress
-
-        dispatch({ type: 'SET_READING_PROGRESS', payload: progress })
+        const p = scrollHeight > 0 ? Math.min((scrollTop / scrollHeight) * 100, 100) : 0
+        // 只在跨 1% 阈值时更新，避免无效渲染
+        if (Math.abs(p - prevRef.current) < 1) return
+        prevRef.current = p
+        setProgress(p)
       })
     }
 
@@ -39,7 +37,9 @@ export function useReadingProgress({ dispatch, containerRef }: UseReadingProgres
       container.removeEventListener('scroll', handleScroll)
       if (rafId !== null) cancelAnimationFrame(rafId)
     }
-  }, [dispatch, containerRef])
+  }, [containerRef])
+
+  return { progress }
 }
 
 export default useReadingProgress
