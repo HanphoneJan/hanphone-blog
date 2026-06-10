@@ -87,12 +87,10 @@ export interface BlogState {
   loading: boolean;
   likeLoading: boolean;
   headings: Heading[];
-  activeHeading: string;
   isMobile: boolean;
   sidebarOpen: boolean;
   headerHeight: number;
   commentsLoaded: boolean;
-  readingProgress: number;
 }
 
 // Reducer Action类型
@@ -104,12 +102,10 @@ export type BlogAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_LIKE_LOADING'; payload: boolean }
   | { type: 'SET_HEADINGS'; payload: Heading[] }
-  | { type: 'SET_ACTIVE_HEADING'; payload: string }
   | { type: 'SET_IS_MOBILE'; payload: boolean }
   | { type: 'SET_SIDEBAR_OPEN'; payload: boolean }
   | { type: 'SET_HEADER_HEIGHT'; payload: number }
   | { type: 'TOGGLE_LIKE' }
   | { type: 'ADD_COMMENT'; payload: CommentItem }
   | { type: 'DELETE_COMMENT'; payload: number }
-  | { type: 'SET_COMMENTS_LOADED'; payload: boolean }
-  | { type: 'SET_READING_PROGRESS'; payload: number };
+  | { type: 'SET_COMMENTS_LOADED'; payload: boolean };

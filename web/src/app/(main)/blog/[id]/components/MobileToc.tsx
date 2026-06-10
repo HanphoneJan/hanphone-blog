@@ -4,28 +4,31 @@ import React from 'react'
 import { Menu, X } from 'lucide-react'
 import CircularProgress from './ReadingProgress'
 import ModalOverlay from '@/components/shared/ModalOverlay'
+import { useReadingProgress, useScrollSpy } from '../hooks'
 import type { Heading } from '../types'
-
 import { Z_INDEX } from '@/lib/constants'
+
 interface MobileTocProps {
   headings: Heading[]
-  activeHeading: string
   sidebarOpen: boolean
-  readingProgress: number
   headerHeight: number
+  containerRef: React.RefObject<HTMLDivElement | null>
   onToggleSidebar: () => void
   onHeadingClick: (id: string) => void
 }
 
 function MobileToc({
   headings,
-  activeHeading,
   sidebarOpen,
-  readingProgress,
   headerHeight,
+  containerRef,
   onToggleSidebar,
   onHeadingClick
 }: MobileTocProps) {
+  // 滚动状态在组件内部管理，不会触发父组件重渲染
+  const { progress: readingProgress } = useReadingProgress({ containerRef })
+  const { activeHeading } = useScrollSpy({ headings, headerHeight, containerRef })
+
   if (headings.length === 0) return null
 
   return (

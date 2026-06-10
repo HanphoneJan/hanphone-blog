@@ -16,7 +16,8 @@ import { ThumbsUp, Share2, Copy, ChevronLeft, Loader2 } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
 
-import { useBlogDetail, useComments, useToc, useReadingProgress, useScrollSpy } from '../hooks'
+import { useBlogDetail, useComments, useToc } from '../hooks'
+import { useScrollSpy } from '../hooks'
 import { CommentList, CommentForm, TableOfContents, MobileToc, RecommendedBlogs } from './'
 import { CodeBlock, CustomHeading, CustomImage, CustomLink } from './markdown'
 import type { Blog, RelatedBlog, RecommendedBlog } from '../types'
@@ -183,17 +184,6 @@ export default function BlogDetailClient({
     dispatch
   })
 
-  // 阅读进度
-  useReadingProgress({ dispatch, containerRef: blogContentRef })
-
-  // Scroll Spy
-  useScrollSpy({
-    headings: state.headings,
-    headerHeight: state.headerHeight,
-    dispatch,
-    containerRef: blogContentRef
-  })
-
   // Markdown组件
   const markdownComponents = useMemo(
     () => ({
@@ -252,10 +242,9 @@ export default function BlogDetailClient({
       {/* 移动端目录 */}
       <MobileToc
         headings={state.headings}
-        activeHeading={state.activeHeading}
         sidebarOpen={state.sidebarOpen}
-        readingProgress={state.readingProgress}
         headerHeight={state.headerHeight}
+        containerRef={blogContentRef}
         onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_OPEN', payload: !state.sidebarOpen })}
         onHeadingClick={scrollToHeading}
       />
@@ -504,14 +493,37 @@ export default function BlogDetailClient({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <TableOfContents
+            <DesktopToc
               headings={state.headings}
-              activeHeading={state.activeHeading}
+              headerHeight={state.headerHeight}
+              containerRef={blogContentRef}
               onHeadingClick={scrollToHeading}
             />
           </motion.aside>
         </div>
       </main>
     </motion.div>
+  )
+}
+
+// 桌面端 TOC — 内部管理滚动监听状态，避免父组件重渲染
+function DesktopToc({
+  headings,
+  headerHeight,
+  containerRef,
+  onHeadingClick
+}: {
+  headings: any[]
+  headerHeight: number
+  containerRef: React.RefObject<HTMLDivElement | null>
+  onHeadingClick: (id: string) => void
+}) {
+  const { activeHeading } = useScrollSpy({ headings, headerHeight, containerRef })
+  return (
+    <TableOfContents
+      headings={headings}
+      activeHeading={activeHeading}
+      onHeadingClick={onHeadingClick}
+    />
   )
 }

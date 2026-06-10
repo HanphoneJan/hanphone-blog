@@ -65,19 +65,19 @@ interface UseLive2DModelOptions {
 // 动态加载脚本
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    // 检查是否已加载
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
+    // 移除可能存在的旧标签（HMR 后脚本元素仍在 DOM 但全局已丢失）
+    const existingScript = document.querySelector(`script[src="${src}"]`)
+    if (existingScript) {
+      existingScript.remove()
     }
-    
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-    document.head.appendChild(script);
-  });
+
+    const script = document.createElement('script')
+    script.src = src
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error(`Failed to load script: ${src}`))
+    document.head.appendChild(script)
+  })
 }
 
 // 延迟导入 pixi-live2d-display-advanced，确保运行时先加载
