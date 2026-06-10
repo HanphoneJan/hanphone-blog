@@ -8,7 +8,6 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
-import rehypeRewrite from 'rehype-rewrite'
 import rehypeRaw from 'rehype-raw'
 import 'katex/dist/katex.min.css'
 import ClipboardJS from 'clipboard'
@@ -353,15 +352,6 @@ export default function BlogDetailClient({
                           macros: {
                             "\\begin{align*}": "\\begin{aligned}",
                             "\\end{align*}": "\\end{aligned}"
-                          }
-                        }
-                      ],
-                      [
-                        rehypeRewrite,
-                        {
-                          rewrite: (node: any) => {
-                            if (node.tagName === 'img') {
-                            }
                           }
                         }
                       ],

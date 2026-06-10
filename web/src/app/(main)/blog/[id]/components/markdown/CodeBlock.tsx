@@ -1,10 +1,10 @@
 'use client'
 
-import { useId, useEffect } from 'react'
+import { useId, useEffect, useState, useCallback } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ClipboardJS from 'clipboard'
-import { Copy } from 'lucide-react'
+import { Copy, Check } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
 
@@ -15,11 +15,46 @@ interface CodeBlockProps {
   [key: string]: any
 }
 
+const LANGUAGE_ALIASES: Record<string, string> = {
+  js: 'JavaScript', ts: 'TypeScript', tsx: 'TSX', jsx: 'JSX',
+  py: 'Python', rb: 'Ruby', rs: 'Rust', go: 'Go',
+  java: 'Java', kt: 'Kotlin', swift: 'Swift',
+  c: 'C', cpp: 'C++', cs: 'C#', php: 'PHP',
+  html: 'HTML', css: 'CSS', scss: 'SCSS',
+  sql: 'SQL', sh: 'Shell', bash: 'Bash', zsh: 'Zsh',
+  yaml: 'YAML', yml: 'YAML', json: 'JSON', xml: 'XML',
+  md: 'Markdown', dockerfile: 'Dockerfile',
+  text: 'plain text', plaintext: 'plain text',
+}
+
+/** 递归提取 React children 中的纯文本 */
+function extractText(node: React.ReactNode): string {
+  if (typeof node === 'string') return node
+  if (typeof node === 'number' || typeof node === 'boolean') return String(node)
+  if (node == null) return ''
+  if (Array.isArray(node)) return node.map(extractText).join('')
+  if (typeof node === 'object' && 'props' in node) {
+    return extractText((node as any).props.children)
+  }
+  return ''
+}
+
+/** 移除 react-markdown 代码块首尾的换行 */
+function normalizeCodeText(children: React.ReactNode): string {
+  const raw = extractText(children)
+  const lines = raw.split('\n')
+  // 去掉首行空行（markdown 代码块 ``` 后的第一个换行）
+  if (lines.length > 0 && lines[0].trim() === '') lines.shift()
+  // 去掉尾行空行
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop()
+  return lines.join('\n')
+}
+
 export function CodeBlock({ node, className, children, ...props }: CodeBlockProps) {
   const codeId = useId()
   const copyId = `copy-${codeId}`
+  const [copied, setCopied] = useState(false)
 
-  // 判断是否为行内代码
   const inline =
     node?.type === 'element' &&
     node?.tagName === 'code' &&
@@ -28,52 +63,104 @@ export function CodeBlock({ node, className, children, ...props }: CodeBlockProp
     node?.children[0]?.type === 'text' &&
     node?.position?.start?.line === node?.position?.end?.line
 
+  const handleCopied = useCallback(() => {
+    setCopied(true)
+    showAlert(BLOG_DETAIL_LABELS.CODE_COPIED)
+    setTimeout(() => setCopied(false), 2000)
+  }, [])
+
   useEffect(() => {
     if (inline) return
-
     const clipboard = new ClipboardJS(`#${copyId}`, {
-      text: () => (Array.isArray(children) ? children.join('') : String(children))
+      text: () => normalizeCodeText(children)
     })
-
-    clipboard.on('success', () => {
-      showAlert(BLOG_DETAIL_LABELS.CODE_COPIED)
-    })
-
+    clipboard.on('success', handleCopied)
     return () => clipboard.destroy()
-  }, [inline, copyId, children])
+  }, [inline, copyId, children, handleCopied])
 
   if (inline) {
     return (
-      <code
-        className="bg-[rgb(var(--bg))] rounded px-1 py-0.5 blog-text-sm font-mono text-[rgb(var(--primary))]"
-        {...props}
-      >
+      <code className="bg-[rgb(var(--code-bg))] text-[rgb(var(--code-text))] rounded px-1.5 py-0.5 blog-text-sm font-mono" {...props}>
         {children}
       </code>
     )
   }
 
   const match = /language-(\w+)/.exec(className || '')
-  const language = match ? match[1] : 'text'
+  const langKey = match ? match[1] : 'text'
+  const language = LANGUAGE_ALIASES[langKey] || langKey
+
+  const codeStr = normalizeCodeText(children)
+  const lineCount = codeStr === '' ? 0 : codeStr.split('\n').length
 
   return (
-    <div className="relative group">
+    <div className="my-5 rounded-xl overflow-hidden border border-[rgb(var(--border))] shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[rgb(var(--muted))] border-b border-[rgb(var(--border))]">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+            <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
+            <span className="w-3 h-3 rounded-full bg-[#28c840]" />
+          </div>
+          <span className="text-[11px] font-medium text-[rgb(var(--muted-foreground))] tracking-wide select-none">
+            {language}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[rgb(var(--muted-foreground))]/60 select-none tabular-nums">
+            {lineCount} 行
+          </span>
+          <button
+            id={copyId}
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-all duration-200 ${
+              copied
+                ? 'text-green-500 bg-green-500/10'
+                : 'text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))] hover:bg-[rgb(var(--card))]'
+            }`}
+            title="复制代码"
+          >
+            {copied ? (
+              <><Check className="h-3.5 w-3.5" /><span>已复制</span></>
+            ) : (
+              <><Copy className="h-3.5 w-3.5" /><span>复制</span></>
+            )}
+          </button>
+        </div>
+      </div>
+
       <SyntaxHighlighter
         style={dracula}
-        language={language}
+        language={langKey}
         PreTag="div"
-        className="rounded-lg !bg-[#282a36] !p-4"
+        showLineNumbers
+        lineNumberStyle={{
+          minWidth: '2.5em',
+          paddingRight: '1em',
+          color: '#6272a4',
+          textAlign: 'right',
+          userSelect: 'none',
+          fontSize: '0.85rem',
+        }}
+        customStyle={{
+          margin: 0,
+          padding: '1.25rem 0',
+          borderRadius: 0,
+          background: '#282a36',
+          fontSize: '0.875rem',
+          lineHeight: '1.7',
+        }}
+        codeTagProps={{
+          style: {
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+          }
+        }}
+        wrapLines
+        lineProps={() => ({ style: { display: 'block', padding: '0 1rem' } })}
         {...props}
       >
-        {String(children).replace(/\n$/, '')}
+        {codeStr}
       </SyntaxHighlighter>
-      <button
-        id={copyId}
-        className="absolute top-2 right-2 p-2 bg-[rgb(var(--text))] hover:bg-[rgb(var(--primary))] rounded-md text-white opacity-0 group-hover:opacity-100 transition-opacity"
-        title="复制代码"
-      >
-        <Copy className="h-4 w-4" />
-      </button>
     </div>
   )
 }

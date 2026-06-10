@@ -340,7 +340,7 @@ export default function BlogListClient({
 
   return (
     <div className="min-h-screen flex flex-col z-1 bg-[rgb(var(--bg)/0.8)] text-[rgb(var(--text))]">
-      <BgOverlay />
+      {/* <BgOverlay opacity={0.2}/> */}
 
       <main className="blog-main-prose flex-1 flex flex-col min-h-0 w-full bg-[rgb(var(--bg)/0.8)] px-4 sm:px-6 lg:px-8 py-6 relative z-10 page-blog">
         {/* 三栏布局 - 固定高度，支持独立滚动 */}

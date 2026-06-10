@@ -254,9 +254,6 @@ export default function ToolsClient({ initialProjects }: ToolsClientProps) {
               style={{ background: accent.main, width: '2px' }}
             />
           </h1>
-          <p className="text-center text-xs mt-1 text-[rgb(var(--muted-foreground))]" style={{ opacity: 0.5 }}>
-            {projects.length} 个工具可用
-          </p>
         </motion.div>
 
         {/* 内容区 */}
