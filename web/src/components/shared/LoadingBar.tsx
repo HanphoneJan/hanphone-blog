@@ -1,37 +1,33 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
-
+import { useEffect, useState, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { TIME } from '@/lib/constants'
+
 /**
- * 全局加载进度条组件
- * 在路由切换时显示顶部进度条，增加呼吸感
+ * 全局加载进度条 — 仅在路径变化时显示
+ * 刻意不用 useSearchParams：histroy.replaceState 改变 hash 时
+ * useSearchParams 返回新对象引用，会导致不必要的触发。
+ * usePathname 返回 string，同值不触发 effect。
  */
 export function LoadingBar() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  const prev = useRef(pathname)
+  const mounted = useRef(false)
 
   useEffect(() => {
-    // 路由开始变化时显示进度条
+    if (!mounted.current) { mounted.current = true; return }
+
+    if (prev.current === pathname) return
+    prev.current = pathname
+
     setIsLoading(true)
-
-    // 使用定时器模拟加载过程
-    const timer1 = setTimeout(() => {
-      setIsLoading(false)
-    }, TIME.LOADING_BAR_DURATION)
-
-    return () => {
-      clearTimeout(timer1)
-    }
-  }, [pathname, searchParams])
+    const timer = setTimeout(() => setIsLoading(false), TIME.LOADING_BAR_DURATION)
+    return () => clearTimeout(timer)
+  }, [pathname])
 
   return (
-    <div
-      id='global-loading-bar'
-      className={isLoading ? 'active' : ''}
-      aria-hidden='true'
-    />
+    <div id="global-loading-bar" className={isLoading ? 'active' : ''} aria-hidden="true" />
   )
 }
