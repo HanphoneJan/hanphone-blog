@@ -78,9 +78,19 @@ const CHAT_PUBLIC_PATH = '/chat/public'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || ''
 const CHAT_PUBLIC_URL = `${SITE_URL}${CHAT_PUBLIC_PATH}`
 
+/** 不显示聊天室悬浮按钮的页面路径 */
+const HIDDEN_PATHS = [
+  '/music',
+]
+
+function isHiddenPage(pathname: string): boolean {
+  return HIDDEN_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
+
 export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProps) {
   const { theme } = useTheme()
   const pathname = usePathname()
+  const hidden = isHiddenPage(pathname)
   const [isOpen, setIsOpen] = useState(false)
   const [anchor, setAnchor] = useState<Anchor>({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
@@ -266,6 +276,11 @@ export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProp
     setIsOpen(false)
   }, [])
 
+  // 进入隐藏页面时自动关闭聊天窗口
+  useEffect(() => {
+    if (hidden) handleClose()
+  }, [hidden, handleClose])
+
   // Esc 关闭聊天窗口
   useEffect(() => {
     if (!isOpen) return
@@ -296,9 +311,9 @@ export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProp
           backgroundColor: 'rgb(var(--primary))',
           color: 'white',
           cursor: isDragging ? 'grabbing' : 'grab',
-          transform: isOpen || !isReady || isInHero ? 'scale(0)' : 'scale(1)',
-          opacity: isOpen || !isReady || isInHero ? 0 : 1,
-          pointerEvents: isOpen || !isReady || isInHero ? 'none' : 'auto',
+          transform: isOpen || !isReady || hidden || isInHero ? 'scale(0)' : 'scale(1)',
+          opacity: isOpen || !isReady || hidden || isInHero ? 0 : 1,
+          pointerEvents: isOpen || !isReady || hidden || isInHero ? 'none' : 'auto',
           ...themeStyle,
         }}
         onMouseDown={handleDragStart}
@@ -319,9 +334,9 @@ export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProp
           width: CHAT_WIDTH,
           height: WINDOW_HEIGHT,
           backgroundColor: 'transparent',
-          opacity: isOpen && isReady ? 1 : 0,
-          transform: isOpen && isReady ? 'scale(1) translateY(0)' : 'scale(0.9) translateY(20px)',
-          pointerEvents: isOpen && isReady ? 'auto' : 'none',
+          opacity: isOpen && isReady && !hidden ? 1 : 0,
+          transform: isOpen && isReady && !hidden ? 'scale(1) translateY(0)' : 'scale(0.9) translateY(20px)',
+          pointerEvents: isOpen && isReady && !hidden ? 'auto' : 'none',
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
