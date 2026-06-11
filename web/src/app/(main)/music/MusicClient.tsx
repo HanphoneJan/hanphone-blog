@@ -16,7 +16,13 @@ import {
 } from 'lucide-react'
 
 const PLAYLIST_ID = '2093306814'
-const METING_API = 'https://api.i-meto.com/meting/api'
+const MUSIC_API = '/next-api/music'
+
+/** 构建代理 API URL */
+function musicApiUrl(params: Record<string, string>): string {
+  const sp = new URLSearchParams(params)
+  return `${MUSIC_API}?${sp.toString()}`
+}
 
 interface Song {
   title: string
@@ -54,9 +60,12 @@ function isLrcText(val: string): boolean {
 
 function coverUrl(song: Song): string {
   if (!song) return ''
-  if (song.pic?.startsWith('http')) return song.pic
+  if (song.pic?.startsWith('http')) {
+    // http → https (浏览器安全策略)
+    return song.pic.replace(/^http:/, 'https:')
+  }
   const id = song.pic || song.id
-  return `${METING_API}?server=netease&type=pic&id=${id}`
+  return musicApiUrl({ server: 'netease', type: 'pic', id })
 }
 
 type PlayMode = 'list' | 'single' | 'random'
@@ -88,11 +97,13 @@ export default function MusicClient() {
   const progressRef = useRef<HTMLDivElement>(null)
   const lyricsRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
+  const urlCache = useRef<Map<string, string>>(new Map())
+  const seekOnLoad = useRef(-1)
 
   // 拉歌单
   useEffect(() => {
     let c = false
-    fetch(`${METING_API}?server=netease&type=playlist&id=${PLAYLIST_ID}`)
+    fetch(musicApiUrl({ server: 'netease', type: 'playlist', id: PLAYLIST_ID }))
       .then(r => r.json())
       .then((data: Song[]) => {
         if (c) return
@@ -130,7 +141,7 @@ export default function MusicClient() {
     }
     // fallback: 调 API 获取
     if (song.id) {
-      fetch(`${METING_API}?server=netease&type=lrc&id=${song.id}`)
+      fetch(musicApiUrl({ server: 'netease', type: 'lrc', id: song.id }))
         .then(r => r.text())
         .then(text => setLyrics(parseLrc(text)))
         .catch(() => setLyrics([]))
@@ -139,27 +150,51 @@ export default function MusicClient() {
     }
   }, [])
 
+  // 获取歌曲播放 URL（含缓存）
+  const getSongUrl = useCallback(
+    async (song: Song): Promise<string> => {
+      if (song.url) return song.url
+      const cached = urlCache.current.get(song.id)
+      if (cached) return cached
+      try {
+        const res = await fetch(musicApiUrl({ server: 'netease', type: 'song', id: song.id }))
+        const data = await res.json()
+        const url = data.url || ''
+        if (url) urlCache.current.set(song.id, url)
+        return url
+      } catch {
+        return ''
+      }
+    },
+    []
+  )
+
   // 播放指定歌曲
   const playSong = useCallback(
-    (index: number) => {
+    async (index: number) => {
       const song = songs[index]
       if (!song || !audioRef.current) return
       setCurrentIndex(index)
       setCurrentTime(0)
       setDuration(0)
       loadLyrics(song)
-      audioRef.current.src = song.url
+      const url = await getSongUrl(song)
+      if (!url) {
+        setPlaying(false)
+        return
+      }
+      audioRef.current.src = url
       audioRef.current
         .play()
         .then(() => setPlaying(true))
         .catch(() => setPlaying(false))
     },
-    [songs, loadLyrics]
+    [songs, loadLyrics, getSongUrl]
   )
 
   // 选中歌曲（预加载但不自动播放）
   const selectSong = useCallback(
-    (index: number) => {
+    async (index: number) => {
       const song = songs[index]
       if (!song) return
       setCurrentIndex(index)
@@ -168,11 +203,14 @@ export default function MusicClient() {
       setPlaying(false)
       loadLyrics(song)
       if (audioRef.current) {
-        audioRef.current.src = song.url
-        audioRef.current.load()
+        const url = await getSongUrl(song)
+        if (url) {
+          audioRef.current.src = url
+          audioRef.current.load()
+        }
       }
     },
-    [songs, loadLyrics]
+    [songs, loadLyrics, getSongUrl]
   )
 
   // 切换播放模式
@@ -217,9 +255,25 @@ export default function MusicClient() {
     if (i >= 0) playSong(i)
   }, [getNextIndex, playSong])
 
-  // 加载完成后自动选中第一首
+  // 加载完成后：优先恢复之前保存的播放状态，否则选中第一首
   useEffect(() => {
     if (status === 'ready' && songs.length > 0 && currentIndex < 0) {
+      try {
+        const raw = localStorage.getItem('music_player_state')
+        if (raw) {
+          const state = JSON.parse(raw) as { songId: string; currentTime: number; volume: number; playMode: PlayMode }
+          const idx = songs.findIndex(s => s.id === state.songId)
+          if (idx >= 0) {
+            if (typeof state.volume === 'number') setVolume(state.volume)
+            if (state.playMode) setPlayMode(state.playMode)
+            if (typeof state.currentTime === 'number' && state.currentTime > 0) {
+              seekOnLoad.current = state.currentTime
+            }
+            selectSong(idx)
+            return
+          }
+        }
+      } catch { /* ignore */ }
       selectSong(0)
     }
   }, [status, songs, currentIndex, selectSong])
@@ -229,7 +283,13 @@ export default function MusicClient() {
     const a = audioRef.current
     if (!a) return
     const onTime = () => setCurrentTime(a.currentTime)
-    const onDur = () => setDuration(a.duration || 0)
+    const onDur = () => {
+      setDuration(a.duration || 0)
+      if (seekOnLoad.current >= 0 && a.duration) {
+        a.currentTime = Math.min(seekOnLoad.current, a.duration)
+        seekOnLoad.current = -1
+      }
+    }
     const onEnd = () => {
       if (playMode === 'single') {
         a.currentTime = 0
@@ -287,6 +347,27 @@ export default function MusicClient() {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume
   }, [volume])
+
+  // 页面刷新前保存播放状态
+  useEffect(() => {
+    const save = () => {
+      const song = songs[currentIndex]
+      if (!song || currentIndex < 0) return
+      try {
+        localStorage.setItem(
+          'music_player_state',
+          JSON.stringify({
+            songId: song.id,
+            currentTime: audioRef.current?.currentTime || 0,
+            volume,
+            playMode,
+          })
+        )
+      } catch { /* ignore */ }
+    }
+    window.addEventListener('beforeunload', save)
+    return () => window.removeEventListener('beforeunload', save)
+  }, [songs, currentIndex, volume, playMode])
 
   // 进度条拖拽
   const getSeekRatio = useCallback((clientX: number) => {
