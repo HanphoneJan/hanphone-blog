@@ -58,3 +58,4 @@ web/.vercel
 __pycache__
 .gstack/
 superpowers/
+.codegraph/
