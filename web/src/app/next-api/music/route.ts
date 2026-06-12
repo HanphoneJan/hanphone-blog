@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Meting, { type FormattedSong } from '@/lib/meting/meting'
+import { loadEncryptedCookie, decryptCookie } from '@/lib/netease-cookie/crypto'
 
-const NETEASE_COOKIE = process.env.NETEASE_MUSIC_COOKIE || ''
+const COOKIE_KEY = process.env.NETEASE_COOKIE_KEY
 
 const ALLOWED_TYPES = new Set(['playlist', 'pic', 'lrc', 'song'])
 
@@ -27,7 +28,17 @@ export async function GET(request: NextRequest) {
   try {
     const meting = new Meting('netease')
     meting.format(true)
-    if (NETEASE_COOKIE) meting.cookie(NETEASE_COOKIE)
+    if (COOKIE_KEY) {
+      const payload = loadEncryptedCookie()
+      if (payload) {
+        try {
+          const decryptedCookie = decryptCookie(payload, COOKIE_KEY)
+          if (decryptedCookie) meting.cookie(decryptedCookie)
+        } catch {
+          console.error('Cookie 解密失败，可能密钥已更换')
+        }
+      }
+    }
 
     // -- 播放列表 --
     if (type === 'playlist') {
