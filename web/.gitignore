@@ -47,6 +47,9 @@ public/atlas/
 
 # typescript
 *.tsbuildinfo
+
+# 网易云 Cookie 加密文件
+/data/*.enc
 next-env.d.ts
 
 .vscode

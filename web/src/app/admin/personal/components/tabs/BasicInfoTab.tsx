@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
-import { Camera, Save, Loader2, Lock, Edit3 } from 'lucide-react'
+import { Camera, Save, Loader2, Lock, Edit3, Music, Trash2 } from 'lucide-react'
 import { ASSETS } from '@/lib/constants'
 import { UserInfo } from '../../types'
+import { useNeteaseCookie } from '../../hooks/useNeteaseCookie'
 
 interface GlobalUserInfo {
   id: string | number
@@ -31,6 +33,11 @@ export function BasicInfoTab({
   onChangePassword,
   onOpenAvatarDialog
 }: BasicInfoTabProps) {
+  const isAdmin = globalUserInfo?.type === '1'
+  const { status, loading: cookieLoading, error: cookieError, saveCookie, clearCookie } =
+    useNeteaseCookie()
+  const [cookieInput, setCookieInput] = useState('')
+
   return (
     <div className="bg-[rgb(var(--card))] backdrop-blur-sm rounded-b-xl shadow-sm min-h-[100vh] border border-[rgb(var(--border))] border-t-0 overflow-hidden">
       <div className="py-3 px-6 border-b border-[rgb(var(--border))]">
@@ -160,6 +167,85 @@ export function BasicInfoTab({
                 </button>
               </div>
             </form>
+
+            {isAdmin && (
+              <div className="mt-10 pt-8 border-t border-[rgb(var(--border))]">
+                <div className="flex items-center gap-2 mb-4">
+                  <Music className="h-5 w-5 text-[rgb(var(--primary))]" />
+                  <h3 className="text-base font-semibold text-[rgb(var(--text))]">
+                    网易云音乐 Cookie
+                  </h3>
+                  <span className="text-xs text-[rgb(var(--text-muted))]">
+                    用于获取 VIP 音源，更新后即时生效
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <label className="text-sm text-[rgb(var(--text))] min-w-[80px] pt-2">
+                      Cookie
+                    </label>
+                    <div className="flex-1 max-w-lg">
+                      <textarea
+                        value={cookieInput}
+                        onChange={e => setCookieInput(e.target.value)}
+                        placeholder="粘贴网易云音乐 Cookie 字符串"
+                        rows={4}
+                        className="w-full px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all resize-none font-mono text-xs"
+                      />
+                      {status.configured && (
+                        <p className="mt-2 text-xs text-[rgb(var(--text-muted))]">
+                          当前已配置，更新时间：
+                          {status.updatedAt
+                            ? new Date(status.updatedAt).toLocaleString()
+                            : '未知'}
+                        </p>
+                      )}
+                      {cookieError && (
+                        <p className="mt-2 text-xs text-red-500">{cookieError}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    {status.configured && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await clearCookie()
+                          setCookieInput('')
+                        }}
+                        disabled={cookieLoading}
+                        className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors flex items-center gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>清除</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const success = await saveCookie(cookieInput)
+                        if (success) setCookieInput('')
+                      }}
+                      disabled={cookieLoading || !cookieInput.trim()}
+                      className={`px-4 py-2 rounded-lg transition duration-300 flex items-center justify-center gap-2 ${
+                        cookieLoading || !cookieInput.trim()
+                          ? 'bg-[rgb(var(--muted))] text-[rgb(var(--text-muted))]'
+                          : 'bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))] text-white'
+                      }`}
+                    >
+                      {cookieLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      <span>保存 Cookie</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
