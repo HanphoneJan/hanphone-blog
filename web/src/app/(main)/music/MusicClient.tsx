@@ -673,21 +673,57 @@ export default function MusicClient() {
 
 function MusicSkeleton() {
   return (
-    <div className="flex flex-col lg:flex-row animate-pulse">
-      <div className="flex-shrink-0 flex items-center justify-center lg:w-[320px] p-4">
-        <div className="w-56 h-56 sm:w-64 sm:h-64 lg:w-[280px] lg:h-[280px] rounded-2xl bg-[rgb(var(--card))] border border-[rgb(var(--border))]" />
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-5.5rem)] overflow-hidden animate-pulse">
+      {/* 主内容区 —— 与真实布局完全一致 */}
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+        {/* 左侧：播放列表骨架 */}
+        <div className="hidden lg:block lg:w-[42%] lg:min-w-[320px] flex-shrink-0 lg:h-full lg:overflow-hidden p-4">
+          <div className="space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-2.5">
+                <div className="w-5 flex-shrink-0" />
+                <div className="h-4 rounded bg-[rgb(var(--card))] flex-1" />
+                <div className="h-3 w-16 rounded bg-[rgb(var(--card))]" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 右侧：播放器骨架 */}
+        <div className="flex-1 flex flex-col items-center px-4 sm:px-8 py-4 lg:py-6 lg:border-l border-[rgb(var(--border))] min-h-0">
+          {/* 封面 */}
+          <div className="w-48 h-48 sm:w-52 sm:h-52 lg:w-56 lg:h-56 rounded-xl bg-[rgb(var(--card))] border border-[rgb(var(--border))] mb-4" />
+          {/* 标题 */}
+          <div className="h-6 w-48 rounded bg-[rgb(var(--card))] mb-1" />
+          {/* 作者 */}
+          <div className="h-4 w-24 rounded bg-[rgb(var(--card))] mb-2" />
+          {/* 歌词区 */}
+          <div className="w-full max-w-2xl flex-1 px-6 space-y-2 py-2">
+            {[60, 35, 50, 40, 55].map((w, i) => (
+              <div key={i} className="flex justify-center">
+                <div className="h-4 rounded bg-[rgb(var(--card))]" style={{ width: `${w}%` }} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-      <div className="flex-1 p-4 sm:p-6 space-y-3">
-        <div className="h-6 w-48 rounded bg-[rgb(var(--card))]" />
-        <div className="h-4 w-24 rounded bg-[rgb(var(--card))]" />
-        <div className="h-2 w-full rounded bg-[rgb(var(--card))]" />
-        <div className="h-32 rounded bg-[rgb(var(--card))]" />
-      </div>
-      <div className="lg:w-[280px] border-t lg:border-t-0 lg:border-l border-[rgb(var(--border))]">
-        <div className="p-4 space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-10 rounded bg-[rgb(var(--card))]" />
-          ))}
+
+      {/* 底部控制条骨架 */}
+      <div className="px-4 py-3 bg-[rgb(var(--bg))]/90 backdrop-blur-sm border-t border-[rgb(var(--border))]">
+        {/* 进度条 */}
+        <div className="flex items-center gap-2 mb-2">
+          <div className="h-3 w-10 rounded bg-[rgb(var(--card))]" />
+          <div className="flex-1 h-1.5 rounded-full bg-[rgb(var(--border))]" />
+          <div className="h-3 w-10 rounded bg-[rgb(var(--card))]" />
+        </div>
+        {/* 按钮 */}
+        <div className="flex items-center justify-center gap-3">
+          {/* 左按钮 */}
+          <div className="h-9 w-9 rounded-full bg-[rgb(var(--card))]" />
+          {/* 播放按钮 */}
+          <div className="h-12 w-12 rounded-full bg-[rgb(var(--card))]" />
+          {/* 右按钮 */}
+          <div className="h-9 w-9 rounded-full bg-[rgb(var(--card))]" />
         </div>
       </div>
     </div>
