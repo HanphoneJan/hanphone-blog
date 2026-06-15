@@ -202,11 +202,14 @@ function shuffleArray<T>(arr: T[]): T[] {
 function smoothScrollTo(element: HTMLElement, target: number, duration: number = 300): (() => void) {
   const start = element.scrollTop
   const distance = target - start
+  if (Math.abs(distance) < 1) return () => {}
   const startTime = performance.now()
   let cancelled = false
+  let rafId = 0
 
   function cancel() {
     cancelled = true
+    if (rafId) cancelAnimationFrame(rafId)
   }
 
   function easeOutCubic(t: number): number {
@@ -218,15 +221,13 @@ function smoothScrollTo(element: HTMLElement, target: number, duration: number =
     const elapsed = currentTime - startTime
     const progress = Math.min(elapsed / duration, 1)
     const eased = easeOutCubic(progress)
-
     element.scrollTop = start + distance * eased
-
     if (progress < 1) {
-      requestAnimationFrame(animate)
+      rafId = requestAnimationFrame(animate)
     }
   }
 
-  requestAnimationFrame(animate)
+  rafId = requestAnimationFrame(animate)
   return cancel
 }
 
@@ -526,8 +527,8 @@ export default function MusicClient() {
         const containerRect = container.getBoundingClientRect()
         const elRect = el.getBoundingClientRect()
         const relativeTop = elRect.top - containerRect.top + container.scrollTop
-        // 目标位置：让高亮行位于容器正中
-        const targetScrollTop = relativeTop + el.clientHeight / 2 - containerHeight / 2
+        // 目标位置：让高亮行位于容器上方约 35% 处（视觉重心偏上）
+        const targetScrollTop = relativeTop + el.clientHeight / 2 - containerHeight * 0.35
         // 开头：不强制居中，紧贴顶部
         // 结尾：不强制居中，紧贴底部
         const finalScrollTop = Math.max(0, Math.min(maxScrollTop, targetScrollTop))
@@ -671,7 +672,7 @@ export default function MusicClient() {
       {status === 'error' && <MusicError />}
 
       {status === 'ready' && (
-        <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-5rem)] overflow-hidden">
+        <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-3.5rem)] overflow-hidden">
           {/* 主内容区 */}
           <div className="flex flex-col lg:flex-row flex-1 min-h-0">
             {/* 左侧：播放列表 */}
@@ -1018,7 +1019,7 @@ export default function MusicClient() {
 
 function MusicSkeleton() {
   return (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-5rem)] overflow-hidden animate-pulse">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-3.5rem)] overflow-hidden animate-pulse">
       {/* 主内容区 —— 与真实布局完全一致 */}
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
         {/* 左侧：播放列表骨架 */}
