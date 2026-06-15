@@ -6,7 +6,6 @@ import {
   SkipForward,
   Play,
   Pause,
-  Volume,
   VolumeX,
   Volume2,
   Repeat,
@@ -188,6 +187,10 @@ export default function MusicClient() {
         .play()
         .then(() => setPlaying(true))
         .catch(() => setPlaying(false))
+      // 移动端选中歌曲后自动收起播放列表
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setShowPlaylist(false)
+      }
     },
     [songs, loadLyrics, getSongUrl]
   )
@@ -432,7 +435,7 @@ export default function MusicClient() {
   const ModeIcon = modeIcons[playMode].icon
 
   return (
-    <div className="w-full relative z-10 flex flex-col">
+    <div className="w-full relative z-10 flex flex-col page-transition">
       <audio ref={audioRef} preload="auto" />
 
       {status === 'loading' && <MusicSkeleton />}
@@ -444,7 +447,11 @@ export default function MusicClient() {
           <div className="flex flex-col lg:flex-row flex-1 min-h-0">
             {/* 左侧：播放列表 */}
             <div
-              className={`${showPlaylist ? 'block' : 'hidden'} lg:block lg:w-[42%] lg:min-w-[320px] flex-shrink-0 lg:h-full lg:overflow-y-auto scrollbar-hide overflow-y-auto`}
+              className={`
+                ${showPlaylist ? 'fixed inset-x-0 top-14 bottom-[4.5rem] z-20 bg-[rgb(var(--bg))]' : 'hidden'}
+                lg:static lg:block lg:top-auto lg:bottom-auto lg:z-auto lg:w-[42%] lg:min-w-[320px] lg:flex-shrink-0 lg:h-full lg:bg-transparent
+                overflow-y-auto scrollbar-hide
+              `}
             >
               <ol className="divide-y divide-[rgb(var(--border))]/40">
                 {songs.map((song, i) => (
@@ -491,7 +498,11 @@ export default function MusicClient() {
             {/* 右侧：播放器 */}
             <div className="flex-1 flex flex-col items-center px-4 sm:px-8 py-4 lg:py-6 lg:border-l border-[rgb(var(--border))] min-h-0 overflow-y-auto lg:overflow-hidden">
               {/* 封面 */}
-              <div className="w-48 h-48 sm:w-52 sm:h-52 lg:w-56 lg:h-56 rounded-xl overflow-hidden shadow-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] mb-4">
+              <div
+                className={`w-48 h-48 sm:w-52 sm:h-52 lg:w-56 lg:h-56 rounded-xl overflow-hidden shadow-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] mb-4 ${
+                  playing ? 'animate-music-breathe' : ''
+                }`}
+              >
                 {currentSong ? (
                   <img
                     src={coverUrl(currentSong)}
@@ -565,13 +576,14 @@ export default function MusicClient() {
 
             {/* 按钮：移动端 play 居中，两侧分排 */}
             <div className="flex items-center justify-between relative">
-              {/* 左侧：播放列表 + 音量（移动端） */}
+              {/* 左侧：移动端播放模式 + 音量；桌面端音量 */}
               <div className="flex items-center gap-1 lg:hidden">
                 <button
-                  onClick={() => setShowPlaylist(!showPlaylist)}
+                  onClick={toggleMode}
                   className="p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] transition-colors"
+                  title={modeIcons[playMode].label}
                 >
-                  <ListMusic className="w-5 h-5" />
+                  <ModeIcon className="w-5 h-5" />
                 </button>
                 <div className="relative">
                   <button
@@ -653,11 +665,17 @@ export default function MusicClient() {
                 </button>
               </div>
 
-              {/* 右侧：播放模式 */}
+              {/* 右侧：移动端播放列表 / 桌面端播放模式 */}
               <div className="flex items-center">
                 <button
+                  onClick={() => setShowPlaylist(!showPlaylist)}
+                  className="p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] transition-colors lg:hidden"
+                >
+                  <ListMusic className="w-5 h-5" />
+                </button>
+                <button
                   onClick={toggleMode}
-                  className="p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] transition-colors"
+                  className="hidden lg:block p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] transition-colors"
                   title={modeIcons[playMode].label}
                 >
                   <ModeIcon className="w-5 h-5" />
@@ -667,6 +685,23 @@ export default function MusicClient() {
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes music-breathe {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 10px 25px rgb(var(--primary) / 0.1);
+          }
+          50% {
+            transform: scale(1.02);
+            box-shadow: 0 16px 40px rgb(var(--primary) / 0.22);
+          }
+        }
+        .animate-music-breathe {
+          animation: music-breathe 4s ease-in-out infinite;
+          will-change: transform, box-shadow;
+        }
+      `}</style>
     </div>
   )
 }
