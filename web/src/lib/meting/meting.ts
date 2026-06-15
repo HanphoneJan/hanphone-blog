@@ -10,7 +10,7 @@ import type { ApiConfig } from './providers/base'
 export default class Meting {
   VERSION = '2.0.0'
   raw = ''
-  info: { statusCode: number; headers: Record<string, string> } | null = null
+  info: { statusCode: number; headers: Record<string, string>; setCookie?: string[] } | null = null
   error: string | null = null
   status = ''
   temp: Record<string, unknown> = {}
@@ -63,6 +63,7 @@ export default class Meting {
         this.info = {
           statusCode: response.status,
           headers: Object.fromEntries(response.headers.entries()),
+          setCookie: (response.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() || [],
         }
         this.raw = await response.text()
         this.error = null

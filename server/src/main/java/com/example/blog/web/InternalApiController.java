@@ -3,11 +3,13 @@ package com.example.blog.web;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.po.User;
+import com.example.blog.service.AlertService;
 import com.example.blog.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 内部 API 控制器 — 供 hanphone-chat 等内部服务调用
@@ -19,12 +21,14 @@ import java.util.List;
 public class InternalApiController {
 
     private final UserService userService;
+    private final AlertService alertService;
 
     @Value("${internal.api.key:}")
     private String internalApiKey;
 
-    public InternalApiController(UserService userService) {
+    public InternalApiController(UserService userService, AlertService alertService) {
         this.userService = userService;
+        this.alertService = alertService;
     }
 
     /**
@@ -128,6 +132,29 @@ public class InternalApiController {
             return new Result<>(false, StatusCode.ERROR, "设置失败，用户可能不存在", null);
         } catch (Exception e) {
             return new Result<>(false, StatusCode.ERROR, "设置失败: " + e.getMessage(), null);
+        }
+    }
+
+    /**
+     * 发送管理员告警邮件
+     */
+    @PostMapping("/internal/alert/email")
+    public Result<Void> sendAdminAlertEmail(
+            @RequestBody Map<String, String> body,
+            @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key) {
+        if (!verifyKey(key)) {
+            return unauthorized();
+        }
+        try {
+            String subject = body.getOrDefault("subject", "系统告警");
+            String content = body.getOrDefault("content", "");
+            Boolean sent = alertService.sendAlertToAdmins(subject, content);
+            if (Boolean.TRUE.equals(sent)) {
+                return new Result<>(true, StatusCode.OK, "告警邮件已发送", null);
+            }
+            return new Result<>(false, StatusCode.ERROR, "告警邮件发送失败或被频次限制", null);
+        } catch (Exception e) {
+            return new Result<>(false, StatusCode.ERROR, "告警邮件发送失败: " + e.getMessage(), null);
         }
     }
 

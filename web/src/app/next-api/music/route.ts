@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Meting, { type FormattedSong } from '@/lib/meting/meting'
 import { loadEncryptedCookie, decryptCookie } from '@/lib/netease-cookie/crypto'
 
+export const runtime = 'nodejs'
+
 const COOKIE_KEY = process.env.NETEASE_COOKIE_KEY
 
 const ALLOWED_TYPES = new Set(['playlist', 'pic', 'lrc', 'song'])
