@@ -6,6 +6,8 @@ import apiClient from '@/lib/utils'
 interface CookieStatus {
   configured: boolean
   updatedAt?: string
+  hoursSinceLastRefresh?: number | null
+  needsRefresh?: boolean
 }
 
 export function useNeteaseCookie() {
@@ -56,9 +58,30 @@ export function useNeteaseCookie() {
     }
   }, [fetchStatus])
 
+  const refreshCookie = useCallback(async (): Promise<boolean> => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await apiClient.post<{ success: boolean; refreshed?: boolean; error?: string }>(
+        '/next-api/admin/music/cookie',
+      )
+      if (!res.data.success) {
+        setError(res.data.error || '刷新失败')
+        return false
+      }
+      await fetchStatus()
+      return true
+    } catch (err: any) {
+      setError(err?.response?.data?.error || '刷新失败')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchStatus])
+
   useEffect(() => {
     fetchStatus()
   }, [fetchStatus])
 
-  return { status, loading, error, saveCookie, clearCookie, refresh: fetchStatus }
+  return { status, loading, error, saveCookie, clearCookie, refreshCookie, refresh: fetchStatus }
 }

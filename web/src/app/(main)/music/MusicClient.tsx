@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import {
   SkipBack,
   SkipForward,
@@ -32,25 +32,142 @@ interface Song {
   id: string
 }
 
-interface LyricLine {
-  time: number
+/** 逐词时间戳 */
+interface WordTimestamp {
+  start: number
+  end: number
   text: string
 }
 
+/** 歌词行数据结构，支持逐词和双语 */
+interface LyricLine {
+  time: number
+  text: string
+  words: WordTimestamp[]
+  translation?: string
+}
+
+/**
+ * 解析 LRC 歌词文本
+ * 支持标准 LRC 和逐词 LRC（网易云格式）
+ * 逐词格式：[mm:ss.xx]word1[mm:ss.xx]word2... 或 [mm:ss.xx]<mm:ss.xx>word
+ */
 function parseLrc(lrc: string): LyricLine[] {
   if (!lrc) return []
+  const lines = lrc.split('\n')
   const result: LyricLine[] = []
-  for (const line of lrc.split('\n')) {
-    const m = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/)
-    if (m) {
-      const min = parseInt(m[1])
-      const sec = parseInt(m[2])
-      const ms = m[3].length === 2 ? parseInt(m[3]) * 10 : parseInt(m[3])
-      const text = m[4].trim()
-      if (text) result.push({ time: min * 60 + sec + ms / 1000, text })
+
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx]
+    // 匹配行首时间戳 [mm:ss.xx] 或 [mm:ss.xxx]
+    const lineMatch = line.match(/^(\[\d{2}:\d{2}\.\d{2,3}\])(.*)/)
+    if (!lineMatch) continue
+
+    const lineTime = parseTimestamp(lineMatch[1])
+    const content = lineMatch[2]
+
+    // 尝试解析逐词时间戳
+    const words = parseWordTimestamps(content, lineTime)
+
+    let text = content
+    let translation: string | undefined
+
+    // 清理逐词时间戳标记，提取纯文本
+    if (words.length > 0) {
+      text = words.map(w => w.text).join('')
+    } else {
+      // 移除内容中可能残留的逐词时间戳标记
+      text = content.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, '').replace(/<\d{2}:\d{2}\.\d{2,3}>/g, '').trim()
+    }
+
+    // 双语歌词检测：检查下一行是否时间戳相同且是翻译
+    if (idx + 1 < lines.length) {
+      const nextLine = lines[idx + 1]
+      const nextMatch = nextLine.match(/^(\[\d{2}:\d{2}\.\d{2,3}\])(.*)/)
+      if (nextMatch) {
+        const nextTime = parseTimestamp(nextMatch[1])
+        // 时间戳相同（允许1ms误差），且内容不同，认为是翻译
+        if (Math.abs(nextTime - lineTime) < 0.001) {
+          const nextContent = nextMatch[2].replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, '').replace(/<\d{2}:\d{2}\.\d{2,3}>/g, '').trim()
+          // 如果当前行是中文，下一行是英文（或反之），则认为是翻译
+          if (nextContent && nextContent !== text) {
+            translation = nextContent
+            idx++ // 跳过下一行
+          }
+        }
+      }
+    }
+
+    if (text) {
+      result.push({ time: lineTime, text, words, translation })
     }
   }
+
   return result
+}
+
+/** 解析 [mm:ss.xx] 时间戳为秒数 */
+function parseTimestamp(ts: string): number {
+  const m = ts.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\]/)
+  if (!m) return 0
+  const min = parseInt(m[1])
+  const sec = parseInt(m[2])
+  const ms = m[3].length === 2 ? parseInt(m[3]) * 10 : parseInt(m[3])
+  return min * 60 + sec + ms / 1000
+}
+
+/**
+ * 解析逐词时间戳
+ * 支持格式：
+ * 1. [mm:ss.xx]word1[mm:ss.xx]word2...
+ * 2. [mm:ss.xx]<mm:ss.xx>word （开始时间<结束时间>词）
+ */
+function parseWordTimestamps(content: string, lineTime: number): WordTimestamp[] {
+  const words: WordTimestamp[] = []
+
+  // 格式1: [mm:ss.xx]word1[mm:ss.xx]word2...
+  const pattern1 = /\[(\d{2}:\d{2}\.\d{2,3})\]([^\[]*)/g
+  let match: RegExpExecArray | null
+  let lastTime = lineTime
+  let hasPattern1 = false
+
+  while ((match = pattern1.exec(content)) !== null) {
+    hasPattern1 = true
+    const time = parseTimestamp(`[${match[1]}]`)
+    const text = match[2]
+    if (text) {
+      words.push({ start: time, end: time, text })
+      lastTime = time
+    }
+  }
+
+  if (hasPattern1 && words.length > 0) {
+    // 为每个词估算结束时间（下一个词的开始时间）
+    for (let i = 0; i < words.length - 1; i++) {
+      words[i].end = words[i + 1].start
+    }
+    // 最后一个词的结束时间：估算为开始时间 + 平均词时长
+    if (words.length > 1) {
+      const avgDuration = (words[words.length - 2].end - words[words.length - 2].start) || 0.3
+      words[words.length - 1].end = words[words.length - 1].start + avgDuration
+    } else {
+      words[0].end = words[0].start + 1
+    }
+    return words
+  }
+
+  // 格式2: [mm:ss.xx]<mm:ss.xx>word
+  const pattern2 = /\[(\d{2}:\d{2}\.\d{2,3})\]<(\d{2}:\d{2}\.\d{2,3})>([^\[]*)/g
+  while ((match = pattern2.exec(content)) !== null) {
+    const start = parseTimestamp(`[${match[1]}]`)
+    const end = parseTimestamp(`[${match[2]}]`)
+    const text = match[3]
+    if (text) {
+      words.push({ start, end, text })
+    }
+  }
+
+  return words
 }
 
 function isLrcText(val: string): boolean {
@@ -78,6 +195,41 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a
 }
 
+/**
+ * 平滑滚动动画
+ * 使用 ease-out 缓动函数，300ms 内完成滚动
+ */
+function smoothScrollTo(element: HTMLElement, target: number, duration: number = 300): (() => void) {
+  const start = element.scrollTop
+  const distance = target - start
+  const startTime = performance.now()
+  let cancelled = false
+
+  function cancel() {
+    cancelled = true
+  }
+
+  function easeOutCubic(t: number): number {
+    return 1 - Math.pow(1 - t, 3)
+  }
+
+  function animate(currentTime: number) {
+    if (cancelled) return
+    const elapsed = currentTime - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = easeOutCubic(progress)
+
+    element.scrollTop = start + distance * eased
+
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    }
+  }
+
+  requestAnimationFrame(animate)
+  return cancel
+}
+
 export default function MusicClient() {
   const [songs, setSongs] = useState<Song[]>([])
   const [currentIndex, setCurrentIndex] = useState(-1)
@@ -92,12 +244,18 @@ export default function MusicClient() {
   const [playMode, setPlayMode] = useState<PlayMode>('list')
   const [shuffledOrder, setShuffledOrder] = useState<number[]>([])
 
+  // 用于 rAF 循环的高精度时间
+  const rafTimeRef = useRef(0)
+  const rafActiveRef = useRef(false)
+
   const audioRef = useRef<HTMLAudioElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const lyricsRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
   const urlCache = useRef<Map<string, string>>(new Map())
   const seekOnLoad = useRef(-1)
+  // 保存当前平滑滚动动画的取消函数，切歌时取消上一个动画
+  const scrollCancelRef = useRef<(() => void) | null>(null)
 
   // 拉歌单
   useEffect(() => {
@@ -285,7 +443,11 @@ export default function MusicClient() {
   useEffect(() => {
     const a = audioRef.current
     if (!a) return
-    const onTime = () => setCurrentTime(a.currentTime)
+    const onTime = () => {
+      const t = a.currentTime
+      setCurrentTime(t)
+      rafTimeRef.current = t
+    }
     const onDur = () => {
       setDuration(a.duration || 0)
       if (seekOnLoad.current >= 0 && a.duration) {
@@ -317,7 +479,34 @@ export default function MusicClient() {
     }
   }, [next, playMode])
 
-  // 歌词滚动：高亮行尽量在歌词区域垂直居中，开头/结尾特殊处理
+  /**
+   * rAF 循环：用于高精度歌词高亮更新
+   * timeupdate 约 250ms 触发一次，rAF 约 16ms 一次，提供更平滑的高亮效果
+   */
+  useEffect(() => {
+    if (!playing) {
+      rafActiveRef.current = false
+      return
+    }
+    rafActiveRef.current = true
+
+    function rafLoop() {
+      if (!rafActiveRef.current) return
+      if (audioRef.current) {
+        // 更新高精度时间，用于逐词高亮计算
+        rafTimeRef.current = audioRef.current.currentTime
+      }
+      requestAnimationFrame(rafLoop)
+    }
+
+    const id = requestAnimationFrame(rafLoop)
+    return () => {
+      rafActiveRef.current = false
+      cancelAnimationFrame(id)
+    }
+  }, [playing])
+
+  // 歌词滚动：高亮行尽量在歌词区域垂直居中，使用平滑滚动动画
   useEffect(() => {
     if (!lyricsRef.current || lyrics.length === 0) return
     let curIdx = -1
@@ -341,10 +530,26 @@ export default function MusicClient() {
         const targetScrollTop = relativeTop + el.clientHeight / 2 - containerHeight / 2
         // 开头：不强制居中，紧贴顶部
         // 结尾：不强制居中，紧贴底部
-        container.scrollTop = Math.max(0, Math.min(maxScrollTop, targetScrollTop))
+        const finalScrollTop = Math.max(0, Math.min(maxScrollTop, targetScrollTop))
+
+        // 取消上一个滚动动画，开始新的平滑滚动
+        if (scrollCancelRef.current) {
+          scrollCancelRef.current()
+        }
+        scrollCancelRef.current = smoothScrollTo(container, finalScrollTop, 400)
       }
     }
   }, [currentTime, lyrics])
+
+  // 切歌时取消未完成的滚动动画
+  useEffect(() => {
+    return () => {
+      if (scrollCancelRef.current) {
+        scrollCancelRef.current()
+        scrollCancelRef.current = null
+      }
+    }
+  }, [currentIndex])
 
   // 音量
   useEffect(() => {
@@ -418,6 +623,16 @@ export default function MusicClient() {
     else audioRef.current.play().catch(() => {})
   }
 
+  // 点击歌词跳转
+  const handleLyricClick = useCallback((time: number) => {
+    if (!audioRef.current || !duration) return
+    audioRef.current.currentTime = time
+    // 如果当前未播放，自动开始播放
+    if (!playing) {
+      audioRef.current.play().catch(() => {})
+    }
+  }, [duration, playing])
+
   const currentSong = currentIndex >= 0 ? songs[currentIndex] : null
   const progressPct = duration ? (currentTime / duration) * 100 : 0
   const fmt = (s: number) => {
@@ -434,15 +649,29 @@ export default function MusicClient() {
   }
   const ModeIcon = modeIcons[playMode].icon
 
+  /**
+   * 计算当前高亮行索引
+   * 使用 useMemo 避免每帧重复计算
+   */
+  const currentLyricIndex = useMemo(() => {
+    if (lyrics.length === 0) return -1
+    for (let i = lyrics.length - 1; i >= 0; i--) {
+      if (lyrics[i].time <= currentTime) {
+        return i
+      }
+    }
+    return -1
+  }, [lyrics, currentTime])
+
   return (
-    <div className="w-full relative z-10 flex flex-col page-transition">
+    <div className="w-full relative z-10 flex flex-col">
       <audio ref={audioRef} preload="auto" />
 
       {status === 'loading' && <MusicSkeleton />}
       {status === 'error' && <MusicError />}
 
       {status === 'ready' && (
-        <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-5.5rem)] overflow-hidden">
+        <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-5rem)] overflow-hidden">
           {/* 主内容区 */}
           <div className="flex flex-col lg:flex-row flex-1 min-h-0">
             {/* 左侧：播放列表 */}
@@ -526,21 +755,102 @@ export default function MusicClient() {
 
               {/* 歌词：占据剩余空间，内部滚动 */}
               <div
-                className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide text-center text-base leading-relaxed space-y-1 py-2 px-6"
+                className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide text-center py-2 px-6"
                 ref={lyricsRef}
               >
                 {lyrics.length > 0 ? (
                   lyrics.map((l, i) => {
-                    const cur =
-                      l.time <= currentTime &&
-                      (i === lyrics.length - 1 || lyrics[i + 1].time > currentTime)
+                    const isCurrent = i === currentLyricIndex
+                    const isPast = i < currentLyricIndex
+                    const isFuture = i > currentLyricIndex
+
                     return (
-                      <p
+                      <div
                         key={i}
-                        className={`transition-all duration-200 ${cur ? 'text-[rgb(var(--text))] font-semibold text-lg lg:text-xl scale-105' : 'text-[rgb(var(--text-muted))]/60'}`}
+                        onClick={() => handleLyricClick(l.time)}
+                        className={`
+                          transition-all duration-300 cursor-pointer select-none
+                          py-2 lg:py-2.5 px-2 rounded-lg
+                          hover:bg-[rgb(var(--hover))]/50 active:bg-[rgb(var(--hover))]
+                          ${isCurrent
+                            ? 'text-[rgb(var(--text))] font-bold text-xl lg:text-2xl scale-105'
+                            : isPast
+                              ? 'text-[rgb(var(--text-muted))]/35 text-sm lg:text-base'
+                              : 'text-[rgb(var(--text-muted))]/50 text-sm lg:text-base'
+                          }
+                        `}
+                        style={isCurrent ? {
+                          textShadow: '0 0 20px rgb(var(--primary) / 0.3), 0 0 40px rgb(var(--primary) / 0.15)'
+                        } : undefined}
                       >
-                        {l.text}
-                      </p>
+                        {/* 原文歌词行 */}
+                        <div className="leading-relaxed">
+                          {l.words.length > 0 ? (
+                            // 逐词高亮渲染（Karaoke 效果）
+                            <span className="inline-flex flex-wrap justify-center">
+                              {l.words.map((word, wi) => {
+                                // 使用 rafTimeRef 获取高精度时间，实现更平滑的逐词高亮
+                                const time = rafTimeRef.current || currentTime
+                                const isWordActive = time >= word.start
+                                const isWordPast = time >= word.end
+                                // 计算当前词的高亮进度（0-1）
+                                let progress = 0
+                                if (isWordPast) {
+                                  progress = 1
+                                } else if (isWordActive) {
+                                  const duration = word.end - word.start
+                                  progress = duration > 0
+                                    ? Math.min(1, (time - word.start) / duration)
+                                    : 1
+                                }
+
+                                return (
+                                  <span
+                                    key={wi}
+                                    className="relative inline-block"
+                                  >
+                                    {/* 未高亮部分（背景文字） */}
+                                    <span
+                                      className={`
+                                        transition-colors duration-100
+                                        ${isCurrent ? 'text-[rgb(var(--text-muted))]/30' : ''}
+                                      `}
+                                    >
+                                      {word.text}
+                                    </span>
+                                    {/* 高亮部分（前景文字，通过 clip 实现逐字效果） */}
+                                    {isCurrent && (
+                                      <span
+                                        className="absolute inset-0 text-[rgb(var(--primary))] overflow-hidden whitespace-nowrap"
+                                        style={{
+                                          clipPath: `inset(0 ${(1 - progress) * 100}% 0 0)`
+                                        }}
+                                      >
+                                        {word.text}
+                                      </span>
+                                    )}
+                                  </span>
+                                )
+                              })}
+                            </span>
+                          ) : (
+                            // 无逐词时间戳，整行显示
+                            l.text
+                          )}
+                        </div>
+                        {/* 翻译歌词（双语支持） */}
+                        {l.translation && (
+                          <div className={`
+                            text-xs lg:text-sm mt-1 transition-all duration-300
+                            ${isCurrent
+                              ? 'text-[rgb(var(--text-muted))]/60'
+                              : 'text-[rgb(var(--text-muted))]/30'
+                            }
+                          `}>
+                            {l.translation}
+                          </div>
+                        )}
+                      </div>
                     )
                   })
                 ) : (
@@ -553,7 +863,7 @@ export default function MusicClient() {
           </div>
 
           {/* 底部控制条 */}
-          <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-[rgb(var(--bg))]/90 backdrop-blur-sm border-t border-[rgb(var(--border))] z-20">
+          <div className="px-4 py-3 bg-[rgb(var(--bg))]/90 backdrop-blur-sm border-t border-[rgb(var(--border))] z-20">
             {/* 进度条 */}
             <div className="flex items-center gap-2 text-xs text-[rgb(var(--text-muted))] mb-2">
               <span className="w-10 text-right tabular-nums">{fmt(currentTime)}</span>
@@ -708,7 +1018,7 @@ export default function MusicClient() {
 
 function MusicSkeleton() {
   return (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-5.5rem)] overflow-hidden animate-pulse">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] lg:h-[calc(100vh-5rem)] overflow-hidden animate-pulse">
       {/* 主内容区 —— 与真实布局完全一致 */}
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
         {/* 左侧：播放列表骨架 */}

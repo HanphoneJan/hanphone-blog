@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { existsSync, unlinkSync } from 'fs'
+import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/api'
 import {
   encryptCookie,
@@ -7,6 +7,13 @@ import {
   saveEncryptedCookie,
   COOKIE_FILE,
 } from '@/lib/netease-cookie/crypto'
+import {
+  hoursSinceLastRefresh,
+  refreshNeteaseCookieAndAlert,
+  shouldRefreshCookie,
+} from '@/lib/netease-cookie/refresh'
+
+export const runtime = 'nodejs'
 
 const COOKIE_KEY = process.env.NETEASE_COOKIE_KEY
 
@@ -41,9 +48,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ configured: false })
   }
 
+  const hours = hoursSinceLastRefresh(payload.updatedAt)
+
   return NextResponse.json({
     configured: true,
     updatedAt: payload.updatedAt,
+    hoursSinceLastRefresh: hours,
+    needsRefresh: shouldRefreshCookie(payload.updatedAt),
+  })
+}
+
+export async function POST(request: NextRequest) {
+  const token = request.headers.get('token')
+  if (!token) return unauthorized()
+
+  const isAdmin = await verifyAdminToken(token)
+  if (!isAdmin) return forbidden()
+
+  const result = await refreshNeteaseCookieAndAlert()
+  if (!result.success) {
+    return NextResponse.json(
+      { success: false, error: result.error },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({
+    success: true,
+    refreshed: result.refreshed,
+    updatedAt: result.updatedAt,
   })
 }
 

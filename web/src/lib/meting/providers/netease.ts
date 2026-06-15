@@ -100,6 +100,16 @@ export default class NeteaseProvider extends BaseProvider {
     }
   }
 
+  /** 网易云登录状态刷新（仅支持密码登录获取的 Cookie） */
+  refreshLogin(): ApiConfig {
+    return {
+      method: 'POST',
+      url: 'http://music.163.com/api/login/token/refresh',
+      body: {},
+      encode: 'netease_eapi',
+    }
+  }
+
   pic(id: string, size = 300): string {
     const url = `https://p3.music.126.net/${this.encryptId(id)}/${id}.jpg?param=${size}y${size}`
     return JSON.stringify({ url })

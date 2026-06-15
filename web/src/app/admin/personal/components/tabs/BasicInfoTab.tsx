@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Camera, Save, Loader2, Lock, Edit3, Music, Trash2 } from 'lucide-react'
+import { Camera, Save, Loader2, Lock, Edit3, Music, Trash2, RefreshCw } from 'lucide-react'
 import { ASSETS } from '@/lib/constants'
 import { UserInfo } from '../../types'
 import { useNeteaseCookie } from '../../hooks/useNeteaseCookie'
@@ -34,7 +34,7 @@ export function BasicInfoTab({
   onOpenAvatarDialog
 }: BasicInfoTabProps) {
   const isAdmin = globalUserInfo?.type === '1'
-  const { status, loading: cookieLoading, error: cookieError, saveCookie, clearCookie } =
+  const { status, loading: cookieLoading, error: cookieError, saveCookie, clearCookie, refreshCookie } =
     useNeteaseCookie()
   const [cookieInput, setCookieInput] = useState('')
 
@@ -180,6 +180,10 @@ export function BasicInfoTab({
                   </span>
                 </div>
 
+                <p className="text-xs text-amber-500 mb-3">
+                  提示：仅支持账号密码登录（手机号/邮箱）获取的 Cookie。二维码登录的 Cookie 无法自动刷新。
+                </p>
+
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
                     <label className="text-sm text-[rgb(var(--text))] min-w-[80px] pt-2">
@@ -194,12 +198,24 @@ export function BasicInfoTab({
                         className="w-full px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all resize-none font-mono text-xs"
                       />
                       {status.configured && (
-                        <p className="mt-2 text-xs text-[rgb(var(--text-muted))]">
-                          当前已配置，更新时间：
-                          {status.updatedAt
-                            ? new Date(status.updatedAt).toLocaleString()
-                            : '未知'}
-                        </p>
+                        <div className="mt-2 space-y-1 text-xs">
+                          <p className="text-[rgb(var(--text-muted))]">
+                            当前已配置，更新时间：
+                            {status.updatedAt
+                              ? new Date(status.updatedAt).toLocaleString()
+                              : '未知'}
+                          </p>
+                          {typeof status.hoursSinceLastRefresh === 'number' && (
+                            <p className="text-[rgb(var(--text-muted))]">
+                              距离上次刷新：{status.hoursSinceLastRefresh.toFixed(1)} 小时
+                            </p>
+                          )}
+                          {status.needsRefresh && (
+                            <p className="text-amber-500">
+                              Cookie 已超过建议刷新时间，建议手动刷新
+                            </p>
+                          )}
+                        </div>
                       )}
                       {cookieError && (
                         <p className="mt-2 text-xs text-red-500">{cookieError}</p>
@@ -208,6 +224,21 @@ export function BasicInfoTab({
                   </div>
 
                   <div className="flex justify-end gap-3">
+                    {status.configured && (
+                      <button
+                        type="button"
+                        onClick={refreshCookie}
+                        disabled={cookieLoading}
+                        className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors flex items-center gap-2"
+                      >
+                        {cookieLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                        <span>刷新 Cookie</span>
+                      </button>
+                    )}
                     {status.configured && (
                       <button
                         type="button"
