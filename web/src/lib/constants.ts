@@ -364,7 +364,9 @@ export const STORAGE_KEYS = {
   // 背景透明度（0-100）
   BACKGROUND_OPACITY: 'blog_bg_opacity',
   // 背景遮罩强度（0-100）
-  BACKGROUND_OVERLAY: 'blog_bg_overlay'
+  BACKGROUND_OVERLAY: 'blog_bg_overlay',
+  // 音乐播放器状态
+  MUSIC_PLAYER_STATE: 'music_player_state'
 } as const
 
 // ==================== 背景配置 ====================

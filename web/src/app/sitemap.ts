@@ -11,15 +11,17 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/`, priority: 1, changeFrequency: 'daily' },
 
   // 次要聚合页
-  { url: `${SITE_URL}/blog`, priority: 0.6, changeFrequency: 'daily' },
-  { url: `${SITE_URL}/essay`, priority: 0.6, changeFrequency: 'weekly' },
-  { url: `${SITE_URL}/project`, priority: 0.6, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/personal`, priority: 0.6, changeFrequency: 'monthly' },
+  { url: `${SITE_URL}/blog`, priority: 0.8, changeFrequency: 'daily' },
+  { url: `${SITE_URL}/essays`, priority: 0.6, changeFrequency: 'weekly' },
+  { url: `${SITE_URL}/projects`, priority: 0.6, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/about`, priority: 0.6, changeFrequency: 'monthly' },
 
   // 低频/工具页面
-  { url: `${SITE_URL}/message`, priority: 0.4, changeFrequency: 'weekly' },
-  { url: `${SITE_URL}/link`, priority: 0.3, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/messages`, priority: 0.4, changeFrequency: 'weekly' },
+  { url: `${SITE_URL}/links`, priority: 0.3, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/docs`, priority: 0.5, changeFrequency: 'weekly' },
+  { url: `${SITE_URL}/music`, priority: 0.5, changeFrequency: 'weekly' },
+  { url: `${SITE_URL}/rss`, priority: 0.3, changeFrequency: 'daily' },
 
   // 子项目：照片墙（不定期更新照片）
   { url: `${SITE_URL}/atlas`, priority: 0.5, changeFrequency: 'monthly' },
