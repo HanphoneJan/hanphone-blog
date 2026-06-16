@@ -77,9 +77,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: meting.status || '请求失败' }, { status: 500 })
       }
       const data = JSON.parse(raw)
-      // 返回与旧格式兼容的 LRC 文本
-      return new NextResponse(data.lyric || '', {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      return NextResponse.json({
+        lyric: data.lyric || '',
+        tlyric: data.tlyric || '',
       })
     }
 

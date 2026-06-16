@@ -43,7 +43,7 @@ const contentVariants = {
     y: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut"
+      ease: 'easeOut'
     }
   }
 } as const
@@ -55,7 +55,7 @@ const headerVariants = {
     y: 0,
     transition: {
       duration: 0.4,
-      ease: "easeOut"
+      ease: 'easeOut'
     }
   }
 } as const
@@ -193,7 +193,7 @@ export default function HomeClient({
     let methodText = ''
 
     if (selectedTypeId !== null) {
-      const type = typeList.find((item) => item.id === selectedTypeId)
+      const type = typeList.find(item => item.id === selectedTypeId)
       if (type) methodText += `分类: ${type.name}`
     }
 
@@ -202,11 +202,11 @@ export default function HomeClient({
       methodText += '标签: '
 
       const tagNames = selectedTagIds
-        .map((tagId) => {
-          const tag = tagList.find((item) => item.id === tagId)
+        .map(tagId => {
+          const tag = tagList.find(item => item.id === tagId)
           return tag ? tag.name : ''
         })
-        .filter((name) => name)
+        .filter(name => name)
 
       methodText += tagNames.join(', ')
     }
@@ -228,7 +228,7 @@ export default function HomeClient({
   // 修改当前页码
   const handleCurrentChange = useCallback(
     (newPage: number) => {
-      setQueryInfo((prev) => ({ ...prev, pagenum: newPage }))
+      setQueryInfo(prev => ({ ...prev, pagenum: newPage }))
       const el = document.getElementById('blogListSection')
       if (el) {
         const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
@@ -243,7 +243,7 @@ export default function HomeClient({
   // 处理分页输入变化
   const handlePageInputChange = useCallback(
     (page: number) => {
-      setQueryInfo((prev) => ({ ...prev, pagenum: page }))
+      setQueryInfo(prev => ({ ...prev, pagenum: page }))
     },
     [setQueryInfo]
   )
@@ -267,14 +267,14 @@ export default function HomeClient({
 
           // 如果有选中的标签，进一步筛选
           if (selectedTagIds.length > 0) {
-            const tagPromises = selectedTagIds.map((tagId) =>
-              fetch(`/api/tags/${tagId}`).then((res) => res.json())
+            const tagPromises = selectedTagIds.map(tagId =>
+              fetch(`/api/tags/${tagId}`).then(res => res.json())
             )
 
             const tagResponses = await Promise.all(tagPromises)
-            const tagBlogsArrays = tagResponses.map((res) => res.data?.content || [])
+            const tagBlogsArrays = tagResponses.map(res => res.data?.content || [])
 
-            filteredBlogs = filteredBlogs.filter((blog) =>
+            filteredBlogs = filteredBlogs.filter(blog =>
               tagBlogsArrays.every((tagBlogs: Blog[]) =>
                 tagBlogs.some((tagBlog: Blog) => tagBlog.id === blog.id)
               )
@@ -300,7 +300,7 @@ export default function HomeClient({
     async (id: number) => {
       // 切换标签选中状态
       const newSelectedTagIds = selectedTagIds.includes(id)
-        ? selectedTagIds.filter((tagId) => tagId !== id)
+        ? selectedTagIds.filter(tagId => tagId !== id)
         : [...selectedTagIds, id]
 
       setSelectedTagIds(newSelectedTagIds)
@@ -328,14 +328,14 @@ export default function HomeClient({
 
           // 如果有选中的标签，进一步筛选
           if (newSelectedTagIds.length > 0) {
-            const tagPromises = newSelectedTagIds.map((tagId) =>
-              fetch(`/api/tags/${tagId}`).then((res) => res.json())
+            const tagPromises = newSelectedTagIds.map(tagId =>
+              fetch(`/api/tags/${tagId}`).then(res => res.json())
             )
 
             const tagResponses = await Promise.all(tagPromises)
-            const tagBlogsArrays = tagResponses.map((res) => res.data?.content || [])
+            const tagBlogsArrays = tagResponses.map(res => res.data?.content || [])
 
-            filteredBlogs = filteredBlogs.filter((blog) =>
+            filteredBlogs = filteredBlogs.filter(blog =>
               tagBlogsArrays.every((tagBlogs: Blog[]) =>
                 tagBlogs.some((tagBlog: Blog) => tagBlog.id === blog.id)
               )
@@ -356,7 +356,7 @@ export default function HomeClient({
       let methodText = ''
 
       if (selectedTypeId !== null) {
-        const type = typeList.find((item) => item.id === selectedTypeId)
+        const type = typeList.find(item => item.id === selectedTypeId)
         if (type) methodText += `分类: ${type.name}`
       }
 
@@ -365,11 +365,11 @@ export default function HomeClient({
         methodText += '标签: '
 
         const tagNames = newSelectedTagIds
-          .map((tagId) => {
-            const tag = tagList.find((item) => item.id === tagId)
+          .map(tagId => {
+            const tag = tagList.find(item => item.id === tagId)
             return tag ? tag.name : ''
           })
-          .filter((name) => name)
+          .filter(name => name)
 
         methodText += tagNames.join(', ')
       }
@@ -400,7 +400,7 @@ export default function HomeClient({
     setSelectedTypeId(null)
     setSelectedTagIds([])
     setSelectMethod(HOME_LABELS.ALL_BLOGS)
-    setQueryInfo((prev) => ({ ...prev, pagenum: 1 }))
+    setQueryInfo(prev => ({ ...prev, pagenum: 1 }))
     getBlogList()
   }, [getBlogList])
 
@@ -408,11 +408,11 @@ export default function HomeClient({
   useEffect(() => {
     const observerOptions = {
       root: null,
-      rootMargin: '0px 0px -80px 0px',
+      rootMargin: '0px 0px -20px 0px',
       threshold: 0.05
     }
 
-    const fadeInObserver = new IntersectionObserver((entries) => {
+    const fadeInObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible')
@@ -439,7 +439,10 @@ export default function HomeClient({
       <HeroSection />
 
       {/* 2. 主内容区 */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 relative z-10" id="mainContent">
+      <main
+        className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 relative z-10"
+        id="mainContent"
+      >
         {/* 推荐博客区 */}
         <motion.div variants={contentVariants}>
           <FeaturedSection recommendList={recommendList} />
@@ -461,7 +464,7 @@ export default function HomeClient({
                   >
                     <ArrowLeft
                       className="mr-2 text-[rgb(var(--primary))] cursor-pointer hover:scale-110 transition-transform h-5 w-5 z-10"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation()
                         updateBlogList()
                       }}
@@ -486,46 +489,42 @@ export default function HomeClient({
                 <ArrowRight className="w-4 h-4 ml-1.5 text-[rgb(var(--primary))] opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />
               </Link>
             </div>
-            <motion.span
-              className="text-[rgb(var(--text-muted))]"
-              variants={counterVariants}
-            >
-                共{' '}
-                <motion.span
-                  key={totalcount}
-                  className="text-[rgb(var(--primary))] text-xl font-bold"
-                  initial={{ scale: 1.2 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  {totalcount}
-                </motion.span>
-                {' '}篇
-              </motion.span>
+            <motion.span className="text-[rgb(var(--text-muted))]" variants={counterVariants}>
+              共{' '}
+              <motion.span
+                key={totalcount}
+                className="text-[rgb(var(--primary))] text-xl font-bold"
+                initial={{ scale: 1.2 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
+                {totalcount}
+              </motion.span>{' '}
+              篇
+            </motion.span>
           </div>
 
           {/* 分类筛选按钮独立出来 */}
-          <motion.div
-            className="flex items-center gap-2 mb-6 flex-wrap"
-            variants={headerVariants}
-          >
+          <motion.div className="flex items-center gap-2 mb-6 flex-wrap" variants={headerVariants}>
             <button
               onClick={updateBlogList}
               className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
                 !selected ? 'text-white' : 'hover:bg-[rgb(var(--hover))]'
               }`}
-              style={!selected ? { background: 'rgb(var(--primary))' } : { color: 'rgb(var(--text-muted))' }}
+              style={
+                !selected
+                  ? { background: 'rgb(var(--primary))' }
+                  : { color: 'rgb(var(--text-muted))' }
+              }
             >
               全部
             </button>
-            {typeList.slice(0, 5).map((type) => (
+            {typeList.slice(0, 5).map(type => (
               <button
                 key={type.id}
                 onClick={() => handleSelectType(type.id)}
                 className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-                  selectedTypeId === type.id
-                    ? 'text-white'
-                    : 'hover:bg-[rgb(var(--hover))]'
+                  selectedTypeId === type.id ? 'text-white' : 'hover:bg-[rgb(var(--hover))]'
                 }`}
                 style={
                   selectedTypeId === type.id
@@ -551,7 +550,7 @@ export default function HomeClient({
                 visible={blogListVisible}
                 pageSize={queryInfo.pagesize}
               />
-              
+
               {/* 分页组件 */}
               <Pagination
                 totalcount={totalcount}
@@ -580,11 +579,9 @@ export default function HomeClient({
         <motion.div variants={contentVariants}>
           <ProjectSection projects={initialProjects} />
         </motion.div>
-
-
       </main>
-        {/* Footer */}
-        <Footer />
+      {/* Footer */}
+      <Footer />
     </motion.div>
   )
 }

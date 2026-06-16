@@ -1,5 +1,6 @@
 import { createMetadata } from '@/lib/seo-config'
 import MusicClient from './MusicClient'
+import BgOverlay from '@/app/(main)/components/BgOverlay'
 
 export const metadata = createMetadata(
   '音乐库',
@@ -12,8 +13,9 @@ export const metadata = createMetadata(
 
 export default function MusicPage() {
   return (
-    <div className="flex-1 flex flex-col" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+    <>
+      <BgOverlay />
       <MusicClient />
-    </div>
+    </>
   )
 }
