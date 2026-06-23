@@ -155,6 +155,10 @@ export function hoursSinceLastRefresh(updatedAt?: string): number | null {
 /**
  * 判断是否应该刷新 Cookie。
  * 采用 12~24 小时随机阈值，避免固定频率触发风控。
+ * 
+ * 注意：此函数使用 Math.random()，每次调用结果不同。
+ * 外部 cron 任务每 12 小时调用一次时，有 50% 概率触发刷新；
+ * 超过 24 小时则必定触发。
  */
 export function shouldRefreshCookie(updatedAt?: string): boolean {
   const hours = hoursSinceLastRefresh(updatedAt)

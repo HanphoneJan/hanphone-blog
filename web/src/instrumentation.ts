@@ -7,8 +7,5 @@ export async function register() {
   // 此条件会被 Turbopack 树摇优化，在 Edge build 中消除本次 import
   if (process.env.NEXT_RUNTIME === 'edge') return
 
-  const { startCookieRefreshScheduler } = await import(
-    '@/lib/netease-cookie/scheduler'
-  )
-  startCookieRefreshScheduler()
+  // 网易云 Cookie 刷新已由外部定时任务接管，不再在进程内启动调度器
 }

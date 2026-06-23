@@ -71,71 +71,47 @@ function renewLock() {
   }
 }
 
-function randomIntervalMs(): number {
-  // 12 ~ 24 小时
-  const hours = 12 + Math.random() * 12
-  return Math.floor(hours * 60 * 60 * 1000)
-}
-
-async function tick() {
+/**
+ * 执行一次 Cookie 刷新检查。
+ * 由外部定时任务（如 cron）调用，通过文件锁保证多实例下只有一个执行。
+ *
+ * @returns 刷新结果，包含是否成功、是否实际刷新、错误信息等
+ */
+export async function runCookieRefreshTick(): Promise<{
+  success: boolean
+  refreshed?: boolean
+  skipped?: boolean
+  error?: string
+}> {
   if (!tryAcquireLock()) {
-    // 当前实例不是调度器，等下一轮再尝试
-    scheduleNext()
-    return
+    return { success: true, skipped: true, error: '另一个实例正在执行刷新' }
   }
 
   try {
     const payload = loadEncryptedCookie()
     if (!payload) {
-      // 没有配置 Cookie，不需要刷新
-      scheduleNext()
-      return
+      return { success: true, skipped: true, error: '未配置 Cookie，无需刷新' }
     }
 
-    if (shouldRefreshCookie(payload.updatedAt)) {
-      const result = await refreshNeteaseCookieAndAlert()
-      if (!result.success) {
-        console.error('[NeteaseCookieScheduler] 自动刷新失败:', result.error)
-      } else if (result.refreshed) {
-        console.log('[NeteaseCookieScheduler] 自动刷新成功:', result.updatedAt)
-      }
+    if (!shouldRefreshCookie(payload.updatedAt)) {
+      return { success: true, skipped: true, error: 'Cookie 尚未到期，无需刷新' }
+    }
+
+    const result = await refreshNeteaseCookieAndAlert()
+    if (!result.success) {
+      console.error('[NeteaseCookieScheduler] 自动刷新失败:', result.error)
+      return { success: false, error: result.error }
+    }
+
+    if (result.refreshed) {
+      console.log('[NeteaseCookieScheduler] 自动刷新成功:', result.updatedAt)
     }
 
     renewLock()
+    return { success: true, refreshed: result.refreshed }
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     console.error('[NeteaseCookieScheduler] tick 异常:', err)
+    return { success: false, error: message }
   }
-
-  scheduleNext()
-}
-
-function scheduleNext(delayMs?: number) {
-  const delay = delayMs ?? randomIntervalMs()
-  setTimeout(() => {
-    tick().catch(err => console.error('[NeteaseCookieScheduler] tick 未捕获异常:', err))
-  }, delay)
-}
-
-/**
- * 启动进程内 Cookie 刷新调度器。
- *
- * - 只在生产环境服务端启动
- * - 多实例通过文件锁保证只有一个实例实际执行刷新
- * - 刷新间隔 12~24 小时随机
- * - 刷新失败会自动发送管理员告警邮件
- */
-export function startCookieRefreshScheduler() {
-  // 只在服务端、生产环境、非构建阶段运行
-  if (typeof window !== 'undefined') return
-  if (process.env.NODE_ENV !== 'production') return
-  if (process.env.NEXT_PHASE === 'phase-production-build') return
-  if (!process.env.NETEASE_COOKIE_KEY) return
-
-  // 第一次：如果 Cookie 已经到期，立即尝试刷新；否则随机等待
-  const payload = loadEncryptedCookie()
-  const firstDelay =
-    payload && shouldRefreshCookie(payload.updatedAt) ? 0 : randomIntervalMs()
-
-  scheduleNext(firstDelay)
-  console.log('[NeteaseCookieScheduler] 调度器已启动，首次执行延迟:', firstDelay, 'ms')
 }
