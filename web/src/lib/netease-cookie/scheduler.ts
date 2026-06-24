@@ -8,8 +8,8 @@ import { loadEncryptedCookie } from './crypto'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 const LOCK_FILE = path.join(DATA_DIR, 'netease-cookie-scheduler.lock')
-// 锁有效期：如果持有进程 30 分钟内没有续约，视为已死，其他进程可抢占
-const LOCK_TTL_MS = 30 * 60 * 1000
+// 锁有效期：如果持有进程 5 分钟内没有续约，视为已死，其他进程可抢占
+const LOCK_TTL_MS = 5 * 60 * 1000
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -31,15 +31,31 @@ function isLockValid(lock: { updatedAt: string }): boolean {
   return Date.now() - updated < LOCK_TTL_MS
 }
 
+function deleteLock() {
+  try {
+    if (fs.existsSync(LOCK_FILE)) {
+      fs.unlinkSync(LOCK_FILE)
+    }
+  } catch (err) {
+    console.error('[NeteaseCookieScheduler] 删除锁失败:', err)
+  }
+}
+
 /**
  * 尝试原子性地获取调度器锁。
  * 使用 wx 标志：如果锁文件已存在则创建失败，避免多实例并发抢占。
+ * 如果锁已过期，会先删除过期锁再尝试获取。
  */
 function tryAcquireLock(): boolean {
   ensureDataDir()
   const existing = readLock()
   if (existing && isLockValid(existing)) {
     return false
+  }
+
+  // 锁已过期，删除后再尝试获取
+  if (existing && !isLockValid(existing)) {
+    deleteLock()
   }
 
   try {
@@ -113,5 +129,8 @@ export async function runCookieRefreshTick(): Promise<{
     const message = err instanceof Error ? err.message : String(err)
     console.error('[NeteaseCookieScheduler] tick 异常:', err)
     return { success: false, error: message }
+  } finally {
+    // 无论成功或失败，刷新完成后都删除锁，避免锁永久残留
+    deleteLock()
   }
 }
