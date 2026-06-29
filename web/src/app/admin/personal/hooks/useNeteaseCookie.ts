@@ -3,11 +3,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import apiClient from '@/lib/utils'
 
+interface RefreshLog {
+  timestamp: string
+  success: boolean
+  refreshed?: boolean
+  error?: string
+}
+
 interface CookieStatus {
   configured: boolean
   updatedAt?: string
   hoursSinceLastRefresh?: number | null
   needsRefresh?: boolean
+  lastRefresh?: RefreshLog | null
 }
 
 export function useNeteaseCookie() {

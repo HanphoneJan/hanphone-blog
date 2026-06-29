@@ -12,6 +12,7 @@ import {
   refreshNeteaseCookieAndAlert,
   shouldRefreshCookie,
 } from '@/lib/netease-cookie/refresh'
+import { readLastRefreshLog } from '@/lib/netease-cookie/scheduler'
 
 export const runtime = 'nodejs'
 
@@ -49,12 +50,14 @@ export async function GET(request: NextRequest) {
   }
 
   const hours = hoursSinceLastRefresh(payload.updatedAt)
+  const lastLog = readLastRefreshLog()
 
   return NextResponse.json({
     configured: true,
     updatedAt: payload.updatedAt,
     hoursSinceLastRefresh: hours,
     needsRefresh: shouldRefreshCookie(payload.updatedAt),
+    lastRefresh: lastLog,
   })
 }
 
