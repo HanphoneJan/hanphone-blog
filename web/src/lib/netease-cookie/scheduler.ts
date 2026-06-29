@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import {
   refreshNeteaseCookieAndAlert,
   shouldRefreshCookie,
@@ -6,6 +8,71 @@ import { loadEncryptedCookie } from './crypto'
 
 // 冷却期：1 分钟，防止并发时重复刷新
 const COOLDOWN_MS = 60 * 1000
+
+const DATA_DIR = path.join(process.cwd(), 'data')
+const LOG_FILE = path.join(DATA_DIR, 'netease-cookie-refresh.log')
+const MAX_LOG_LINES = 1000
+
+interface RefreshLog {
+  timestamp: string
+  success: boolean
+  refreshed?: boolean
+  error?: string
+}
+
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 })
+  }
+}
+
+export function writeRefreshLog(log: RefreshLog) {
+  try {
+    ensureDataDir()
+    const entry = JSON.stringify(log) + '\n'
+    fs.appendFileSync(LOG_FILE, entry, { mode: 0o600 })
+    
+    // 清理旧日志：保持最多 1000 行
+    cleanupOldLogs()
+  } catch (err) {
+    console.error('[NeteaseCookieScheduler] 写入日志失败:', err)
+  }
+}
+
+function cleanupOldLogs() {
+  try {
+    if (!fs.existsSync(LOG_FILE)) return
+    
+    const stats = fs.statSync(LOG_FILE)
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    
+    // 如果文件超过一周，或行数超过 1000 行，进行清理
+    if (stats.mtimeMs < oneWeekAgo || stats.size > 1024 * 1024) {
+      const raw = fs.readFileSync(LOG_FILE, 'utf8')
+      const lines = raw.trim().split('\n').filter(Boolean)
+      
+      if (lines.length > MAX_LOG_LINES) {
+        // 保留最后 1000 行
+        const keepLines = lines.slice(-MAX_LOG_LINES)
+        fs.writeFileSync(LOG_FILE, keepLines.join('\n') + '\n', { mode: 0o600 })
+      }
+    }
+  } catch (err) {
+    console.error('[NeteaseCookieScheduler] 清理日志失败:', err)
+  }
+}
+
+export function readLastRefreshLog(): RefreshLog | null {
+  try {
+    if (!fs.existsSync(LOG_FILE)) return null
+    const raw = fs.readFileSync(LOG_FILE, 'utf8')
+    const lines = raw.trim().split('\n').filter(Boolean)
+    if (lines.length === 0) return null
+    return JSON.parse(lines[lines.length - 1]) as RefreshLog
+  } catch {
+    return null
+  }
+}
 
 function isInCooldown(updatedAt: string): boolean {
   const lastRun = new Date(updatedAt).getTime()

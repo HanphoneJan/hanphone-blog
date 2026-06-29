@@ -215,6 +215,25 @@ export function BasicInfoTab({
                               Cookie 已超过建议刷新时间，建议手动刷新
                             </p>
                           )}
+                          {status.lastRefresh && (
+                            <div className="mt-1 pt-1 border-t border-[rgb(var(--border))]/30">
+                              <p className="text-[rgb(var(--text-muted))]">
+                                自动刷新记录：
+                                {status.lastRefresh.success ? (
+                                  <span className="text-green-500">
+                                    {status.lastRefresh.refreshed ? '成功刷新' : '无需更新'}
+                                  </span>
+                                ) : (
+                                  <span className="text-red-500">
+                                    失败{status.lastRefresh.error ? ` (${status.lastRefresh.error})` : ''}
+                                  </span>
+                                )}
+                                <span className="text-[rgb(var(--text-muted))]/60 ml-1">
+                                  {new Date(status.lastRefresh.timestamp).toLocaleString()}
+                                </span>
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                       {cookieError && (

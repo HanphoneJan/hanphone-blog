@@ -8,6 +8,7 @@ import {
 } from './crypto'
 
 import { sendRefreshFailureAlert } from './alert'
+import { writeRefreshLog } from './scheduler'
 
 const COOKIE_KEY = process.env.NETEASE_COOKIE_KEY
 
@@ -140,6 +141,17 @@ export async function refreshNeteaseCookieAndAlert(): Promise<RefreshResult> {
   const result = await refreshNeteaseCookie()
   if (!result.success) {
     await sendRefreshFailureAlert(result.error || '未知错误')
+    writeRefreshLog({
+      timestamp: new Date().toISOString(),
+      success: false,
+      error: result.error,
+    })
+  } else {
+    writeRefreshLog({
+      timestamp: new Date().toISOString(),
+      success: true,
+      refreshed: result.refreshed,
+    })
   }
   return result
 }
