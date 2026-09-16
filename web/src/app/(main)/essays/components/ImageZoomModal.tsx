@@ -37,8 +37,7 @@ export function ImageZoomModal({ visible, url, type, onClose }: ImageZoomModalPr
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 720px"
             width={1200}
             height={800}
-            priority={true}
-            loading="eager"
+            loading="lazy"
             className="max-w-full max-h-[90vh] object-contain"
           />
         </div>
