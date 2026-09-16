@@ -15,13 +15,11 @@ const withSerwist = withSerwistInit({
   additionalPrecacheEntries: [{ url: '/offline', revision }]
 })
 
-// 从环境变量读取文件服务域名，默认为 hanphone.top
-const fileDomain = process.env.NEXT_PUBLIC_FILE_DOMAIN || 'hanphone.top'
-
 const isStaticExport = process.env.STATIC_EXPORT === 'true'
 
 const nextConfig: NextConfig = {
   trailingSlash: true,
+  poweredByHeader: false,
   // 静态导出配置（Tauri / GitHub Pages 使用）
   ...(isStaticExport && {
     output: 'export',
@@ -31,26 +29,6 @@ const nextConfig: NextConfig = {
   }),
   images: {
     unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: fileDomain,
-        port: '',
-        pathname: '/**'
-      },
-      {
-        protocol: 'http',
-        hostname: fileDomain,
-        port: '',
-        pathname: '/**'
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.jsdelivr.net',
-        port: '',
-        pathname: '/**'
-      }
-    ]
   },
   eslint: {
     ignoreDuringBuilds: true
