@@ -89,8 +89,8 @@ export function endGate(): void {
 export function startInitialGate(): void {
   if (gateActive) return
   beginGate()
-  void settleFonts(2500).finally(() => endGate())
-  window.setTimeout(() => endGate(), 4000)
+  void settleFonts(600).finally(() => endGate())
+  window.setTimeout(() => endGate(), 1200)
 }
 
 if (typeof window !== 'undefined') {
