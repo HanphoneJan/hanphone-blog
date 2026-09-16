@@ -35,9 +35,13 @@ export function BlogCard({ blog, index = 0 }: BlogCardProps) {
           {/* 图片区 */}
           <div className="sm:w-[240px] flex-shrink-0">
             <div className="img-zoom-container relative h-[180px] sm:h-full w-full">
-              <div
-                className="img-bg absolute inset-0"
-                style={{ backgroundImage: `url(${blog.firstPicture || blog.type?.pic_url})` }}
+              <Image
+                src={blog.firstPicture || blog.type?.pic_url || ASSETS.DEFAULT_AVATAR}
+                alt={blog.title}
+                fill
+                sizes="(max-width: 640px) 100vw, 240px"
+                loading="lazy"
+                className="img-bg object-cover"
               />
               {/* 推荐标记 */}
               {blog.recommend && (
