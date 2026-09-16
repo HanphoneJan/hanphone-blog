@@ -11,6 +11,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,7 @@ public class TagServiceImpl implements TagService {
         }
     }
 
+    @CacheEvict(value = {"tags", "tagsTop"}, allEntries = true)
     @Transactional
     @Override
     public Tag saveTag(Tag tag) {
@@ -81,6 +84,7 @@ public class TagServiceImpl implements TagService {
         }
     }
 
+    @Cacheable("tags")
     @Override
     public List<Tag> listTag() {
         try {
@@ -106,6 +110,7 @@ public class TagServiceImpl implements TagService {
         }
     }
 
+    @Cacheable("tagsTop")
     @Override
     public List<Tag> listTagTop(Integer size) {
         try {
@@ -186,6 +191,7 @@ public class TagServiceImpl implements TagService {
         }
     }
 
+    @CacheEvict(value = {"tags", "tagsTop"}, allEntries = true)
     @Transactional
     @Override
     public Tag updateTag(Long id, Tag tag) {
@@ -210,6 +216,7 @@ public class TagServiceImpl implements TagService {
         }
     }
 
+    @CacheEvict(value = {"tags", "tagsTop"}, allEntries = true)
     @Transactional
     @Override
     public void deleteTag(Long id) {

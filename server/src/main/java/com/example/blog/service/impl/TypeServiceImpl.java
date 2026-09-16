@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -23,6 +25,7 @@ public class TypeServiceImpl implements TypeService {
         this.typeRepository = typeRepository;
     }
 
+    @CacheEvict(value = {"types", "typesTop"}, allEntries = true)
     @Transactional
     @Override
     public Type saveType(Type type) {
@@ -48,12 +51,14 @@ public class TypeServiceImpl implements TypeService {
         return typeRepository.findAll(pageable);
     }
 
+    @Cacheable("types")
     @Override
     public List<Type> listType() {
         List<Type> types = typeRepository.findAll();
         return getTypes(types);
     }
 
+    @Cacheable("typesTop")
     @Override
     public List<Type> listTypeTop(Integer size) {
         Pageable pageable = PageRequest.of(0, size);
@@ -79,6 +84,7 @@ public class TypeServiceImpl implements TypeService {
         return typeRepository.findByNameExceptSelf(id, name);
     }
 
+    @CacheEvict(value = {"types", "typesTop"}, allEntries = true)
     @Transactional
     @Override
     public Type updateType(Long id, Type type) {
@@ -87,6 +93,7 @@ public class TypeServiceImpl implements TypeService {
         return typeRepository.save(t);
     }
 
+    @CacheEvict(value = {"types", "typesTop"}, allEntries = true)
     @Transactional
     @Override
     public void deleteType(Long id) {
