@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeProvider'
-import MDEditor from '@uiw/react-md-editor'
+import dynamic from 'next/dynamic'
 import '@uiw/react-md-editor/markdown-editor.css'
 import Image from 'next/image'
 import Compressor from 'compressorjs' // 引入compressor.js
@@ -32,6 +32,9 @@ import {
   RotateCcw, // 重置图标
   Send
 } from 'lucide-react'
+
+// MD 编辑器懒加载，避免进后台首屏 chunk
+const MDEditor = dynamic(() => import('@uiw/react-md-editor').then((m) => m.default), { ssr: false })
 
 interface UserInfo {
   avatar?: string
