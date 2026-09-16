@@ -29,13 +29,15 @@ const Live2DWidget = () => {
 
   // 首屏渲染完成、浏览器空闲后再加载 Live2D
   useEffect(() => {
-    const id = 'requestIdleCallback' in window
-      ? (window as any).requestIdleCallback(() => setReady(true), { timeout: 3000 })
-      : window.setTimeout(() => setReady(true), 2000)
-    return () => {
-      if (id && typeof id !== 'number' && typeof id.cancel === 'function') id.cancel()
-      else if (typeof id === 'number') window.clearTimeout(id)
+    let cancel: () => void
+    if ('requestIdleCallback' in window) {
+      const handle = (window as any).requestIdleCallback(() => setReady(true), { timeout: 3000 })
+      cancel = () => (window as any).cancelIdleCallback?.(handle)
+    } else {
+      const handle = window.setTimeout(() => setReady(true), 2000)
+      cancel = () => window.clearTimeout(handle)
     }
+    return () => cancel()
   }, [])
 
   // 滚动到 hero 区域时隐藏 widget

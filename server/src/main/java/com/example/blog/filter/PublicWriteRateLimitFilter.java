@@ -56,6 +56,7 @@ public class PublicWriteRateLimitFilter extends OncePerRequestFilter {
                 response.setStatus(429);
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write("{\"flag\":false,\"code\":429,\"message\":\"操作过于频繁，请稍后再试\"}");
+                response.getWriter().flush();
                 return;
             }
         } catch (Exception e) {
