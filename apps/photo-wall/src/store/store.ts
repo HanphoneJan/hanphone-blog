@@ -5,11 +5,9 @@ export const useUserStore = defineStore('user', {
     // 处理 token 可能存在的多余双引号
     const rawToken = localStorage.getItem('token');
     let token = rawToken;
-    console.log('原始token:', rawToken);
     if (token) {
       // 移除首尾可能存在的双引号（包括普通双引号和可能的全角双引号）
       token = token.replace(/^["“](.*)["”]$/, '$1').trim();
-      console.log('处理后的token:', token);
     }
 
     // 解析用户信息逻辑保持不变

@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ArrowUpBold } from '@element-plus/icons-vue';
 import { useUserStore } from '../store/store';
 import NavBar from "../components/layout/NavBar.vue";
 
@@ -109,9 +110,14 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-.el-icon-arrow-up {
-  color: #ccc;
-  font-size: 40px;
+/* 箭头图标：明确颜色与大小，避免与圆形背景同色不可见 */
+#back-top :deep(.el-icon) {
+  color: #606266;
+  font-size: 26px;
+}
+
+.dark #back-top :deep(.el-icon) {
+  color: #e5e7eb;
 }
 
 /* 渐隐渐现过渡效果 */

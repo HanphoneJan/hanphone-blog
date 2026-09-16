@@ -392,6 +392,19 @@
               </div>
             </div>
             
+            <div class="form-group">
+              <label>拍摄时间</label>
+              <el-date-picker
+                v-model="editForm.taken_time"
+                type="datetime"
+                value-format="YYYY-MM-DDTHH:mm:ss"
+                placeholder="选择拍摄时间（留空则视为无）"
+                clearable
+                style="width: 100%"
+                @change="saveField('taken_time')"
+              />
+            </div>
+
             <!-- 管理员专用 -->
             <div v-if="userStore.isAdmin" class="form-group admin-only">
               <label>审核状态</label>
@@ -411,6 +424,10 @@
             <div class="meta-item">
               <span class="meta-label">上传时间</span>
               <span class="meta-value">{{ formatDateTime(selectedPhoto.upload_time) }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">拍摄时间</span>
+              <span class="meta-value">{{ selectedPhoto.taken_time || '-' }}</span>
             </div>
             <div class="meta-item">
               <span class="meta-label">点赞数</span>
@@ -594,6 +611,14 @@
                   :rows="2"
                   placeholder="描述..."
                 />
+                <el-date-picker
+                  v-model="file.takenTime"
+                  type="datetime"
+                  size="small"
+                  value-format="YYYY-MM-DDTHH:mm:ss"
+                  placeholder="拍摄时间（自动读取）"
+                  style="width: 100%"
+                />
               </div>
             </div>
           </div>
@@ -681,6 +706,7 @@ import { ENDPOINTS } from '@/api/api';
 import { useUserStore } from '@/store/store';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import api from '@/api/interceptor';
+import { parse as exifrParse } from 'exifr';
 import { 
   Picture, Plus, Edit, Delete, Search, Close, Check, 
   Grid, List, Sort, InfoFilled, Star, Upload, User,
@@ -703,6 +729,7 @@ interface Photo {
   likes: number;
   type: number;
   upload_time: string;
+  taken_time?: string;
   tags: Tag[];
   userId: number;
   username?: string;
@@ -1100,6 +1127,31 @@ const triggerFileInput = () => {
   fileInputRef.value?.click();
 };
 
+// 本地时区 ISO 串（与 el-date-picker value-format 一致，避免时区偏差）
+const toLocalIso = (d: Date) => {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+
+// 读取文件 EXIF 拍摄时间，按优先级回退；失败返回 null
+const readTakenTime = async (file: File): Promise<string | null> => {
+  try {
+    const tags = await exifrParse(file, {
+      pick: ['DateTimeOriginal', 'CreateDate', 'ModifyDate', 'GPSDateStamp', 'GPSTimeStamp'],
+      gps: true
+    });
+    const gps = tags?.GPSDateStamp && tags?.GPSTimeStamp
+      ? `${String(tags.GPSDateStamp).replace(/:/g, '-')}T${String(tags.GPSTimeStamp)}`
+      : null;
+    const candidate = tags?.DateTimeOriginal || tags?.CreateDate || gps || tags?.ModifyDate;
+    if (!candidate) return null;
+    const d = new Date(candidate);
+    return isNaN(d.getTime()) ? null : toLocalIso(d);
+  } catch (e) {
+    return null;
+  }
+};
+
 const handleFileSelect = (event: Event) => {
   const input = event.target as HTMLInputElement;
   if (input.files) {
@@ -1111,9 +1163,11 @@ const handleFileSelect = (event: Event) => {
         url: URL.createObjectURL(file),
         preview: URL.createObjectURL(file),
         customTitle: '',
-        customDescription: ''
+        customDescription: '',
+        takenTime: '' as string
       };
       uploadFiles.value.push(uploadFile);
+      readTakenTime(file).then((t) => { if (t && !uploadFile.takenTime) uploadFile.takenTime = t; });
     });
   }
   // 重置 input 以便可以再次选择相同文件
@@ -1133,9 +1187,11 @@ const handleFileDrop = (event: DragEvent) => {
         url: URL.createObjectURL(file),
         preview: URL.createObjectURL(file),
         customTitle: '',
-        customDescription: ''
+        customDescription: '',
+        takenTime: '' as string
       };
       uploadFiles.value.push(uploadFile);
+      readTakenTime(file).then((t) => { if (t && !uploadFile.takenTime) uploadFile.takenTime = t; });
     });
   }
 };
@@ -1227,7 +1283,8 @@ const startUpload = async () => {
         description: file.customDescription || batchUploadForm.value.description || '无',
         userId: userStore.userId,
         urls: [urls[i]],
-        tags: batchUploadForm.value.tags
+        tags: batchUploadForm.value.tags,
+        takenTime: file.takenTime || null
       };
       
       await api.post(ENDPOINTS.UPLOAD, data);

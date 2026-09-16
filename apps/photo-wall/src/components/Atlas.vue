@@ -21,6 +21,7 @@
 
   <!-- 瀑布流布局 -->
   <div v-if="viewMode === 'masonry'" class="atlas-container" id="atlas-container">
+    <div v-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
     <div class="masonry-columns">
       <div
         v-for="item in filteredAtlasData"
@@ -33,8 +34,24 @@
               :src="item.path"
               class="image"
               lazy
-              ref="imageRef"
-            />
+              :preview-src-list="previewList"
+              :initial-index="itemIndex(item)"
+              :preview-teleported="true"
+              hide-on-click-modal
+              :ref="(el: any) => setImageRef(item.id, el)"
+            >
+              <template #placeholder>
+                <div class="image-placeholder">
+                  <el-icon class="is-loading"><Loading /></el-icon>
+                </div>
+              </template>
+              <template #error>
+                <div class="image-error">
+                  <el-icon><Picture /></el-icon>
+                  <span>加载失败</span>
+                </div>
+              </template>
+            </el-image>
             <div class="photo-overlay">
               <div class="photo-info-overlay">
                 <div class="title-author-row">
@@ -55,7 +72,7 @@
                     </el-tag>
                   </div>
                   <div class="photo-actions">
-                    <el-icon class="action-icon" @click="zoomImage(item)">
+                    <el-icon class="action-icon" @click="openPreview(item)">
                       <ZoomIn :style="{ color: 'white' }" />
                     </el-icon>
                     <el-icon class="action-icon" @click="downloadImage(item)">
@@ -77,7 +94,7 @@
   </div>
 
   <!-- 野兽派便利贴布局 -->
-  <div v-else class="brutalist-container">
+  <div v-else-if="viewMode === 'brutalist'" class="brutalist-container">
     <!-- 网格背景 -->
     <div class="grid-background"></div>
     
@@ -90,6 +107,7 @@
     <div class="geo-element geo-6"></div>
     
     <!-- 便利贴区域 -->
+    <div v-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
     <div class="sticky-notes-area">
       <div
         v-for="(item, index) in filteredAtlasData"
@@ -107,15 +125,31 @@
             :src="item.path"
             class="note-image"
             lazy
-            @click="zoomImage(item)"
-          />
+            :preview-src-list="previewList"
+            :initial-index="itemIndex(item)"
+            :preview-teleported="true"
+            hide-on-click-modal
+            :ref="(el: any) => setImageRef(item.id, el)"
+          >
+            <template #placeholder>
+              <div class="image-placeholder">
+                <el-icon class="is-loading"><Loading /></el-icon>
+              </div>
+            </template>
+            <template #error>
+              <div class="image-error">
+                <el-icon><Picture /></el-icon>
+                <span>加载失败</span>
+              </div>
+            </template>
+          </el-image>
         </div>
         
         <!-- 内容区 -->
         <div class="note-content">
           <div class="note-header">
             <span class="note-number">{{ String(index + 1).padStart(3, '0') }}</span>
-            <span class="note-date">{{ formatDate(item.upload_time) }}</span>
+            <span class="note-date">{{ formatTakenDate(item) }}</span>
           </div>
           
           <h3 class="note-title">{{ item.title }}</h3>
@@ -135,7 +169,7 @@
         
         <!-- 操作按钮 -->
         <div class="note-actions">
-          <button class="brutalist-btn small" @click="zoomImage(item)">
+          <button class="brutalist-btn small" @click="openPreview(item)">
             <el-icon><ZoomIn /></el-icon>
           </button>
           <button class="brutalist-btn small" @click="downloadImage(item)">
@@ -159,6 +193,65 @@
     <div class="corner-mark bl">+</div>
     <div class="corner-mark br">+</div>
   </div>
+
+  <!-- 时间线布局 -->
+  <div v-else class="timeline-container">
+    <div v-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
+    <div class="timeline">
+      <template v-for="group in timelineGroups" :key="group.year">
+        <div class="timeline-year">
+          <span class="timeline-year-label">{{ group.year === '0' ? '未知年份' : group.year }}</span>
+        </div>
+        <div v-for="item in group.items" :key="item.id" class="timeline-item">
+          <div class="timeline-marker"></div>
+          <div class="timeline-card">
+            <div class="timeline-photo">
+              <el-image
+                :src="item.path"
+                class="timeline-image"
+                lazy
+                :preview-src-list="previewList"
+                :initial-index="itemIndex(item)"
+                :preview-teleported="true"
+                hide-on-click-modal
+                :ref="(el: any) => setImageRef(item.id, el)"
+              >
+                <template #placeholder>
+                  <div class="image-placeholder"><el-icon class="is-loading"><Loading /></el-icon></div>
+                </template>
+                <template #error>
+                  <div class="image-error"><el-icon><Picture /></el-icon><span>加载失败</span></div>
+                </template>
+              </el-image>
+            </div>
+            <div class="timeline-info">
+              <div class="timeline-title">{{ item.title }}</div>
+              <div class="timeline-meta">@{{ item.author }} · {{ formatTakenDate(item) }}</div>
+              <div class="timeline-tags" v-if="item.tags && item.tags.length">
+                <span v-for="tag in item.tags.slice(0, 3)" :key="tag.id" class="note-tag">{{ tag.name }}</span>
+              </div>
+              <div class="timeline-actions">
+                <button class="brutalist-btn small" @click="openPreview(item)">
+                  <el-icon><ZoomIn /></el-icon>
+                </button>
+                <button class="brutalist-btn small" @click="downloadImage(item)">
+                  <el-icon><Download /></el-icon>
+                </button>
+                <button
+                  class="brutalist-btn small like-btn"
+                  :class="{ 'is-liked': item.isLiked }"
+                  @click.stop="handleLikes(item, $event)"
+                >
+                  <el-icon><StarFilled v-if="item.isLiked" /><Star v-else /></el-icon>
+                  <span class="like-count">{{ item.likes }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -168,7 +261,7 @@ import { ElMessage } from 'element-plus';
 import api from '@/api/interceptor';
 import { ENDPOINTS } from '@/api/api';
 import { useUserStore } from '@/store/store';
-import { ArrowRightBold, Star, StarFilled, ZoomIn, Download } from '@element-plus/icons-vue';
+import { ArrowRightBold, Star, StarFilled, ZoomIn, Download, Loading, Picture } from '@element-plus/icons-vue';
 
 interface Tag {
   id: number | null;
@@ -184,10 +277,13 @@ interface AtlasItem {
   likes: number;
   type: number;
   upload_time: string;
+  taken_time?: string;
   isLiked: boolean;
   tags: Tag[];
   username: string;
 }
+
+type SortMode = 'hot' | 'likes' | 'upload_desc' | 'upload_asc' | 'taken_desc';
 
 const route = useRoute();
 const router = useRouter();
@@ -195,16 +291,22 @@ const userStore = useUserStore();
 
 const tagsList = ref<Tag[]>([]);
 const atlasData = ref<AtlasItem[]>([]);
-const sortedAtlasData = ref<AtlasItem[]>([]);
 const selectedTags = ref<number[]>([]);
 const showWelcome = ref(true);
-const imageRefs = ref<(HTMLElement | null)[]>([]);
+const imageRefMap = new Map<number, any>();
 let timerId: ReturnType<typeof setTimeout> | undefined = undefined;
 const intro = ref('生活の瞬間を捉え、感動を記録する');
 const welcomeTitle = ref('寒楓のフォトギャラリー');
 
-// 视图模式：masonry(瀑布流) | brutalist(野兽派便利贴)
-const viewMode = ref<'masonry' | 'brutalist'>('brutalist');
+// 视图模式：masonry(瀑布流) | brutalist(野兽派便利贴) | timeline(时间线)
+const viewMode = ref<'masonry' | 'brutalist' | 'timeline'>('brutalist');
+
+// 排序模式：hot(综合热度) | likes | upload_desc | upload_asc | taken_desc
+const sortMode = ref<SortMode>('hot');
+
+// 综合热度算法常量（调参只改这里）
+const HOT_POW = 1.5;      // 时间衰减指数，越大旧照片掉得越快
+const HOT_SMOOTH = 2;     // 小时平滑项，避免除零
 
 // 便利贴颜色配置
 const noteColors = [
@@ -224,26 +326,46 @@ onMounted(async () => {
   
   getTag();
   atlasShow();
-  startReadTimeout();
+  
+  // 本次会话已看过欢迎页则直接跳过
+  const hasSeenWelcome = sessionStorage.getItem('atlasWelcomeShown') === '1';
+  if (hasSeenWelcome) {
+    showWelcome.value = false;
+  } else {
+    startReadTimeout();
+  }
   
   // 从 localStorage 读取视图模式
-  const savedMode = localStorage.getItem('atlasViewMode') as 'masonry' | 'brutalist';
+  const savedMode = localStorage.getItem('atlasViewMode') as 'masonry' | 'brutalist' | 'timeline';
   if (savedMode) {
     viewMode.value = savedMode;
   }
-  
-  // 监听视图切换事件
+
+  // 从 localStorage 读取排序模式
+  const savedSort = localStorage.getItem('atlasSortMode') as SortMode | null;
+  if (savedSort) {
+    sortMode.value = savedSort;
+  }
+
+  // 监听视图/排序切换事件
   window.addEventListener('atlas-view-mode-change', handleViewModeChange as EventListener);
+  window.addEventListener('atlas-sort-change', handleSortChange as EventListener);
 });
 
 onUnmounted(() => {
   // 移除事件监听
   window.removeEventListener('atlas-view-mode-change', handleViewModeChange as EventListener);
+  window.removeEventListener('atlas-sort-change', handleSortChange as EventListener);
 });
 
 // 处理视图切换事件
 const handleViewModeChange = (event: CustomEvent) => {
   viewMode.value = event.detail;
+};
+
+// 处理排序切换事件
+const handleSortChange = (event: CustomEvent) => {
+  sortMode.value = event.detail as SortMode;
 };
 
 watch(() => route.query.tags, (newTags) => {
@@ -253,6 +375,44 @@ watch(() => route.query.tags, (newTags) => {
     selectedTags.value = [];
   }
 }, { immediate: true });
+
+// 生效时间：优先拍摄时间，否则上传时间
+const effectiveTime = (item: AtlasItem) => {
+  const d = new Date(item.taken_time || item.upload_time).getTime();
+  return isNaN(d) ? 0 : d;
+};
+
+// Hacker News 风格综合热度
+const hotScore = (item: AtlasItem) => {
+  const t = effectiveTime(item);
+  if (!t) return 0;
+  const hours = Math.max(0, (Date.now() - t) / 3600000);
+  return Math.log(item.likes + 2) / Math.pow(hours + HOT_SMOOTH, HOT_POW);
+};
+
+// 按当前排序模式排序
+const sortedAtlasData = computed(() => {
+  const arr = [...atlasData.value];
+  switch (sortMode.value) {
+    case 'likes':
+      arr.sort((a, b) => b.likes - a.likes);
+      break;
+    case 'upload_desc':
+      arr.sort((a, b) => new Date(b.upload_time).getTime() - new Date(a.upload_time).getTime());
+      break;
+    case 'upload_asc':
+      arr.sort((a, b) => new Date(a.upload_time).getTime() - new Date(b.upload_time).getTime());
+      break;
+    case 'taken_desc':
+      arr.sort((a, b) => effectiveTime(b) - effectiveTime(a));
+      break;
+    case 'hot':
+    default:
+      arr.sort((a, b) => hotScore(b) - hotScore(a));
+      break;
+  }
+  return arr;
+});
 
 const filteredAtlasData = computed(() => {
   const rawSelectedTags = selectedTags.value.map(id => Number(id));
@@ -268,7 +428,28 @@ const filteredAtlasData = computed(() => {
   return result;
 });
 
+// 时间线分组：按年份聚合，年份降序（无效日期归入"未知年份"并排最后），组内保持当前排序
+const timelineGroups = computed(() => {
+  const groups: { year: string; items: AtlasItem[] }[] = [];
+  for (const item of filteredAtlasData.value) {
+    const d = new Date(item.taken_time || item.upload_time);
+    const year = isNaN(d.getTime()) ? '0' : String(d.getFullYear());
+    let g = groups.find((x) => x.year === year);
+    if (!g) {
+      g = { year, items: [] };
+      groups.push(g);
+    }
+    g.items.push(item);
+  }
+  return groups.sort((a, b) => {
+    const na = a.year === '0' ? -1 : Number(a.year);
+    const nb = b.year === '0' ? -1 : Number(b.year);
+    return nb - na;
+  });
+});
+
 const startRead = () => {
+  sessionStorage.setItem('atlasWelcomeShown', '1');
   showWelcome.value = false;
 };
 
@@ -291,7 +472,6 @@ const atlasShow = async () => {
         ...item,
         isLiked: item.isLiked ?? false
       }));
-      sortedAtlasData.value = [...atlasData.value].sort((b, a) => a.likes - b.likes);
     }
   } catch (error: any) {
     console.error('获取图集数据失败：', error.message);
@@ -309,8 +489,14 @@ const getTag = async () => {
   }
 };
 
+// 点赞请求中的照片id，防止连点竞态
+const likingIds = new Set<number>();
+
 const handleLikes = async (item: AtlasItem, event: Event) => {
   event.stopPropagation();
+  
+  // 该照片请求进行中时忽略重复点击
+  if (likingIds.has(item.id)) return;
   
   // 检查是否登录
   if (!userStore.isLoggedIn) {
@@ -318,11 +504,11 @@ const handleLikes = async (item: AtlasItem, event: Event) => {
     // 保存当前路径，登录后返回
     localStorage.setItem('redirectAfterLogin', route.fullPath);
     // 跳转到登录页
-    const router = useRouter();
     router.push('/login');
     return;
   }
   
+  likingIds.add(item.id);
   try {
     const response = await api.post(ENDPOINTS.LIKES, { id: item.id });
     if (response.data.status === 830) {
@@ -342,53 +528,49 @@ const handleLikes = async (item: AtlasItem, event: Event) => {
       ElMessage.error('登录已过期，请重新登录');
       userStore.logout();
       localStorage.setItem('redirectAfterLogin', route.fullPath);
-      const router = useRouter();
       router.push('/login');
     } else {
       ElMessage.error(error.response?.data?.message || '操作失败');
       console.error('点赞失败:', error.message);
     }
+  } finally {
+    likingIds.delete(item.id);
   }
 };
 
-const zoomImage = (item: AtlasItem) => {
-  const previewContainer = document.createElement('div');
-  previewContainer.style.position = 'fixed';
-  previewContainer.style.top = '0';
-  previewContainer.style.left = '0';
-  previewContainer.style.width = '100%';
-  previewContainer.style.height = '100%';
-  previewContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-  previewContainer.style.display = 'flex';
-  previewContainer.style.justifyContent = 'center';
-  previewContainer.style.alignItems = 'center';
-  previewContainer.style.zIndex = '9999';
-  previewContainer.style.cursor = 'zoom-out';
+// 图片预览：全部图片路径（供 el-image 内置 viewer 使用）
+const previewList = computed(() => filteredAtlasData.value.map(item => item.path));
 
-  const previewImage = document.createElement('img');
-  previewImage.src = item.path;
-  previewImage.style.maxWidth = '90%';
-  previewImage.style.maxHeight = '90%';
-  previewImage.style.objectFit = 'contain';
-  previewImage.style.border = '6px solid #0a0a0a';
-  previewImage.style.boxShadow = '12px 12px 0 rgba(0,0,0,0.5)';
+// 当前图片在预览列表中的下标
+const itemIndex = (item: AtlasItem) => filteredAtlasData.value.indexOf(item);
 
-  previewContainer.appendChild(previewImage);
-  document.body.appendChild(previewContainer);
+// 收集每个 el-image 组件实例，用于程序化打开预览
+const setImageRef = (id: number, el: any) => {
+  if (el) {
+    imageRefMap.set(id, el);
+  } else {
+    imageRefMap.delete(id);
+  }
+};
 
-  previewContainer.addEventListener('click', () => {
-    document.body.removeChild(previewContainer);
-  });
+const openPreview = (item: AtlasItem) => {
+  const el = imageRefMap.get(item.id);
+  if (el && typeof el.showPreview === 'function') {
+    el.showPreview();
+  }
 };
 
 const downloadImage = (item: AtlasItem) => {
   const url = new URL(item.path);
   url.searchParams.append('download', '1');
 
+  const match = url.pathname.match(/\.([a-zA-Z0-9]+)$/);
+  const ext = match ? match[1] : 'jpg';
+
   const link = document.createElement('a');
   link.target = '_blank';
   link.href = url.toString();
-  link.download = `${item.title}_${item.author}.jpg`;
+  link.download = `${item.title}_${item.author}.${ext}`;
   document.body.appendChild(link);
   link.click();
   setTimeout(() => {
@@ -412,9 +594,12 @@ const getNoteStyle = (index: number) => {
   };
 };
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+// 优先显示拍摄时间，无则回退上传时间
+const formatTakenDate = (item: AtlasItem) => {
+  const s = item.taken_time || item.upload_time;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 };
 
 // 切换视图模式
@@ -617,6 +802,17 @@ watchEffect(() => {
   font-size: 0;
 }
 
+.atlas-empty {
+  position: relative;
+  z-index: 1;
+  padding: 80px 20px;
+  text-align: center;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #6c757d;
+  font-family: "Noto Serif SC", "Songti SC", SimSun, "STSong", "Times New Roman", serif;
+}
+
 .photo-card {
   border-radius: 0;
   overflow: hidden;
@@ -644,6 +840,26 @@ watchEffect(() => {
   height: auto;
   display: block;
   transition: transform 0.3s;
+  cursor: zoom-in;
+}
+
+.image-placeholder,
+.image-error {
+  width: 100%;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #8a8a8a;
+  background-color: #e9e9e9;
+  font-size: 13px;
+}
+
+.note-image-wrapper .image-placeholder,
+.note-image-wrapper .image-error {
+  min-height: 200px;
 }
 
 .photo-card:hover .image {
@@ -1243,6 +1459,157 @@ watchEffect(() => {
   .sticky-note { min-height: 350px; }
   .note-image { height: 150px; }
 }
+
+/* ========== 时间线布局 ========== */
+.timeline-container {
+  min-height: 100vh;
+  width: 100vw;
+  padding: 60px 20px 80px;
+  box-sizing: border-box;
+  position: relative;
+  background: linear-gradient(135deg, #e8e8e8 0%, #d4d4d4 25%, #f0f0f0 50%, #dcdcdc 75%, #e8e8e8 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+.timeline {
+  position: relative;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-left: 40px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, #0a0a0a, rgba(10,10,10,0.15));
+}
+
+.timeline-year {
+  position: relative;
+  margin: 32px 0 20px;
+  font-family: "Noto Serif SC", "Songti SC", SimSun, "STSong", "Times New Roman", serif;
+}
+
+.timeline-year-label {
+  display: inline-block;
+  padding: 6px 18px;
+  background: #0a0a0a;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -40px;
+  top: 24px;
+  width: 16px;
+  height: 16px;
+  background: #ffd93d;
+  border: 3px solid #0a0a0a;
+  transform: rotate(45deg);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.timeline-card {
+  display: flex;
+  gap: 16px;
+  background: #fff;
+  border: 3px solid #0a0a0a;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.15);
+  padding: 14px;
+  transition: all 0.3s ease;
+}
+
+.timeline-card:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.2);
+}
+
+.timeline-photo {
+  flex-shrink: 0;
+  width: 220px;
+}
+
+.timeline-image {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+  border: 2px solid #0a0a0a;
+}
+
+.timeline-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.timeline-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.timeline-meta {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.timeline-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.timeline-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .timeline-container { padding: 40px 10px 60px; }
+  .timeline { padding-left: 30px; }
+  .timeline::before { left: 6px; }
+  .timeline-marker { left: -30px; top: 20px; }
+  .timeline-card { flex-direction: column; }
+  .timeline-photo { width: 100%; }
+  .timeline-image { height: auto; max-height: 260px; }
+}
+
+/* 暗色适配 */
+.dark .timeline-container {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%, #0f0f0f 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+.dark .timeline::before { background: linear-gradient(to bottom, #f5f5f5, rgba(245,245,245,0.15)); }
+.dark .timeline-year-label { background: #f5f5f5; color: #0a0a0a; }
+.dark .timeline-card { background: #1a1a2e; border-color: #f5f5f5; box-shadow: 8px 8px 0 rgba(255,255,255,0.1); }
+.dark .timeline-card:hover { box-shadow: 12px 12px 0 rgba(255,255,255,0.15); }
+.dark .timeline-title { color: #f5f5f5; }
+.dark .timeline-meta { color: rgba(255,255,255,0.65); }
+.dark .timeline-image { border-color: #f5f5f5; }
 
 /* ========== 暗黑模式 ========== */
 .dark {

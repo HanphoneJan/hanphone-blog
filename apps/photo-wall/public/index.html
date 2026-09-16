@@ -10,6 +10,16 @@
   <meta http-equiv="Expires" content="0" />
   <title>寒枫的照片墙</title>
   <link rel="preload" as="image" href="https://hanphone.top/blog/atlas/background.jpeg">
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('theme') === 'dark') {
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body style="margin: 0;">
 <div id="app"></div>

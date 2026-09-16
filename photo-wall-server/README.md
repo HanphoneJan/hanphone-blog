@@ -70,7 +70,8 @@
 3. ❤️ 互动能力：支持点赞与访问统计
 4. 🔐 身份认证：基于 JWT 的登录鉴权与接口拦截
 5. 🛠️ 后台管理：支持图片、标签、用户等后台管理功能
-6. 📚 学习参考：保留 PHP 实现供对照学习（功能较 Node.js 版本滞后）
+6. 🕐 拍摄时间：`atlas_files.taken_time` 列存储照片拍摄时间（EXIF 提取或后台编辑），接口随 `SELECT *` 自动返回
+7. 📚 学习参考：保留 PHP 实现供对照学习（功能较 Node.js 版本滞后）
 
 ## 📂 仓库结构
 
@@ -168,6 +169,12 @@ pnpm start
 
 - 默认端口：`4001`
 - 关键配置：`config/db.js`
+
+### 数据库
+
+照片墙数据表已合并到 **blog 数据库**（`public` schema，完整 schema 见 `server/init.sql`，连接配置见 `config/db.js`）。
+
+`atlas_files.taken_time`（拍摄时间列）已并入 `server/init.sql`，生产环境已应用，无需单独迁移。
 
 ### 方式二：启动 PHP 后端
 
