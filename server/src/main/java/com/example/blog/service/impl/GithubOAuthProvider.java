@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import jakarta.transaction.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.*;
 
 @Component("github")
@@ -43,7 +44,10 @@ public class GithubOAuthProvider implements OAuthProvider {
                                ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.userService = userService;
-        this.restTemplate = restTemplateBuilder.build();
+        this.restTemplate = restTemplateBuilder
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(10))
+                .build();
         this.objectMapper = objectMapper;
     }
 
