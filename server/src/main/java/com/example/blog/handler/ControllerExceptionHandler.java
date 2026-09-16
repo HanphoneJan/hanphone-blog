@@ -7,11 +7,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -76,6 +79,44 @@ public class ControllerExceptionHandler {
         logger.error("RuntimeException! Request URL: {}, Message: {}", request.getRequestURL(), e.getMessage(), e);
         Result<Void> result = new Result<>(false, StatusCode.ERROR, "服务器内部错误", null);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+    }
+
+    /**
+     * 处理缺少必填请求参数 — 400
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleMissingParameter(HttpServletRequest request,
+            MissingServletRequestParameterException e) {
+        logger.warn("Missing parameter! URL: {}, Parameter: {}", request.getRequestURL(), e.getParameterName());
+        Result<Void> result = new Result<>(false, StatusCode.ERROR,
+                "缺少必填参数: " + e.getParameterName(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
+    }
+
+    /**
+     * 处理参数类型不匹配（如路径变量/查询参数类型转换失败）— 400
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleTypeMismatch(HttpServletRequest request,
+            MethodArgumentTypeMismatchException e) {
+        logger.warn("Type mismatch! URL: {}, Parameter: {}", request.getRequestURL(), e.getName());
+        Result<Void> result = new Result<>(false, StatusCode.ERROR,
+                "参数格式错误: " + e.getName(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
+    }
+
+    /**
+     * 处理请求体不可解析（JSON 格式错误等）— 400
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseBody
+    public ResponseEntity<Result<Void>> handleMessageNotReadable(HttpServletRequest request,
+            HttpMessageNotReadableException e) {
+        logger.warn("Message not readable! URL: {}", request.getRequestURL());
+        Result<Void> result = new Result<>(false, StatusCode.ERROR, "请求体格式错误", null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
     }
 
     /**

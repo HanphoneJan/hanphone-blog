@@ -47,7 +47,8 @@ public class PublicWriteRateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             String ip = getClientIp(request);
-            String key = "rl:write:" + ip + ":" + request.getRequestURI();
+            String normalizedUri = request.getRequestURI().replaceAll("/\\d+", "/{id}");
+            String key = "rl:write:" + ip + ":" + normalizedUri;
             Long count = redisTemplate.opsForValue().increment(key);
             if (count != null && count == 1) {
                 redisTemplate.expire(key, Duration.ofMinutes(1));
@@ -67,9 +68,10 @@ public class PublicWriteRateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
+        // 仅信任反向代理（nginx）覆写的 X-Real-IP；X-Forwarded-For 可由客户端伪造
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
         }
         return request.getRemoteAddr();
     }

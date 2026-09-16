@@ -11,7 +11,9 @@ import java.util.Date;
 @Data
 @Entity
 @NoArgsConstructor
-@Table(name = "t_comment")
+@Table(name = "t_comment", indexes = {
+        @Index(name = "idx_comment_create_time", columnList = "create_time")
+})
 @JsonIgnoreProperties(value = {"hibernateLazyInitializer"})
 public class Comment {
 

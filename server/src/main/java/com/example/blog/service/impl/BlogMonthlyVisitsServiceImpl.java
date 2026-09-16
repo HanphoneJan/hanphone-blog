@@ -14,22 +14,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class BlogMonthlyVisitsServiceImpl implements BlogMonthlyVisitsService {
 
     private final BlogMonthlyVisitsRepository blogMonthlyVisitsRepository;
 
+    // 进程内总访问量缓存，避免每次读取都做全表 SUM；-1 表示未初始化
+    private final AtomicLong totalVisitsCache = new AtomicLong(-1);
+
     public BlogMonthlyVisitsServiceImpl(BlogMonthlyVisitsRepository blogMonthlyVisitsRepository) {
         this.blogMonthlyVisitsRepository = Objects.requireNonNull(blogMonthlyVisitsRepository,
                 "blogMonthlyVisitsRepository must not be null");
+    }
+
+    private void invalidateTotalVisitsCache() {
+        totalVisitsCache.set(-1);
     }
 
     @Override
     public BlogMonthlyVisits saveBlogMonthlyVisits(BlogMonthlyVisits blogMonthlyVisits) {
         Objects.requireNonNull(blogMonthlyVisits, "blogMonthlyVisits must not be null");
         try {
-            return blogMonthlyVisitsRepository.save(blogMonthlyVisits);
+            BlogMonthlyVisits saved = blogMonthlyVisitsRepository.save(blogMonthlyVisits);
+            invalidateTotalVisitsCache();
+            return saved;
         } catch (Exception e) {
             throw new RuntimeException("Failed to save BlogMonthlyVisits", e);
         }
@@ -119,7 +129,9 @@ public class BlogMonthlyVisitsServiceImpl implements BlogMonthlyVisitsService {
             original.setYearMonth(blogMonthlyVisits.getYearMonth());
             original.setTotalVisits(blogMonthlyVisits.getTotalVisits());
             original.setRecordUpdateTime(blogMonthlyVisits.getRecordUpdateTime());
-            return blogMonthlyVisitsRepository.save(original);
+            BlogMonthlyVisits saved = blogMonthlyVisitsRepository.save(original);
+            invalidateTotalVisitsCache();
+            return saved;
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
@@ -132,6 +144,7 @@ public class BlogMonthlyVisitsServiceImpl implements BlogMonthlyVisitsService {
         Objects.requireNonNull(id, "id must not be null");
         try {
             blogMonthlyVisitsRepository.deleteById(id);
+            invalidateTotalVisitsCache();
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete BlogMonthlyVisits with id: " + id, e);
         }
@@ -202,10 +215,18 @@ public class BlogMonthlyVisitsServiceImpl implements BlogMonthlyVisitsService {
     @Transactional
     public Long incrementAndGetTotalVisits() {
         try {
-            getOrCreateCurrentMonthRecord(); // 确保当前月记录存在
             String yearMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-            blogMonthlyVisitsRepository.incrementVisits(yearMonth, ZonedDateTime.now());
-            return getTotalVisits();
+            // 单条 upsert 完成建行/自增，避免先查后插竞态与额外往返
+            blogMonthlyVisitsRepository.upsertIncrementVisits(yearMonth, ZonedDateTime.now());
+
+            long cached = totalVisitsCache.get();
+            if (cached < 0) {
+                // 冷启动首次读取：从 DB 聚合一次并缓存，后续直接自增
+                cached = getTotalVisits();
+                totalVisitsCache.set(cached);
+                return cached;
+            }
+            return totalVisitsCache.incrementAndGet();
         } catch (TransactionException e) {
             throw new RuntimeException("Transaction failed while incrementing visits", e);
         } catch (Exception e) {

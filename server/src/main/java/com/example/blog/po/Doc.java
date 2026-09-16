@@ -7,7 +7,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "t_doc")
+@Table(name = "t_doc", indexes = {
+        @Index(name = "idx_doc_published", columnList = "published")
+})
 @JsonIgnoreProperties(value = {"hibernateLazyInitializer"})
 @Data
 public class Doc {

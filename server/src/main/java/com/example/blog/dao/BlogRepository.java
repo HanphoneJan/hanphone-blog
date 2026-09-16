@@ -3,6 +3,8 @@ package com.example.blog.dao;
 import com.example.blog.po.Blog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,6 +16,16 @@ import java.util.List;
 
 @Repository
 public interface BlogRepository extends JpaRepository<Blog, Long>, JpaSpecificationExecutor<Blog> {
+
+    // 列表查询一次性抓取 type/user，避免逐条 N+1
+    @Override
+    @EntityGraph(attributePaths = {"type", "user"})
+    Page<Blog> findAll(Specification<Blog> spec, Pageable pageable);
+
+    // 全局搜索按 spec 全量查询，同样抓取关联避免 N+1
+    @Override
+    @EntityGraph(attributePaths = {"type", "user"})
+    List<Blog> findAll(Specification<Blog> spec);
 
     @Query("select b from Blog b where b.recommend = true")
     List<Blog> findTop(Pageable pageable);

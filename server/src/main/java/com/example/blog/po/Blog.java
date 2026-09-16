@@ -10,7 +10,10 @@ import java.util.List;
 
 @Data
 @Entity
-@Table(name = "t_blog")
+@Table(name = "t_blog", indexes = {
+        @Index(name = "idx_blog_published_create_time", columnList = "published, create_time"),
+        @Index(name = "idx_blog_recommend_published", columnList = "recommend, published")
+})
 @JsonIgnoreProperties(value = {"hibernateLazyInitializer"})
 public class Blog {
 

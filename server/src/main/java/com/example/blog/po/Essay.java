@@ -10,7 +10,9 @@ import java.util.List;
 
 @Data
 @Entity
-@Table(name = "t_essay")
+@Table(name = "t_essay", indexes = {
+        @Index(name = "idx_essay_published", columnList = "published")
+})
 @JsonIgnoreProperties(value = {"hibernateLazyInitializer", "handler"}) // 增加handler避免JSON序列化问题
 public class Essay {
     @Id
