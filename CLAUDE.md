@@ -54,7 +54,7 @@ cd server && python3 test.py       # 39 security test cases
 - Next.js frontend calls Spring Boot REST API at `NEXT_PUBLIC_API_BASE_URL` (default `https://hanphone.cn/api`)
 - File uploads go to `admin-file` Express service on separate domain (`hanphone.top`)
 - Photo wall has its own Express backend (`photo-wall-server`) on port 4001
-- Backend uses PostgreSQL (primary DB) + Redis (caching, rate limiting, sessions)
+- Backend uses PostgreSQL (primary DB) + Redis (rate limiting, sessions, captcha); hot public reads (tags/types/site-stats) cached in-process via Caffeine (TTL 300s, evicted on writes)
 - JWT-based auth: TokenInterceptor validates tokens on admin endpoints (`/admin/**`); public endpoints use IndexController/UserController etc.
 
 ### Frontend Architecture (web/src/)
