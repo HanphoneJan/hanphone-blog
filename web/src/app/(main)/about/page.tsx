@@ -3,6 +3,8 @@ import PersonalClient from './PersonalClient'
 
 import { API_CODE } from '@/lib/constants'
 
+export const revalidate = 300
+
 // 定义数据类型
 interface Item {
   id: number

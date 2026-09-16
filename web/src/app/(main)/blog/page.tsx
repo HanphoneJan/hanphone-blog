@@ -4,6 +4,8 @@ import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import BlogListClient from './BlogListClient'
 import type { Blog, Type, Tag, PageInfo, BlogArchive } from './types'
 
+export const revalidate = 300
+
 // 获取归档数据（服务端）
 async function fetchArchives(): Promise<BlogArchive> {
   try {
