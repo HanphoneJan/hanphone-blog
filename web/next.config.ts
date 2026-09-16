@@ -80,8 +80,6 @@ const nextConfig: NextConfig = {
       },
     ]
   },
-  // 排除 react-pdf 从服务端打包 (Turbopack 兼容)
-  serverExternalPackages: ['react-pdf'],
 }
 
 export default isDev ? nextConfig : withSerwist(nextConfig)
