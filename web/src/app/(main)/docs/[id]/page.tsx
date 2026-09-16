@@ -22,7 +22,7 @@ interface BackendDoc {
 async function getDocsFromBackend(): Promise<DocMeta[]> {
   try {
     const res = await fetch(`${API_BASE_URL}/docs`, {
-      next: { revalidate: 0 },
+      next: { revalidate: 300 },
     })
     if (!res.ok) return []
     const result = await res.json()
