@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import BlogChart from '@/components/charts/BlogChart'
-import TagChart from '@/components/charts/TagChart'
-import TypeChart from '@/components/charts/TypeChart'
-import VisitorMap from '@/components/charts/VisitorMap'
+import dynamic from 'next/dynamic'
 import { ENDPOINTS } from '@/lib/api'
 import { BarChart3, FileText, ThumbsUp, MessageSquare, Eye, MapPin } from 'lucide-react'
 import { API_CODE } from '@/lib/constants'
 import apiClient from '@/lib/utils' // 导入axios实例
+
+// 图表组件懒加载（echarts 体积大，避免进首屏）
+const BlogChart = dynamic(() => import('@/components/charts/BlogChart').then((m) => m.default), { ssr: false })
+const TagChart = dynamic(() => import('@/components/charts/TagChart').then((m) => m.default), { ssr: false })
+const TypeChart = dynamic(() => import('@/components/charts/TypeChart').then((m) => m.default), { ssr: false })
+const VisitorMap = dynamic(() => import('@/components/charts/VisitorMap').then((m) => m.default), { ssr: false })
 
 // 动画变体定义
 const pageVariants: Variants = {
