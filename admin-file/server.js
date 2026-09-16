@@ -16,6 +16,39 @@ const baseUploadDir = path.join(__dirname, "uploads");
 const tempUploadDir = path.join(baseUploadDir, "temp"); // 定义临时目录
 const avatarUploadDir = path.join(baseUploadDir, "blog", "avatars"); // 头像上传目录
 
+// 【修复 1】temp 孤儿文件清理：启动时清一次 + 每 6 小时清一次，删除超过 24 小时未移动的文件
+const TEMP_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h
+const TEMP_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6h
+
+async function cleanupTempFiles() {
+  let entries;
+  try {
+    entries = await fs.readdir(tempUploadDir);
+  } catch (err) {
+    if (err.code === "ENOENT") return; // 目录还不存在，跳过
+    logger.error("读取 temp 目录失败:", { error: err.message });
+    return;
+  }
+  const now = Date.now();
+  let removed = 0;
+  for (const entry of entries) {
+    const filePath = path.join(tempUploadDir, entry);
+    try {
+      const stat = await fs.stat(filePath);
+      if (!stat.isFile()) continue;
+      if (now - stat.mtimeMs >= TEMP_FILE_MAX_AGE_MS) {
+        await fs.unlink(filePath);
+        removed++;
+      }
+    } catch (err) {
+      logger.warn("清理 temp 文件失败:", { file: entry, error: err.message });
+    }
+  }
+  if (removed > 0) {
+    logger.info("temp 目录清理完成", { removed });
+  }
+}
+
 /**
  * @swagger
  * components:
@@ -331,6 +364,22 @@ function getFullStoragePath(category, namespace, mimetype, filename) {
 }
 
 /**
+ * 【修复 3】路径穿越校验：确保拼接后的目标路径不越出 uploads 根目录
+ */
+function assertInsideUploadDir(targetPath) {
+  const resolvedBase = path.resolve(baseUploadDir);
+  const resolvedTarget = path.resolve(targetPath);
+  if (
+    resolvedTarget === resolvedBase ||
+    !resolvedTarget.startsWith(resolvedBase + path.sep)
+  ) {
+    const err = new Error("非法的路径");
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
+/**
  * 修复ISO-8859-1编码的中文文件名
  */
 function fixFileNameEncoding(originalName) {
@@ -405,16 +454,10 @@ const avatarStorage = multer.diskStorage({
   },
   filename: async function (req, file, cb) {
     try {
-      const originalName = fixFileNameEncoding(file.originalname);
-      const ext = path.extname(originalName);
-      const nameWithoutExt = path.basename(originalName, ext);
-      const timestamp = Date.now();
-      const uniqueName = `avatar-${timestamp}-${Math.round(Math.random() * 1e9)}${ext}`;
-      cb(null, uniqueName);
+      cb(null, fixFileNameEncoding(file.originalname));
     } catch (err) {
       logger.error("生成头像文件名时出错:", { error: err.message, stack: err.stack });
-      const uniqueName = `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
-      cb(null, uniqueName);
+      cb(null, `avatar-${Date.now()}${path.extname(file.originalname)}`);
     }
   },
 });
@@ -622,9 +665,12 @@ app.post("/upload/avatar", avatarUploadLimiter, uploadAvatar.single("avatar"), a
       finalFilename = `${nameWithoutExt}-${timestamp}${ext}`;
     }
     
-    // 移动文件到最终位置并重命名
+    // 移动文件到最终位置并重命名（multer 已落盘到 avatarUploadDir，仅当文件名变化时重命名）
+    const storedPath = req.file.path;
     const finalFilePath = path.join(avatarUploadDir, finalFilename);
-    await fs.rename(req.file.path, finalFilePath);
+    if (storedPath !== finalFilePath) {
+      await fs.rename(storedPath, finalFilePath);
+    }
     
     // 构建返回的URL
     const encodedFilename = encodeURIComponent(finalFilename);
@@ -981,15 +1027,8 @@ app.delete("/delete", authenticateToken, async (req, res) => {
       targetPath = path.join(baseUploadDir, name);
     }
 
-    // 路径安全校验：禁止越出上传根目录（防御 ../ 路径穿越）
-    const resolvedBase = path.resolve(baseUploadDir);
-    const resolvedTarget = path.resolve(targetPath);
-    if (
-      resolvedTarget === resolvedBase ||
-      !resolvedTarget.startsWith(resolvedBase + path.sep)
-    ) {
-      return res.status(400).json({ error: "非法的删除路径" });
-    }
+    // 【修复 3】路径安全校验：禁止越出上传根目录（防御 ../ 路径穿越）
+    assertInsideUploadDir(targetPath);
 
     if (!(await fileExists(targetPath))) {
       return res
@@ -1053,7 +1092,7 @@ app.delete("/delete", authenticateToken, async (req, res) => {
     }
   } catch (err) {
     logger.error("删除操作失败:", { error: err.message, stack: err.stack, name: req.body.name });
-    res.status(500).json({ error: "删除时发生错误" });
+    res.status(err.statusCode || 500).json({ error: err.statusCode ? err.message : "删除时发生错误" });
   }
 });
 
@@ -1120,6 +1159,7 @@ app.get("/files", authenticateToken, async (req, res) => {
     }
 
     const targetDir = getFullStoragePath(category, namespace, "", "");
+    assertInsideUploadDir(targetDir); // 【修复 3】防 namespace/category 穿越
     if (!(await fileExists(targetDir))) {
       return res.status(404).json({ error: "目录不存在", namespace, category });
     }
@@ -1157,7 +1197,7 @@ app.get("/files", authenticateToken, async (req, res) => {
     });
   } catch (err) {
     logger.error("获取文件列表失败:", { error: err.message, stack: err.stack, namespace: req.query.namespace, category: req.query.category });
-    res.status(500).json({ error: "获取文件列表时发生错误" });
+    res.status(err.statusCode || 500).json({ error: err.statusCode ? err.message : "获取文件列表时发生错误" });
   }
 });
 
@@ -1212,6 +1252,7 @@ app.get("/file", authenticateToken, async (req, res) => {
     }
 
     const targetDir = getFullStoragePath(category, namespace, "", "");
+    assertInsideUploadDir(targetDir); // 【修复 3】防 namespace/category 穿越
     const filePath = path.join(targetDir, filename);
 
     if (!(await fileExists(filePath))) {
@@ -1255,7 +1296,7 @@ app.get("/file", authenticateToken, async (req, res) => {
     });
   } catch (err) {
     logger.error("获取文件详情失败:", { error: err.message, stack: err.stack, filename: req.query.filename });
-    res.status(500).json({ error: "获取文件详情时发生错误" });
+    res.status(err.statusCode || 500).json({ error: err.statusCode ? err.message : "获取文件详情时发生错误" });
   }
 });
 
@@ -1276,6 +1317,7 @@ app.post("/directory", authenticateToken, async (req, res) => {
       }
     }
     const newDirPath = path.join(parentDir, name);
+    assertInsideUploadDir(newDirPath); // 【修复 3】防 name 含 ../ 穿越
     if (await fileExists(newDirPath)) {
       return res
         .status(409)
@@ -1291,7 +1333,7 @@ app.post("/directory", authenticateToken, async (req, res) => {
     });
   } catch (err) {
     logger.error("创建目录失败:", { error: err.message, stack: err.stack, directoryName: req.body.name });
-    res.status(500).json({ error: "创建目录时发生错误" });
+    res.status(err.statusCode || 500).json({ error: err.statusCode ? err.message : "创建目录时发生错误" });
   }
 });
 
@@ -1426,10 +1468,45 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "服务器内部错误" });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`服务器启动成功`, { 
     port: PORT, 
     env: process.env.NODE_ENV || 'development',
     uploadDir: baseUploadDir 
   });
+  cleanupTempFiles(); // 启动时清一次
+  setInterval(cleanupTempFiles, TEMP_CLEANUP_INTERVAL_MS); // 每 6 小时
 });
+
+// 【修复 2】监听错误处理：端口占用/权限不足等给出明确提示而非静默崩溃
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    logger.error(`端口 ${PORT} 已被占用，请更换 PORT 后重试`);
+  } else if (err.code === "EACCES") {
+    logger.error(`没有权限监听端口 ${PORT}`);
+  } else {
+    logger.error("服务器启动失败:", { error: err.message, code: err.code });
+  }
+  process.exit(1);
+});
+
+// 【修复 5】优雅关闭：处理 SIGINT/SIGTERM，让进行中的请求完成
+function shutdown(signal) {
+  logger.info(`收到 ${signal}，正在优雅关闭...`);
+  server.close(() => {
+    logger.info("服务器已关闭");
+    process.exit(0);
+  });
+  // 关闭空闲的 keep-alive 连接，避免 server.close 一直等待导致走兜底强退
+  if (typeof server.closeIdleConnections === "function") {
+    server.closeIdleConnections();
+  }
+  // 兜底：10s 内未关闭则强制退出
+  setTimeout(() => {
+    logger.error("优雅关闭超时，强制退出");
+    process.exit(1);
+  }, 10 * 1000).unref();
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
