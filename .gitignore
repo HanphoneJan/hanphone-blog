@@ -57,6 +57,9 @@ server/*.jar
 # Web specific
 web/.vercel
 
+# Photo wall build output (nginx alias /home/hanphone/html/atlas; 自包含于 apps/photo-wall/dist)
+web/public/atlas/
+
 __pycache__
 .gstack/
 superpowers/

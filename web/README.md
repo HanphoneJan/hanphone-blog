@@ -100,8 +100,6 @@ pnpm --filter web build:static
 
 ```
 web/
-├── apps/
-│   └── photo-wall/                 # 照片墙子应用 (Uni-app + Vue3)
 ├── public/                         # 静态资源
 │   ├── games/                      # 小游戏合集
 │   │   ├── 2048/

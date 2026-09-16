@@ -50,7 +50,7 @@ pnpm install
 # 开发模式
 pnpm --filter atlas dev
 
-# 生产构建（产物自动输出到 web/public/atlas/）
+# 生产构建（产物输出到 apps/photo-wall/dist/）
 pnpm build:photo-wall
 ```
 
@@ -142,12 +142,27 @@ apps/photo-wall/
 
 ## 部署说明
 
-生产构建产物输出到 `web/public/atlas/`，与 Next.js 主站一起部署：
+照片墙构建产物输出到 `apps/photo-wall/dist/`（自包含，不依赖 Next.js / `web/public/`）。
+
+生产环境由 **nginx 直接托管**：将 `dist/` 内容部署到服务器 `/home/hanphone/html/atlas` 目录，`hanphone.cn` 的 nginx 配置：
+
+```nginx
+location /atlas {
+    alias /home/hanphone/html/atlas;
+    index index.html;
+    try_files $uri $uri/ /atlas/index.html;
+}
+```
+
+部署步骤：
 
 ```bash
-# 根目录一键构建
+# 1. 根目录构建
 pnpm build:photo-wall
-# 产物位于 web/public/atlas/，由 Next.js 站点统一托管
+
+# 2. 将产物同步到服务器（示例）
+rsync -av apps/photo-wall/dist/ user@server:/home/hanphone/html/atlas/
+# 或 scp -r apps/photo-wall/dist/* user@server:/home/hanphone/html/atlas/
 ```
 
 ## 相关文档
