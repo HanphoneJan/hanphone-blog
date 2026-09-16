@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.time.Duration;
 import java.util.*;
 
 @Component("google")
@@ -59,10 +60,15 @@ public class GoogleOAuthProvider implements OAuthProvider {
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
             SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
             factory.setProxy(proxy);
+            factory.setConnectTimeout(Duration.ofSeconds(5));
+            factory.setReadTimeout(Duration.ofSeconds(10));
             builder = builder.requestFactory(() -> factory);
             logger.info("Google OAuth using proxy {}:{}", proxyHost, proxyPort);
         }
-        this.restTemplate = builder.build();
+        this.restTemplate = builder
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
     @Override
