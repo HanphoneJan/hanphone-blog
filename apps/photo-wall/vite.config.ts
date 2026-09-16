@@ -133,7 +133,7 @@ export default defineConfig({
       },
     },
     target: 'esnext', // 目标输出环境
-    outDir: 'dist', // 输出目录（自包含；生产由 nginx alias /home/hanphone/html/atlas 托管）
+    outDir: 'atlas', // 输出目录（自包含；生产由 nginx alias /home/hanphone/html/atlas 托管）
     assetsDir: 'assets', // 静态资源目录
     assetsInlineLimit: 4096, // 小于这个大小的资源会被内联到base64中
     rollupOptions: {

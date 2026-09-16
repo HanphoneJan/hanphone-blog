@@ -50,7 +50,7 @@ pnpm install
 # 开发模式
 pnpm --filter atlas dev
 
-# 生产构建（产物输出到 apps/photo-wall/dist/）
+# 生产构建（产物输出到 apps/photo-wall/atlas/）
 pnpm build:photo-wall
 ```
 
@@ -142,9 +142,9 @@ apps/photo-wall/
 
 ## 部署说明
 
-照片墙构建产物输出到 `apps/photo-wall/dist/`（自包含，不依赖 Next.js / `web/public/`）。
+照片墙构建产物输出到 `apps/photo-wall/atlas/`（自包含，不依赖 Next.js / `web/public/`）。
 
-生产环境由 **nginx 直接托管**：将 `dist/` 内容部署到服务器 `/home/hanphone/html/atlas` 目录，`hanphone.cn` 的 nginx 配置：
+生产环境由 **nginx 直接托管**：将 `atlas/` 内容部署到服务器 `/home/hanphone/html/atlas` 目录，`hanphone.cn` 的 nginx 配置：
 
 ```nginx
 location /atlas {
@@ -161,8 +161,8 @@ location /atlas {
 pnpm build:photo-wall
 
 # 2. 将产物同步到服务器（示例）
-rsync -av apps/photo-wall/dist/ user@server:/home/hanphone/html/atlas/
-# 或 scp -r apps/photo-wall/dist/* user@server:/home/hanphone/html/atlas/
+rsync -av apps/photo-wall/atlas/ user@server:/home/hanphone/html/atlas/
+# 或 scp -r apps/photo-wall/atlas/* user@server:/home/hanphone/html/atlas/
 ```
 
 ## 相关文档
