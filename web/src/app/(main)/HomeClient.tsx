@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Filter, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
@@ -163,6 +163,9 @@ export default function HomeClient({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // 标记初始数据是否已由 SSR 提供，避免挂载时重复请求
+  const initialFetchDone = useRef(false)
+
   // 获取初始数据（仅在需要时）
   useEffect(() => {
     if (initialBlogs.length === 0) {
@@ -176,12 +179,17 @@ export default function HomeClient({
   // 当查询信息变化时重新获取博客列表 - 添加防抖
   useEffect(() => {
     if (selectedTypeId === null && selectedTagIds.length === 0) {
+      // 挂载时若 SSR 已提供数据则跳过重复请求
+      if (!initialFetchDone.current && initialBlogs.length > 0) {
+        initialFetchDone.current = true
+        return
+      }
       const timer = setTimeout(() => {
         getBlogList()
       }, TIME.DEBOUNCE_DELAY)
       return () => clearTimeout(timer)
     }
-  }, [queryInfo, getBlogList, selectedTypeId, selectedTagIds])
+  }, [queryInfo, getBlogList, selectedTypeId, selectedTagIds, initialBlogs.length])
 
   // 更新selectMethod显示当前选中的分类与标签
   const updateSelectMethod = useCallback(() => {
