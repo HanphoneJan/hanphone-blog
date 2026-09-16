@@ -33,18 +33,19 @@ apiClient.interceptors.request.use(
   }
 );
 
-// 响应拦截器（可选，用于处理 token 过期等情况）
+// 响应拦截器（处理 token 过期等情况）
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 如果是 401 未授权，可能是 token 过期
-    // if (error.response?.status === 401) {
-    //   // 清除无效 token
-    //   localStorage.removeItem('token');
-    //   // 跳转到登录页
-    //   window.location.href = '/';
-    // }
-    return Promise.reject(error);
+    // 401 未授权：清除无效凭证；仅后台路径跳转登录
+    if (error.response?.status === 401) {
+      localStorage.removeItem(STORAGE_KEYS.TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.USER_INFO)
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
   }
 );
 
