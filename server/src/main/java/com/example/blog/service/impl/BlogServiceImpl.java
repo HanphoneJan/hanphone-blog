@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.*;
@@ -195,6 +196,7 @@ public class BlogServiceImpl implements BlogService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Transactional
     @Override
     public Blog saveBlog(Blog blog) {
@@ -230,6 +232,7 @@ public class BlogServiceImpl implements BlogService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Transactional
     @Override
     public Blog updateBlog(Long id, Blog blog) {
@@ -254,6 +257,7 @@ public class BlogServiceImpl implements BlogService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Transactional
     @Override
     public void deleteBlog(Long id) {

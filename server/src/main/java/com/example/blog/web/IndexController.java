@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -187,6 +188,7 @@ public class IndexController {
     }
 
     @GetMapping("/site-stats")
+    @Cacheable("siteStats")
     public Result<Map<String, Long>> getSiteStats() {
         Map<String, Long> stats = new HashMap<>();
         stats.put("blogCount", blogService.countPublishedBlog());

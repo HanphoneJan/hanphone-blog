@@ -8,6 +8,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -51,6 +52,7 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     public void deleteMessage(Long id) {
         Objects.requireNonNull(id, "message id must not be null");
@@ -61,6 +63,7 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     public Message saveMessage(Message message) {
         Objects.requireNonNull(message, "message must not be null");

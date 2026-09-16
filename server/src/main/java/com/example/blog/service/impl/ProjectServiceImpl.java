@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
@@ -162,6 +163,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     public void deleteProject(Long id) {
         // 校验id非空
@@ -173,6 +175,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     public Project saveProject(Project project) {
         // 校验project非空
@@ -184,6 +187,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     public Project updateProject(Long id, Project project) {
         // 校验参数非空
