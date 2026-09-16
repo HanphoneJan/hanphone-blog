@@ -202,14 +202,9 @@ public class BlogMonthlyVisitsServiceImpl implements BlogMonthlyVisitsService {
     @Transactional
     public Long incrementAndGetTotalVisits() {
         try {
-            BlogMonthlyVisits currentMonthRecord = getOrCreateCurrentMonthRecord();
-            Objects.requireNonNull(currentMonthRecord, "currentMonthRecord must not be null");
-
-            Long currentVisits = currentMonthRecord.getTotalVisits();
-            currentMonthRecord.setTotalVisits((currentVisits != null ? currentVisits : 0L) + 1);
-            currentMonthRecord.setRecordUpdateTime(ZonedDateTime.now());
-            blogMonthlyVisitsRepository.save(currentMonthRecord);
-
+            getOrCreateCurrentMonthRecord(); // 确保当前月记录存在
+            String yearMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+            blogMonthlyVisitsRepository.incrementVisits(yearMonth, ZonedDateTime.now());
             return getTotalVisits();
         } catch (TransactionException e) {
             throw new RuntimeException("Transaction failed while incrementing visits", e);

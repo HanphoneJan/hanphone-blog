@@ -2,9 +2,12 @@ package com.example.blog.dao;
 
 import com.example.blog.po.BlogMonthlyVisits;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +36,9 @@ public interface BlogMonthlyVisitsRepository extends JpaRepository<BlogMonthlyVi
     // 使用数据库聚合查询总访问量，避免查全表
     @Query("select coalesce(sum(b.totalVisits), 0) from BlogMonthlyVisits b")
     Long sumTotalVisits();
+
+    // 原子自增当月访问量（recordUpdateTime 用绑定参数匹配 ZonedDateTime 字段）
+    @Modifying
+    @Query("UPDATE BlogMonthlyVisits b SET b.totalVisits = b.totalVisits + 1, b.recordUpdateTime = :ts WHERE b.yearMonth = :yearMonth")
+    int incrementVisits(@Param("yearMonth") String yearMonth, @Param("ts") ZonedDateTime ts);
 }
