@@ -26,7 +26,7 @@ cd server && mvn clean package -DskipTests  # Build JAR
 
 # === Sub-apps ===
 pnpm build:gomoku                  # Build gomoku game (Uni-app → web/public/games/gomoku/)
-pnpm build:photo-wall              # Build photo wall (Vite → apps/photo-wall/dist/；生产由 nginx alias /home/hanphone/html/atlas 托管)
+pnpm build:photo-wall              # Build photo wall (Vite → apps/photo-wall/atlas/；生产由 nginx alias /home/hanphone/html/atlas 托管)
 
 # === File services ===
 pnpm --filter admin-file start     # Express file service (port 4000)
@@ -60,7 +60,7 @@ cd server && python3 test.py       # 39 security test cases
 ### Frontend Architecture (web/src/)
 
 - **App Router**: Pages in `app/(main)/` (public) and `app/admin/` (dashboard)
-- **Static sub-apps**: Gomoku builds to `web/public/games/` and is served by Next.js rewrites at `/games/`. Photo wall (`apps/photo-wall`) builds to its own `dist/` and is served **by nginx alias** `/home/hanphone/html/atlas` at `/atlas/` (不在 Next.js / `web/public/` 内托管)
+- **Static sub-apps**: Gomoku builds to `web/public/games/` and is served by Next.js rewrites at `/games/`. Photo wall (`apps/photo-wall`) builds to its own `atlas/` and is served **by nginx alias** `/home/hanphone/html/atlas` at `/atlas/` (不在 Next.js / `web/public/` 内托管)
 - **PWA**: Serwist v9 service worker (`app/sw.ts`) with offline page
 - **Desktop**: Tauri 2 wrapper in `src-tauri/` packages as Windows desktop app
 - **Themes**: 4 themes (light, dark, macaron, cyberpunk) via CSS custom properties + Tailwind variants; theme persisted in cookie set by middleware
