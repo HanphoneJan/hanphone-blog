@@ -133,17 +133,8 @@ public class EssayServiceImpl implements EssayService {
                 return null;
             }, pageable);
 
-            return essays.map(essay -> {
-                Objects.requireNonNull(essay, "essay must not be null");
-                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
-                Optional<UserEssayLike> existingLike = userId != null
-                        ? userEssayLikeRepository.findByUserIdAndEssayId(userId, essay.getId())
-                        : Optional.empty();
-                essay.setEssayFileUrls(fileUrls);
-                essay.setLiked(existingLike.isPresent());
-                fillParentCommentId(essay);
-                return essay;
-            });
+            fillEssayRelations(essays.getContent(), userId);
+            return essays;
         } catch (Exception e) {
             throw new RuntimeException("获取随笔列表失败", e);
         }
@@ -361,17 +352,8 @@ public class EssayServiceImpl implements EssayService {
                 return null;
             }, pageable);
 
-            return essays.map(essay -> {
-                Objects.requireNonNull(essay, "essay must not be null");
-                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
-                Optional<UserEssayLike> existingLike = userId != null
-                        ? userEssayLikeRepository.findByUserIdAndEssayId(userId, essay.getId())
-                        : Optional.empty();
-                essay.setEssayFileUrls(fileUrls);
-                essay.setLiked(existingLike.isPresent());
-                fillParentCommentId(essay);
-                return essay;
-            });
+            fillEssayRelations(essays.getContent(), userId);
+            return essays;
         } catch (Exception e) {
             throw new RuntimeException("获取已发布随笔分页列表失败", e);
         }
@@ -395,13 +377,8 @@ public class EssayServiceImpl implements EssayService {
                         return null;
                     }, pageable);
 
-            return essays.map(essay -> {
-                Objects.requireNonNull(essay, "essay must not be null");
-                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
-                essay.setEssayFileUrls(fileUrls);
-                fillParentCommentId(essay);
-                return essay;
-            });
+            fillEssayRelations(essays.getContent(), null);
+            return essays;
         } catch (Exception e) {
             throw new RuntimeException("搜索已发布随笔失败，关键字: " + query, e);
         }
@@ -449,13 +426,8 @@ public class EssayServiceImpl implements EssayService {
                         return null;
                     }, pageable);
 
-            return essays.map(essay -> {
-                Objects.requireNonNull(essay, "essay must not be null");
-                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
-                essay.setEssayFileUrls(fileUrls);
-                fillParentCommentId(essay);
-                return essay;
-            });
+            fillEssayRelations(essays.getContent(), null);
+            return essays;
         } catch (Exception e) {
             throw new RuntimeException("搜索随笔失败，关键字: " + query, e);
         }
@@ -477,12 +449,7 @@ public class EssayServiceImpl implements EssayService {
                         cq.where(predicates.toArray(new Predicate[0]));
                         return null;
                     }, pageable).getContent();
-            essays.forEach(essay -> {
-                Objects.requireNonNull(essay, "essay must not be null");
-                List<EssayFileUrl> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(essay.getId());
-                essay.setEssayFileUrls(fileUrls);
-                fillParentCommentId(essay);
-            });
+            fillEssayRelations(essays, null);
             return essays;
         } catch (Exception e) {
             throw new RuntimeException("获取推荐随笔列表失败", e);
