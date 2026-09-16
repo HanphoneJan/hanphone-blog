@@ -517,8 +517,7 @@ export default function ProjectClient({ initialProjects }: ProjectClientProps) {
                     alt={project.title}
                     width={600}
                     height={320}
-                    priority={true}
-                    loading="eager"
+                    loading="lazy"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
                     className="object-cover w-full h-full"
                   />
@@ -611,8 +610,7 @@ export default function ProjectClient({ initialProjects }: ProjectClientProps) {
                 alt={project.title}
                 width={400}
                 height={320}
-                priority={true}
-                loading="eager"
+                loading="lazy"
                 className="object-cover w-full h-full"
               />
             </motion.div>

@@ -90,8 +90,7 @@ export function TypeFilter({
                           src={type.pic_url}
                           alt={type.name}
                           fill
-                          loading="eager"
-                          priority={true}
+                          loading="lazy"
                           className="object-cover w-full h-full"
                         />
                       </div>

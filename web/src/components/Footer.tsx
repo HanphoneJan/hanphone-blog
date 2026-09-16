@@ -11,6 +11,7 @@ import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
 import { FOOTER_CONFIG, ROUTES, API_CODE } from '@/lib/constants'
 import { FOOTER_LABELS } from '@/lib/labels'
+import useCachedData from '@/hooks/useCachedData'
 
 // 定义接口返回数据类型
 interface VisitCountResponse {
@@ -58,41 +59,25 @@ function formatUptimeDisplay(uptime: string): string {
 
 const Footer: React.FC = () => {
   const { theme } = useTheme()
-  const [totalVisitCount, setTotalVisitCount] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
   const [uptime, setUptime] = useState('')
 
-  useEffect(() => {
-    const fetchVisitCount = async (retryCount = 0): Promise<void> => {
-      try {
-        setLoading(true)
-        const response = await apiClient.get<VisitCountResponse>(ENDPOINTS.GET_VISIT_COUNT, {
-          timeout: 30000,
-        })
-
-        if (response.data.flag && response.data.code === API_CODE.SUCCESS) {
-          setTotalVisitCount(response.data.data)
-          setError(false)
-        } else {
-          console.error('获取访问量失败:', response.data.message)
-          setError(true)
-        }
-      } catch (err) {
-        if (retryCount < 2) {
-          console.warn(`访问量请求失败，第 ${retryCount + 1} 次重试...`)
-          await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)))
-          return fetchVisitCount(retryCount + 1)
-        }
-        console.error('Failed to fetch visit count:', err)
-        setError(true)
-      } finally {
-        setLoading(false)
+  // 访问量走共享缓存（TTL 5 分钟，避免多路由切换重复请求）
+  const visit = useCachedData<number>({
+    key: 'visit-count',
+    ttl: 5 * 60 * 1000,
+    fetchData: async () => {
+      const response = await apiClient.get<VisitCountResponse>(ENDPOINTS.GET_VISIT_COUNT, {
+        timeout: 30000,
+      })
+      if (response.data.flag && response.data.code === API_CODE.SUCCESS) {
+        return response.data.data
       }
-    }
-
-    fetchVisitCount()
-  }, [])
+      throw new Error(response.data.message)
+    },
+  })
+  const totalVisitCount = visit.data
+  const loading = visit.loading
+  const error = visit.error !== null
 
   useEffect(() => {
     if (!SITE_START_DATE) return
@@ -126,7 +111,6 @@ const Footer: React.FC = () => {
                 width={140}
                 height={140}
                 sizes="140px"
-                priority={true}
               />
             </div>
             <p className="text-sm text-[rgb(var(--text-muted))] mt-1 text-center md:text-left">
