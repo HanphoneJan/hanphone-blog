@@ -88,6 +88,10 @@ public interface BlogRepository extends JpaRepository<Blog, Long>, JpaSpecificat
     @Query("UPDATE Blog e SET e.recommend = :recommend WHERE e.id = :id")
     int updateRecommend(@Param("id") Long id, @Param("recommend") boolean recommend);
 
+    @Modifying
+    @Query("UPDATE Blog b SET b.views = b.views + 1 WHERE b.id = :id")
+    int incrementViews(@Param("id") Long id);
+
     long countByPublishedTrue();
 
 }
