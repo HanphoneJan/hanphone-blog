@@ -265,6 +265,7 @@ public class BlogServiceImpl implements BlogService {
         }
     }
 
+    @Transactional
     @Override
     public Blog getAndConvert(Long userId, Long id) {
         requireNonNull(id, "blog id must not be null");
@@ -273,9 +274,9 @@ public class BlogServiceImpl implements BlogService {
             if (!blog.isPublished()) {
                 throw new EntityNotFoundException("Blog not found with id: " + id);
             }
-            // 累加访问量
-            blog.setViews(blog.getViews() + 1);
-            blog = blogRepository.save(blog);
+            // 累加访问量：原子自增后重取，避免整行保存与读改写竞争
+            blogRepository.incrementViews(id);
+            blog = blogRepository.getReferenceById(id);
             // 复制属性
             Blog b = new Blog();
             BeanUtils.copyProperties(blog, b);
