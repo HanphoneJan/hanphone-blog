@@ -1,12 +1,17 @@
 'use client'
 
 import { useId, useEffect, useState, useCallback } from 'react'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import dynamic from 'next/dynamic'
 import ClipboardJS from 'clipboard'
 import { Copy, Check } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
+
+// 语法高亮器懒加载，避免进文章详情首屏 chunk
+const CodeHighlighter = dynamic(
+  () => import('./CodeHighlighter').then((m) => m.CodeHighlighter),
+  { ssr: false, loading: () => <pre /> }
+)
 
 interface CodeBlockProps {
   node?: any
@@ -124,38 +129,7 @@ export function CodeBlock({ node, className, children, ...props }: CodeBlockProp
         </div>
       </div>
 
-      <SyntaxHighlighter
-        style={dracula}
-        language={langKey}
-        PreTag="div"
-        showLineNumbers
-        lineNumberStyle={{
-          minWidth: '2.5em',
-          paddingRight: '1em',
-          color: '#6272a4',
-          textAlign: 'right',
-          userSelect: 'none',
-          fontSize: '0.85rem',
-        }}
-        customStyle={{
-          margin: 0,
-          padding: '1.25rem 0',
-          borderRadius: 0,
-          background: '#282a36',
-          fontSize: '0.875rem',
-          lineHeight: '1.7',
-        }}
-        codeTagProps={{
-          style: {
-            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-          }
-        }}
-        wrapLines
-        lineProps={() => ({ style: { display: 'block', padding: '0 1rem' } })}
-        {...props}
-      >
-        {codeStr}
-      </SyntaxHighlighter>
+      <CodeHighlighter language={langKey} code={codeStr} {...props} />
     </div>
   )
 }
