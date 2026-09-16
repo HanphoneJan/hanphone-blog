@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -119,6 +120,7 @@ public class DocServiceImpl implements DocService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     @Transactional
     public Doc saveDoc(Doc doc) {
@@ -130,6 +132,7 @@ public class DocServiceImpl implements DocService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     @Transactional
     public Doc updateDoc(Long id, Doc doc) {
@@ -147,6 +150,7 @@ public class DocServiceImpl implements DocService {
         }
     }
 
+    @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     @Transactional
     public void deleteDoc(Long id) {
