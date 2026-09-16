@@ -301,15 +301,15 @@ axios.interceptors.response.use(
 | **噪点纹理** | 细微噪点叠加，增加复古质感 |
 | **几何图形** | 背景装饰性几何元素（方块、三角形、圆形）|
 
-## 双布局系统
+## 三布局系统
 
-Atlas 组件内置两种布局模式，通过 `viewMode` 状态切换：
-
-### 1. 便利贴布局（Brutalist）- 默认
+Atlas 组件内置三种布局模式，通过 `viewMode` 状态切换：
 
 ```typescript
-const viewMode = ref<'masonry' | 'brutalist'>('brutalist');
+const viewMode = ref<'masonry' | 'brutalist' | 'timeline'>('brutalist');
 ```
+
+### 1. 便利贴布局（Brutalist）- 默认
 
 **视觉特征**：
 - 8种鲜艳便利贴配色（`#ff6b6b`、`#4ecdc4`、`#ffe066` 等）
@@ -340,6 +340,20 @@ const viewMode = ref<'masonry' | 'brutalist'>('brutalist');
 
 **适用场景**：摄影作品、风景图片、需要沉浸式浏览的内容
 
+### 3. 时间线布局（Timeline）
+
+**视觉特征**：
+- 竖向时间轴，按"拍摄时间（无则上传时间）"倒序
+- 以年份为分组头，竖线 + 旋转方块标记
+- 卡片含缩略图、标题、作者、标签、点赞、操作按钮
+
+**交互效果**：
+- 悬停卡片浮起 + 阴影加深
+- 点击图片或放大按钮复用 el-image 内置预览
+- 排序方式同样作用于时间线（年份降序，组内保持当前排序）
+
+**适用场景**：按时间回顾照片、成长记录、旅行足迹
+
 ### 布局切换
 
 ```typescript
@@ -352,11 +366,29 @@ const toggleViewMode = () => {
 
 用户偏好的布局会自动保存到 `localStorage`，下次访问时恢复。
 
+### 排序方式
+
+侧边栏提供 5 种排序（`localStorage.atlasSortMode` + `atlas-sort-change` 事件通知 Atlas）：
+
+| value | 说明 |
+|-------|------|
+| `hot` | 综合热度（默认）：`score = ln(likes+2) / (小时数+2)^1.5`，权重常量见 `Atlas.vue` 顶部 |
+| `likes` | 点赞最多 |
+| `upload_desc` | 最新上传 |
+| `upload_asc` | 最早上传 |
+| `taken_desc` | 拍摄时间（新→旧） |
+
+### 拍摄时间（taken_time）
+
+- 上传时前端用 `exifr` 读取 EXIF，按 `DateTimeOriginal → CreateDate → GPSDateTime → ModifyDate` 优先级提取
+- 无 EXIF 时管理员可在后台详情面板手动编辑
+- 显示规则：有 `taken_time` 显示拍摄时间，否则回退上传时间
+
 ## 组件说明
 
 ### Atlas.vue
 
-照片墙核心组件，支持双布局切换展示。
+照片墙核心组件，支持三布局切换展示。
 
 **Props:**
 
@@ -365,10 +397,12 @@ const toggleViewMode = () => {
 | - | - | - | 无外部Props，数据通过API获取 |
 
 **Features:**
-- 双布局切换（便利贴/瀑布流）
+- 三布局切换（便利贴/瀑布流/时间线）
+- 5 种排序方式（综合热度/点赞/上传时间/拍摄时间）
 - 标签筛选
-- 图片预览（自定义遮罩层）
+- 图片预览（Element Plus el-image 内置 viewer，支持缩放/旋转/切换/键盘操作）
 - 点赞功能
+- 拍摄时间展示（无则回退上传时间）
 - 响应式布局适配
 
 ### AdminAtlas.vue
@@ -380,6 +414,7 @@ const toggleViewMode = () => {
 - 照片审核（改变type状态）
 - 照片删除
 - 标签编辑
+- 拍摄时间编辑（EXIF 自动读取 + 手动覆盖）
 
 ### AdminUser.vue
 

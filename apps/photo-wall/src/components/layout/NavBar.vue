@@ -33,7 +33,7 @@
             class="search-input"
             :placeholder="isAdminPage ? '搜索内容...' : '搜索照片...'"
             v-model="searchInput"
-            @input="searchItems" 
+            @input="handleSearchInput" 
             size="small"
             clearable
           ></el-input>
@@ -126,6 +126,35 @@
             <el-icon><Document /></el-icon>
             <span>便利贴</span>
           </el-button>
+          <el-button 
+            class="view-mode-btn" 
+            :class="{ 'active': atlasViewMode === 'timeline' }"
+            @click="setViewMode('timeline')"
+          >
+            <el-icon><Clock /></el-icon>
+            <span>时间线</span>
+          </el-button>
+        </div>
+      </div>
+
+      <!-- 排序方式 - 仅在照片墙页面显示 -->
+      <div v-if="isPhotoWallPage" class="sort-section">
+        <div class="sort-header">
+          <div class="filter-title">
+            <el-icon><Sort /></el-icon>
+            <span>排序方式</span>
+          </div>
+        </div>
+        <div class="sort-buttons">
+          <el-button
+            v-for="opt in sortOptions"
+            :key="opt.value"
+            class="sort-btn"
+            :class="{ 'active': atlasSortMode === opt.value }"
+            @click="setSortMode(opt.value)"
+          >
+            {{ opt.label }}
+          </el-button>
         </div>
       </div>
 
@@ -214,11 +243,11 @@ import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/store/store';
 import api from '@/api/interceptor';
 import { ENDPOINTS } from '@/api/api';
-import { 
-  Expand, Fold, Picture, Document, Setting, 
-  User, UserFilled, CollectionTag, SwitchButton, 
+import {
+  Expand, Fold, Picture, Document, Setting,
+  User, UserFilled, CollectionTag, SwitchButton,
   Moon, Sunny, Filter, ArrowUp, ArrowDown, Search,
-  View, Grid
+  View, Grid, Clock, Sort
 } from '@element-plus/icons-vue';
 
 // 标签接口定义
@@ -242,6 +271,7 @@ const searching = ref(false);
 const searchInput = ref('');
 const searchList = ref<AtlasItem[]>([]);
 const sidebarOpen = ref(false);
+let searchTimer: ReturnType<typeof setTimeout> | undefined = undefined;
 
 // 标签相关状态（仅前台）
 const tagsList = ref<Tag[]>([]);
@@ -255,22 +285,45 @@ const isAdminPage = computed(() => route.path.startsWith('/admin'));
 const isPhotoWallPage = computed(() => route.path === '/index' || route.path === '/');
 
 // 照片墙视图模式
-const atlasViewMode = ref<'masonry' | 'brutalist'>('brutalist');
+const atlasViewMode = ref<'masonry' | 'brutalist' | 'timeline'>('brutalist');
+
+// 照片墙排序模式
+const atlasSortMode = ref('hot');
+
+const sortOptions = [
+  { value: 'hot', label: '综合热度' },
+  { value: 'likes', label: '点赞最多' },
+  { value: 'upload_desc', label: '最新上传' },
+  { value: 'upload_asc', label: '最早上传' },
+  { value: 'taken_desc', label: '拍摄时间' },
+];
 
 // 从 localStorage 读取视图模式
 onMounted(() => {
-  const savedMode = localStorage.getItem('atlasViewMode') as 'masonry' | 'brutalist';
+  const savedMode = localStorage.getItem('atlasViewMode') as 'masonry' | 'brutalist' | 'timeline';
   if (savedMode) {
     atlasViewMode.value = savedMode;
+  }
+  const savedSort = localStorage.getItem('atlasSortMode') as string | null;
+  if (savedSort) {
+    atlasSortMode.value = savedSort;
   }
 });
 
 // 设置视图模式
-const setViewMode = (mode: 'masonry' | 'brutalist') => {
+const setViewMode = (mode: 'masonry' | 'brutalist' | 'timeline') => {
   atlasViewMode.value = mode;
   localStorage.setItem('atlasViewMode', mode);
   // 触发自定义事件通知 Atlas 组件
   window.dispatchEvent(new CustomEvent('atlas-view-mode-change', { detail: mode }));
+  resetInactivityTimer();
+};
+
+// 设置排序模式
+const setSortMode = (mode: string) => {
+  atlasSortMode.value = mode;
+  localStorage.setItem('atlasSortMode', mode);
+  window.dispatchEvent(new CustomEvent('atlas-sort-change', { detail: mode }));
   resetInactivityTimer();
 };
 
@@ -385,6 +438,17 @@ const handleLogout = () => {
 const toggleTheme = () => {
   userStore.changeTheme(userStore.theme === 'dark' ? 'light' : 'dark');
   resetInactivityTimer();
+};
+
+// 输入防抖：停止输入 300ms 后才发起搜索
+const handleSearchInput = () => {
+  resetInactivityTimer();
+  if (searchTimer !== undefined) {
+    clearTimeout(searchTimer);
+  }
+  searchTimer = setTimeout(() => {
+    searchItems();
+  }, 300);
 };
 
 // 实时搜索
@@ -519,6 +583,9 @@ onMounted(async () => {
 onUnmounted(() => {
   if (inactivityTimer !== null) {
     clearTimeout(inactivityTimer);
+  }
+  if (searchTimer !== undefined) {
+    clearTimeout(searchTimer);
   }
   document.removeEventListener('mousemove', handleUserActivity);
   document.removeEventListener('keypress', handleUserActivity);
@@ -781,6 +848,59 @@ onUnmounted(() => {
   border-color: #74b9ff;
   color: #1a1a1a;
 }
+
+/* 排序面板 */
+.sort-section {
+  margin: 10px 0;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sort-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sort-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sort-btn {
+  flex: 1 1 40%;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 2px solid #d1d5db;
+  background-color: #ffffff;
+  color: #4a4a4a;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.sort-btn:hover {
+  border-color: #0984e3;
+  color: #0984e3;
+}
+
+.sort-btn.active {
+  background-color: #0984e3;
+  border-color: #0984e3;
+  color: white;
+}
+
+.dark .sort-section { border-bottom-color: rgba(255, 255, 255, 0.05); }
+.dark .sort-btn {
+  background-color: #2d3436;
+  border-color: #444;
+  color: #b2bec3;
+}
+.dark .sort-btn:hover { border-color: #74b9ff; color: #74b9ff; }
+.dark .sort-btn.active { background-color: #74b9ff; border-color: #74b9ff; color: #1a1a1a; }
 
 /* 标签过滤器区域 */
 .tag-filter-section {

@@ -11,7 +11,7 @@ try {
 async function adminUpdate(req, res) {
   let client;
   try {
-    const { id, author, username, description, title, type, likes } = req.body;
+    const { id, author, username, description, title, type, likes, taken_time } = req.body;
 
     if (!id) {
       return res.status(400).json({ message: '缺少或无效的id参数', status: 0 });
@@ -48,6 +48,11 @@ async function adminUpdate(req, res) {
     if (likes !== undefined) {
       updateFields.push(`likes = $${params.length + 1}`);
       params.push(likes);
+    }
+    if (taken_time !== undefined) {
+      updateFields.push(`taken_time = $${params.length + 1}`);
+      // 空串/非法值置 NULL，否则规范为 19 位 ISO 串
+      params.push(taken_time && !isNaN(new Date(taken_time).getTime()) ? String(taken_time).slice(0, 19) : null);
     }
 
     if (updateFields.length === 0) {

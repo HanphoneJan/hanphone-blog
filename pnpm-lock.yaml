@@ -135,6 +135,9 @@ importers:
       element-plus:
         specifier: ^2.9.1
         version: 2.14.0(vue@3.5.35(typescript@5.6.3))
+      exifr:
+        specifier: ^7.1.3
+        version: 7.1.3
       md5:
         specifier: ^2.3.0
         version: 2.3.0
@@ -5870,6 +5873,9 @@ packages:
 
   exif-parser@0.1.12:
     resolution: {integrity: sha512-c2bQfLNbMzLPmzQuOr8fy0csy84WmwnER81W88DzTp9CYNPJ6yzOj2EZAh9pywYpqHnshVLHQJ8WzldAyfY+Iw==}
+
+  exifr@7.1.3:
+    resolution: {integrity: sha512-g/aje2noHivrRSLbAUtBPWFbxKdKhgj/xr1vATDdUXPOFYJlQ62Ft0oy+72V6XLIpDJfHs6gXLbBLAolqOXYRw==}
 
   exit@0.1.2:
     resolution: {integrity: sha512-Zk/eNKV2zbjpKzrsQ+n1G6poVbErQxJ0LBOJXaKZ1EViLzH+hrLu9cdXI4zw9dBQJslwBEpbQ2P1oS7nDxs6jQ==}
@@ -17279,6 +17285,8 @@ snapshots:
       strip-final-newline: 3.0.0
 
   exif-parser@0.1.12: {}
+
+  exifr@7.1.3: {}
 
   exit@0.1.2: {}
 

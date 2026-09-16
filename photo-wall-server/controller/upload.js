@@ -21,7 +21,7 @@ async function upload(req, res) {
   let client;
 
   try {
-    const { author = '佚名', userId, description = '暂无', title = '未命名', urls } = req.body;
+    const { author = '佚名', userId, description = '暂无', title = '未命名', takenTime = null, urls } = req.body;
 
     // 验证URLs是否存在
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -66,13 +66,18 @@ async function upload(req, res) {
         // 生成上传时间
         const uploadTime = new Date().toISOString().slice(0, 19);
 
+        // 拍摄时间取自前端 EXIF，规范为 19 位 ISO 串；空或非法则 NULL
+        const taken = takenTime && !isNaN(new Date(takenTime).getTime())
+          ? String(takenTime).slice(0, 19)
+          : null;
+
         // 插入数据库（使用自增主键，不指定id字段）
         const queryResult = await client.query(
           `INSERT INTO atlas_files (
-            path, author, description, title, type, upload_time, likes, user_id
-          ) VALUES ($1, $2, $3, $4, 0, $5, 0, $6)
+            path, author, description, title, type, upload_time, taken_time, likes, user_id
+          ) VALUES ($1, $2, $3, $4, 0, $5, $6, 0, $7)
           RETURNING id`,  // 添加RETURNING id获取自增主键
-          [url, author, description, title, uploadTime, userId]
+          [url, author, description, title, uploadTime, taken, userId]
         );
 
         // 从返回结果中获取数据库生成的id

@@ -97,7 +97,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /\.(?:png|jpg|jpeg|gif|svg)$/,// 匹配请求路径
+            urlPattern: /\.(?:png|jpe?g|gif|svg|webp|avif|bmp)(?:[?#].*)?$/i,// 匹配请求路径
             handler: 'CacheFirst',  // 网络优先，如果请求失败，使用缓存
             options: {
               cacheName: 'atlas-image-cache', // 固定名称，靠 expiration 控制缓存条目数量和过期
