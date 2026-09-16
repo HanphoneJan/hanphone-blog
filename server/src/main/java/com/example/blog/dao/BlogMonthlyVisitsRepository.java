@@ -41,4 +41,13 @@ public interface BlogMonthlyVisitsRepository extends JpaRepository<BlogMonthlyVi
     @Modifying
     @Query("UPDATE BlogMonthlyVisits b SET b.totalVisits = b.totalVisits + 1, b.recordUpdateTime = :ts WHERE b.yearMonth = :yearMonth")
     int incrementVisits(@Param("yearMonth") String yearMonth, @Param("ts") ZonedDateTime ts);
+
+    // 单条语句完成「当月记录不存在则插入、存在则自增」，避免先查后插的竞态与额外往返
+    @Modifying
+    @Query(value = "INSERT INTO blog_monthly_visits (year_month, total_visits, record_update_time) "
+            + "VALUES (:yearMonth, 1, :ts) "
+            + "ON CONFLICT (year_month) DO UPDATE SET "
+            + "total_visits = blog_monthly_visits.total_visits + 1, record_update_time = :ts",
+            nativeQuery = true)
+    int upsertIncrementVisits(@Param("yearMonth") String yearMonth, @Param("ts") ZonedDateTime ts);
 }

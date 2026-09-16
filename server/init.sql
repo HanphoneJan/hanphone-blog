@@ -1540,6 +1540,13 @@ CREATE INDEX idx_essay_title_trgm ON public.t_essay USING gin (title public.gin_
 
 
 --
+-- Name: idx_essay_published; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_essay_published ON public.t_essay USING btree (published);
+
+
+--
 -- TOC entry 3600 (class 1259 OID 17380)
 -- Name: idx_project_content_trgm; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -1561,6 +1568,13 @@ CREATE INDEX idx_project_techs_trgm ON public.t_project USING gin (techs public.
 --
 
 CREATE INDEX idx_project_title_trgm ON public.t_project USING gin (title public.gin_trgm_ops);
+
+
+--
+-- Name: idx_project_published; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_project_published ON public.t_project USING btree (published);
 
 
 --
@@ -1596,11 +1610,32 @@ CREATE INDEX idx_t_blog_user_id ON public.t_blog USING btree (user_id);
 
 
 --
+-- Name: idx_blog_published_create_time; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_blog_published_create_time ON public.t_blog USING btree (published, create_time);
+
+
+--
+-- Name: idx_blog_recommend_published; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_blog_recommend_published ON public.t_blog USING btree (recommend, published);
+
+
+--
 -- TOC entry 3566 (class 1259 OID 17387)
 -- Name: idx_t_comment_blog_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX idx_t_comment_blog_id ON public.t_comment USING btree (blog_id);
+
+
+--
+-- Name: idx_comment_create_time; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_comment_create_time ON public.t_comment USING btree (create_time);
 
 
 --
@@ -1625,6 +1660,13 @@ CREATE INDEX idx_t_comment_parent_id ON public.t_comment USING btree (parent_com
 --
 
 CREATE INDEX idx_t_doc_recommend ON public.t_doc USING btree (recommend);
+
+
+--
+-- Name: idx_doc_published; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_doc_published ON public.t_doc USING btree (published);
 
 
 --

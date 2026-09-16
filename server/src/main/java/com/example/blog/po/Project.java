@@ -6,7 +6,9 @@ import lombok.Data;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "t_project")
+@Table(name = "t_project", indexes = {
+        @Index(name = "idx_project_published", columnList = "published")
+})
 @JsonIgnoreProperties(value = {"hibernateLazyInitializer"})
 @Data // 生成getter、setter、toString、equals和hashCode方法
 public class Project {
