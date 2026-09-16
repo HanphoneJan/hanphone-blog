@@ -17,6 +17,7 @@ import type { Song, LyricLine, PlayMode } from './types'
 import { parseLrc, shuffleArray } from './utils'
 import { PLAYLIST_ID, MUSIC_API_BASE, DEFAULT_VOLUME, LYRIC_SCROLL_DURATION, LYRIC_SCROLL_POSITION, USER_SCROLL_TIMEOUT, MOBILE_BREAKPOINT } from './constants'
 import { STORAGE_KEYS } from '@/lib/constants'
+import Image from 'next/image'
 
 export { Song, LyricLine, PlayMode }
 
@@ -584,12 +585,14 @@ export default function MusicClient() {
             {/* 右侧：播放器 */}
             <div className="flex-1 flex flex-col items-center px-4 sm:px-8 py-4 lg:py-6 lg:border-l border-[rgb(var(--border))] min-h-0 overflow-y-auto lg:overflow-hidden">
               {/* 封面 */}
-              <div className="w-48 h-48 sm:w-52 sm:h-52 lg:w-56 lg:h-56 rounded-xl overflow-hidden bg-[rgb(var(--card))] border border-[rgb(var(--border))] mb-4">
+              <div className="relative w-48 h-48 sm:w-52 sm:h-52 lg:w-56 lg:h-56 rounded-xl overflow-hidden bg-[rgb(var(--card))] border border-[rgb(var(--border))] mb-4">
                 {currentSong ? (
-                  <img
+                  <Image
                     src={coverUrl(currentSong)}
                     alt={currentSong.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 640px) 192px, 224px"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[rgb(var(--text-muted))]">
