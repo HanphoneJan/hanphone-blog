@@ -156,7 +156,7 @@ pnpm build:photo-wall
 | [后端开发指南](server/README.md)             | 后端配置、启动、API          |
 | [后端技术文档](server/TECHNICAL_DOCUMENT.md) | 后端架构、分层设计、安全     |
 | [测试指南](TESTING.md)                       | 单元测试、E2E 测试、CI 配置  |
-| [Docker 部署](server/DOCKER_DEPLOYMENT.md)   | 生产环境 Docker 部署         |
+| [部署指南](server/DEPLOYMENT.md)             | 生产部署（Systemd / Docker） |
 | [API 文档使用](server/SWAGGER_USAGE.md)      | SpringDoc OpenAPI 3 注解说明 |
 | [文件服务](admin-file/README.md)             | admin-file 功能、API、配置   |
 | [照片墙前端](apps/photo-wall/README.md)      | Vue 3 照片墙开发指南         |

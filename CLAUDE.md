@@ -89,5 +89,5 @@ Three jobs on push/PR to main: server tests (Maven), web unit tests (Vitest), bu
 - [前端开发指南](web/README.md) / [前端技术文档](web/TECHNICAL_DOCUMENT.md)
 - [后端开发指南](server/README.md) / [后端技术文档](server/TECHNICAL_DOCUMENT.md)
 - [测试指南](TESTING.md)
-- [Docker 部署](server/DOCKER_DEPLOYMENT.md)
+- [部署指南](server/DEPLOYMENT.md)（Systemd / Docker）
 - [Swagger 使用说明](server/SWAGGER_USAGE.md)

@@ -58,17 +58,17 @@ mvn spring-boot:run
 
 ```bash
 mvn clean package
-java -jar target/blog.jar --spring.profiles.active=prod
+java -jar target/blog-3.0.jar --spring.profiles.active=prod
 ```
 
-### Docker 部署（推荐）
+### 生产部署
 
-```bash
-# 一键启动 PostgreSQL + Redis + 后端
-docker compose up -d
-```
+支持两种方式，详见 [DEPLOYMENT.md](./DEPLOYMENT.md)：
 
-详细说明: [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)
+- **Systemd 原生部署**（当前使用）：主机托管 jar + `EnvironmentFile` 注入 `.env`
+- **Docker Compose 部署**：一键拉起 PostgreSQL + Redis + 后端
+
+Docker 完整说明另见 [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)。
 
 ---
 
@@ -107,6 +107,7 @@ server/
 │           └── web/                    # 接口测试
 ├── test.py                             # 安全 & 功能回归测试 (Python)
 ├── stress_test.py                      # 压力测试 (Python)
+├── DEPLOYMENT.md                       # 部署指南（Systemd / Docker）
 ├── docker-compose.yml
 ├── Dockerfile
 └── pom.xml
