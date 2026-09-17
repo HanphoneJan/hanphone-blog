@@ -10,6 +10,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -34,8 +35,6 @@ public class IdempotencyAspect {
     private static final String HEADER_REQUEST_ID = "X-Request-Id";
     private static final String KEY_PREFIX = "idem:";
     private static final String VALUE_PENDING = "PENDING";
-    private static final long DEFAULT_MAX_WAIT_MS = 3000L;
-    private static final long DEFAULT_POLL_INTERVAL_MS = 100L;
     private static final int MAX_REQUEST_ID_LENGTH = 128;
 
     private final RedisTemplate<String, String> redisTemplate;
@@ -43,12 +42,10 @@ public class IdempotencyAspect {
     private final long maxWaitMs;
     private final long pollIntervalMs;
 
-    public IdempotencyAspect(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper) {
-        this(redisTemplate, objectMapper, DEFAULT_MAX_WAIT_MS, DEFAULT_POLL_INTERVAL_MS);
-    }
-
-    public IdempotencyAspect(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper,
-            long maxWaitMs, long pollIntervalMs) {
+    public IdempotencyAspect(RedisTemplate<String, String> redisTemplate,
+            ObjectMapper objectMapper,
+            @Value("${idempotency.max-wait-ms:3000}") long maxWaitMs,
+            @Value("${idempotency.poll-interval-ms:100}") long pollIntervalMs) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.maxWaitMs = maxWaitMs;
