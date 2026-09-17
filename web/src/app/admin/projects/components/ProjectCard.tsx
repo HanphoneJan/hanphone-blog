@@ -306,6 +306,12 @@ export const ProjectCard = ({
               </div>
             </div>
 
+            {/* 时间信息（只读，自动维护） */}
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[rgb(var(--text-muted))]">
+              <span>创建时间：{project.createdTime ? new Date(project.createdTime).toLocaleDateString('zh-CN') : '-'}</span>
+              <span>更新时间：{project.updateTime ? new Date(project.updateTime).toLocaleDateString('zh-CN') : '-'}</span>
+            </div>
+
             {/* 第三行：技术栈和操作按钮 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 技术栈 */}

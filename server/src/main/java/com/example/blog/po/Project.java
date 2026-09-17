@@ -5,6 +5,8 @@ import lombok.Data;
 
 import jakarta.persistence.*;
 
+import java.util.Date;
+
 @Entity
 @Table(name = "t_project", indexes = {
         @Index(name = "idx_project_published", columnList = "published")
@@ -26,10 +28,26 @@ public class Project {
     @Column(name = "published")
     private Boolean published = false;
 
+    @Column(name = "created_time")
+    private Date createdTime;
+
+    @Column(name = "update_time")
+    private Date updateTime;
+
     @PrePersist
     protected void onCreate() {
         if (published == null) {
             published = false;
         }
+        Date now = new Date();
+        if (createdTime == null) {
+            createdTime = now;
+        }
+        updateTime = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updateTime = new Date();
     }
 }

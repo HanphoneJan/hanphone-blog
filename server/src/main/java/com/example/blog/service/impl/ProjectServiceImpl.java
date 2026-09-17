@@ -262,6 +262,8 @@ public class ProjectServiceImpl implements ProjectService {
     public List<Project> listPublishedProjectByType(Integer type) {
         requireNonNull(type, "type must not be null");
         try {
+            Sort sort = Sort.by(Sort.Direction.DESC, "recommend")
+                    .and(Sort.by(Sort.Direction.DESC, "updateTime"));
             return projectRepository.findAll(
                     (Specification<Project>) (root, cq, cb) -> {
                         List<Predicate> predicates = new ArrayList<>();
@@ -270,7 +272,7 @@ public class ProjectServiceImpl implements ProjectService {
                         predicates.add(cb.notEqual(root.get("type"), 0));
                         cq.where(predicates.toArray(new Predicate[0]));
                         return null;
-                    });
+                    }, sort);
         } catch (Exception e) {
             throw new RuntimeException("Failed to list published projects by type: " + type, e);
         }

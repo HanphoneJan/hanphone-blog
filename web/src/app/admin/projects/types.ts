@@ -27,8 +27,8 @@ export interface Project {
   tempContent?: string
   tempImageUrl?: string
   tempUrl?: string
-  created_at?: string
-  updated_at?: string
+  createdTime?: string
+  updateTime?: string
 }
 
 // 项目表单数据类型
