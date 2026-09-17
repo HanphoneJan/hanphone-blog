@@ -73,7 +73,7 @@ export function ArticleRow({ blog, index = 0 }: ArticleRowProps) {
             {/* 元信息 - 移动端优化布局 */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-xs text-[rgb(var(--text-muted))]">
               {/* 第一行：作者、日期、阅读量 */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {/* 作者头像和名字 */}
                 <div className="flex items-center gap-1.5">
                   <div className="relative w-4 h-4 rounded-full overflow-hidden border border-[rgb(var(--border))]">
