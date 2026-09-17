@@ -99,7 +99,9 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("不允许的跨域来源"));
+      const err = new Error("不允许的跨域来源");
+      err.statusCode = 403;
+      return callback(err);
     },
     methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization", "Token"],

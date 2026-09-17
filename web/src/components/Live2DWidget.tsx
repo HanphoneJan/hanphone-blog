@@ -34,8 +34,8 @@ const Live2DWidget = () => {
       const handle = (window as any).requestIdleCallback(() => setReady(true), { timeout: 3000 })
       cancel = () => (window as any).cancelIdleCallback?.(handle)
     } else {
-      const handle = window.setTimeout(() => setReady(true), 2000)
-      cancel = () => window.clearTimeout(handle)
+      const handle = (window as any).setTimeout(() => setReady(true), 2000)
+      cancel = () => (window as any).clearTimeout(handle)
     }
     return () => cancel()
   }, [])

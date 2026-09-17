@@ -262,8 +262,11 @@ public class ProjectServiceImpl implements ProjectService {
     public List<Project> listPublishedProjectByType(Integer type) {
         requireNonNull(type, "type must not be null");
         try {
-            Sort sort = Sort.by(Sort.Direction.DESC, "recommend")
-                    .and(Sort.by(Sort.Direction.DESC, "updateTime"));
+            // 存量数据 update_time 为 NULL，DESC 默认 NULLS FIRST 会把旧项目排在最前；
+            // 显式 NULLS LAST，让有更新时间的项目排在前面
+            Sort sort = Sort.by(new Sort.Order(Sort.Direction.DESC, "recommend"))
+                    .and(Sort.by(new Sort.Order(Sort.Direction.DESC, "updateTime")
+                            .with(Sort.NullHandling.NULLS_LAST)));
             return projectRepository.findAll(
                     (Specification<Project>) (root, cq, cb) -> {
                         List<Predicate> predicates = new ArrayList<>();

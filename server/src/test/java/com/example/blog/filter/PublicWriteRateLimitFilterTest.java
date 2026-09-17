@@ -62,7 +62,7 @@ class PublicWriteRateLimitFilterTest {
     @Test
     void xRealIpFromTrustedProxyIsUsed() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/comments");
-        request.setRemoteAddr("9.9.9.9");
+        request.setRemoteAddr("127.0.0.1");
         request.addHeader("X-Real-IP", "5.5.5.5");
 
         filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
@@ -70,5 +70,19 @@ class PublicWriteRateLimitFilterTest {
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         verify(valueOps).increment(captor.capture());
         assertTrue(captor.getValue().contains("5.5.5.5"));
+    }
+
+    @Test
+    void spoofedXRealIpFromDirectClientIsNotTrusted() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/comments");
+        request.setRemoteAddr("9.9.9.9");
+        request.addHeader("X-Real-IP", "1.2.3.4");
+
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(valueOps).increment(captor.capture());
+        assertTrue(captor.getValue().contains("9.9.9.9"));
+        assertFalse(captor.getValue().contains("1.2.3.4"));
     }
 }

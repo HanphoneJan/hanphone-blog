@@ -18,7 +18,10 @@ interface UseCommentsOptions {
 
 export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments }: UseCommentsOptions) {
   const [content, setContent] = useState('')
-  const { getId: getRequestId, reset: resetRequestId } = useRequestId()
+  const { getId: getCommentRequestId, reset: resetCommentRequestId } = useRequestId()
+  const { getId: getReplyRequestId, reset: resetReplyRequestId } = useRequestId()
+
+  const isReply = (parentId: number) => parentId !== -1
 
   const findComment = useCallback((commentId: number): CommentItem | null => {
     return comments.find(c => c.id === commentId) || null
@@ -60,12 +63,13 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
         return
       }
 
+      const requestId = isReply(parentId) ? getReplyRequestId() : getCommentRequestId()
       const res = await fetchData(ENDPOINTS.COMMENTS, 'POST', {
         content: commentContent,
         blogId,
         userId: userInfo.id || 1,
         parentId: parentId
-      }, getRequestId())
+      }, requestId)
 
       if (res.code !== API_CODE.SUCCESS) {
         showAlert(res.message || BLOG_DETAIL_LABELS.COMMENT_FAIL_RETRY)
@@ -98,7 +102,8 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
           setContent('')
         }
         dispatch({ type: 'SET_RP_ACTIVE_ID', payload: -1 })
-        resetRequestId()
+        if (isReply(parentId)) resetReplyRequestId()
+        else resetCommentRequestId()
         showAlert(BLOG_DETAIL_LABELS.COMMENT_SUCCESS)
       }
 
@@ -108,7 +113,7 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
       showAlert(BLOG_DETAIL_LABELS.COMMENT_FAIL)
       console.error('提交失败:', error)
     }
-  }, [content, blogId, userInfo, onShowLogin, dispatch, findComment, fetchData, getRequestId, resetRequestId])
+  }, [content, blogId, userInfo, onShowLogin, dispatch, findComment, fetchData, getCommentRequestId, resetCommentRequestId, getReplyRequestId, resetReplyRequestId])
 
   const handleDeleteComment = useCallback(async (id: number) => {
     try {

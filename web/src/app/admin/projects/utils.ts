@@ -176,7 +176,7 @@ export const sortProjects = (
 
     switch (sortBy) {
       case 'created':
-        comparison = new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+        comparison = new Date(a.createdTime || 0).getTime() - new Date(b.createdTime || 0).getTime()
         break
       case 'name':
         comparison = a.title.localeCompare(b.title)

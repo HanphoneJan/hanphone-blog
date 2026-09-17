@@ -26,9 +26,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 class IdempotencyAspectTest {
 
@@ -129,6 +131,74 @@ class IdempotencyAspectTest {
 
         verify(redisTemplate).delete(KEY);
         verify(valueOps, never()).set(eq(KEY), anyString(), any(Duration.class));
+    }
+
+    @Test
+    void cacheFailure_keepsDoneMarkerSoRetryDoesNotDuplicate() throws Throwable {
+        withRequestId();
+        when(valueOps.setIfAbsent(eq(KEY), eq("PENDING"), any(Duration.class))).thenReturn(true);
+        when(pjp.proceed()).thenReturn(ok("c1"));
+        doThrow(new RuntimeException("serialize fail"))
+                .when(valueOps).set(eq(KEY), anyString(), any(Duration.class));
+
+        aspect.around(pjp, annotation());
+
+        // 业务成功但缓存失败时：不得删除幂等键（否则重试会重复写入），应写入 DONE 完成标记
+        verify(redisTemplate, never()).delete(KEY);
+        ArgumentCaptor<Duration> ttlCaptor = ArgumentCaptor.forClass(Duration.class);
+        verify(valueOps).set(eq(KEY), eq("DONE"), ttlCaptor.capture());
+        // DONE 标记必须用完整 TTL（与成功缓存一致）：若用短 pendingTtl，过期后重试会重新抢占并重复写入
+        assertEquals(Duration.ofSeconds(annotation().ttlSeconds()), ttlCaptor.getValue());
+    }
+
+    @Test
+    void retrySeesDoneMarker_returnsProcessedMessageWithoutProceeding() throws Throwable {
+        withRequestId();
+        when(valueOps.setIfAbsent(eq(KEY), eq("PENDING"), any(Duration.class))).thenReturn(false);
+        when(valueOps.get(KEY)).thenReturn("DONE");
+
+        Object result = aspect.around(pjp, annotation());
+
+        assertInstanceOf(Result.class, result);
+        Result<?> done = (Result<?>) result;
+        assertEquals(false, done.isFlag());
+        assertEquals("请求已处理成功，请勿重复提交", done.getMessage());
+        verify(pjp, never()).proceed();
+    }
+
+    @Test
+    void nullKey_reacquiresBeforeExecuting_toAvoidConcurrentDuplicates() throws Throwable {
+        withRequestId();
+        // 首个请求失败释放 key，两个并发重试同时看到 null
+        when(valueOps.setIfAbsent(eq(KEY), eq("PENDING"), any(Duration.class))).thenReturn(false);
+        when(valueOps.get(KEY)).thenReturn(null);
+        // 其中一个重试抢占成功，执行业务
+        when(valueOps.setIfAbsent(eq(KEY), eq("PENDING"), any(Duration.class)))
+                .thenReturn(false, true);
+        Result<String> success = ok("c1");
+        when(pjp.proceed()).thenReturn(success);
+
+        Object result = aspect.around(pjp, annotation());
+
+        assertEquals(success, result);
+        verify(pjp).proceed();
+    }
+
+    @Test
+    void concurrentRetryLosesReacquire_waitsForWinner() throws Throwable {
+        withRequestId();
+        when(valueOps.setIfAbsent(eq(KEY), eq("PENDING"), any(Duration.class))).thenReturn(false);
+        // get 先返回 null（首个失败），随后抢占失败（另一重试已抢），再读到 PENDING
+        when(valueOps.get(KEY)).thenReturn(null, "PENDING");
+        when(valueOps.setIfAbsent(eq(KEY), eq("PENDING"), any(Duration.class)))
+                .thenReturn(false, false);
+
+        Object result = aspect.around(pjp, annotation());
+
+        assertInstanceOf(Result.class, result);
+        Result<?> pending = (Result<?>) result;
+        assertEquals(false, pending.isFlag());
+        verify(pjp, never()).proceed();
     }
 
     @Test
