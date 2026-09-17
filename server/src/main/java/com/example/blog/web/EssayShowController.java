@@ -1,5 +1,6 @@
 package com.example.blog.web;
 
+import com.example.blog.annotation.Idempotent;
 import com.example.blog.constants.CommonConstants;
 import com.example.blog.constants.PaginationConstants;
 import com.example.blog.enums.UserType;
@@ -92,6 +93,7 @@ public class EssayShowController {
     }
 
     @PostMapping("/essays/{id}/comments")
+    @Idempotent
     public Result<EssayComment> post(@PathVariable Long id, @RequestBody Map<String, Object> para) {
         String content = (String) para.get("content");
         Long userId = Long.parseLong(para.get("userId").toString());

@@ -25,7 +25,7 @@ export function useEssays(userInfo: UserInfo | null, options: UseEssaysOptions =
   })
 
   // API调用函数 - 添加缓存机制
-  const fetchData = useCallback(async (url: string, method: string = 'GET', data?: unknown) => {
+  const fetchData = useCallback(async (url: string, method: string = 'GET', data?: unknown, requestId?: string) => {
     if (method === 'GET') {
       const cacheKey = `${url}?${JSON.stringify(data)}`
       const cachedData = cacheRef.current.get(cacheKey)
@@ -40,7 +40,8 @@ export function useEssays(userInfo: UserInfo | null, options: UseEssaysOptions =
         url,
         method,
         data: method !== 'GET' ? data : undefined,
-        params: method === 'GET' ? data : undefined
+        params: method === 'GET' ? data : undefined,
+        headers: requestId ? { 'X-Request-Id': requestId } : undefined
       })
 
       if (method === 'GET') {
