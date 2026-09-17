@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { ENDPOINTS } from '@/lib/api'
 import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
+import { useRequestId } from '@/lib/requestId'
 import type { CommentItem, ParentComment, UserInfo } from '../types'
 
 import { API_CODE } from '@/lib/constants'
@@ -17,17 +18,19 @@ interface UseCommentsOptions {
 
 export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments }: UseCommentsOptions) {
   const [content, setContent] = useState('')
+  const { getId: getRequestId, reset: resetRequestId } = useRequestId()
 
   const findComment = useCallback((commentId: number): CommentItem | null => {
     return comments.find(c => c.id === commentId) || null
   }, [comments])
 
-  const fetchData = useCallback(async (url: string, method: string = 'GET', data?: unknown) => {
+  const fetchData = useCallback(async (url: string, method: string = 'GET', data?: unknown, requestId?: string) => {
     try {
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...(requestId ? { 'X-Request-Id': requestId } : {}),
         },
         body: method !== 'GET' ? JSON.stringify(data) : undefined,
       })
@@ -62,7 +65,7 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
         blogId,
         userId: userInfo.id || 1,
         parentId: parentId
-      })
+      }, getRequestId())
 
       if (res.code !== API_CODE.SUCCESS) {
         showAlert(res.message || BLOG_DETAIL_LABELS.COMMENT_FAIL_RETRY)
@@ -95,6 +98,7 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
           setContent('')
         }
         dispatch({ type: 'SET_RP_ACTIVE_ID', payload: -1 })
+        resetRequestId()
         showAlert(BLOG_DETAIL_LABELS.COMMENT_SUCCESS)
       }
 
@@ -104,7 +108,7 @@ export function useComments({ blogId, userInfo, onShowLogin, dispatch, comments 
       showAlert(BLOG_DETAIL_LABELS.COMMENT_FAIL)
       console.error('提交失败:', error)
     }
-  }, [content, blogId, userInfo, onShowLogin, dispatch, findComment, fetchData])
+  }, [content, blogId, userInfo, onShowLogin, dispatch, findComment, fetchData, getRequestId, resetRequestId])
 
   const handleDeleteComment = useCallback(async (id: number) => {
     try {

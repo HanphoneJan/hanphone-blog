@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { X, Link2, User, Image, Rss, Palette, FileText, Send, Loader2, Check, Copy } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import { SITE_URL } from '@/lib/seo-config'
+import { useRequestId } from '@/lib/requestId'
 
 import { API_CODE } from '@/lib/constants'
 interface ApplyModalProps {
@@ -116,6 +117,7 @@ export default function ApplyModal({ isOpen, onClose, defaultTab = 'copy' }: App
   const [error, setError] = useState('')
   const [copyFormat, setCopyFormat] = useState<CopyFormat>('yaml')
   const [copied, setCopied] = useState(false)
+  const { getId: getRequestId, reset: resetRequestId } = useRequestId()
 
   const handleCopy = async () => {
     try {
@@ -165,13 +167,17 @@ export default function ApplyModal({ isOpen, onClose, defaultTab = 'copy' }: App
 
       const res = await fetch(ENDPOINTS.FRIENDLINKS_APPLY, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Request-Id': getRequestId()
+        },
         body: JSON.stringify(payload)
       })
 
       const data = await res.json()
 
       if (data.flag && data.code === API_CODE.SUCCESS) {
+        resetRequestId()
         setSuccess(true)
         setTimeout(() => {
           setSuccess(false)

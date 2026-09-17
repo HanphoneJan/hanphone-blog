@@ -4,6 +4,7 @@ import { useCallback } from 'react'
 import { ENDPOINTS } from '@/lib/api'
 import { showAlert } from '@/lib/Alert'
 import { ESSAY_LABELS } from '@/lib/labels'
+import { useRequestId } from '@/lib/requestId'
 import type { Essay, UserInfo, Comment } from '../types'
 
 import { API_CODE } from '@/lib/constants'
@@ -13,7 +14,7 @@ interface UseEssayActionsOptions {
   administrator: boolean
   onShowLogin: () => void
   dispatch: React.Dispatch<any>
-  fetchData: (url: string, method?: string, data?: unknown) => Promise<any>
+  fetchData: (url: string, method?: string, data?: unknown, requestId?: string) => Promise<any>
 }
 
 export function useEssayActions({
@@ -24,6 +25,7 @@ export function useEssayActions({
   dispatch,
   fetchData
 }: UseEssayActionsOptions) {
+  const { getId: getRequestId, reset: resetRequestId } = useRequestId()
   // 点赞/取消点赞
   const toggleLike = useCallback(async (essayId: number) => {
     if (!userInfo) {
@@ -89,7 +91,7 @@ export function useEssayActions({
         userId: userInfo.id,
         content: trimmedContent,
         parentCommentId: -1
-      })
+      }, getRequestId())
 
       if (res.code === API_CODE.SUCCESS) {
         const newComment: Comment = {
@@ -105,6 +107,7 @@ export function useEssayActions({
 
         dispatch({ type: 'ADD_COMMENT', payload: { essayId, comment: newComment } })
         dispatch({ type: 'SET_COMMENT_INPUT', payload: { essayId, value: '' } })
+        resetRequestId()
         showAlert(ESSAY_LABELS.COMMENT_SUCCESS)
       } else {
         showAlert(ESSAY_LABELS.COMMENT_FAIL)
@@ -113,7 +116,7 @@ export function useEssayActions({
       console.log('评论操作失败:', error)
       showAlert(ESSAY_LABELS.COMMENT_FAIL)
     }
-  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays])
+  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays, getRequestId, resetRequestId])
 
   // 提交回复
   const submitReply = useCallback(async (essayId: number, commentId: number, content: string) => {
@@ -134,7 +137,7 @@ export function useEssayActions({
         userId: userInfo.id,
         content: trimmedContent,
         parentCommentId: commentId || -1
-      })
+      }, getRequestId())
 
       if (res.code === API_CODE.SUCCESS) {
         const newReply: Comment = {
@@ -152,6 +155,7 @@ export function useEssayActions({
         dispatch({ type: 'ADD_COMMENT', payload: { essayId, comment: newReply } })
         dispatch({ type: 'SET_REPLY_INPUT', payload: { commentId, value: '' } })
         dispatch({ type: 'TOGGLE_REPLY_BOX', payload: { commentId, value: false } })
+        resetRequestId()
         showAlert(ESSAY_LABELS.REPLY_SUCCESS)
       } else {
         showAlert(ESSAY_LABELS.REPLY_FAIL)
@@ -160,7 +164,7 @@ export function useEssayActions({
       console.log('回复操作失败:', error)
       showAlert(ESSAY_LABELS.REPLY_FAIL)
     }
-  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays])
+  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays, getRequestId, resetRequestId])
 
   // 删除评论（仅管理员）
   const deleteComment = useCallback(async (essayId: number, commentId: number) => {

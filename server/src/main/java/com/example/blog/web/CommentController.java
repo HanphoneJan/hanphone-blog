@@ -1,5 +1,6 @@
 package com.example.blog.web;
 
+import com.example.blog.annotation.Idempotent;
 import com.example.blog.constants.CommonConstants;
 import com.example.blog.enums.UserType;
 import com.example.blog.po.Blog;
@@ -57,6 +58,7 @@ public class CommentController {
     }
 
     @PostMapping("/comments")
+    @Idempotent
     public Result<Comment> post(@RequestBody Map<String, Object> para) {
         try {
             String content = (String) para.get("content");

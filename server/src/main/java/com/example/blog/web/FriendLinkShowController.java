@@ -1,5 +1,6 @@
 package com.example.blog.web;
 
+import com.example.blog.annotation.Idempotent;
 import com.example.blog.po.FriendLink;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
@@ -33,6 +34,7 @@ public class FriendLinkShowController {
 
     // 前台申请友链（免登录）
     @PostMapping("/friendLinks/apply")
+    @Idempotent
     public Result<FriendLink> applyFriendLink(@RequestBody FriendLink friendLink) {
         try {
             // 文本粘贴模式：有 applyText 时不强制校验 name/url

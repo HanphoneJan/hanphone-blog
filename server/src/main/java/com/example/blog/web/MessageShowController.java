@@ -1,5 +1,6 @@
 package com.example.blog.web;
 
+import com.example.blog.annotation.Idempotent;
 import com.example.blog.constants.CommonConstants;
 import com.example.blog.po.Message;
 import com.example.blog.po.Result;
@@ -38,6 +39,7 @@ public class MessageShowController {
     }
 
     @PostMapping("/messages")
+    @Idempotent
     public Result<Message> post(@RequestBody Map<String, Object> para) {
         try {
             Object messageObj = para.get("message");
