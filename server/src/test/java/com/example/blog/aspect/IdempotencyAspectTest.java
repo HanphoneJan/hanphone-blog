@@ -154,6 +154,12 @@ class IdempotencyAspectTest {
     }
 
     @Test
+    void singlePublicConstructor_forSpringAutowiring() {
+        assertEquals(1, IdempotencyAspect.class.getConstructors().length,
+                "必须保持单一构造器，Spring 才能自动注入（多构造器会导致 No default constructor found）");
+    }
+
+    @Test
     void exception_deletesKeyAndRethrows() throws Throwable {
         withRequestId();
         when(valueOps.setIfAbsent(eq(KEY), eq("PENDING"), any(Duration.class))).thenReturn(true);
