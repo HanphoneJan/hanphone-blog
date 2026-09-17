@@ -22,6 +22,8 @@ public class BlogMonthlyVisitsServiceImpl implements BlogMonthlyVisitsService {
     private final BlogMonthlyVisitsRepository blogMonthlyVisitsRepository;
 
     // 进程内总访问量缓存，避免每次读取都做全表 SUM；-1 表示未初始化
+    // 注意：仅适用于单实例部署；多实例下各实例缓存会各自自增而与 DB 漂移，
+    // 若将来水平扩容需改用 Redis/共享计数。
     private final AtomicLong totalVisitsCache = new AtomicLong(-1);
 
     public BlogMonthlyVisitsServiceImpl(BlogMonthlyVisitsRepository blogMonthlyVisitsRepository) {

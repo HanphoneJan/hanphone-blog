@@ -25,7 +25,8 @@ export function useEssayActions({
   dispatch,
   fetchData
 }: UseEssayActionsOptions) {
-  const { getId: getRequestId, reset: resetRequestId } = useRequestId()
+  const { getId: getCommentRequestId, reset: resetCommentRequestId } = useRequestId()
+  const { getId: getReplyRequestId, reset: resetReplyRequestId } = useRequestId()
   // 点赞/取消点赞
   const toggleLike = useCallback(async (essayId: number) => {
     if (!userInfo) {
@@ -91,7 +92,7 @@ export function useEssayActions({
         userId: userInfo.id,
         content: trimmedContent,
         parentCommentId: -1
-      }, getRequestId())
+      }, getCommentRequestId())
 
       if (res.code === API_CODE.SUCCESS) {
         const newComment: Comment = {
@@ -107,7 +108,7 @@ export function useEssayActions({
 
         dispatch({ type: 'ADD_COMMENT', payload: { essayId, comment: newComment } })
         dispatch({ type: 'SET_COMMENT_INPUT', payload: { essayId, value: '' } })
-        resetRequestId()
+        resetCommentRequestId()
         showAlert(ESSAY_LABELS.COMMENT_SUCCESS)
       } else {
         showAlert(ESSAY_LABELS.COMMENT_FAIL)
@@ -116,7 +117,7 @@ export function useEssayActions({
       console.log('评论操作失败:', error)
       showAlert(ESSAY_LABELS.COMMENT_FAIL)
     }
-  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays, getRequestId, resetRequestId])
+  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays, getCommentRequestId, resetCommentRequestId])
 
   // 提交回复
   const submitReply = useCallback(async (essayId: number, commentId: number, content: string) => {
@@ -137,7 +138,7 @@ export function useEssayActions({
         userId: userInfo.id,
         content: trimmedContent,
         parentCommentId: commentId || -1
-      }, getRequestId())
+      }, getReplyRequestId())
 
       if (res.code === API_CODE.SUCCESS) {
         const newReply: Comment = {
@@ -155,7 +156,7 @@ export function useEssayActions({
         dispatch({ type: 'ADD_COMMENT', payload: { essayId, comment: newReply } })
         dispatch({ type: 'SET_REPLY_INPUT', payload: { commentId, value: '' } })
         dispatch({ type: 'TOGGLE_REPLY_BOX', payload: { commentId, value: false } })
-        resetRequestId()
+        resetReplyRequestId()
         showAlert(ESSAY_LABELS.REPLY_SUCCESS)
       } else {
         showAlert(ESSAY_LABELS.REPLY_FAIL)
@@ -164,7 +165,7 @@ export function useEssayActions({
       console.log('回复操作失败:', error)
       showAlert(ESSAY_LABELS.REPLY_FAIL)
     }
-  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays, getRequestId, resetRequestId])
+  }, [userInfo, administrator, onShowLogin, dispatch, fetchData, essays, getReplyRequestId, resetReplyRequestId])
 
   // 删除评论（仅管理员）
   const deleteComment = useCallback(async (essayId: number, commentId: number) => {

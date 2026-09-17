@@ -128,7 +128,8 @@ const buildMessageTree = (messages: Message[]): Message[] => {
 export function useMessages(userInfo: { nickname?: string; avatar?: string } | null, administrator: boolean) {
   const [loading, setLoading] = useState(true)
   const [messages, dispatch] = useReducer(messageReducer, [])
-  const { getId: getRequestId, reset: resetRequestId } = useRequestId()
+  const { getId: getPublishRequestId, reset: resetPublishRequestId } = useRequestId()
+  const { getId: getReplyRequestId, reset: resetReplyRequestId } = useRequestId()
 
   const fetchMessages = useCallback(async () => {
     setLoading(true)
@@ -150,7 +151,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
         avatar: userInfo?.avatar || ASSETS.DEFAULT_AVATAR,
         parentMessage: null
       }
-      const res = await fetchData(ENDPOINTS.MESSAGES, 'POST', { message }, getRequestId())
+      const res = await fetchData(ENDPOINTS.MESSAGES, 'POST', { message }, getPublishRequestId())
       if (res.code === API_CODE.SUCCESS) {
         const newMsg: Message = {
           ...message,
@@ -161,7 +162,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
           children: []
         }
         dispatch({ type: 'ADD_MESSAGE', payload: newMsg })
-        resetRequestId()
+        resetPublishRequestId()
         showAlert(MESSAGE_LABELS.SEND_SUCCESS)
         return true
       }
@@ -171,7 +172,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
       showAlert(MESSAGE_LABELS.SEND_FAIL)
       return false
     }
-  }, [userInfo, administrator, getRequestId, resetRequestId])
+  }, [userInfo, administrator, getPublishRequestId, resetPublishRequestId])
 
   const reply = useCallback(async (messageId: number, content: string) => {
     if (!content.trim() || content.length > 500) return false
@@ -199,7 +200,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
         avatar: userInfo?.avatar || ASSETS.DEFAULT_AVATAR,
         parentId: target.id
       }
-      const res = await fetchData(ENDPOINTS.MESSAGES, 'POST', { message }, getRequestId())
+      const res = await fetchData(ENDPOINTS.MESSAGES, 'POST', { message }, getReplyRequestId())
       if (res.code === API_CODE.SUCCESS) {
         const newReply: Message = {
           ...message,
@@ -222,7 +223,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
         }
         const parentId = target.parentMessage ? findRootId(messages) || messageId : messageId
         dispatch({ type: 'ADD_REPLY', payload: { parentId, reply: newReply } })
-        resetRequestId()
+        resetReplyRequestId()
         showAlert(MESSAGE_LABELS.REPLY_SUCCESS)
         return true
       }
@@ -232,7 +233,7 @@ export function useMessages(userInfo: { nickname?: string; avatar?: string } | n
       showAlert(MESSAGE_LABELS.REPLY_FAIL)
       return false
     }
-  }, [userInfo, administrator, messages, getRequestId, resetRequestId])
+  }, [userInfo, administrator, messages, getReplyRequestId, resetReplyRequestId])
 
   const remove = useCallback(async (id: number) => {
     try {
