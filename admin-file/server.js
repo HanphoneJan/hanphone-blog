@@ -85,16 +85,26 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// 配置CORS
+// 配置CORS（仅允许白名单域名）
+const allowedOrigins = [
+  "https://hanphone.cn",
+  "https://docs.hanphone.cn",
+  "https://www.hanphone.cn",
+  "https://hanphone.top",
+  "https://www.hanphone.top",
+];
 app.use(
   cors({
-    origin: "*",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("不允许的跨域来源"));
+    },
     methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization", "Token"],
   })
 );
-
-app.options("/*all", cors());
 
 // 【修改 1】丰富了文件类型分类
 const fileCategories = {
@@ -479,7 +489,9 @@ const avatarFileFilter = (req, file, cb) => {
   if (allowedMimetypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error("仅限上传图片文件（jpg, jpeg, png, gif, webp, avif, svg）"), false);
+    const err = new Error("仅限上传图片文件（jpg, jpeg, png, gif, webp, avif, svg）");
+    err.statusCode = 400;
+    cb(err, false);
   }
 };
 
@@ -1137,20 +1149,20 @@ app.get("/files", authenticateToken, async (req, res) => {
 
     if (!namespace && !category) {
       const items = await fs.readdir(baseUploadDir, { withFileTypes: true });
-      const result = [];
-      for (const item of items) {
-        if (item.name === "temp") continue; // 不显示临时目录
-        const itemPath = path.join(baseUploadDir, item.name);
-        const stats = await fs.stat(itemPath);
-        result.push({
-          name: item.name,
-          isDirectory: item.isDirectory(),
-          type: item.isDirectory() ? "namespace" : "file",
-          size: stats.size,
-          mtime: stats.mtime,
-          birthtime: stats.birthtime,
-        });
-      }
+      const result = await Promise.all(items
+        .filter((item) => item.name !== "temp")
+        .map(async (item) => {
+          const itemPath = path.join(baseUploadDir, item.name);
+          const stats = await fs.stat(itemPath);
+          return {
+            name: item.name,
+            isDirectory: item.isDirectory(),
+            type: item.isDirectory() ? "namespace" : "file",
+            size: stats.size,
+            mtime: stats.mtime,
+            birthtime: stats.birthtime,
+          };
+        }));
       return res.json({
         code: 200,
         message: "获取根目录内容成功",
@@ -1165,13 +1177,12 @@ app.get("/files", authenticateToken, async (req, res) => {
     }
 
     const items = await fs.readdir(targetDir, { withFileTypes: true });
-    const fileItems = [];
     const dirStats = await fs.stat(targetDir);
 
-    for (const item of items) {
+    const fileItems = await Promise.all(items.map(async (item) => {
       const itemPath = path.join(targetDir, item.name);
       const stats = await fs.stat(itemPath);
-      fileItems.push({
+      return {
         name: item.name,
         isDirectory: item.isDirectory(),
         size: stats.size,
@@ -1179,8 +1190,8 @@ app.get("/files", authenticateToken, async (req, res) => {
         birthtime: stats.birthtime,
         category: !namespace ? category : null,
         namespace: namespace || null,
-      });
-    }
+      };
+    }));
 
     res.json({
       code: 200,
@@ -1464,6 +1475,9 @@ app.use((err, req, res, next) => {
       return res.status(413).json({ error: "头像文件大小超过限制（最大5MB）" });
     }
     return res.status(413).json({ error: "文件大小超过限制（最大1GB）" });
+  }
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({ error: err.message });
   }
   res.status(500).json({ error: "服务器内部错误" });
 });
