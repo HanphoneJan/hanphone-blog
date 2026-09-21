@@ -33,7 +33,7 @@ pnpm --filter admin-file start     # Express file service (port 4000)
 # photo-wall-server: node app.js (port 4001)
 
 # === Backend security regression tests ===
-cd server && python3 test.py       # 39 security test cases
+cd server && python3 test.py       # 39 security test cases；注册/找回密码用例需本地 Redis + redis-py（从 Redis 读取验证码）
 ```
 
 ## Architecture
