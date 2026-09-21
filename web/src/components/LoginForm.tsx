@@ -377,9 +377,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.MODAL }}>
       <ModalOverlay onClick={onClose} />
 
-      <div className="relative z-10 bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
+      <div className="relative z-10 bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md max-h-[60vh] flex flex-col transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
         
-        <div className="flex justify-between items-center px-6 py-4 border-b border-[rgb(var(--border))]">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-[rgb(var(--border))] shrink-0">
           <h2 className="text-lg font-semibold text-[rgb(var(--primary))]">
             {isResetMode ? '找回密码' : '登录'}
           </h2>
@@ -391,7 +391,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={isResetMode ? handleResetSubmit : handleLoginSubmit} className="p-6">
+        <form onSubmit={isResetMode ? handleResetSubmit : handleLoginSubmit} className="p-6 overflow-y-auto min-h-0">
           {isResetMode ? (
             <>
               <div className="mb-4">
@@ -433,7 +433,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
                     name="captcha"
                     value={resetData.captcha}
                     onChange={handleResetInputChange}
-                    className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                    className={`min-w-0 flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
                       resetErrors.captcha
                         ? 'border-danger focus:ring-danger/50'
                         : 'border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:border-[rgb(var(--primary))] focus:ring-[rgb(var(--primary)/0.5)]'
@@ -444,7 +444,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
                     type="button"
                     onClick={getCaptcha}
                     disabled={loading || countdown > 0}
-                    className="px-4 py-2 rounded-md hover:disabled:opacity-50 transition-colors whitespace-nowrap bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                    className="px-4 py-2 rounded-md hover:disabled:opacity-50 transition-colors whitespace-nowrap shrink-0 bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
                   >
                     {countdown > 0 ? `重新发送(${countdown}s)` : '获取验证码'}
                   </button>
