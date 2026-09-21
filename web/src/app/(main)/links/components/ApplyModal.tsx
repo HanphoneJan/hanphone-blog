@@ -206,7 +206,7 @@ export default function ApplyModal({ isOpen, onClose, defaultTab = 'copy' }: App
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-[rgb(var(--bg))] border-2 border-[rgb(var(--text))]"
+        className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-[rgb(var(--bg))] border-2 border-[rgb(var(--text))]"
         onClick={e => e.stopPropagation()}
       >
         {/* 阴影层 */}
@@ -224,7 +224,7 @@ export default function ApplyModal({ isOpen, onClose, defaultTab = 'copy' }: App
         </button>
 
         {/* 标题 */}
-        <div className="p-6 border-b-2 border-[rgb(var(--text))]">
+        <div className="p-6 border-b-2 border-[rgb(var(--text))] shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[16px] border-b-[rgb(var(--primary))]" />
             <h3 className="text-xl font-black" style={{ fontFamily: 'var(--font-body)' }}>
@@ -268,7 +268,7 @@ export default function ApplyModal({ isOpen, onClose, defaultTab = 'copy' }: App
         </div>
 
         {/* 内容 */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto min-h-0 flex-1">
           {activeTab === 'copy' && (
             <div className="space-y-4">
               <p className="text-sm opacity-80">
@@ -503,7 +503,7 @@ export default function ApplyModal({ isOpen, onClose, defaultTab = 'copy' }: App
         </div>
 
         {/* 底部按钮 */}
-        <div className="p-6 border-t-2 border-[rgb(var(--text))] flex gap-3">
+        <div className="p-6 border-t-2 border-[rgb(var(--text))] flex gap-3 shrink-0">
           {activeTab === 'copy' ? (
             <button
               onClick={onClose}
