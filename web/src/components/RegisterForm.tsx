@@ -34,6 +34,7 @@ interface FormData {
   username: string
   password: string
   email: string
+  captcha: string
 }
 
 // 错误信息类型
@@ -42,6 +43,7 @@ interface FormErrors {
   username?: string
   password?: string
   email?: string
+  captcha?: string
 }
 
 interface RegisterFormProps {
@@ -56,12 +58,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
     nickname: '',
     username: '',
     password: '',
-    email: ''
+    email: '',
+    captcha: ''
   })
   const [errors, setErrors] = useState<FormErrors>({})
+  const [countdown, setCountdown] = useState(0)
   const [avatarUrl, setAvatarUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const uploadRef = useRef<HTMLInputElement>(null) // 上传input的ref
+
+  // 验证码倒计时
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), TIME.COUNTDOWN_INTERVAL)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
 
   // 当visible变化时重置表单
   useEffect(() => {
@@ -151,6 +163,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
       newErrors.email = '请输入有效的邮箱地址'
     }
 
+    if (!formData.captcha) {
+      newErrors.captcha = '请输入验证码'
+    } else if (formData.captcha.length !== VALIDATION.CAPTCHA_LENGTH) {
+      newErrors.captcha = `验证码长度为${VALIDATION.CAPTCHA_LENGTH}位`
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -211,6 +229,32 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
     setAvatarUrl('')
   }
 
+  const getCaptcha = async () => {
+    if (!formData.email) {
+      setErrors(prev => ({ ...prev, email: '请输入邮箱' }))
+      return
+    }
+    if (!VALIDATION.EMAIL_REGEX.test(formData.email)) {
+      setErrors(prev => ({ ...prev, email: '请输入有效的邮箱地址' }))
+      return
+    }
+    try {
+      const response = await fetchData(ENDPOINTS.USER.SEND_CAPTCHA, 'POST', {
+        email: formData.email,
+        scene: 'register'
+      })
+      if (response.code === API_CODE.SUCCESS) {
+        alertSuccess(AUTH_LABELS.CAPTCHA_SENT)
+        setCountdown(VALIDATION.CAPTCHA_COUNTDOWN)
+      } else {
+        alertError(response.message || '获取验证码失败')
+      }
+    } catch (error) {
+      alertError(AUTH_LABELS.CAPTCHA_FAIL)
+      console.log('发送验证码错误' + error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -227,16 +271,20 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
 
       const response = await fetchData(ENDPOINTS.REGISTER, 'POST', user)
 
-      alertSuccess(AUTH_LABELS.REGISTER_SUCCESS)
+      if (response.code === API_CODE.SUCCESS) {
+        alertSuccess(AUTH_LABELS.REGISTER_SUCCESS)
 
-      // 使用context的setter方法更新用户状态
-      setToken(response.data.token)
-      setUserInfo(response.data.user)
+        // 使用context的setter方法更新用户状态
+        setToken(response.data.token)
+        setUserInfo(response.data.user)
 
-      // 注册成功后关闭表单
-      setTimeout(() => {
-        onClose()
-      }, TIME.SUCCESS_CLOSE_DELAY)
+        // 注册成功后关闭表单
+        setTimeout(() => {
+          onClose()
+        }, TIME.SUCCESS_CLOSE_DELAY)
+      } else {
+        alertError(response.message || AUTH_LABELS.REGISTER_FAIL)
+      }
     } catch (error) {
       console.log('注册错误' + error)
       alertError(AUTH_LABELS.REGISTER_FAIL)
@@ -248,10 +296,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
       nickname: '',
       username: '',
       password: '',
-      email: ''
+      email: '',
+      captcha: ''
     })
     setAvatarUrl('')
     setErrors({})
+    setCountdown(0)
   }
 
   if (!visible) return null
@@ -364,6 +414,41 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
             />
             {errors.email && (
               <p className="mt-1 text-sm text-danger dark:text-danger">{errors.email}</p>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="captcha"
+              className="block text-sm font-medium text-[rgb(var(--text))] mb-1"
+            >
+              邮箱验证码
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="captcha"
+                name="captcha"
+                type="text"
+                value={formData.captcha}
+                onChange={handleInputChange}
+                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                  errors.captcha
+                    ? 'border-danger focus:ring-danger/50'
+                    : 'border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:border-[rgb(var(--primary))] focus:ring-[rgb(var(--primary)/0.5)]'
+                }`}
+                placeholder="请输入邮箱验证码"
+              />
+              <button
+                type="button"
+                onClick={getCaptcha}
+                disabled={uploading || countdown > 0}
+                className="px-4 py-2 rounded-md hover:disabled:opacity-50 transition-colors whitespace-nowrap bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+              >
+                {countdown > 0 ? `重新发送(${countdown}s)` : '获取验证码'}
+              </button>
+            </div>
+            {errors.captcha && (
+              <p className="mt-1 text-sm text-danger dark:text-danger">{errors.captcha}</p>
             )}
           </div>
 
