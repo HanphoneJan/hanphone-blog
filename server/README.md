@@ -31,7 +31,7 @@ cp env.example .env
 mvn spring-boot:run
 ```
 
-> 访客 IP 全球定位（可选）：下载 MaxMind GeoLite2 City 离线库（`GeoLite2-City.mmdb`），在 `.env` 配置 `GEO_DB_PATH=/绝对路径/GeoLite2-City.mmdb`。未配置或文件缺失时，访客区域解析降级为「未知区域」，不影响其他功能。
+> 访客 IP 全球定位（可选）：下载 **DB-IP City Lite** 离线库（mmdb 格式，兼容现有 MaxMind geoip2 读取器，无需改代码），在 `.env` 配置 `GEO_DB_PATH=/绝对路径/GeoLite2-City.mmdb`。未配置或文件缺失时，访客区域解析降级为「未知区域」，不影响其他功能。可运行 `scripts/update-dbip.sh`（或用其 cron 配置）每月自动更新该库。
 
 服务运行在 http://localhost:8090
 
