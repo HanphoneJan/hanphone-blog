@@ -8,6 +8,7 @@ import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
 import { PageTransition } from '@/components/shared/PageTransition'
 import { LoadingBar } from '@/components/shared/LoadingBar'
 import { ScrollReset } from './components/ScrollReset'
+import VisitTracker from '@/components/VisitTracker'
 
 export const metadata: Metadata = {
   description: SITE_CONFIG.description,
@@ -62,6 +63,7 @@ export default function MainLayout({
       </div>
       <Live2DWidget />
       <FloatingChat />
+      <VisitTracker />
     </div>
   )
 }
