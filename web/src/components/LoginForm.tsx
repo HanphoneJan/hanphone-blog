@@ -377,7 +377,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.MODAL }}>
       <ModalOverlay onClick={onClose} />
 
-      <div className="relative z-10 bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md max-h-[60vh] flex flex-col transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
+      <div className="relative z-10 bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md max-h-[90vh] flex flex-col transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
         
         <div className="flex justify-between items-center px-6 py-4 border-b border-[rgb(var(--border))] shrink-0">
           <h2 className="text-lg font-semibold text-[rgb(var(--primary))]">
@@ -391,7 +391,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={isResetMode ? handleResetSubmit : handleLoginSubmit} className="p-6 overflow-y-auto min-h-0">
+        <form onSubmit={isResetMode ? handleResetSubmit : handleLoginSubmit} className="flex flex-col min-h-0 overflow-hidden">
+          <div className="p-6 overflow-y-auto min-h-0 flex-1">
           {isResetMode ? (
             <>
               <div className="mb-4">
@@ -582,20 +583,23 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
               </div>
             </>
           )}
+          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors mb-3 font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
-          >
-            {loading
-              ? isResetMode
-                ? '重置中...'
-                : '登录中...'
-              : isResetMode
-              ? '重置密码'
-              : '登录'}
-          </button>
+          <div className="px-6 py-4 border-t border-[rgb(var(--border))] shrink-0">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
+            >
+              {loading
+                ? isResetMode
+                  ? '重置中...'
+                  : '登录中...'
+                : isResetMode
+                ? '重置密码'
+                : '登录'}
+            </button>
+          </div>
         </form>
         <div className="px-6 py-3 rounded-b-xl">
 
