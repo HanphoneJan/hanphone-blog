@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as echarts from 'echarts';
 import worldJson from '@/assets/world.json';
 import { ENDPOINTS } from "@/lib/api";
 import apiClient from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { API_CODE } from '@/lib/constants';
-import { processGeoJson } from '@/lib/geoJson';
 
 interface WorldArea { name: string; visitorCount: number; totalVisits: number; }
 
@@ -19,9 +18,6 @@ const VisitorWorldMap: React.FC<VisitorWorldMapProps> = ({ style, refreshKey = 0
   const [chart, setChart] = useState<echarts.ECharts | null>(null);
   const [data, setData] = useState<WorldArea[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // 只预处理一次，避免就地修改 worldJson 导致二次编码损坏
-  const processedWorld = useMemo(() => processGeoJson(worldJson), []);
 
   const getThemeColors = () => {
     const base = {
@@ -83,7 +79,8 @@ const VisitorWorldMap: React.FC<VisitorWorldMapProps> = ({ style, refreshKey = 0
   // 初始化 + 主题变化重建（与 VisitorMap 一致）
   useEffect(() => {
     if (!ref.current) return;
-    echarts.registerMap('world', processedWorld);
+    // world.json 为标准 GeoJSON，ECharts registerMap 原生支持，无需手动预编码
+    echarts.registerMap('world', worldJson as any);
     const instance = echarts.init(ref.current);
     instance.setOption(buildOption());
     setChart(instance);
