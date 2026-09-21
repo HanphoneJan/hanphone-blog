@@ -64,44 +64,65 @@ public class UserController {
     }
 
     @PostMapping(value = "/register")
-    public Result<Map<String, Object>> post(@RequestBody User u) {
-        if (u == null || u.getUsername() == null || u.getPassword() == null || u.getEmail() == null) {
-            return new Result<>(false, StatusCode.ERROR, "用户名、密码和邮箱不能为空", null);
-        }
-        String username = u.getUsername().trim();
-        String email = u.getEmail().trim();
-        String password = u.getPassword();
+    public Result<Map<String, Object>> post(@RequestBody Map<String, Object> para) {
+        try {
+            if (para == null) {
+                return new Result<>(false, StatusCode.ERROR, "用户名、密码和邮箱不能为空", null);
+            }
+            String username = para.get("username") != null ? para.get("username").toString().trim() : null;
+            String email = para.get("email") != null ? para.get("email").toString().trim() : null;
+            String password = para.get("password") != null ? para.get("password").toString() : null;
+            String nickname = para.get("nickname") != null ? para.get("nickname").toString() : "";
+            String avatar = para.get("avatar") != null ? para.get("avatar").toString() : "";
+            String captcha = para.get("captcha") != null ? para.get("captcha").toString().trim() : null;
 
-        // 密码复杂度校验
-        if (password.length() < minPasswordLength) {
-            return new Result<>(false, StatusCode.ERROR, "密码长度不能少于" + minPasswordLength + "位", null);
-        }
-        if (!PASSWORD_PATTERN.matcher(password).matches()) {
-            return new Result<>(false, StatusCode.ERROR, "密码必须包含字母和数字", null);
-        }
+            if (username == null || password == null || email == null) {
+                return new Result<>(false, StatusCode.ERROR, "用户名、密码和邮箱不能为空", null);
+            }
 
-        // 分别检查用户名和邮箱是否已被占用
-        User existingUserByUsername = userService.findUserByUsername(username);
-        if (existingUserByUsername != null) {
-            return new Result<>(false, StatusCode.ERROR, "用户名已被占用", null);
-        }
-        if (userService.isEmailExists(email, null)) {
-            return new Result<>(false, StatusCode.ERROR, "邮箱已被绑定", null);
-        }
+            // 密码复杂度校验
+            if (password.length() < minPasswordLength) {
+                return new Result<>(false, StatusCode.ERROR, "密码长度不能少于" + minPasswordLength + "位", null);
+            }
+            if (!PASSWORD_PATTERN.matcher(password).matches()) {
+                return new Result<>(false, StatusCode.ERROR, "密码必须包含字母和数字", null);
+            }
 
-        String encryptPassword = BcryptUtils.encrypt(password);
-        u.setPassword(encryptPassword);
-        u.setUsername(username);
-        u.setEmail(email);
-        u.setType(UserType.NORMAL.getCode());
-        User user = userService.save(u);
-        userService.clearSensitiveFields(user);
-        TokenUtil.TokenInfo tokenInfo = TokenUtil.sign(user);
-        Map<String, Object> info = new HashMap<>();
-        info.put("user", user);
-        info.put("token", Objects.requireNonNull(tokenInfo).getToken());
-        info.put("expire", tokenInfo.getExpireTime());
-        return new Result<>(true, StatusCode.OK, "注册并登录成功", info);
+            // 邮箱验证码校验（注册专用场景，防跨场景复用）
+            if (captcha == null || captcha.isEmpty()) {
+                return new Result<>(false, StatusCode.ERROR, "请输入验证码", null);
+            }
+            if (!emailCaptchaService.validateCaptcha(email, EmailCaptchaService.SCENE_REGISTER, captcha)) {
+                return new Result<>(false, StatusCode.ERROR, "验证码错误或已过期", null);
+            }
+
+            // 分别检查用户名和邮箱是否已被占用
+            User existingUserByUsername = userService.findUserByUsername(username);
+            if (existingUserByUsername != null) {
+                return new Result<>(false, StatusCode.ERROR, "用户名已被占用", null);
+            }
+            if (userService.isEmailExists(email, null)) {
+                return new Result<>(false, StatusCode.ERROR, "邮箱已被绑定", null);
+            }
+
+            User u = new User();
+            u.setUsername(username);
+            u.setEmail(email);
+            u.setNickname(nickname);
+            u.setAvatar(avatar);
+            u.setPassword(BcryptUtils.encrypt(password));
+            u.setType(UserType.NORMAL.getCode());
+            User user = userService.save(u);
+            userService.clearSensitiveFields(user);
+            TokenUtil.TokenInfo tokenInfo = TokenUtil.sign(user);
+            Map<String, Object> info = new HashMap<>();
+            info.put("user", user);
+            info.put("token", Objects.requireNonNull(tokenInfo).getToken());
+            info.put("expire", tokenInfo.getExpireTime());
+            return new Result<>(true, StatusCode.OK, "注册并登录成功", info);
+        } catch (Exception e) {
+            return new Result<>(false, StatusCode.ERROR, "注册失败", null);
+        }
     }
 
     // 重置密码接口：无具体数据返回（null），泛型指定为Void
@@ -137,7 +158,12 @@ public class UserController {
             if (email == null || email.trim().isEmpty()) {
                 return new Result<>(false, StatusCode.ERROR, "邮箱地址不能为空", null);
             }
-            if(emailCaptchaService.sendCaptcha(email)){
+            String scene = para.getOrDefault("scene", EmailCaptchaService.SCENE_GENERAL);
+            // scene 白名单：仅允许 general / register，防止构造任意 Redis key
+            if (!EmailCaptchaService.SCENE_GENERAL.equals(scene) && !EmailCaptchaService.SCENE_REGISTER.equals(scene)) {
+                scene = EmailCaptchaService.SCENE_GENERAL;
+            }
+            if(emailCaptchaService.sendCaptcha(email.trim(), scene)){
                 return new Result<>(true, StatusCode.OK, "发送验证码成功", null);
             }
             return new Result<>(true, StatusCode.ERROR, "发送验证码失败", null);
