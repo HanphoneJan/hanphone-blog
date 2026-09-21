@@ -310,7 +310,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
   const modalContent = (
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.MODAL }}>
       <ModalOverlay onClick={onClose} />
-      <div className="relative z-10 bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md max-h-[60vh] flex flex-col transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
+      <div className="relative z-10 bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] w-full max-w-md max-h-[90vh] flex flex-col transform transition-all duration-300 hover:shadow-xl hover:border-[rgb(var(--primary)/0.5)]">
         <div className="flex justify-between items-center px-6 py-4 border-b border-[rgb(var(--border))] shrink-0">
           <h3 className="text-lg font-semibold text-[rgb(var(--primary))]">请注册</h3>
           <button
@@ -321,7 +321,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto min-h-0">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 overflow-hidden">
+          <div className="p-6 overflow-y-auto min-h-0 flex-1">
           <div className="mb-4">
             <label
               htmlFor="nickname"
@@ -512,7 +513,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
             </p>
           </div>
 
-          <div className="flex justify-end">
+          </div>
+
+          <div className="px-6 py-4 border-t border-[rgb(var(--border))] shrink-0 flex justify-end">
             <button
               type="button"
               onClick={onClose}
