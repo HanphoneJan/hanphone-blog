@@ -49,9 +49,9 @@ public class GeoIpUtils {
                     // 国家名用英文，保证与前端世界地图 world.json 的 features[].properties.name 一致
                     .locales(java.util.List.of("en"))
                     .build();
-            logger.info("GeoLite2 数据库加载成功: {}", dbPath);
+            logger.info("IP 定位数据库（DB-IP / MaxMind mmdb）加载成功: {}", dbPath);
         } catch (Exception e) {
-            logger.warn("GeoLite2 数据库加载失败，降级为未知区域: {}", e.getMessage());
+            logger.warn("IP 定位数据库加载失败，降级为未知区域: {}", e.getMessage());
         }
     }
 
