@@ -1,6 +1,7 @@
 package com.example.blog.web.admin;
 
 import com.example.blog.po.*;
+import com.example.blog.dao.BlogVisitorRepository;
 import com.example.blog.service.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -22,15 +24,20 @@ public class AdminIndexController {
 
     private final CommentService commentService;
     private final BlogMonthlyVisitsService blogMonthlyVisitsService;
+    private final BlogVisitorRepository blogVisitorRepository;
+    private final com.example.blog.service.VisitorTrackService visitorTrackService;
 
     public AdminIndexController(BlogService blogService, TypeService typeService, TagService tagService,
-            UserService userService, CommentService commentService, BlogMonthlyVisitsService blogMonthlyVisitsService) {
+            UserService userService, CommentService commentService, BlogMonthlyVisitsService blogMonthlyVisitsService,
+            BlogVisitorRepository blogVisitorRepository, com.example.blog.service.VisitorTrackService visitorTrackService) {
         this.blogService = blogService;
         this.typeService = typeService;
         this.tagService = tagService;
         this.userService = userService;
         this.commentService = commentService;
         this.blogMonthlyVisitsService = blogMonthlyVisitsService;
+        this.blogVisitorRepository = blogVisitorRepository;
+        this.visitorTrackService = visitorTrackService;
     }
 
     // 获取博客数量
@@ -123,5 +130,63 @@ public class AdminIndexController {
     public Result<List<String>> getMonthlyStats(@RequestParam(required = false) String year) {
         List<String> formattedData = blogMonthlyVisitsService.getFormattedMonthlyStats(year);
         return new Result<>(true, StatusCode.OK, "获取按月份统计网站浏览量", formattedData);
+    }
+
+    // 区域聚合（按国家），供世界地图展示
+    @GetMapping("/visitor/area-list")
+    public Result<List<Map<String, Object>>> getVisitorAreaList() {
+        List<Object[]> rows = blogVisitorRepository.aggregateByCountry();
+        List<Map<String, Object>> list = new java.util.ArrayList<>();
+        for (Object[] row : rows) {
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("name", row[0]);
+            m.put("visitorCount", ((Number) row[1]).longValue());
+            m.put("totalVisits", ((Number) row[2]).longValue());
+            list.add(m);
+        }
+        return new Result<>(true, StatusCode.OK, "获取访客区域分布成功", list);
+    }
+
+    // 概览：UV / PV / 未知占比
+    @GetMapping("/visitor/overview")
+    public Result<Map<String, Object>> getVisitorOverview() {
+        long uv = blogVisitorRepository.countAll();
+        long pv = blogVisitorRepository.sumVisitCount();
+        long unknown = blogVisitorRepository.countUnknownRegion();
+        Map<String, Object> m = new java.util.HashMap<>();
+        m.put("uv", uv);
+        m.put("pv", pv);
+        m.put("unknownRegion", unknown);
+        m.put("unknownRegionPercent", uv == 0 ? 0.0 : Math.round(unknown * 1000.0 / uv) / 10.0);
+        return new Result<>(true, StatusCode.OK, "获取访客概览成功", m);
+    }
+
+    // 单 IP 明细分页
+    @GetMapping("/visitor/ip-list")
+    public Result<?> getVisitorIpList(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize) {
+        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort
+                .by(org.springframework.data.domain.Sort.Direction.DESC, "lastVisitTime");
+        if (page != null && pageSize != null) {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest
+                    .of(page - 1, pageSize, sort);
+            return new Result<>(true, StatusCode.OK, "获取访客 IP 列表成功",
+                    blogVisitorRepository.findAll(pageable));
+        }
+        return new Result<>(true, StatusCode.OK, "获取访客 IP 列表成功", blogVisitorRepository.findAll(sort));
+    }
+
+    // 手动清理：支持按天数清理（如 ?days=30）或全量（不带参数）
+    @PostMapping("/visitor/clear")
+    public Result<Void> clearVisitor(@RequestParam(required = false) Integer days) {
+        if (days != null && days > 0) {
+            blogVisitorRepository.deleteBefore(java.time.ZonedDateTime.now().minusDays(days));
+        } else {
+            blogVisitorRepository.deleteAllVisitors();
+        }
+        // 丢弃未落库的缓冲，避免清理后又被定时任务写回（必须丢弃而非 flush）
+        visitorTrackService.discardBuffer();
+        return new Result<>(true, StatusCode.OK, "访客数据已清理", null);
     }
 }
