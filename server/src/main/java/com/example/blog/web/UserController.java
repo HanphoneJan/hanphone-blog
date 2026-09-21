@@ -19,9 +19,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 public class UserController {
+
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
     private final EmailCaptchaService emailCaptchaService;
@@ -121,6 +125,7 @@ public class UserController {
             info.put("expire", tokenInfo.getExpireTime());
             return new Result<>(true, StatusCode.OK, "注册并登录成功", info);
         } catch (Exception e) {
+            log.error("注册失败", e);
             return new Result<>(false, StatusCode.ERROR, "注册失败", null);
         }
     }
