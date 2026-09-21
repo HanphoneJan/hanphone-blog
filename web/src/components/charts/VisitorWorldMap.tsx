@@ -7,6 +7,7 @@ import { ENDPOINTS } from "@/lib/api";
 import apiClient from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { API_CODE } from '@/lib/constants';
+import { toZhCountry } from '@/lib/countryZh';
 
 interface WorldArea { name: string; visitorCount: number; totalVisits: number; }
 
@@ -41,8 +42,8 @@ const VisitorWorldMap: React.FC<VisitorWorldMapProps> = ({ style, refreshKey = 0
         textStyle: { color: c.tooltipText },
         formatter: (p: any) => {
           const d = p.data as WorldArea | undefined;
-          if (!d) return p.name;
-          return `<div style="font-weight:600">${d.name}</div>访客IP数: ${d.visitorCount}<br/>访问次数: ${d.totalVisits}`;
+          if (!d) return p.name ? toZhCountry(String(p.name)) : '';
+          return `<div style="font-weight:600">${toZhCountry(d.name)}</div>访客IP数: ${d.visitorCount ?? 0}<br/>访问次数: ${d.totalVisits ?? 0}`;
         },
       },
       visualMap: { min: 0, max: 50, hoverLink: false, textStyle: { color: c.label }, inRange: { color: ['#e0e7ff', '#818cf8', '#4338ca'] } },
