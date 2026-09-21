@@ -443,7 +443,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
                 type="button"
                 onClick={getCaptcha}
                 disabled={uploading || countdown > 0}
-                className="px-4 py-2 rounded-md hover:disabled:opacity-50 transition-colors whitespace-nowrap shrink-0 bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                className="px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] transition-colors font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)] disabled:opacity-50 whitespace-nowrap shrink-0"
               >
                 {countdown > 0 ? `重新发送(${countdown}s)` : '获取验证码'}
               </button>
