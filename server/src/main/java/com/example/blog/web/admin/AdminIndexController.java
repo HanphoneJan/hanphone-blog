@@ -132,16 +132,24 @@ public class AdminIndexController {
         return new Result<>(true, StatusCode.OK, "获取按月份统计网站浏览量", formattedData);
     }
 
-    // 区域聚合（按国家），供世界地图展示
+    // 区域聚合（国家 + 省份两级），供地图/热力展示；每条含 level 标识来源维度
     @GetMapping("/visitor/area-list")
     public Result<List<Map<String, Object>>> getVisitorAreaList() {
-        List<Object[]> rows = blogVisitorRepository.aggregateByCountry();
         List<Map<String, Object>> list = new java.util.ArrayList<>();
-        for (Object[] row : rows) {
+        for (Object[] row : blogVisitorRepository.aggregateByCountry()) {
             Map<String, Object> m = new java.util.HashMap<>();
             m.put("name", row[0]);
             m.put("visitorCount", ((Number) row[1]).longValue());
             m.put("totalVisits", ((Number) row[2]).longValue());
+            m.put("level", "country");
+            list.add(m);
+        }
+        for (Object[] row : blogVisitorRepository.aggregateByProvince()) {
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("name", row[0]);
+            m.put("visitorCount", ((Number) row[1]).longValue());
+            m.put("totalVisits", ((Number) row[2]).longValue());
+            m.put("level", "province");
             list.add(m);
         }
         return new Result<>(true, StatusCode.OK, "获取访客区域分布成功", list);

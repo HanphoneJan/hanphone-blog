@@ -74,6 +74,7 @@ export default function DashboardPage() {
   const [visitorOverview, setVisitorOverview] = useState<any>(null)
   const [visitorIpList, setVisitorIpList] = useState<any[]>([])
   const [visitorPageSize] = useState(20)
+  const [visitorRefreshKey, setVisitorRefreshKey] = useState(0)
 
   // 检测客户端环境并设置初始屏幕宽度
   useEffect(() => {
@@ -181,6 +182,8 @@ export default function DashboardPage() {
       await apiClient.post(ENDPOINTS.ADMIN.VISITOR_CLEAR)
       fetchVisitorOverview()
       fetchVisitorIpList()
+      // 触发世界地图重新拉取（清理后 area-list 应反映为空）
+      setVisitorRefreshKey((k) => k + 1)
     } catch { /* ignore */ }
   }
 
@@ -395,7 +398,7 @@ export default function DashboardPage() {
               </div>
             )}
             <div className="w-full overflow-hidden" style={smallChartContainerStyle}>
-              {screenWidth !== null && <VisitorWorldMap style={{ width: '100%', height: '100%' }} />}
+              {screenWidth !== null && <VisitorWorldMap style={{ width: '100%', height: '100%' }} refreshKey={visitorRefreshKey} />}
             </div>
             {visitorIpList.length > 0 && (
               <div className="mt-4 max-h-64 overflow-auto">

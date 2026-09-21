@@ -11,9 +11,9 @@ import { processGeoJson } from '@/lib/geoJson';
 
 interface WorldArea { name: string; visitorCount: number; totalVisits: number; }
 
-interface VisitorWorldMapProps { style?: React.CSSProperties; }
+interface VisitorWorldMapProps { style?: React.CSSProperties; refreshKey?: number; }
 
-const VisitorWorldMap: React.FC<VisitorWorldMapProps> = ({ style }) => {
+const VisitorWorldMap: React.FC<VisitorWorldMapProps> = ({ style, refreshKey = 0 }) => {
   const { theme } = useTheme();
   const ref = useRef<HTMLDivElement>(null);
   const [chart, setChart] = useState<echarts.ECharts | null>(null);
@@ -103,7 +103,7 @@ const VisitorWorldMap: React.FC<VisitorWorldMapProps> = ({ style }) => {
     }
   }, [data, chart]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [refreshKey]);
 
   return (
     <div style={style} className="relative">

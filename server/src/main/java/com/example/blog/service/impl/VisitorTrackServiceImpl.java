@@ -19,8 +19,19 @@ public class VisitorTrackServiceImpl implements VisitorTrackService {
 
     private final BlogVisitorRepository repository;
 
-    // ip -> 待写入记录（含区域与最近访问时间）；由 flush 消费
-    private final Map<String, GeoIpUtils.Location> pending = new HashMap<>();
+    // ip -> 缓冲计数（该 flush 窗口内访问次数）；由 flush 消费，同一 IP 累加计次
+    private final Map<String, PendingVisit> pending = new HashMap<>();
+
+    // 缓冲内单 IP 记录：区域 + 窗口内累计次数
+    private static final class PendingVisit {
+        final GeoIpUtils.Location location;
+        int count;
+
+        PendingVisit(GeoIpUtils.Location location) {
+            this.location = location;
+            this.count = 1;
+        }
+    }
 
     public VisitorTrackServiceImpl(BlogVisitorRepository repository) {
         this.repository = repository;
@@ -31,14 +42,21 @@ public class VisitorTrackServiceImpl implements VisitorTrackService {
         if (ip == null || ip.isBlank()) {
             return;
         }
+        GeoIpUtils.Location loc = location != null ? location : new GeoIpUtils.Location(null, null, null);
         synchronized (pending) {
-            pending.put(ip, location != null ? location : new GeoIpUtils.Location(null, null, null));
+            PendingVisit pv = pending.get(ip);
+            if (pv == null) {
+                pending.put(ip, new PendingVisit(loc));
+            } else {
+                // 同一 flush 窗口内同 IP 多次访问，累计计数（避免 PV 被低估）
+                pv.count++;
+            }
         }
     }
 
     @Override
     public int flushBuffer() {
-        Map<String, GeoIpUtils.Location> batch;
+        Map<String, PendingVisit> batch;
         synchronized (pending) {
             if (pending.isEmpty()) {
                 return 0;
@@ -48,8 +66,9 @@ public class VisitorTrackServiceImpl implements VisitorTrackService {
         }
         ZonedDateTime now = ZonedDateTime.now();
         int count = 0;
-        for (Map.Entry<String, GeoIpUtils.Location> e : batch.entrySet()) {
-            GeoIpUtils.Location loc = e.getValue();
+        for (Map.Entry<String, PendingVisit> e : batch.entrySet()) {
+            PendingVisit pv = e.getValue();
+            GeoIpUtils.Location loc = pv.location;
             try {
                 // 不加方法级 @Transactional：让每条 upsert 各自走独立短事务
                 // （Spring Data @Modifying 默认自带事务），避免单条失败 abort 整个批次导致丢数据。
@@ -57,12 +76,18 @@ public class VisitorTrackServiceImpl implements VisitorTrackService {
                         loc != null ? loc.country() : null,
                         loc != null ? loc.province() : null,
                         loc != null ? loc.city() : null,
+                        pv.count,
                         now);
-                count++;
+                count += pv.count;
             } catch (Exception ex) {
                 logger.warn("访客 IP 落库失败，回填缓冲: {} - {}", e.getKey(), ex.getMessage());
                 synchronized (pending) {
-                    pending.put(e.getKey(), loc);
+                    PendingVisit existing = pending.get(e.getKey());
+                    if (existing == null) {
+                        pending.put(e.getKey(), pv);
+                    } else {
+                        existing.count += pv.count;
+                    }
                 }
             }
         }
