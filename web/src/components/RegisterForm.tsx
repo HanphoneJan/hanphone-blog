@@ -21,6 +21,7 @@ interface User {
   avatar: string
   email: string
   password: string
+  captcha?: string
   type: number
   loginProvince?: string
   loginCity?: string
