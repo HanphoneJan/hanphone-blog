@@ -1,4 +1,4 @@
-// 手动实现GeoJSON预处理函数，生成encodeOffsets（原样迁移自 VisitorMap.tsx）
+// 手动实现GeoJSON预处理函数，生成encodeOffsets（迁移自 VisitorMap.tsx，并处理空坐标环）
 export const processGeoJson = (geoJson: any) => {
   if (!geoJson?.features) return geoJson;
 
@@ -10,11 +10,14 @@ export const processGeoJson = (geoJson: any) => {
   const traverseCoordinates = (coords: any[]) => {
     if (Array.isArray(coords)) {
       coords.forEach((coord) => {
+        // 跳过空数组/无坐标环（如 world.json 中国南海诸岛的空环），避免污染边界计算
+        if (!Array.isArray(coord) || coord.length === 0) return;
         if (Array.isArray(coord[0])) {
           traverseCoordinates(coord);
         } else {
           const x = coord[0];
           const y = coord[1];
+          if (typeof x !== 'number' || typeof y !== 'number') return;
           minX = Math.min(minX, x);
           maxX = Math.max(maxX, x);
           minY = Math.min(minY, y);
@@ -49,6 +52,8 @@ export const processGeoJson = (geoJson: any) => {
         const result: any[] = [];
         if (Array.isArray(coords)) {
           coords.forEach((coord) => {
+            // 跳过空数组/无坐标环，避免产生 [NaN,NaN] 或空环导致地图渲染崩溃
+            if (!Array.isArray(coord) || coord.length === 0) return;
             if (Array.isArray(coord[0])) {
               result.push(processCoord(coord, true));
               if (isMulti) {
