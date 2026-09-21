@@ -42,6 +42,7 @@ export const ENDPOINTS = {
   UPLOAD_BLOG_IMAGE: `${API_BASE_URL}/upload/blogs`,
   COMMENTS: `${API_BASE_URL}/comments`,
   GET_VISIT_COUNT: `${API_BASE_URL}/visit-count`,
+  VISIT_TRACK: `${API_BASE_URL}/visit/track`,
   FILE: {
     UPLOAD: `${PICTURE_BASE_URL}/upload/`,
     UPLOAD_BATCH: `${PICTURE_BASE_URL}/upload/batch`,
@@ -118,6 +119,10 @@ export const ENDPOINTS = {
     ESSAY: `${API_BASE_URL}/admin/essay`,
     ESSAYS: `${API_BASE_URL}/admin/essays`,
     DEAL_DELETED_TAG: `${API_BASE_URL}/admin/dealDeletedTag`,
-    MCP_KEYS: `${API_BASE_URL}/admin/mcp-keys`
+    MCP_KEYS: `${API_BASE_URL}/admin/mcp-keys`,
+    VISITOR_AREA_LIST: `${API_BASE_URL}/admin/visitor/area-list`,
+    VISITOR_OVERVIEW: `${API_BASE_URL}/admin/visitor/overview`,
+    VISITOR_IP_LIST: `${API_BASE_URL}/admin/visitor/ip-list`,
+    VISITOR_CLEAR: `${API_BASE_URL}/admin/visitor/clear`
   }
 }
