@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 @Service
 public class EmailCaptchaServiceImpl implements EmailCaptchaService {
@@ -33,8 +34,14 @@ public class EmailCaptchaServiceImpl implements EmailCaptchaService {
     @Value("${captcha.max-email-length:254}")
     private int maxEmailLength;
 
+    @Value("${captcha.max-attempts:5}")
+    private int maxAttempts;
+
     private static final int CAPTCHA_EXPIRE_MINUTES = 5;
     private static final int CAPTCHA_LENGTH = 6;
+
+    // 验证码尝试次数 key 前缀
+    private static final String ATTEMPTS_PREFIX = "captcha:attempts:";
 
     // 邮箱格式正则
     private static final java.util.regex.Pattern EMAIL_PATTERN =
@@ -48,9 +55,19 @@ public class EmailCaptchaServiceImpl implements EmailCaptchaService {
 
     @Override
     public Boolean sendCaptcha(String email) {
+        return sendCaptcha(email, SCENE_GENERAL);
+    }
+
+    @Override
+    public Boolean validateCaptcha(String email, String captcha) {
+        return validateCaptcha(email, SCENE_GENERAL, captcha);
+    }
+
+    @Override
+    public Boolean sendCaptcha(String email, String scene) {
         try {
-            // 校验输入参数
             Objects.requireNonNull(email, "email must not be null");
+            Objects.requireNonNull(scene, "scene must not be null");
 
             // 校验邮箱长度
             if (email.length() > maxEmailLength) {
@@ -65,7 +82,7 @@ public class EmailCaptchaServiceImpl implements EmailCaptchaService {
             }
 
             // Rate Limiting：同一邮箱发送间隔校验
-            String rateKey = "captcha:rate:" + email;
+            String rateKey = "captcha:rate:" + scene + ":" + email;
             Boolean canSend = redisTemplate.opsForValue()
                     .setIfAbsent(rateKey, "1", captchaRateLimitSeconds, java.util.concurrent.TimeUnit.SECONDS);
             if (!Boolean.TRUE.equals(canSend)) {
@@ -91,9 +108,11 @@ public class EmailCaptchaServiceImpl implements EmailCaptchaService {
             // 发送邮件
             javaMailSender.send(message);
 
-            // 存储验证码到Redis
-            String redisKey = "captcha:" + email;
+            // 存储验证码到Redis（按场景隔离，防跨场景复用）
+            String redisKey = "captcha:" + scene + ":" + email;
             redisTemplate.opsForValue().set(redisKey, captcha, CAPTCHA_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            // 新验证码重置尝试次数，避免历史失败影响新码
+            redisTemplate.delete(ATTEMPTS_PREFIX + scene + ":" + email);
 
             return true;
         } catch (IllegalArgumentException e) {
@@ -106,19 +125,35 @@ public class EmailCaptchaServiceImpl implements EmailCaptchaService {
     }
 
     @Override
-    public Boolean validateCaptcha(String email, String captcha) {
+    public Boolean validateCaptcha(String email, String scene, String captcha) {
         try {
             // 校验输入参数
             Objects.requireNonNull(email, "email must not be null");
+            Objects.requireNonNull(scene, "scene must not be null");
             Objects.requireNonNull(captcha, "captcha must not be null");
 
-            String redisKey = "captcha:" + email;
+            String redisKey = "captcha:" + scene + ":" + email;
             String storedCaptcha = redisTemplate.opsForValue().get(redisKey);
 
             // 验证验证码
             if (captcha.equals(storedCaptcha)) {
                 redisTemplate.delete(redisKey);
+                redisTemplate.delete(ATTEMPTS_PREFIX + scene + ":" + email);
                 return true;
+            }
+
+            // 仅当存在验证码时才累计尝试次数，避免为从未发码的邮箱产生无效 Redis 键
+            if (storedCaptcha != null) {
+                // 尝试次数上限，防止 6 位验证码暴力枚举
+                String attemptKey = ATTEMPTS_PREFIX + scene + ":" + email;
+                Long attempts = redisTemplate.opsForValue().increment(attemptKey);
+                if (attempts != null && attempts == 1) {
+                    redisTemplate.expire(attemptKey, Duration.ofMinutes(CAPTCHA_EXPIRE_MINUTES));
+                }
+                if (attempts != null && attempts >= maxAttempts) {
+                    log.warn("验证码尝试次数超限，删除验证码: " + email);
+                    redisTemplate.delete(redisKey);
+                }
             }
             return false;
         } catch (IllegalArgumentException e) {
