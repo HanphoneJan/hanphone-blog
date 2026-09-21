@@ -200,7 +200,8 @@ web/
 │   │   │   ├── BlogChart.tsx
 │   │   │   ├── TagChart.tsx
 │   │   │   ├── TypeChart.tsx
-│   │   │   └── VisitorMap.tsx
+│   │   │   ├── VisitorMap.tsx
+│   │   │   └── VisitorWorldMap.tsx
 │   │   ├── shared/                 # 共享基础组件
 │   │   │   ├── ConfirmDialog.tsx
 │   │   │   ├── EmptyState.tsx
@@ -222,7 +223,8 @@ web/
 │   │   ├── Live2DWidget.tsx
 │   │   ├── LoginForm.tsx
 │   │   ├── RegisterForm.tsx
-│   │   └── UserInfoForm.tsx
+│   │   ├── UserInfoForm.tsx
+│   │   └── VisitTracker.tsx
 │   ├── contexts/                   # React Context
 │   │   ├── ThemeProvider.tsx
 │   │   └── UserContext.tsx

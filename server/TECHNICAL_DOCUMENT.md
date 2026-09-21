@@ -188,12 +188,13 @@ User (用户)
 | ProjectShowController | `/projects` | 项目展示 |
 | TagShowController | `/tags` | 标签 |
 | TypeShowController | `/types` | 分类 |
+| VisitorTrackController | `/visit/track` | 页面访问埋点（POST，公开） |
 
 ### 管理后台接口 (web/admin/)
 
 | Controller | 路径前缀 | 功能 |
 |------------|----------|------|
-| AdminIndexController | `/admin` | 后台首页、仪表盘 |
+| AdminIndexController | `/admin` | 后台首页、仪表盘、访客 IP 统计（`/admin/visitor/area-list|overview|ip-list|clear`） |
 | AdministratorController | `/administrator` | 管理员登录 |
 | BlogController | `/admin/blogs` | 博客增删改查 |
 | DocController | `/admin/docs` | 文档增删改查 |
