@@ -99,6 +99,32 @@ tail -f /home/hanphone/server_blog/logs/out.log # 或看输出文件
 
 ---
 
+### 7. 访客 IP 定位库自动更新
+
+后端使用 **DB-IP City Lite** 离线库把访客 IP 解析成国家/省份。该库每月更新一次，可配 cron 自动拉取覆盖并重启服务。
+
+```bash
+# 1. 把脚本放到服务器（路径可自定义）
+sudo mkdir -p /home/hanphone/bin
+sudo cp scripts/update-dbip.sh /home/hanphone/bin/update-dbip.sh
+sudo chmod +x /home/hanphone/bin/update-dbip.sh
+
+# 2. 编辑脚本顶部配置区，确保 MMDB_PATH 与 server/.env 的 GEO_DB_PATH 一致
+sudo vim /home/hanphone/bin/update-dbip.sh
+
+# 3. 加入 crontab：每月 1 号凌晨 3 点自动更新
+sudo crontab -e
+# 添加一行：
+# 0 3 1 * *  /home/hanphone/bin/update-dbip.sh >> /var/log/update-dbip.log 2>&1
+
+# 4. 立即手动执行一次验证
+sudo /home/hanphone/bin/update-dbip.sh
+```
+
+脚本会：下载 db-ip 官方当月 mmdb → 校验为有效 MaxMind DB 格式 → 覆盖 `GEO_DB_PATH` 指向的文件（保留 `.bak` 备份）→ 重启 `blog` 服务。
+
+> 注意：只需配置一次 `GEO_DB_PATH` 与 mmdb 文件，之后更新全自动，无需手动干预。
+
 ## 方式二：Docker Compose 部署
 
 Docker 方式会把 PostgreSQL、Redis、后端一起容器化，适合需要一键拉起完整依赖的场景。
