@@ -104,23 +104,23 @@ tail -f /home/hanphone/server_blog/logs/out.log # 或看输出文件
 后端使用 **DB-IP City Lite** 离线库把访客 IP 解析成国家/省份。该库每月更新一次，可用 `scripts/update-dbip.sh` 配 cron 自动拉取覆盖并重启服务。
 
 ```bash
-# 1. 把脚本放到服务器（路径请用你自己的目录）
+# 1. 把脚本放到服务器某目录（路径请用你自己的目录）
 sudo mkdir -p <你的目录>/bin
 sudo cp scripts/update-dbip.sh <你的目录>/bin/update-dbip.sh
 sudo chmod +x <你的目录>/bin/update-dbip.sh
 
-# 2. 立即手动执行一次验证（-p 为 mmdb 落地路径，-s 为 systemd 服务名）
-sudo <你的目录>/bin/update-dbip.sh -p <mmdb落地路径> -s blog
+# 2. 立即手动执行一次验证（-s 为 systemd 服务名；不传 -p 则 mmdb 下载到脚本同目录）
+sudo <你的目录>/bin/update-dbip.sh -s blog
 
 # 3. 加入 crontab：每月 1 号凌晨 3 点自动更新
 sudo crontab -e
 # 添加一行（换成你的实际路径）：
-# 0 3 1 * *  <你的目录>/bin/update-dbip.sh -p <mmdb落地路径> -s blog >> /var/log/update-dbip.log 2>&1
+# 0 3 1 * *  <你的目录>/bin/update-dbip.sh -s blog >> /var/log/update-dbip.log 2>&1
 ```
 
-脚本会：下载 db-ip 官方当月 mmdb → 校验为有效 MaxMind DB 格式 → 覆盖 `-p` 指向的文件（保留 `.bak` 备份）→ 重启 `-s` 指定的服务。
+脚本会：下载 db-ip 官方当月 mmdb → 校验为有效 MaxMind DB 格式 → 覆盖目标文件（保留 `.bak` 备份）→ 重启 `-s` 指定的服务。不传 `-p` 时，mmdb 默认下载到脚本所在目录（`dbip-city-lite.mmdb`），然后你可把 `server/.env` 的 `GEO_DB_PATH` 指向该文件。
 
-> 参数说明见脚本头部注释（`-p` 必填，`-s` 可选，`-n` 预演不落库）。所有路径/服务名由调用方传入，脚本本身不包含任何部署信息。
+> 参数说明见脚本头部注释（`-p` 可选默认脚本目录，`-s` 可选，`-n` 预演不落库）。所有路径/服务名由调用方传入，脚本本身不包含任何部署信息。
 
 ## 方式二：Docker Compose 部署
 
