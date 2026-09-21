@@ -8,6 +8,7 @@ import json
 import time
 import threading
 import argparse
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
@@ -183,6 +184,37 @@ class Tester:
 # 测试用例
 # =============================================================================
 
+_REDIS_WARNED = [False]
+
+
+def _send_and_get_captcha(t, email, scene="register"):
+    """发送验证码并从 Redis 读取验证码（无 redis-py/无 Redis 环境返回 None）"""
+    t.session.post(f"{t.base_url}/user/sendCaptcha",
+                   json={"email": email, "scene": scene}, timeout=TIMEOUT)
+    try:
+        import redis as redis_lib
+        r = redis_lib.Redis(
+            host=os.getenv("REDIS_HOST", "localhost"),
+            port=int(os.getenv("REDIS_PORT", "6379")),
+            password=os.getenv("REDIS_PASSWORD", "") or None,
+            decode_responses=True)
+        return r.get(f"captcha:{scene}:{email}")
+    except Exception:
+        if not _REDIS_WARNED[0]:
+            _REDIS_WARNED[0] = True
+            print(f"\n{YELLOW}[!] 无法连接 Redis 或未安装 redis-py，"
+                  f"注册/找回密码验证码用例将失败；请安装 redis-py 并确认本地 Redis 运行{NC}")
+        return None
+
+
+def register_with_captcha(t, payload):
+    """发送注册验证码并从 Redis 读取后携带注册；Redis 不可用时不带验证码（用例将报 FAIL）"""
+    email = payload.get("email", "")
+    code = _send_and_get_captcha(t, email, "register")
+    if code:
+        payload = {**payload, "captcha": code}
+    return t.session.post(f"{t.base_url}/register", json=payload, timeout=TIMEOUT)
+
 def run_tests(t: Tester, skip_t11: bool = False):
     ts = str(int(time.time()))
 
@@ -231,15 +263,12 @@ def run_tests(t: Tester, skip_t11: bool = False):
     t.group("T5 XSS 防护 (JSON Body)")
     xss_username = f"xsstest_{ts}"
     xss_email = f"xss_{ts}@test.com"
-    reg_resp = t.session.post(
-        f"{t.base_url}/register",
-        json={
-            "username": xss_username,
-            "password": "abcd1234",
-            "email": xss_email,
-            "nickname": "<script>alert(1)</script>"
-        },
-        timeout=TIMEOUT)
+    reg_resp = register_with_captcha(t, {
+        "username": xss_username,
+        "password": "abcd1234",
+        "email": xss_email,
+        "nickname": "<script>alert(1)</script>"
+    })
     try:
         reg_data = reg_resp.json()
         token = reg_data.get("data", {}).get("token", "")
@@ -282,19 +311,18 @@ def run_tests(t: Tester, skip_t11: bool = False):
                         method="POST", json_data={
                             "username": f"pw2_{ts}", "password": "abcdefgh",
                             "email": f"pw2_{ts}@a.com"})
-    t.assert_json_field("T6.3 合法密码 → 注册成功", "message",
-                        "注册并登录成功", "/register",
-                        method="POST", json_data={
-                            "username": f"pw3_{ts}", "password": "abcd1234",
-                            "email": f"pw3_{ts}@a.com"})
+    r63 = register_with_captcha(t, {
+        "username": f"pw3_{ts}", "password": "abcd1234",
+        "email": f"pw3_{ts}@a.com"})
+    if r63.json().get("message", "") == "注册并登录成功":
+        t._add(True, "T6.3 合法密码 → 注册成功")
+    else:
+        t._add(False, "T6.3 合法密码 → 注册成功", f"返回: {r63.json().get('message', '')}")
 
     # 验证默认 userType
-    reg2 = t.session.post(
-        f"{t.base_url}/register",
-        json={
-            "username": f"pw4_{ts}", "password": "xyz98765",
-            "email": f"pw4_{ts}@a.com"
-        }, timeout=TIMEOUT)
+    reg2 = register_with_captcha(t, {
+        "username": f"pw4_{ts}", "password": "xyz98765",
+        "email": f"pw4_{ts}@a.com"})
     try:
         utype = reg2.json().get("data", {}).get("user", {}).get("type", "")
         if utype == "0":
@@ -336,6 +364,106 @@ def run_tests(t: Tester, skip_t11: bool = False):
     t.assert_json_field("T7.5 空邮箱 → 拒收", "message",
                         "邮箱地址不能为空", "/user/sendCaptcha",
                         method="POST", json_data={"email": ""})
+
+    # ---- T13. 注册邮箱验证码 ----
+    t.group("T13 注册邮箱验证码")
+    cap_email = f"cap_{ts}@test.com"
+    cap_username = f"cap_{ts}"
+
+    # 不带验证码
+    t.assert_json_field("T13.1 注册不带验证码 → 拒绝", "message",
+                        "请输入验证码", "/register",
+                        method="POST", json_data={
+                            "username": cap_username, "password": "abcd1234",
+                            "email": cap_email})
+
+    # 验证码错误（该邮箱未发码，storedCaptcha=null）
+    t.assert_json_field("T13.2 注册验证码错误 → 拒绝", "message",
+                        "验证码错误或已过期", "/register",
+                        method="POST", json_data={
+                            "username": cap_username, "password": "abcd1234",
+                            "email": cap_email, "captcha": "000000"})
+
+    # 正确验证码 → 注册成功
+    r13 = register_with_captcha(t, {
+        "username": cap_username, "password": "abcd1234",
+        "email": cap_email})
+    if r13.json().get("message", "") == "注册并登录成功":
+        t._add(True, "T13.3 正确验证码 → 注册成功")
+    else:
+        t._add(False, "T13.3 正确验证码", f"返回: {r13.json().get('message', '')}")
+
+    # 场景隔离：general 场景验证码不能用于注册
+    cap_email2 = f"cap2_{ts}@test.com"
+    general_code = _send_and_get_captcha(t, cap_email2, "general")
+    if general_code:
+        t.assert_json_field("T13.4 跨场景验证码 → 拒绝", "message",
+                            "验证码错误或已过期", "/register",
+                            method="POST", json_data={
+                                "username": f"cap2_{ts}", "password": "abcd1234",
+                                "email": cap_email2, "captcha": general_code})
+    else:
+        t._add(False, "T13.4 跨场景验证码", "无法从 Redis 读取验证码")
+
+    # 连续错 5 次后正确验证码也失效（防暴力枚举）
+    cap_email3 = f"cap3_{ts}@test.com"
+    code3 = _send_and_get_captcha(t, cap_email3, "register")
+    if code3:
+        wrong_all = True
+        for _ in range(5):
+            rw = t.session.post(f"{t.base_url}/register", json={
+                "username": f"cap3_{ts}", "password": "abcd1234",
+                "email": cap_email3, "captcha": "000000"}, timeout=TIMEOUT)
+            if rw.json().get("message", "") != "验证码错误或已过期":
+                wrong_all = False
+                break
+        if wrong_all:
+            r6 = t.session.post(f"{t.base_url}/register", json={
+                "username": f"cap3_{ts}", "password": "abcd1234",
+                "email": cap_email3, "captcha": code3}, timeout=TIMEOUT)
+            if r6.json().get("message", "") == "验证码错误或已过期":
+                t._add(True, "T13.5 错5次后正确码也失效")
+            else:
+                t._add(False, "T13.5 错5次后正确码也失效",
+                       f"第6次返回: {r6.json().get('message', '')}")
+        else:
+            t._add(False, "T13.5 错5次后正确码也失效", "错误验证码未被拒绝")
+    else:
+        t._add(False, "T13.5 错5次后正确码也失效", "无法从 Redis 读取验证码")
+
+    # 找回密码回归（默认场景 general 验证码 → resetPassword）
+    rp_email = f"pw3_{ts}@a.com"
+    rp_code = _send_and_get_captcha(t, rp_email, "general")
+    if rp_code:
+        resp_rp = t.session.post(f"{t.base_url}/user/resetPassword", json={
+            "email": rp_email, "captcha": rp_code,
+            "newPassword": "newpass123"}, timeout=TIMEOUT)
+        if resp_rp.json().get("message", "") == "重置密码成功":
+            t._add(True, "T13.6 找回密码回归（默认场景验证码）")
+        else:
+            t._add(False, "T13.6 找回密码回归", f"返回: {resp_rp.json().get('message', '')}")
+    else:
+        t._add(False, "T13.6 找回密码回归", "无法从 Redis 读取验证码")
+
+    # 改邮箱回归（updateCurrentUser 默认场景验证码）
+    login_resp = t.session.post(f"{t.base_url}/login", json={
+        "username": f"pw3_{ts}", "password": "newpass123"}, timeout=TIMEOUT)
+    login_data = login_resp.json().get("data", {})
+    token = login_data.get("token", "")
+    user_id = login_data.get("user", {}).get("id")
+    cap_email4 = f"cap4_{ts}@test.com"
+    new_code = _send_and_get_captcha(t, cap_email4, "general")
+    if token and user_id and new_code:
+        resp_up = t.session.post(f"{t.base_url}/user/current/update", json={
+            "userId": user_id,
+            "user": {"email": cap_email4},
+            "captcha": new_code}, headers={"token": token}, timeout=TIMEOUT)
+        if resp_up.json().get("message", "") == "更新用户信息成功":
+            t._add(True, "T13.7 改邮箱回归（默认场景验证码）")
+        else:
+            t._add(False, "T13.7 改邮箱回归", f"返回: {resp_up.json().get('message', '')}")
+    else:
+        t._add(False, "T13.7 改邮箱回归", "缺少 token/userId 或无法读取验证码")
 
     # ---- T8. SQL 注入防御 ----
     t.group("T8 SQL 注入防御")
