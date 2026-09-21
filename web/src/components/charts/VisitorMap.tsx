@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as echarts from 'echarts';
 import chinaJson from '@/assets/china.json';
 import { ENDPOINTS } from "@/lib/api";
 import apiClient from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeProvider';
-import { processGeoJson } from '@/lib/geoJson';
 
 import { API_CODE } from '@/lib/constants'
 // 定义用户数据类型
@@ -34,9 +33,6 @@ const VisitorMap: React.FC<VisitorMapProps> = ({ style }) => {
   const [chartInstance, setChartInstance] = useState<echarts.ECharts | null>(null);
   const [allData, setAllData] = useState<MapDataItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // processGeoJson 就地修改入参且非幂等，只处理一次避免 React 18 StrictMode 双挂载重复编码损坏地图
-  const processedChinaJson = useMemo(() => processGeoJson(chinaJson), []);
 
   // 根据主题获取配色方案
   const getThemeColors = () => {
@@ -197,8 +193,8 @@ const VisitorMap: React.FC<VisitorMapProps> = ({ style }) => {
     const instance = echarts.init(visitRef.current);
     setChartInstance(instance);
 
-    // 使用预处理函数处理GeoJSON
-    echarts.registerMap('china', processedChinaJson);
+    // china.json 为标准 GeoJSON，ECharts registerMap 原生支持，无需手动预编码
+    echarts.registerMap('china', chinaJson as any);
 
     // 获取当前主题配色
     const colors = getThemeColors();
