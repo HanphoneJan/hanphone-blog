@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { ENDPOINTS } from '@/lib/api'
-import { BarChart3, FileText, ThumbsUp, MessageSquare, Eye, MapPin } from 'lucide-react'
+import { BarChart3, FileText, ThumbsUp, MessageSquare, Eye, MapPin, Globe2, List, Trash2 } from 'lucide-react'
 import { API_CODE } from '@/lib/constants'
 import apiClient from '@/lib/utils' // 导入axios实例
 
@@ -13,6 +13,7 @@ const BlogChart = dynamic(() => import('@/components/charts/BlogChart').then((m)
 const TagChart = dynamic(() => import('@/components/charts/TagChart').then((m) => m.default), { ssr: false })
 const TypeChart = dynamic(() => import('@/components/charts/TypeChart').then((m) => m.default), { ssr: false })
 const VisitorMap = dynamic(() => import('@/components/charts/VisitorMap').then((m) => m.default), { ssr: false })
+const VisitorWorldMap = dynamic(() => import('@/components/charts/VisitorWorldMap').then((m) => m.default), { ssr: false })
 
 // 动画变体定义
 const pageVariants: Variants = {
@@ -70,6 +71,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [isClient, setIsClient] = useState(false)
   const [screenWidth, setScreenWidth] = useState<number | null>(null) // 初始为null，表示未获取到实际宽度
+  const [visitorOverview, setVisitorOverview] = useState<any>(null)
+  const [visitorIpList, setVisitorIpList] = useState<any[]>([])
+  const [visitorPageSize] = useState(20)
 
   // 检测客户端环境并设置初始屏幕宽度
   useEffect(() => {
@@ -154,6 +158,39 @@ export default function DashboardPage() {
   useEffect(() => {
     getCountList()
   }, [])
+
+  const fetchVisitorOverview = async () => {
+    try {
+      const res = await apiClient.get(ENDPOINTS.ADMIN.VISITOR_OVERVIEW)
+      if (res.data?.code === API_CODE.SUCCESS) setVisitorOverview(res.data.data)
+    } catch { /* ignore */ }
+  }
+
+  const fetchVisitorIpList = async () => {
+    try {
+      const res = await apiClient.get(ENDPOINTS.ADMIN.VISITOR_IP_LIST, { params: { page: 1, pageSize: visitorPageSize } })
+      if (res.data?.code === API_CODE.SUCCESS) {
+        setVisitorIpList(res.data.data?.content ?? [])
+      }
+    } catch { /* ignore */ }
+  }
+
+  const handleVisitorClear = async () => {
+    if (!window.confirm('确定清理全部访客 IP 数据？此操作不可撤销。')) return
+    try {
+      await apiClient.post(ENDPOINTS.ADMIN.VISITOR_CLEAR)
+      fetchVisitorOverview()
+      fetchVisitorIpList()
+    } catch { /* ignore */ }
+  }
+
+  // 客户端就绪后拉取访客概览与 IP 明细
+  useEffect(() => {
+    if (screenWidth !== null) {
+      fetchVisitorOverview()
+      fetchVisitorIpList()
+    }
+  }, [screenWidth])
 
   // 选择卡片的处理函数
   const selectCard = (id: number) => {
@@ -332,6 +369,62 @@ export default function DashboardPage() {
             <div className="w-full overflow-hidden" style={smallChartContainerStyle}>
               {screenWidth !== null && <VisitorMap style={{ width: '100%', height: '100%' }} />}
             </div>
+          </motion.div>
+
+          <motion.div
+            className="bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] p-4 sm:p-6 transition-all duration-150 hover:shadow-lg"
+            variants={fadeInUpVariants}
+          >
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="flex items-center">
+                <Globe2 className="h-5 w-5 mr-2 text-[rgb(var(--primary))]" />
+                <h2 className="text-base sm:text-lg font-semibold text-[rgb(var(--primary))]">访客 IP 分布（全球）</h2>
+              </div>
+              <button
+                onClick={handleVisitorClear}
+                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--muted-foreground))] hover:text-red-500 hover:border-red-400 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> 清理数据
+              </button>
+            </div>
+            {visitorOverview && (
+              <div className="flex flex-wrap gap-4 mb-3 text-sm">
+                <span className="text-[rgb(var(--muted-foreground))]">访客IP(UV): <b className="text-[rgb(var(--primary))]">{visitorOverview.uv}</b></span>
+                <span className="text-[rgb(var(--muted-foreground))]">访问次数(PV): <b className="text-[rgb(var(--primary))]">{visitorOverview.pv}</b></span>
+                <span className="text-[rgb(var(--muted-foreground))]">未知区域: <b className="text-[rgb(var(--primary))]">{visitorOverview.unknownRegion}</b> ({visitorOverview.unknownRegionPercent}%)</span>
+              </div>
+            )}
+            <div className="w-full overflow-hidden" style={smallChartContainerStyle}>
+              {screenWidth !== null && <VisitorWorldMap style={{ width: '100%', height: '100%' }} />}
+            </div>
+            {visitorIpList.length > 0 && (
+              <div className="mt-4 max-h-64 overflow-auto">
+                <div className="flex items-center gap-2 mb-2">
+                  <List className="h-4 w-4 text-[rgb(var(--primary))]" />
+                  <h3 className="text-sm font-semibold text-[rgb(var(--primary))]">IP 明细（近 {visitorIpList.length} 条）</h3>
+                </div>
+                <table className="w-full text-xs text-[rgb(var(--muted-foreground))]">
+                  <thead>
+                    <tr className="border-b border-[rgb(var(--border))] text-left">
+                      <th className="py-1 pr-2">IP</th><th className="py-1 pr-2">国家</th><th className="py-1 pr-2">省份</th>
+                      <th className="py-1 pr-2">城市</th><th className="py-1 pr-2">次数</th><th className="py-1">最近访问</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visitorIpList.map((v: any) => (
+                      <tr key={v.id} className="border-b border-[rgb(var(--border))]/50">
+                        <td className="py-1 pr-2 font-mono">{v.ip}</td>
+                        <td className="py-1 pr-2">{v.country ?? '-'}</td>
+                        <td className="py-1 pr-2">{v.province ?? '-'}</td>
+                        <td className="py-1 pr-2">{v.city ?? '-'}</td>
+                        <td className="py-1 pr-2">{v.visitCount}</td>
+                        <td className="py-1">{v.lastVisitTime ? new Date(v.lastVisitTime).toLocaleString() : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </motion.div>
         </div>
       </main>
