@@ -169,20 +169,27 @@ public class AdminIndexController {
         return new Result<>(true, StatusCode.OK, "获取访客概览成功", m);
     }
 
-    // 单 IP 明细分页
+    // 单 IP 明细分页：支持 keyword 模糊匹配、visitCount/lastVisitTime 排序升降序
     @GetMapping("/visitor/ip-list")
-    public Result<?> getVisitorIpList(
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer pageSize) {
-        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort
-                .by(org.springframework.data.domain.Sort.Direction.DESC, "lastVisitTime");
-        if (page != null && pageSize != null) {
-            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest
-                    .of(page - 1, pageSize, sort);
-            return new Result<>(true, StatusCode.OK, "获取访客 IP 列表成功",
-                    blogVisitorRepository.findAll(pageable));
-        }
-        return new Result<>(true, StatusCode.OK, "获取访客 IP 列表成功", blogVisitorRepository.findAll(sort));
+    public Result<org.springframework.data.domain.Page<BlogVisitor>> getVisitorIpList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String order,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
+        int safePage = (page == null || page < 1) ? 1 : page;
+        int safeSize = (pageSize == null || pageSize < 1) ? 20 : pageSize;
+
+        org.springframework.data.domain.Sort.Direction dir =
+                "asc".equalsIgnoreCase(order) ? org.springframework.data.domain.Sort.Direction.ASC
+                        : org.springframework.data.domain.Sort.Direction.DESC;
+        String field = "visitCount".equalsIgnoreCase(sortBy) ? "visitCount" : "lastVisitTime";
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest
+                .of(safePage - 1, safeSize, org.springframework.data.domain.Sort.by(dir, field));
+
+        org.springframework.data.domain.Page<BlogVisitor> result =
+                blogVisitorRepository.findAll(BlogVisitorRepository.keywordSpec(keyword), pageable);
+        return new Result<>(true, StatusCode.OK, "获取访客 IP 列表成功", result);
     }
 
     // 手动清理：支持按天数清理（如 ?days=30）或全量（不带参数）
