@@ -7,6 +7,8 @@ import { ENDPOINTS } from '@/lib/api'
 import { BarChart3, FileText, ThumbsUp, MessageSquare, Eye, MapPin, Globe2, List, Trash2 } from 'lucide-react'
 import { API_CODE } from '@/lib/constants'
 import apiClient from '@/lib/utils' // 导入axios实例
+import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import { alertSuccess } from '@/lib/Alert'
 
 // 图表组件懒加载（echarts 体积大，避免进首屏）
 const BlogChart = dynamic(() => import('@/components/charts/BlogChart').then((m) => m.default), { ssr: false })
@@ -74,7 +76,13 @@ export default function DashboardPage() {
   const [visitorOverview, setVisitorOverview] = useState<any>(null)
   const [visitorIpList, setVisitorIpList] = useState<any[]>([])
   const [visitorPageSize] = useState(20)
+  const [visitorPage, setVisitorPage] = useState(1)
+  const [visitorTotal, setVisitorTotal] = useState(0)
+  const [visitorKeyword, setVisitorKeyword] = useState('')
+  const [visitorSortBy, setVisitorSortBy] = useState('lastVisitTime')
+  const [visitorOrder, setVisitorOrder] = useState<'asc' | 'desc'>('desc')
   const [visitorRefreshKey, setVisitorRefreshKey] = useState(0)
+  const [visitorClearConfirm, setVisitorClearConfirm] = useState(false)
 
   // 检测客户端环境并设置初始屏幕宽度
   useEffect(() => {
@@ -169,29 +177,45 @@ export default function DashboardPage() {
 
   const fetchVisitorIpList = async () => {
     try {
-      const res = await apiClient.get(ENDPOINTS.ADMIN.VISITOR_IP_LIST, { params: { page: 1, pageSize: visitorPageSize } })
+      const params: Record<string, any> = {
+        page: visitorPage,
+        pageSize: visitorPageSize,
+        sortBy: visitorSortBy,
+        order: visitorOrder
+      }
+      if (visitorKeyword.trim()) params.keyword = visitorKeyword.trim()
+      const res = await apiClient.get(ENDPOINTS.ADMIN.VISITOR_IP_LIST, { params })
       if (res.data?.code === API_CODE.SUCCESS) {
         setVisitorIpList(res.data.data?.content ?? [])
+        setVisitorTotal(res.data.data?.totalElements ?? 0)
       }
     } catch { /* ignore */ }
   }
 
+  const resetVisitorPage = () => setVisitorPage(1)
+
+  // 筛选/排序/分页状态变化时重新请求 IP 明细
+  useEffect(() => {
+    fetchVisitorIpList()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitorPage, visitorKeyword, visitorSortBy, visitorOrder, visitorRefreshKey])
+
   const handleVisitorClear = async () => {
-    if (!window.confirm('确定清理全部访客 IP 数据？此操作不可撤销。')) return
     try {
       await apiClient.post(ENDPOINTS.ADMIN.VISITOR_CLEAR)
+      alertSuccess('访客 IP 数据已清理')
       fetchVisitorOverview()
-      fetchVisitorIpList()
-      // 触发世界地图重新拉取（清理后 area-list 应反映为空）
+      // 触发 IP 明细与世界地图重新拉取（清理后应反映为空）
+      resetVisitorPage()
       setVisitorRefreshKey((k) => k + 1)
     } catch { /* ignore */ }
+    setVisitorClearConfirm(false)
   }
 
-  // 客户端就绪后拉取访客概览与 IP 明细
+  // 客户端就绪后拉取访客概览
   useEffect(() => {
     if (screenWidth !== null) {
       fetchVisitorOverview()
-      fetchVisitorIpList()
     }
   }, [screenWidth])
 
@@ -373,63 +397,128 @@ export default function DashboardPage() {
               {screenWidth !== null && <VisitorMap style={{ width: '100%', height: '100%' }} />}
             </div>
           </motion.div>
+        </div>
 
-          <motion.div
-            className="bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] p-4 sm:p-6 transition-all duration-150 hover:shadow-lg"
-            variants={fadeInUpVariants}
-          >
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <div className="flex items-center">
-                <Globe2 className="h-5 w-5 mr-2 text-[rgb(var(--primary))]" />
-                <h2 className="text-base sm:text-lg font-semibold text-[rgb(var(--primary))]">访客 IP 分布（全球）</h2>
+        {/* 访客 IP 分布（全球）卡片 - 独立整行全宽 */}
+        <motion.div
+          className="bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-lg border border-[rgb(var(--border))] p-4 sm:p-6 mb-6 md:mb-10 transition-all duration-150 hover:shadow-lg"
+          variants={fadeInUpVariants}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
+            <div className="flex items-center">
+              <Globe2 className="h-5 w-5 mr-2 text-[rgb(var(--primary))]" />
+              <h2 className="text-base sm:text-lg font-semibold text-[rgb(var(--primary))]">访客 IP 分布（全球）</h2>
+            </div>
+            <button
+              onClick={() => setVisitorClearConfirm(true)}
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--muted-foreground))] hover:text-red-500 hover:border-red-400 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> 清理数据
+            </button>
+          </div>
+          {visitorOverview && (
+            <div className="flex flex-wrap gap-4 mb-3 text-sm">
+              <span className="text-[rgb(var(--muted-foreground))]">访客IP(UV): <b className="text-[rgb(var(--primary))]">{visitorOverview.uv}</b></span>
+              <span className="text-[rgb(var(--muted-foreground))]">访问次数(PV): <b className="text-[rgb(var(--primary))]">{visitorOverview.pv}</b></span>
+              <span className="text-[rgb(var(--muted-foreground))]">未知区域: <b className="text-[rgb(var(--primary))]">{visitorOverview.unknownRegion}</b> ({visitorOverview.unknownRegionPercent}%)</span>
+            </div>
+          )}
+          <div className="w-full overflow-hidden" style={chartContainerStyle}>
+            {screenWidth !== null && <VisitorWorldMap style={{ width: '100%', height: '100%' }} refreshKey={visitorRefreshKey} />}
+          </div>
+
+          {/* IP 明细：筛选 + 排序 + 分页 */}
+          <div className="mt-6">
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <List className="h-4 w-4 text-[rgb(var(--primary))]" />
+                <h3 className="text-sm font-semibold text-[rgb(var(--primary))]">IP 明细（共 {visitorTotal} 条）</h3>
               </div>
-              <button
-                onClick={handleVisitorClear}
-                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--muted-foreground))] hover:text-red-500 hover:border-red-400 transition-colors"
+              <div className="flex-1 min-w-[160px]">
+                <input
+                  value={visitorKeyword}
+                  onChange={(e) => { setVisitorKeyword(e.target.value); resetVisitorPage() }}
+                  placeholder="搜索国家/省份/城市/IP…"
+                  className="w-full text-xs px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] bg-transparent text-[rgb(var(--text))] placeholder:text-[rgb(var(--muted-foreground))] focus:outline-none focus:border-[rgb(var(--primary))]"
+                />
+              </div>
+              <select
+                value={visitorSortBy}
+                onChange={(e) => { setVisitorSortBy(e.target.value); resetVisitorPage() }}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] bg-transparent text-[rgb(var(--text))] focus:outline-none focus:border-[rgb(var(--primary))]"
               >
-                <Trash2 className="h-3.5 w-3.5" /> 清理数据
+                <option value="lastVisitTime">按最近访问</option>
+                <option value="visitCount">按访问次数</option>
+              </select>
+              <button
+                onClick={() => { setVisitorOrder((o) => (o === 'asc' ? 'desc' : 'asc')); resetVisitorPage() }}
+                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--primary))] hover:border-[rgb(var(--primary))] transition-colors"
+              >
+                {visitorOrder === 'asc' ? '升序 ↑' : '降序 ↓'}
               </button>
             </div>
-            {visitorOverview && (
-              <div className="flex flex-wrap gap-4 mb-3 text-sm">
-                <span className="text-[rgb(var(--muted-foreground))]">访客IP(UV): <b className="text-[rgb(var(--primary))]">{visitorOverview.uv}</b></span>
-                <span className="text-[rgb(var(--muted-foreground))]">访问次数(PV): <b className="text-[rgb(var(--primary))]">{visitorOverview.pv}</b></span>
-                <span className="text-[rgb(var(--muted-foreground))]">未知区域: <b className="text-[rgb(var(--primary))]">{visitorOverview.unknownRegion}</b> ({visitorOverview.unknownRegionPercent}%)</span>
-              </div>
-            )}
-            <div className="w-full overflow-hidden" style={smallChartContainerStyle}>
-              {screenWidth !== null && <VisitorWorldMap style={{ width: '100%', height: '100%' }} refreshKey={visitorRefreshKey} />}
-            </div>
-            {visitorIpList.length > 0 && (
-              <div className="mt-4 max-h-64 overflow-auto">
-                <div className="flex items-center gap-2 mb-2">
-                  <List className="h-4 w-4 text-[rgb(var(--primary))]" />
-                  <h3 className="text-sm font-semibold text-[rgb(var(--primary))]">IP 明细（近 {visitorIpList.length} 条）</h3>
-                </div>
-                <table className="w-full text-xs text-[rgb(var(--muted-foreground))]">
-                  <thead>
-                    <tr className="border-b border-[rgb(var(--border))] text-left">
-                      <th className="py-1 pr-2">IP</th><th className="py-1 pr-2">国家</th><th className="py-1 pr-2">省份</th>
-                      <th className="py-1 pr-2">城市</th><th className="py-1 pr-2">次数</th><th className="py-1">最近访问</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visitorIpList.map((v: any) => (
-                      <tr key={v.id} className="border-b border-[rgb(var(--border))]/50">
-                        <td className="py-1 pr-2 font-mono">{v.ip}</td>
-                        <td className="py-1 pr-2">{v.country ?? '-'}</td>
-                        <td className="py-1 pr-2">{v.province ?? '-'}</td>
-                        <td className="py-1 pr-2">{v.city ?? '-'}</td>
-                        <td className="py-1 pr-2">{v.visitCount}</td>
-                        <td className="py-1">{v.lastVisitTime ? new Date(v.lastVisitTime).toLocaleString() : '-'}</td>
+
+            {visitorIpList.length > 0 ? (
+              <>
+                <div className="max-h-96 overflow-auto">
+                  <table className="w-full text-xs text-[rgb(var(--muted-foreground))]">
+                    <thead>
+                      <tr className="border-b border-[rgb(var(--border))] text-left">
+                        <th className="py-1 pr-2">IP</th><th className="py-1 pr-2">国家</th><th className="py-1 pr-2">省份</th>
+                        <th className="py-1 pr-2">城市</th><th className="py-1 pr-2">次数</th><th className="py-1">最近访问</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {visitorIpList.map((v: any) => (
+                        <tr key={v.id} className="border-b border-[rgb(var(--border))]/50">
+                          <td className="py-1 pr-2 font-mono">{v.ip}</td>
+                          <td className="py-1 pr-2">{v.country ?? '-'}</td>
+                          <td className="py-1 pr-2">{v.province ?? '-'}</td>
+                          <td className="py-1 pr-2">{v.city ?? '-'}</td>
+                          <td className="py-1 pr-2">{v.visitCount}</td>
+                          <td className="py-1">{v.lastVisitTime ? new Date(v.lastVisitTime).toLocaleString() : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex items-center justify-between mt-3 text-xs text-[rgb(var(--muted-foreground))]">
+                  <span>第 {visitorPage} 页</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setVisitorPage((p) => Math.max(1, p - 1))}
+                      disabled={visitorPage <= 1}
+                      className="px-3 py-1 rounded-lg border border-[rgb(var(--border))] disabled:opacity-40 hover:text-[rgb(var(--primary))] hover:border-[rgb(var(--primary))] transition-colors"
+                    >
+                      上一页
+                    </button>
+                    <button
+                      onClick={() => setVisitorPage((p) => p + 1)}
+                      disabled={visitorPage * visitorPageSize >= visitorTotal}
+                      className="px-3 py-1 rounded-lg border border-[rgb(var(--border))] disabled:opacity-40 hover:text-[rgb(var(--primary))] hover:border-[rgb(var(--primary))] transition-colors"
+                    >
+                      下一页
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-[rgb(var(--muted-foreground))] py-4 text-center">暂无访客 IP 数据</p>
             )}
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
+
+        {/* 清理访客数据确认对话框 */}
+        <ConfirmDialog
+          isOpen={visitorClearConfirm}
+          title="确认清理"
+          message="确定清理全部访客 IP 数据？此操作不可撤销。"
+          confirmText="确认清理"
+          cancelText="取消"
+          variant="danger"
+          onConfirm={handleVisitorClear}
+          onCancel={() => setVisitorClearConfirm(false)}
+        />
       </main>
     </motion.div>
   )

@@ -1,7 +1,9 @@
 package com.example.blog.dao;
 
 import com.example.blog.po.BlogVisitor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,9 +15,23 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface BlogVisitorRepository extends JpaRepository<BlogVisitor, Long> {
+public interface BlogVisitorRepository extends JpaRepository<BlogVisitor, Long>, JpaSpecificationExecutor<BlogVisitor> {
 
     Optional<BlogVisitor> findByIp(String ip);
+
+    // IP 明细动态查询条件：keyword 对 ip/country/province/city 模糊匹配（忽略大小写）
+    static Specification<BlogVisitor> keywordSpec(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return (root, query, cb) -> cb.conjunction();
+        }
+        String kw = "%" + keyword.trim().toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("ip")), kw),
+                cb.like(cb.lower(root.get("country")), kw),
+                cb.like(cb.lower(root.get("province")), kw),
+                cb.like(cb.lower(root.get("city")), kw)
+        );
+    }
 
     // 区域聚合（按国家），仅统计国家非空的行
     @Query(value = "SELECT country AS name, count(*) AS visitor_count, sum(visit_count) AS total_visits "
