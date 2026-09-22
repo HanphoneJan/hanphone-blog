@@ -6,7 +6,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  AlertCircle,
   Loader2,
   Upload as UploadIcon,
   X,
@@ -16,6 +15,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_TYPE_LABELS, COMMON_LABELS } from '@/lib/labels'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { PicResponse } from '@/types/response'
 import Compressor from 'compressorjs'
 
@@ -627,55 +627,19 @@ export default function CategoryManagement() {
       )}
 
       {/* 删除确认弹窗 */}
-      <AnimatePresence>
-        {confirmDelete !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[rgb(var(--card))] rounded-xl border border-[rgb(var(--border))] w-full max-w-md p-5 sm:p-6"
-            >
-              <h3 className="text-base sm:text-lg font-semibold text-[rgb(var(--primary))] mb-2 flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2 text-amber-400" />
-                确认删除
-              </h3>
-              <p className="text-[rgb(var(--text))] mb-5 sm:mb-6 text-sm sm:text-base">
-                此操作将永久删除该分类，是否继续？
-              </p>
-              <div className="flex justify-end gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setConfirmDelete(null)}
-                  className="px-3 sm:px-4 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors text-sm"
-                >
-                  取消
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    handleDeleteCategory(confirmDelete)
-                    setConfirmDelete(null)
-                  }}
-                  disabled={loading}
-                  className="px-3 sm:px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 transition-colors flex items-center gap-2 text-sm"
-                >
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  确认删除
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        isOpen={confirmDelete !== null}
+        title="确认删除"
+        message="此操作将永久删除该分类，是否继续？"
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="danger"
+        onConfirm={() => {
+          handleDeleteCategory(confirmDelete!)
+          setConfirmDelete(null)
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
 
       {/* 全局加载指示器 */}
       {loading && (

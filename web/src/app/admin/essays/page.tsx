@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { Plus, FileText } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_ESSAY_LABELS } from '@/lib/labels'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useEssays } from './hooks/useEssays'
 import { useEssayForm } from './hooks/useEssayForm'
 import { useEssayFiles } from './hooks/useEssayFiles'
@@ -350,92 +350,33 @@ export default function EssayManagementPage() {
         </motion.div>
       </main>
 
-      {/* 删除确认对话框（createPortal 返回 portal 节点而非 React element，
-          不能作为 AnimatePresence 子元素——会被 isValidElement 过滤导致弹窗永不渲染） */}
-      {deleteModalVisible &&
-          createPortal(
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-[rgb(var(--overlay))]/50 flex items-center justify-center z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="bg-[rgb(var(--card))]/90 rounded-lg p-6 max-w-sm mx-4"
-              >
-                <h3 className="text-lg font-medium text-[rgb(var(--text))] mb-4">确认删除</h3>
-                <p className="text-[rgb(var(--text-muted))] mb-6">确定要删除这篇随笔吗？此操作不可撤销。</p>
-                <div className="flex justify-end gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={closeDeleteModal}
-                    className="px-4 py-2 rounded-lg bg-[rgb(var(--hover))] text-[rgb(var(--text))] hover:bg-[rgb(var(--muted))] transition-colors"
-                  >
-                    取消
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={confirmDelete}
-                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
-                  >
-                    确认删除
-                  </motion.button>
-                </div>
-              </motion.div>
-            </motion.div>,
-            document.body
-          )}
+      {/* 删除随笔确认对话框 */}
+      <ConfirmDialog
+        isOpen={deleteModalVisible}
+        title="确认删除"
+        message="确定要删除这篇随笔吗？此操作不可撤销。"
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={closeDeleteModal}
+      />
 
-      {/* 文件删除确认对话框（同上，portal 不能放进 AnimatePresence） */}
-      {deleteFileModalVisible &&
-          createPortal(
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-[rgb(var(--overlay))]/50 flex items-center justify-center z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="bg-[rgb(var(--card))]/90 rounded-lg p-6 max-w-sm mx-4"
-              >
-                <h3 className="text-lg font-medium text-[rgb(var(--text))] mb-4">确认删除文件</h3>
-                <p className="text-[rgb(var(--text-muted))] mb-6">
-                  文件 &quot;{fileToDelete?.fileName}&quot;
-                  <br />
-                  {fileDeleteMessage}
-                </p>
-                <div className="flex justify-end gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={closeFileDeleteModal}
-                    className="px-4 py-2 rounded-lg bg-[rgb(var(--hover))] text-[rgb(var(--text))] hover:bg-[rgb(var(--muted))] transition-colors"
-                  >
-                    取消
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleFileDeleteConfirm}
-                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors"
-                  >
-                    确认删除
-                  </motion.button>
-                </div>
-              </motion.div>
-            </motion.div>,
-            document.body
-          )}
+      {/* 文件删除确认对话框 */}
+      <ConfirmDialog
+        isOpen={deleteFileModalVisible}
+        title="确认删除文件"
+        message={
+          fileToDelete
+            ? `文件 "${fileToDelete.fileName}"${fileDeleteMessage ? `\n${fileDeleteMessage}` : ''}`
+            : ''
+        }
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="danger"
+        onConfirm={handleFileDeleteConfirm}
+        onCancel={closeFileDeleteModal}
+      />
     </motion.div>
   )
 }
