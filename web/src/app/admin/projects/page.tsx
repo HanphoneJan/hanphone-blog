@@ -8,6 +8,7 @@ import { useProjectForm } from './hooks/useProjectForm'
 import { useProjectStats } from './hooks/useProjectStats'
 import ProjectForm from './components/ProjectForm'
 import ProjectList from './components/ProjectList'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 
 // 动画变体定义
 const pageVariants = {
@@ -281,45 +282,16 @@ const ProjectManagement = () => {
       </main>
 
       {/* 删除确认对话框 */}
-      <AnimatePresence>
-        {deleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[rgb(var(--card))] rounded-lg p-6 max-w-sm w-full border border-[rgb(var(--border))]"
-            >
-              <h3 className="text-lg font-medium text-[rgb(var(--text))] mb-2">确认删除</h3>
-              <p className="text-[rgb(var(--text-muted))] mb-6">确定要删除这个项目吗？此操作不可撤销。</p>
-              <div className="flex gap-3 justify-end">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setDeleteConfirm(null)}
-                  className="px-4 py-2 rounded border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors"
-                >
-                  取消
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleDeleteConfirm}
-                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-500 transition-colors"
-                >
-                  确认删除
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        title="确认删除"
+        message="确定要删除这个项目吗？此操作不可撤销。"
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </motion.div>
   )
 }

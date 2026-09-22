@@ -2,14 +2,15 @@
 
 import Image from 'next/image'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { Delete, Loader2, AlertCircle, Search,  X } from 'lucide-react'
+import { motion, type Variants } from 'framer-motion'
+import { Delete, AlertCircle, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import {  ASSETS , API_CODE } from '@/lib/constants'
 import { ADMIN_COMMENT_LABELS } from '@/lib/labels'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 
 // 动画变体定义
 const pageVariants: Variants = {
@@ -433,50 +434,16 @@ export default function CommentsPage() {
       </main>
 
       {/* 删除确认弹窗 */}
-      <AnimatePresence>
-        {deleteConfirm !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[rgb(var(--overlay)/0.5)] flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-[rgb(var(--card))] rounded-xl border-[rgb(var(--border))] w-full max-w-md p-5"
-            >
-              <h3 className="text-base font-semibold text-[rgb(var(--primary))] mb-3 flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2 text-amber-400" />
-                确认删除
-              </h3>
-              <p className="text-[rgb(var(--text))] mb-5 text-sm">此操作将永久删除该评论，是否继续？</p>
-              <div className="flex justify-end gap-3">
-                <motion.button
-                  onClick={() => setDeleteConfirm(null)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-4 py-2.5 rounded-md border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors text-sm"
-                >
-                  取消
-                </motion.button>
-                <motion.button
-                  onClick={handleDeleteConfirm}
-                  disabled={loading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-4 py-2.5 rounded-md bg-red-600 text-white hover:bg-red-500 transition-colors flex items-center gap-2 text-sm"
-                >
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  确认删除
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        isOpen={deleteConfirm !== null}
+        title="确认删除"
+        message="此操作将永久删除该评论，是否继续？"
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
       {/* 全局加载指示器 */}
       {loading && (
