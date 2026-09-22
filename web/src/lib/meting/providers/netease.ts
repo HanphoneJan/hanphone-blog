@@ -101,11 +101,11 @@ export default class NeteaseProvider extends BaseProvider {
   }
 
   /** 网易云登录状态刷新（仅支持密码登录获取的 Cookie） */
-  refreshLogin(): ApiConfig {
+  refreshLogin(cookieToken?: string): ApiConfig {
     return {
       method: 'POST',
       url: 'http://music.163.com/api/login/token/refresh',
-      body: {},
+      body: cookieToken ? { cookieToken } : {},
       encode: 'netease_eapi',
     }
   }

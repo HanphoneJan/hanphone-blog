@@ -49,6 +49,12 @@ function mergeCookies(existingCookie: string, setCookie: string[] | undefined): 
     .join('; ')
 }
 
+/** 从 Cookie 字符串中提取指定字段的值 */
+function extractCookieValue(cookie: string, name: string): string | null {
+  const m = cookie.match(new RegExp(`(?:^|;)\\s*${name}=([^;]+)`))
+  return m ? m[1].trim() : null
+}
+
 /**
  * 尝试刷新网易云登录 Cookie。
  *
@@ -88,7 +94,9 @@ export async function refreshNeteaseCookie(): Promise<RefreshResult> {
     meting.cookie(currentCookie)
 
     const provider = meting.provider as NeteaseProvider
-    const api = provider.refreshLogin()
+    // 必须带上 cookieToken（MUSIC_U 值），否则服务端不会下发新的 cookie，
+    // 只会返回 code:200 而 cookie 从未真正续期，导致固定 7 天过期。
+    const api = provider.refreshLogin(extractCookieValue(currentCookie, 'MUSIC_U') ?? undefined)
 
     // executeRequest 内部会处理 eapi 加密并调用 curl；curl 已在 info 中保存 set-cookie
     const raw = await provider.executeRequest(api, meting)
@@ -103,7 +111,12 @@ export async function refreshNeteaseCookie(): Promise<RefreshResult> {
     }
 
     const setCookie = meting.info?.setCookie || []
-    const newCookieString = mergeCookies(currentCookie, setCookie)
+    const bodyCookie = typeof body.cookie === 'string' ? body.cookie : ''
+    // 新 cookie 可能通过 Set-Cookie 头，也可能出现在响应体的 cookie 字段，两者都合并
+    const newCookieString = mergeCookies(
+      mergeCookies(currentCookie, setCookie),
+      bodyCookie ? [bodyCookie] : undefined,
+    )
 
     if (newCookieString === currentCookie) {
       // 刷新接口没有更新字段，但仍把更新时间记为现在，
