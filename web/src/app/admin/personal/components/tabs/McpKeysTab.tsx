@@ -21,10 +21,8 @@ interface McpKeysTabProps {
 
 const MCP_ENDPOINT = 'https://hanphone.cn/mcp'
 
-const claudeCodeSnippet = `claude mcp add --transport http hanphone-blog ${MCP_ENDPOINT} \\
-  --header "Authorization: Bearer <在后台生成的 MCP API Key>"`
-
-const jsonSnippet = `{
+// 通用 MCP 配置（标准 mcpServers 格式，适用于 OpenCode、CodeX 等支持 MCP 的客户端）
+const mcpConfigSnippet = `{
   "mcpServers": {
     "hanphone-blog": {
       "type": "http",
@@ -35,6 +33,20 @@ const jsonSnippet = `{
     }
   }
 }`
+
+// 常见应用命令行接入示例
+const cliSnippet = `# 先导出密钥为环境变量（避免明文写在配置里）
+export HANPHONE_MCP_KEY="<在后台生成的 MCP API Key>"
+
+# OpenCode
+opencode mcp add hanphone-blog \\
+  --url ${MCP_ENDPOINT} \\
+  --header "Authorization: Bearer $HANPHONE_MCP_KEY"
+
+# CodeX
+codex mcp add hanphone-blog \\
+  --url ${MCP_ENDPOINT} \\
+  --bearer-token-env-var HANPHONE_MCP_KEY`
 
 export function McpKeysTab(props: McpKeysTabProps) {
   const {
@@ -277,31 +289,34 @@ export function McpKeysTab(props: McpKeysTabProps) {
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-xs font-medium flex items-center">
                           <TerminalSquare className="h-3.5 w-3.5 mr-1 text-[rgb(var(--primary))]" />
-                          Claude Code（命令行）
+                          通用 MCP 配置（JSON，适用于 OpenCode、CodeX 等）
                         </span>
                         <button
-                          onClick={() => handleCopySnippet(claudeCodeSnippet)}
+                          onClick={() => handleCopySnippet(mcpConfigSnippet)}
                           className="flex items-center text-xs text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] transition-colors"
                         >
                           {copiedId === -1 ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
                           复制
                         </button>
                       </div>
-                      <pre className="p-3 rounded-lg bg-[rgb(var(--bg))] border border-[rgb(var(--border))] font-mono text-xs overflow-x-auto">{claudeCodeSnippet}</pre>
+                      <pre className="p-3 rounded-lg bg-[rgb(var(--bg))] border border-[rgb(var(--border))] font-mono text-xs overflow-x-auto">{mcpConfigSnippet}</pre>
                     </div>
 
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-medium">Claude Desktop / Cursor（JSON 配置）</span>
+                        <span className="text-xs font-medium flex items-center">
+                          <TerminalSquare className="h-3.5 w-3.5 mr-1 text-[rgb(var(--primary))]" />
+                          命令行接入示例（OpenCode / CodeX）
+                        </span>
                         <button
-                          onClick={() => handleCopySnippet(jsonSnippet)}
+                          onClick={() => handleCopySnippet(cliSnippet)}
                           className="flex items-center text-xs text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] transition-colors"
                         >
                           {copiedId === -1 ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
                           复制
                         </button>
                       </div>
-                      <pre className="p-3 rounded-lg bg-[rgb(var(--bg))] border border-[rgb(var(--border))] font-mono text-xs overflow-x-auto">{jsonSnippet}</pre>
+                      <pre className="p-3 rounded-lg bg-[rgb(var(--bg))] border border-[rgb(var(--border))] font-mono text-xs overflow-x-auto">{cliSnippet}</pre>
                     </div>
                   </div>
 
@@ -339,7 +354,7 @@ export function McpKeysTab(props: McpKeysTabProps) {
                 type="text"
                 value={newKeyName}
                 onChange={e => setNewKeyName(e.target.value)}
-                placeholder="密钥名称，例如：Claude Desktop"
+                placeholder="密钥名称，例如：OpenCode"
                 className="w-full px-3 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--bg))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
                 onKeyDown={e => e.key === 'Enter' && handleCreate()}
                 autoFocus
