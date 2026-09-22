@@ -29,8 +29,7 @@ cp env.example .env
 
 # 3. 启动
 mvn spring-boot:run
-```
-> 访客 IP 全球定位（可选）：使用 DB-IP City Lite 离线库（mmdb 格式，兼容现有 geoip2 读取器，无需改代码）。在 .env 配置 GEO_DB_PATH 指向 mmdb 文件绝对路径。未配置或文件缺失时，访客区域解析降级为「未知区域」，不影响其他功能。可运行 scripts/update-dbip.sh 并配 cron 每月自动更新该库（用法见脚本头部注释）。
+```> 访客 IP 全球定位（可选）：使用 **DB-IP City Lite** 离线库（mmdb 格式，兼容现有 geoip2 读取器，无需改代码）。.env 配置 GEO_DB_PATH 指向 mmdb 绝对路径；**不配置时自动加载当前工作目录下的 dbip-city-lite.mmdb**。文件缺失时降级为「未知区域」，不影响其他功能。可运行 scripts/update-dbip.sh 并配 cron 每月自动更新（用法见脚本头部注释与 DEPLOYMENT.md §7）。
 
 服务运行在 http://localhost:8090
 
