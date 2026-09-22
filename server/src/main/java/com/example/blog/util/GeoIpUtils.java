@@ -21,6 +21,9 @@ public class GeoIpUtils {
 
     private DatabaseReader reader;
 
+    // GEO_DB_PATH 未配置时的默认 mmdb 文件名（相对于当前工作目录，即后端服务目录）
+    private static final String DEFAULT_MMDB_FILE = "dbip-city-lite.mmdb";
+
     @Value("${geo.db-path:}")
     private String dbPath;
 
@@ -35,13 +38,16 @@ public class GeoIpUtils {
 
     @PostConstruct
     public void init() {
-        if (dbPath == null || dbPath.isBlank()) {
-            logger.warn("GEO_DB_PATH 未配置，访客 IP 区域解析将降级为未知区域");
-            return;
+        // 未显式配置 GEO_DB_PATH 时，降级为当前工作目录下的 dbip-city-lite.mmdb
+        // （配合 scripts/update-dbip.sh 默认下载到脚本目录，用户无需配置 .env）
+        String path = dbPath;
+        if (path == null || path.isBlank()) {
+            path = DEFAULT_MMDB_FILE;
+            logger.info("GEO_DB_PATH 未配置，尝试默认文件: {}", path);
         }
-        File dbFile = new File(dbPath);
+        File dbFile = new File(path);
         if (!dbFile.exists() || !dbFile.isFile()) {
-            logger.warn("GeoLite2 mmdb 文件不存在: {}，访客 IP 区域解析将降级为未知区域", dbPath);
+            logger.warn("IP 定位 mmdb 文件不存在: {}，访客 IP 区域解析将降级为未知区域", path);
             return;
         }
         try {
