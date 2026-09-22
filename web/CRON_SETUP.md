@@ -58,8 +58,11 @@ sudo crontab -e
 推荐每 12 小时触发一次（实际刷新由 12~24 小时随机阈值控制）：
 
 ```cron
-0 */12 * * * curl -sSL -H "x-internal-key: 你的INTERNAL_API_KEY" http://127.0.0.1:3000/next-api/cron/refresh-netease-cookie/ >> /var/log/netease-cookie-refresh.log 2>&1
+0 */12 * * * cd <你的项目部署目录> && curl -sSL -H "x-internal-key: 你的INTERNAL_API_KEY" http://127.0.0.1:3000/next-api/cron/refresh-netease-cookie/ >> data/netease-cookie-refresh.log 2>&1
 ```
+
+> 将 `<你的项目部署目录>` 替换为你实际的部署路径（例如 `web/` 所在目录）。
+> 日志会写到项目 `data/` 目录下并自动创建。cron 任务默认工作目录是 crontab 属主的家目录，因此**必须**用 `cd` 显式切到项目目录后再用相对路径；直接 `>> /var/log/...` 会因 `/var/log` 仅 root 可写而报 Permission denied。
 
 参数说明：
 
@@ -73,7 +76,7 @@ sudo crontab -e
 > 也可以把密钥放入环境文件避免明文出现在 crontab：
 >
 > ```cron
-> 0 */12 * * * . /www/custom_server/client_blog/.env && curl -sSL -H "x-internal-key: $INTERNAL_API_KEY" http://127.0.0.1:3000/next-api/cron/refresh-netease-cookie/ >> /var/log/netease-cookie-refresh.log 2>&1
+> 0 */12 * * * cd <你的项目部署目录> && . ./.env && curl -sSL -H "x-internal-key: $INTERNAL_API_KEY" http://127.0.0.1:3000/next-api/cron/refresh-netease-cookie/ >> data/netease-cookie-refresh.log 2>&1
 > ```
 
 保存退出（nano：`Ctrl+O` → 回车 → `Ctrl+X`；vim：`:wq`）。
@@ -103,11 +106,11 @@ crontab -l
 grep CRON /var/log/syslog | tail
 
 # 查看每次触发的返回结果
-tail /var/log/netease-cookie-refresh.log
+tail <你的项目部署目录>/data/netease-cookie-refresh.log
 
 # 查看刷新日志与数据文件时间戳
-ls -l /www/custom_server/client_blog/data/
-tail -3 /www/custom_server/client_blog/data/netease-cookie-refresh.log
+ls -l <你的项目部署目录>/data/
+tail -3 <你的项目部署目录>/data/netease-cookie-refresh.log
 
 # 查看应用日志中的调度器输出
 pm2 logs blog_nextjs --lines 50
