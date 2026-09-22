@@ -79,6 +79,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - Frontend env: copy `web/env.example` → `web/.env.local`
 - Backend env: copy `server/env.example` → `server/.env`
 - Internal service auth: `INTERNAL_API_KEY` in backend `.env` for service-to-service calls (e.g., hanphone-chat → blog API)
+- Visitor IP geo stats: `GEO_DB_PATH` in backend `.env` points to a **DB-IP City Lite** mmdb file (globally covers IP→country/region; missing file degrades to "unknown region"). Auto-update monthly via `server/scripts/update-dbip.sh` (see `server/DEPLOYMENT.md` §7). Frontend world map displays country names in Chinese via `web/src/lib/countryZh.ts` mapping.
 
 ## CI (GitHub Actions)
 
