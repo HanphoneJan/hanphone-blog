@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Key, Plus, Trash2, RefreshCw, Copy, Check, Eye, EyeOff, Loader2, X } from 'lucide-react'
+import { Key, Plus, Trash2, RefreshCw, Copy, Check, Eye, EyeOff, Loader2, X, BookOpen, ChevronDown, TerminalSquare } from 'lucide-react'
 import { McpKeySummary, McpKeyDetail, useMcpKeys } from '../../hooks/useMcpKeys'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { showAlert } from '@/lib/Alert'
@@ -18,6 +18,23 @@ interface McpKeysTabProps {
   toggleKey: (id: number, active: boolean) => Promise<void>
   regenerateKey: (id: number) => Promise<McpKeyDetail | null>
 }
+
+const MCP_ENDPOINT = 'https://hanphone.cn/mcp'
+
+const claudeCodeSnippet = `claude mcp add --transport http hanphone-blog ${MCP_ENDPOINT} \\
+  --header "Authorization: Bearer <在后台生成的 MCP API Key>"`
+
+const jsonSnippet = `{
+  "mcpServers": {
+    "hanphone-blog": {
+      "type": "http",
+      "url": "${MCP_ENDPOINT}",
+      "headers": {
+        "Authorization": "Bearer <在后台生成的 MCP API Key>"
+      }
+    }
+  }
+}`
 
 export function McpKeysTab(props: McpKeysTabProps) {
   const {
@@ -38,6 +55,7 @@ export function McpKeysTab(props: McpKeysTabProps) {
   const [confirmRegenerate, setConfirmRegenerate] = useState<number | null>(null)
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [showKeyValue, setShowKeyValue] = useState<Record<number, boolean>>({})
+  const [showTutorial, setShowTutorial] = useState(true)
 
   const handleCreate = async () => {
     if (!newKeyName.trim()) {
@@ -91,6 +109,16 @@ export function McpKeysTab(props: McpKeysTabProps) {
     try {
       await navigator.clipboard.writeText(key)
       setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
+      showAlert('复制失败，请手动选中复制')
+    }
+  }
+
+  const handleCopySnippet = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedId(-1)
       setTimeout(() => setCopiedId(null), 2000)
     } catch {
       showAlert('复制失败，请手动选中复制')
@@ -214,6 +242,79 @@ export function McpKeysTab(props: McpKeysTabProps) {
             ))}
           </div>
         )}
+
+        <div className="mt-8 border border-[rgb(var(--border))] rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowTutorial(prev => !prev)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-[rgb(var(--hover))] hover:opacity-80 transition-opacity text-left"
+          >
+            <span className="flex items-center text-sm font-medium">
+              <BookOpen className="h-4 w-4 mr-2 text-[rgb(var(--primary))]" />
+              Agent 接入教程
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-[rgb(var(--text-muted))] transition-transform ${showTutorial ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          <AnimatePresence initial={false}>
+            {showTutorial && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 space-y-4 text-sm">
+                  <p className="text-[rgb(var(--text-muted))]">
+                    创建密钥后，将其作为 Bearer 令牌配置到支持 MCP 的 Agent 中，即可远程操作博客。端点统一为
+                    <code className="mx-1 px-1.5 py-0.5 rounded bg-[rgb(var(--hover))] font-mono text-xs">https://hanphone.cn/mcp</code>。
+                  </p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium flex items-center">
+                          <TerminalSquare className="h-3.5 w-3.5 mr-1 text-[rgb(var(--primary))]" />
+                          Claude Code（命令行）
+                        </span>
+                        <button
+                          onClick={() => handleCopySnippet(claudeCodeSnippet)}
+                          className="flex items-center text-xs text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] transition-colors"
+                        >
+                          {copiedId === -1 ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                          复制
+                        </button>
+                      </div>
+                      <pre className="p-3 rounded-lg bg-[rgb(var(--bg))] border border-[rgb(var(--border))] font-mono text-xs overflow-x-auto">{claudeCodeSnippet}</pre>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium">Claude Desktop / Cursor（JSON 配置）</span>
+                        <button
+                          onClick={() => handleCopySnippet(jsonSnippet)}
+                          className="flex items-center text-xs text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] transition-colors"
+                        >
+                          {copiedId === -1 ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                          复制
+                        </button>
+                      </div>
+                      <pre className="p-3 rounded-lg bg-[rgb(var(--bg))] border border-[rgb(var(--border))] font-mono text-xs overflow-x-auto">{jsonSnippet}</pre>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[rgb(var(--text-muted))]">
+                    提示：将上面的 <code className="px-1 rounded bg-[rgb(var(--hover))] font-mono">{"<在后台生成的 MCP API Key>"}</code>{' '}
+                    替换为你实际生成的密钥。不支持 HTTP 传输的客户端可用{' '}
+                    <code className="px-1 rounded bg-[rgb(var(--hover))] font-mono">mcp-remote</code> 桥接。
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* 新建密钥弹窗 */}
