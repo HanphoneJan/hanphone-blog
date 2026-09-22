@@ -121,6 +121,8 @@ sudo crontab -e
 脚本会：下载 db-ip 官方当月 mmdb → 校验为有效 MaxMind DB 格式 → 覆盖目标文件（保留 `.bak` 备份）→ 重启 `-s` 指定的服务。不传 `-p` 时，mmdb 默认下载到脚本所在目录（`dbip-city-lite.mmdb`），然后你可把 `server/.env` 的 `GEO_DB_PATH` 指向该文件。
 
 > 参数说明见脚本头部注释（`-p` 可选默认脚本目录，`-s` 可选，`-n` 预演不落库）。所有路径/服务名由调用方传入，脚本本身不包含任何部署信息。
+>
+> 排查：若执行报 `sudo: update-dbip.sh: command not found`，是脚本不在 PATH 且未加执行权限。用绝对路径执行 `sudo <你的目录>/bin/update-dbip.sh -s blog`，并先 `chmod +x <你的目录>/bin/update-dbip.sh`。若仍在当前目录，用 `sudo ./update-dbip.sh -s blog`。
 
 ## 方式二：Docker Compose 部署
 
