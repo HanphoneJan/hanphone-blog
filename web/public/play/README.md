@@ -15,7 +15,6 @@
 |  🎆  | [Canvas炫彩粒子系统](./canvas-particle-universe/)          | `canvas-particle-universe` | `canvas` |
 |  🎉  | [Hanphone&#39;s Congratulation](./congratulation/)         | `congratulation`           |  `节日`  |
 |  💬  | [和AI寒枫聊天](./hanphonechat/browser/)                    | `hanphonechat`             |   `ai`   |
-|  🎂  | [生日快乐！](./happy-birthday/)                            | `happy-birthday`           |  `节日`  |
 |  💌  | [来自寒枫的信](./letter/browser2/envelope.html)            | `letter`                   |  `爱情`  |
 |  🌸  | [致晴樨](./love-memory/)                                   | `love-memory`              |  `爱情`  |
 |  📖  | [博客阅读器](./read/replicant/)                            | `read`                     |  `工具`  |
