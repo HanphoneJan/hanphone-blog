@@ -18,8 +18,6 @@
 |  🎂  | [生日快乐！](./happy-birthday/)                            | `happy-birthday`           |  `节日`  |
 |  💌  | [来自寒枫的信](./letter/browser2/envelope.html)            | `letter`                   |  `爱情`  |
 |  🎰  | [Hanphone&#39;s Lottery](./lottery/)                       | `lottery`                  |  `游戏`  |
-|  🐾  | [可以成为我的恋人吗?](./love-chiikawa/)                    | `love-chiikawa`            |  `爱情`  |
-|  🔐  | [摩斯密码表白器](./love-guess-moss/)                       | `love-guess-moss`          |  `爱情`  |
 |  🌸  | [致晴樨](./love-memory/)                                   | `love-memory`              |  `爱情`  |
 |  📖  | [博客阅读器](./read/replicant/)                            | `read`                     |  `工具`  |
 |  📄  | [寒枫 - 个人简历](./resume/)                               | `resume`                   |  `工具`  |
