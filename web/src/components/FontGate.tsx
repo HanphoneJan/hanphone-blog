@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { beginGate, endGate, settleFonts } from '@/lib/font-gate'
+import { endGate } from '@/lib/font-gate'
 
 const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
@@ -15,15 +15,7 @@ export default function FontGate() {
       mounted.current = true
       return
     }
-    beginGate()
-    let cancelled = false
-    void settleFonts(1500).finally(() => {
-      if (!cancelled) endGate()
-    })
-    return () => {
-      cancelled = true
-      endGate()
-    }
+    endGate()
   }, [pathname])
 
   return null

@@ -90,7 +90,7 @@ export default async function RootLayout({
   const backgroundImageUrl = '/background.webp'
   
   return (
-    <html lang={SITE_CONFIG.language} className={isDark ? 'dark fonts-loading' : 'fonts-loading'}>
+    <html lang={SITE_CONFIG.language} className={isDark ? 'dark' : ''}>
       <head>
         <script
           dangerouslySetInnerHTML={{

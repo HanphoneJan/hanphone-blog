@@ -78,9 +78,11 @@ export function beginGate(): void {
 }
 
 export function endGate(): void {
+  // 无条件移除隐藏文字的类：即使 gateActive 状态错乱（beginGate 未执行/重复 endGate），
+  // 也保证 html.fonts-loading 被清理，避免 SSR 遗留的透明类导致页面永久空白。
+  document.documentElement.classList.remove('fonts-loading')
   if (!gateActive) return
   gateActive = false
-  document.documentElement.classList.remove('fonts-loading')
   const waiters = Array.from(settledWaiters)
   settledWaiters.clear()
   waiters.forEach(callback => callback())
