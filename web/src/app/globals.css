@@ -1157,11 +1157,12 @@ html.fonts-loading body * {
 }
 
 /* 页面过渡动画 - 增强呼吸感 */
-/* 注意：基础态不放 opacity:0，进入隐藏交给 fadeIn 的 from 帧；
-   这样即使动画被禁用/中断，元素也默认可见，杜绝"页面空白但可点击" */
+/* 基础态不放 opacity:0（隐藏交给 fadeIn 的 from 帧），
+   且 animation 不加 forwards、不用 will-change：
+   避免动画结束后残留 transform/will-change 形成持久 stacking context
+   与 containing block，导致背景遮罩层(z-1)盖住正文、正文内 fixed 弹层错位 */
 .page-transition {
-  animation: fadeIn 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-  will-change: opacity;
+  animation: fadeIn 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .page-transition.exit {

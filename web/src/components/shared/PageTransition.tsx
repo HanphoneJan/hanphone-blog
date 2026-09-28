@@ -15,10 +15,12 @@ interface PageTransitionProps {
  * 首次路由进入时若 enter 动画被中断/失败（快速连续导航、后台标签页等），
  * 页面会永远停在 opacity:0 —— 整页空白但 DOM 完整、可点击（opacity 不阻断命中）。
  *
- * 现改为纯 CSS keyframes 入场动画：
- *  - `forwards` 保证动画终态为 opacity:1；
- *  - 即使动画因任何原因未运行，元素默认 opacity 也为 1；
- *  - 因此页面从机制上不可能停留在"透明空白"状态。
+ * 现改为纯 CSS 入场动画，且不依赖动画执行结果：
+ *  - 容器基础态即可见（不设 opacity:0，隐藏由 fadeIn 的 from 帧负责）；
+ *  - 动画不加 forwards、不用 will-change，避免动画结束后残留
+ *    transform/will-change 形成持久 stacking context / containing block
+ *    （否则背景遮罩层 z-1 会盖住正文、正文内 fixed 弹层会错位）；
+ *  - 因此无论动画正常、被禁用还是被中断，页面都保证可见。
  */
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
