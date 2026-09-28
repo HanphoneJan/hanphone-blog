@@ -59,6 +59,8 @@ pnpm build
 
 ## 部署
 
+> 生产部署的完整流程、环境变量注入校验和上线前检查清单见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+
 ### Node.js 部署
 
 ```bash

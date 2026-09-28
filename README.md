@@ -153,6 +153,7 @@ pnpm build:photo-wall
 | ----------------------------------------- | ---------------------------- |
 | [前端开发指南](web/README.md)                | 前端配置、命令、部署         |
 | [前端技术文档](web/TECHNICAL_DOCUMENT.md)    | 前端架构、路由、状态管理     |
+| [前端部署手册](web/DEPLOYMENT.md)            | Next.js 生产部署流程与故障复盘 |
 | [后端开发指南](server/README.md)             | 后端配置、启动、API          |
 | [后端技术文档](server/TECHNICAL_DOCUMENT.md) | 后端架构、分层设计、安全     |
 | [测试指南](TESTING.md)                       | 单元测试、E2E 测试、CI 配置  |
