@@ -152,9 +152,7 @@ export default function BlogManagementPage() {
   // 初始化数据
   useEffect(() => {
     const fetchInitialData = async () => {
-      await getBlogList(queryInfo, pagenum, pagesize)
-      await getFullTypeList()
-      await getFullTagList()
+      await Promise.all([getBlogList(queryInfo, pagenum, pagesize), getFullTypeList(), getFullTagList()])
     }
     fetchInitialData()
   }, [pagenum, pagesize])

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -197,8 +197,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
   const isMobileView = isClientHydrated && screenWidth <= 768
   const isTabletView = isClientHydrated && screenWidth > 768 && screenWidth <= 1024
 
-  // 获取下拉框位置
-  const dropdownPosition = getDropdownPosition()
+  // 获取下拉框位置（仅在下拉框打开时计算，避免每次渲染同步读取布局）
+  const dropdownPosition = useMemo(
+    () => (showUserOptions ? getDropdownPosition() : { top: 0, left: 0, width: 180 }),
+    [showUserOptions]
+  )
 
     // 带放射动画的主题切换按钮
     const ThemeToggleButton = () => {
