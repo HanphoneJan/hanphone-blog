@@ -1157,11 +1157,11 @@ html.fonts-loading body * {
 }
 
 /* 页面过渡动画 - 增强呼吸感 */
+/* 注意：基础态不放 opacity:0，进入隐藏交给 fadeIn 的 from 帧；
+   这样即使动画被禁用/中断，元素也默认可见，杜绝"页面空白但可点击" */
 .page-transition {
-  opacity: 0;
   animation: fadeIn 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-  will-change: opacity, transform;
-  contain: paint;
+  will-change: opacity;
 }
 
 .page-transition.exit {
@@ -1203,6 +1203,13 @@ html.fonts-loading body * {
 .animate-shimmer {
   background-size: 200% 100%;
   animation: shimmer 2s ease-in-out infinite;
+}
+
+/* 关闭系统减少动态效果时直接显示页面（不依赖动画可见） */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+  }
 }
 
 /* 全局加载进度条 */

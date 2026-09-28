@@ -1,57 +1,32 @@
 'use client'
 
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { ReactNode } from 'react'
+import type { Variants } from 'framer-motion'
 
 interface PageTransitionProps {
   children: ReactNode
 }
 
-const pageVariants = {
-  initial: {
-    opacity: 0,
-    y: 20,
-    scale: 0.98
-  },
-  enter: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.6,
-      ease: [0.25, 0.1, 0.25, 1] as const,
-      when: 'beforeChildren',
-      staggerChildren: 0.1
-    }
-  },
-  exit: {
-    opacity: 0,
-    y: -10,
-    scale: 0.98,
-    transition: {
-      duration: 0.4,
-      ease: [0.25, 0.1, 0.25, 1] as const
-    }
-  }
-}
-
+/**
+ * 页面切换容器。
+ *
+ * 历史实现用 framer-motion 的 `AnimatePresence mode="wait"` + `initial={opacity:0}`，
+ * 首次路由进入时若 enter 动画被中断/失败（快速连续导航、后台标签页等），
+ * 页面会永远停在 opacity:0 —— 整页空白但 DOM 完整、可点击（opacity 不阻断命中）。
+ *
+ * 现改为纯 CSS keyframes 入场动画：
+ *  - `forwards` 保证动画终态为 opacity:1；
+ *  - 即使动画因任何原因未运行，元素默认 opacity 也为 1；
+ *  - 因此页面从机制上不可能停留在"透明空白"状态。
+ */
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
 
   return (
-    <AnimatePresence mode='wait' initial={false}>
-      <motion.div
-        key={pathname}
-        initial='initial'
-        animate='enter'
-        exit='exit'
-        variants={pageVariants}
-        style={{ width: '100%' }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <div key={pathname} className="page-transition">
+      {children}
+    </div>
   )
 }
 
