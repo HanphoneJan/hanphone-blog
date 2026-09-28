@@ -5,8 +5,12 @@
 /* ---------- 视差滚动全屏Hero ---------- */
 .parallax-hero {
   position: relative;
+  /* 用恒定大视口高度 lvh 而非 dvh：
+     dvh(动态视口)在移动端 URL 栏收起/展开时会变化，导致 hero 高度随之变化，
+     背景层(bg-cover)被迫重新计算缩放 → 下滑时背景突然变大。
+     lvh 为恒定大视口高度，不受 URL 栏影响；100vh 作为不支持 lvh 的浏览器回退 */
   height: 100vh;
-  height: 100dvh;
+  height: 100lvh;
   overflow: hidden;
   display: flex;
   align-items: center;
