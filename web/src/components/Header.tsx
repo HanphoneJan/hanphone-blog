@@ -105,6 +105,9 @@ const Header: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState<string>(pathname)
   const [menuHiddenVisible, setMenuHiddenVisible] = useState<boolean>(false)
   const [expandedMobileMenu, setExpandedMobileMenu] = useState<number | null>(null)
+  // 桌面端顶部导航：带子菜单的项支持点击展开（平板/触屏无 hover 也能进二级菜单）
+  const [expandedDesktopMenu, setExpandedDesktopMenu] = useState<number | null>(null)
+  const desktopNavRef = useRef<HTMLElement | null>(null)
   const [userOptionVisible, setUserOptionVisible] = useState<boolean>(false)
   const [mobileSearchVisible, setMobileSearchVisible] = useState<boolean>(false)
   const [isClient, setIsClient] = useState<boolean>(false)
@@ -380,6 +383,23 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll)
     handleScroll() // 初始检查
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // 路由变化后关闭桌面端展开的二级菜单
+  useEffect(() => {
+    setExpandedDesktopMenu(null)
+  }, [pathname])
+
+  // 点击导航栏外部时关闭桌面端展开的二级菜单
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (desktopNavRef.current && !desktopNavRef.current.contains(target)) {
+        setExpandedDesktopMenu(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
   }, [])
 
   const getContentTypeLabel = (type: SearchResult['contentType']) => {
@@ -773,6 +793,7 @@ const Header: React.FC = () => {
 
               {/* 桌面端导航菜单 */}
             <nav
+              ref={desktopNavRef}
               className={`hidden md:flex items-center flex-nowrap shrink-0 gap-0.5 p-1 rounded-xl min-w-0 ${
                 isTransparent ? '' : 'bg-[rgb(var(--card))]/20 border border-[rgb(var(--border))]/30'
               }`}
@@ -781,9 +802,16 @@ const Header: React.FC = () => {
                 const hasChildren = !!item.children?.length
                 const isActive = isMenuActive(item)
                 if (hasChildren) {
+                  const isExpanded = expandedDesktopMenu === item.id
                   return (
-                    <div key={item.id} className="relative group">
+                    <div
+                      key={item.id}
+                      className="relative group"
+                      onMouseEnter={() => setExpandedDesktopMenu(prev => (prev !== null && prev !== item.id ? null : prev))}
+                    >
                       <button
+                        onClick={() => setExpandedDesktopMenu(prev => (prev === item.id ? null : item.id))}
+                        aria-expanded={isExpanded}
                         title={item.authName}
                         className={`flex items-center shrink-0 rounded-lg transition-none whitespace-nowrap ${
                           isActive
@@ -799,7 +827,11 @@ const Header: React.FC = () => {
                         <span className="ml-1.5 font-medium text-sm hidden min-[1100px]:inline">{item.authName}</span>
                         <ChevronDown className="w-3 h-3 ml-0.5 hidden min-[1100px]:inline opacity-70" />
                       </button>
-                      <div className={`absolute top-full left-0 mt-1 py-1.5 px-1.5 rounded-xl opacity-0 invisible -translate-y-1 scale-[0.97] transition-all duration-200 ease-out group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:scale-100 min-w-[140px] z-50 origin-top-left ${
+                      <div className={`absolute top-full left-0 mt-1 py-1.5 px-1.5 rounded-xl transition-all duration-200 ease-out min-w-[140px] z-50 origin-top-left ${
+                        isExpanded
+                          ? 'opacity-100 visible translate-y-0 scale-100'
+                          : 'opacity-0 invisible -translate-y-1 scale-[0.97]'
+                      } group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:scale-100 ${
                         isTransparent
                           ? 'bg-transparent border-0 shadow-none'
                           : 'bg-[rgb(var(--bg))] border border-[rgb(var(--border))] shadow-xl'
