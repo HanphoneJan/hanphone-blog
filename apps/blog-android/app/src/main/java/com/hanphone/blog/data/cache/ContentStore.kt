@@ -2,6 +2,9 @@ package com.hanphone.blog.data.cache
 
 import android.content.Context
 import com.hanphone.blog.data.api.ApiClient
+import com.hanphone.blog.data.chat.ChatUser
+import com.hanphone.blog.data.chat.PrivateChatMessage
+import com.hanphone.blog.data.chat.PublicChatMessage
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
@@ -95,4 +98,39 @@ object ContentStore {
     private val docListType: Type = Types.newParameterizedType(List::class.java, Doc::class.java)
     suspend fun readDocs(): List<Doc>? = read("docs.json", docListType)
     suspend fun writeDocs(items: List<Doc>) = write("docs.json", docListType, items)
+
+    // ===== 聊天（消息页本地缓存：首进秒显历史，连接在后台刷新）=====
+    private val publicChatType: Type = Types.newParameterizedType(List::class.java, PublicChatMessage::class.java)
+    suspend fun readPublicChat(): List<PublicChatMessage>? = read("chat_public.json", publicChatType)
+    suspend fun writePublicChat(items: List<PublicChatMessage>) = write("chat_public.json", publicChatType, items)
+
+    /** key：普通用户与管理员对话为 "admin"，管理员与某用户会话为 "u{userId}" */
+    private val privateChatType: Type = Types.newParameterizedType(List::class.java, PrivateChatMessage::class.java)
+    suspend fun readPrivateChat(key: String): List<PrivateChatMessage>? = read("chat_private_$key.json", privateChatType)
+    suspend fun writePrivateChat(key: String, items: List<PrivateChatMessage>) = write("chat_private_$key.json", privateChatType, items)
+
+    // ===== 私信用户列表（管理员收件箱）=====
+    private val chatUsersType: Type = Types.newParameterizedType(List::class.java, ChatUser::class.java)
+    suspend fun readChatUsers(): List<ChatUser>? = read("chat_users.json", chatUsersType)
+    suspend fun writeChatUsers(items: List<ChatUser>) = write("chat_users.json", chatUsersType, items)
+
+    // ===== 数据管理（设置页按功能删除/查看占用）=====
+    suspend fun delete(name: String): Unit = withContext(Dispatchers.IO) {
+        runCatching { File(dir, name).delete() }
+    }
+
+    /** 按文件名前缀批量删除（如聊天私信 chat_private_*） */
+    suspend fun deleteWhere(predicate: (String) -> Boolean): Unit = withContext(Dispatchers.IO) {
+        runCatching { dir.listFiles()?.forEach { if (it.isFile && predicate(it.name)) it.delete() } }
+    }
+
+    /** 各缓存文件大小（字节），key=文件名 */
+    suspend fun cacheSizes(): Map<String, Long> = withContext(Dispatchers.IO) {
+        runCatching { dir.listFiles()?.filter { it.isFile }?.associate { it.name to it.length() } ?: emptyMap() }
+            .getOrDefault(emptyMap())
+    }
+
+    suspend fun clearAll(): Unit = withContext(Dispatchers.IO) {
+        runCatching { dir.listFiles()?.forEach { it.delete() } }
+    }
 }

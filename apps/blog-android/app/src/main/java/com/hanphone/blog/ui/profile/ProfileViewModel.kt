@@ -131,4 +131,28 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * 保存账号资料（对齐网页 UserInfoForm）：昵称/头像/邮箱(+验证码)/密码(md5 摘要)。
+     * 成败由 onResult(null) 反映，UI 负责提示并刷新登录态展示。
+     */
+    fun saveAccount(userId: Long, user: Map<String, String>, captcha: String?, onResult: (User?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val res = repo.updateCurrentUserFull(userId, user, captcha)
+                if (res.flag && res.data != null) {
+                    profile = res.data
+                    onResult(res.data)
+                } else {
+                    onResult(null)
+                }
+            } catch (_: Exception) {
+                onResult(null)
+            }
+        }
+    }
+
+    /** 发送通用邮箱验证码（改邮箱场景，scene 默认 general），成功与否同步返回 */
+    suspend fun sendGeneralCaptcha(email: String): Boolean =
+        runCatching { repo.sendGeneralCaptcha(email).flag }.getOrDefault(false)
 }

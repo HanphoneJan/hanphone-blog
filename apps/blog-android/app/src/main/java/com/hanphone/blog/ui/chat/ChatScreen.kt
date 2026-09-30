@@ -65,6 +65,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.chat.ChatConnectionState
 import com.hanphone.blog.data.chat.ChatSocket
 import com.hanphone.blog.data.chat.ChatUser
@@ -76,6 +77,7 @@ import com.hanphone.blog.util.resolveImageUrl
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.drop
 
 /**
  * 消息页（Hub）：公告 + 【聊天室 | 私信】双 Tab，对应 hanphone-chat 移动端。
@@ -96,9 +98,9 @@ fun ChatScreen(onLogin: () -> Unit) {
         if (t != null) ChatSocket.connect(t) else ChatSocket.disconnect()
     }
 
-    // socket 提示（连接失败自动重试等）直接 collect，替代轮询
+    // socket 提示（服务端 notification 事件）；drop(1) 避免每次进入消息页重弹上次的通知
     LaunchedEffect(Unit) {
-        ChatSocket.notice.collect { n ->
+        ChatSocket.notice.drop(1).collect { n ->
             if (n != null) Toast.makeText(context, n, Toast.LENGTH_SHORT).show()
         }
     }
@@ -172,6 +174,14 @@ private fun PublicRoomContent(onLogin: () -> Unit) {
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.scrollToItem(messages.size - 1)
+    }
+
+    // 冷启动秒显：连接建立前先展示本地缓存历史（socket 数据到达后自然覆盖，不重复）
+    LaunchedEffect(Unit) {
+        if (ChatSocket.messages.value.isEmpty()) {
+            val cached = ContentStore.readPublicChat()
+            if (!cached.isNullOrEmpty()) ChatSocket.restoreMessages(cached)
+        }
     }
 
     fun send() {
@@ -263,6 +273,20 @@ private fun AdminThreadContent(
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
+    // 本地缓存 key：普通用户与管理员=admin；管理员与某用户=u{userId}
+    val convKey = remember(targetUserId) { if (targetUserId != null) "u$targetUserId" else "admin" }
+
+    // 冷启动秒显：连接未就绪时先用本地缓存填充（REST 历史到达后覆盖）
+    LaunchedEffect(convKey) {
+        if (history.isEmpty()) {
+            val cached = ContentStore.readPrivateChat(convKey)
+            if (!cached.isNullOrEmpty()) {
+                history = cached
+                historyError = null
+            }
+        }
+    }
+
     // 历史加载（连接就绪后拉取）
     LaunchedEffect(token, state, loadTick, targetUserId) {
         val t = token
@@ -272,6 +296,7 @@ private fun AdminThreadContent(
                 if (resp.success) {
                     history = resp.messages
                     historyError = null
+                    ContentStore.writePrivateChat(convKey, resp.messages) // 权威历史落盘
                 } else historyError = "历史消息加载失败，点击重试"
             } catch (e: Exception) {
                 historyError = e.message?.ifBlank { null } ?: "历史消息加载失败，点击重试"
@@ -291,8 +316,17 @@ private fun AdminThreadContent(
         map.values.toList()
     }
 
+    // 会话变化：滚动到底 + 节流落盘（5s 一次；id=0 的本地乐观气泡不写缓存）
+    var lastPrivatePersist by remember { mutableStateOf(0L) }
     LaunchedEffect(all.size) {
-        if (all.isNotEmpty()) listState.scrollToItem(all.size - 1)
+        if (all.isNotEmpty()) {
+            listState.scrollToItem(all.size - 1)
+            val now = System.currentTimeMillis()
+            if (now - lastPrivatePersist >= 5_000) {
+                lastPrivatePersist = now
+                ContentStore.writePrivateChat(convKey, all.filter { it.id != 0L })
+            }
+        }
     }
 
     fun send() {
@@ -395,10 +429,23 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
     var users by remember { mutableStateOf<List<ChatUser>>(emptyList()) }
     var open by remember { mutableStateOf<ChatUser?>(null) }
 
+    // 冷启动秒显：REST 到达前先用本地缓存渲染列表（在线状态随后由 socket 覆盖）
+    LaunchedEffect(Unit) {
+        if (users.isEmpty()) {
+            val cached = ContentStore.readChatUsers()
+            if (!cached.isNullOrEmpty()) users = cached
+        }
+    }
+
     LaunchedEffect(token) {
         val t = token
         if (t != null) {
-            kotlin.runCatching { repo.chatUsers(t) }.onSuccess { if (it.success) users = it.users }
+            kotlin.runCatching { repo.chatUsers(t) }.onSuccess {
+                if (it.success) {
+                    users = it.users
+                    ContentStore.writeChatUsers(it.users)
+                }
+            }
         }
     }
     val merged = remember(users, userList) {
@@ -515,7 +562,7 @@ private fun ReconnectBanner(state: ChatConnectionState, onRetry: () -> Unit, mod
         ) {
             if (state == ChatConnectionState.CONNECTING) {
                 CircularProgressIndicator(Modifier.size(13.dp), strokeWidth = 2.dp)
-                Text("连接已断开，正在重连…", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("正在连接…", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 Text("网络异常，点击重试", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
             }

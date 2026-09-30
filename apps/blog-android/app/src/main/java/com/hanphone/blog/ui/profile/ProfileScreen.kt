@@ -1,6 +1,7 @@
 package com.hanphone.blog.ui.profile
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -40,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,9 +52,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.BuildConfig
+import com.hanphone.blog.R
 import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.clearAuth
 import com.hanphone.blog.core.saveAuth
@@ -58,10 +68,12 @@ import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.User
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
+import com.hanphone.blog.util.md5Hex
 import com.hanphone.blog.util.resolveImageUrl
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val appeVersion = "v1.6.0"
+private val appeVersion: String get() = BuildConfig.VERSION_NAME
 
 /** 我的：概览页（登录态/统计）+ 更多入口（留言板/友链/设置）+ 关于 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,6 +88,7 @@ fun ProfileScreen(
 ) {
     val vm: ProfileViewModel = hiltViewModel()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     val stats = vm.stats
     val visits = vm.visits
@@ -116,8 +129,11 @@ fun ProfileScreen(
                     Avatar(url = displayAvatar, name = displayName, size = 72.dp)
                 }
                 Text(displayName, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp))
-                if (displayUsername.isNotBlank()) {
-                    Text("@$displayUsername", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // 用户名行固定占位：网络资料加载出来后出现 @用户名 时不再顶动下方内容（防抖动）
+                Box(Modifier.height(20.dp), contentAlignment = Alignment.Center) {
+                    if (displayUsername.isNotBlank()) {
+                        Text("@$displayUsername", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
                 Text(
                     "点击头像可修改资料",
@@ -126,13 +142,13 @@ fun ProfileScreen(
                     modifier = Modifier.padding(top = 4.dp).clickable { showEditProfile = true }
                 )
             } else {
-                // 未登录：站点占位
-                Box(
-                    Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("云", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
+                // 未登录：博客图标占位（对齐网站图标，不再用文字「云」）
+                Image(
+                    painter = painterResource(R.drawable.ic_blog),
+                    contentDescription = "云林有风",
+                    modifier = Modifier.size(72.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
                 Text("云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp))
                 Text("Hanphone 的个人博客 · 记录与分享", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -228,13 +244,32 @@ fun ProfileScreen(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("云林有风 Android $appeVersion", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // 应用身份（博客图标）
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_blog),
+                        contentDescription = "云林有风图标",
+                        modifier = Modifier.size(52.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Column {
+                        Text("云林有风", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text("版本 ${appeVersion}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 Text(
-                    "原生 Kotlin + Jetpack Compose（Material 3）开发，数据来自 hanphone.cn 博客 API。",
+                    "原生 Kotlin + Jetpack Compose（Material 3）开发的个人博客客户端，数据来自 hanphone.cn 博客 API。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+
+                // 链接区
+                AboutLinkRow("访问博客网站", "hanphone.cn") { uriHandler.openUri("https://hanphone.cn") }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                AboutLinkRow("作者 GitHub", "HanphoneJan") { uriHandler.openUri("https://github.com/HanphoneJan") }
             }
         }
         } // Column
@@ -246,6 +281,7 @@ fun ProfileScreen(
             current = vm.profile,
             fallbackName = displayName,
             fallbackAvatar = displayAvatar,
+            isAdmin = userType == "1",
             vm = vm,
             onDismiss = { showEditProfile = false },
             onSaved = { user ->
@@ -280,6 +316,20 @@ private fun MoreRow(icon: ImageVector, title: String, desc: String, onClick: () 
     }
 }
 
+/** 关于区链接行：标题 + 副标题 + 箭头，点击外部打开 */
+@Composable
+private fun AboutLinkRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline)
+    }
+}
+
 @Composable
 private fun StatItem(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -288,12 +338,14 @@ private fun StatItem(value: String, label: String) {
     }
 }
 
-/** 编辑个人资料：头像（相册选择 → admin-file 上传）+ 昵称 → /user/current/update */
+/** 编辑个人资料（对齐网页 UserInfoForm）：头像/昵称 + 邮箱（改邮箱需验证码）+ 密码（md5 传输）
+ *  → POST /user/current/update；管理员改邮箱免验证码。 */
 @Composable
 private fun ProfileEditDialog(
     current: User?,
     fallbackName: String,
     fallbackAvatar: String?,
+    isAdmin: Boolean,
     vm: ProfileViewModel,
     onDismiss: () -> Unit,
     onSaved: (User) -> Unit
@@ -302,8 +354,39 @@ private fun ProfileEditDialog(
     val scope = rememberCoroutineScope()
     var nickname by remember { mutableStateOf(current?.nickname ?: fallbackName) }
     var avatarUrl by remember { mutableStateOf(current?.avatar ?: fallbackAvatar ?: "") }
+    val currentEmail = current?.email?.trim().orEmpty()
+    var email by remember { mutableStateOf(currentEmail) }
+    var captcha by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var countdown by remember { mutableIntStateOf(0) }
+    var sendingCaptcha by remember { mutableStateOf(false) }
     var uploading by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
+
+    // 验证码倒计时
+    LaunchedEffect(countdown) {
+        if (countdown > 0) { delay(1000); countdown-- }
+    }
+
+    val emailChanged = email.isNotBlank() && email.trim() != currentEmail
+    val needCaptcha = emailChanged && !isAdmin
+
+    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+
+    fun requestCaptcha() {
+        if (!Regex("""^[^@\s]+@[^@\s]+\.[^@\s]+$""").matches(email.trim())) {
+            toast("请先填写正确的新邮箱")
+            return
+        }
+        if (countdown > 0 || sendingCaptcha) return
+        scope.launch {
+            sendingCaptcha = true
+            val ok = vm.sendGeneralCaptcha(email.trim())
+            sendingCaptcha = false
+            if (ok) countdown = 60 else toast("验证码发送失败，请稍后再试")
+        }
+    }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -314,27 +397,30 @@ private fun ProfileEditDialog(
                 if (url != null) {
                     avatarUrl = url
                 } else {
-                    Toast.makeText(context, "头像上传失败", Toast.LENGTH_SHORT).show()
+                    toast("头像上传失败")
                 }
             }
         }
     }
 
     AlertDialog(
-        onDismissRequest = { if (!saving && !uploading) onDismiss() },
+        onDismissRequest = { if (!saving && !uploading && !sendingCaptcha) onDismiss() },
         title = { Text("编辑资料") },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()).heightIn(max = 480.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Box(
                     Modifier.clickable(enabled = !uploading) { picker.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
                     Avatar(url = avatarUrl.ifBlank { null }, name = nickname.ifBlank { "友" }, size = 72.dp)
-                    if (uploading) {
-                        CircularProgressIndicator(Modifier.size(72.dp))
-                    }
+                    if (uploading) CircularProgressIndicator(Modifier.size(72.dp))
                 }
                 Text("点击头像更换（自动上传）", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+
                 OutlinedTextField(
                     value = nickname,
                     onValueChange = { nickname = it },
@@ -342,36 +428,90 @@ private fun ProfileEditDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                if (current?.email?.isNotBlank() == true) {
-                    Text("邮箱 ${current.email}（修改需验证码，请到网页端操作）", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it; captcha = "" },
+                        label = { Text("邮箱") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = { requestCaptcha() },
+                        enabled = emailChanged && !isAdmin && !sendingCaptcha
+                    ) { Text(if (countdown > 0) "重新发送(${countdown}s)" else if (emailChanged) "获取验证码" else "未修改") }
                 }
+                if (needCaptcha) {
+                    OutlinedTextField(
+                        value = captcha,
+                        onValueChange = { captcha = it },
+                        label = { Text("邮箱验证码（已发送到新邮箱）") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else if (!isAdmin) {
+                    Text("修改邮箱需向新邮箱发送验证码", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                }
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("新密码（可选）") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("确认新密码") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("密码留空则不改；至少 6 位且含字母和数字", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
             }
         },
         confirmButton = {
             TextButton(
-                enabled = !saving && !uploading && nickname.isNotBlank(),
+                enabled = !saving && !uploading && !sendingCaptcha && nickname.isNotBlank(),
                 onClick = {
+                    val pwd = password
+                    if (pwd.isNotBlank()) {
+                        if (pwd.length < 6) { toast("密码长度不能少于 6 位"); return@TextButton }
+                        if (!Regex("""^(?=.*[a-zA-Z])(?=.*\d).+$""").matches(pwd)) {
+                            toast("密码必须包含字母和数字"); return@TextButton
+                        }
+                        if (pwd != confirmPassword) { toast("两次输入的密码不一致"); return@TextButton }
+                    }
+                    if (!Regex("""^[^@\s]+@[^@\s]+\.[^@\s]+$""").matches(email.trim())) {
+                        toast("请输入有效的邮箱地址"); return@TextButton
+                    }
+                    if (needCaptcha && captcha.isBlank()) {
+                        toast("修改邮箱需要填写验证码"); return@TextButton
+                    }
                     val uid = TokenStore.userId.value
                     if (uid == null) {
-                        Toast.makeText(context, "登录态已失效，请重新登录", Toast.LENGTH_SHORT).show()
+                        toast("登录态已失效，请重新登录")
                         onDismiss()
                         return@TextButton
                     }
                     saving = true
-                    vm.saveProfile(uid, nickname.trim(), avatarUrl) { user ->
+                    val user = mutableMapOf("nickname" to nickname.trim(), "avatar" to avatarUrl)
+                    if (emailChanged) user["email"] = email.trim()
+                    if (pwd.isNotBlank()) user["password"] = md5Hex(pwd)
+                    vm.saveAccount(uid, user, if (needCaptcha) captcha.trim() else null) { saved ->
                         saving = false
-                        if (user != null) {
-                            onSaved(user)
+                        if (saved != null) {
+                            onSaved(saved)
                             onDismiss()
-                        } else {
-                            Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
-                        }
+                        } else toast("保存失败，请稍后再试")
                     }
                 }
             ) { Text(if (saving) "保存中…" else "保存") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !saving && !uploading) { Text("取消") }
+            TextButton(onClick = onDismiss, enabled = !saving && !uploading && !sendingCaptcha) { Text("取消") }
         }
     )
 }

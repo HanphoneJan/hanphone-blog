@@ -134,6 +134,18 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
     suspend fun updateCurrentUser(userId: Long, user: Map<String, String>): ApiResult<User> =
         withContext(Dispatchers.IO) { api.updateCurrentUser(mapOf("userId" to userId, "user" to user)) }
 
+    /** 完整资料更新（对齐网页 UserInfoForm）：支持改邮箱带验证码，密码传 md5 摘要 */
+    suspend fun updateCurrentUserFull(userId: Long, user: Map<String, String>, captcha: String? = null): ApiResult<User> =
+        withContext(Dispatchers.IO) {
+            val body = mutableMapOf<String, Any?>("userId" to userId, "user" to user)
+            if (!captcha.isNullOrBlank()) body["captcha"] = captcha
+            api.updateCurrentUser(body)
+        }
+
+    /** 通用邮箱验证码（scene 默认 general：改邮箱/重置密码等） */
+    suspend fun sendGeneralCaptcha(email: String): ApiResult<Void?> =
+        withContext(Dispatchers.IO) { api.sendCaptcha(mapOf("email" to email)) }
+
     /** 私信：拉取与管理员的历史记录（需 Bearer token） */
     suspend fun adminMessages(token: String): ChatMessagesResponse =
         withContext(Dispatchers.IO) { api.adminMessages("Bearer $token") }

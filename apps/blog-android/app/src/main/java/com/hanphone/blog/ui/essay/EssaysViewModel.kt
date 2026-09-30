@@ -12,6 +12,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.paging.cachedIn
+import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
@@ -25,6 +26,9 @@ import javax.inject.Inject
  *
  * 服务端 /essays?page=N&pageSize=10 返回 Spring 风格 PageResult（number 0 起始）。
  * PagingSource 的 key 为 1 起始页码，nextKey 按「已取页数+1」推进，取到末页或空页即止。
+ *
+ * 冷启动体验：Paging 首屏（网络）返回前，先用缓存秒显内容（MemoryCache → ContentStore），
+ * 避免进入页面就闪骨架屏/转圈；paging 数据到达后无缝替换（key 一致不闪）。
  */
 @HiltViewModel
 class EssayListViewModel @Inject constructor(
@@ -42,6 +46,23 @@ class EssayListViewModel @Inject constructor(
     ) {
         EssayPagingSource(repo)
     }.flow.cachedIn(viewModelScope)
+
+    /** 冷启动秒显缓存（Paging 首屏未到时先渲染它） */
+    var coldFeed by mutableStateOf<List<Essay>?>(MemoryCache.essayMoments?.takeIf { it.isNotEmpty() })
+        private set
+
+    init {
+        // 进程内无缓存时读磁盘，拿到后交给 UI 立即渲染；Paging 随后网络回源覆盖
+        viewModelScope.launch {
+            if (coldFeed.isNullOrEmpty()) {
+                val cached = ContentStore.readEssayFirstPage()
+                if (!cached.isNullOrEmpty()) {
+                    coldFeed = cached
+                    MemoryCache.essayMoments = cached
+                }
+            }
+        }
+    }
 
     /** 列表条目内加载某条随笔的评论 */
     fun loadComments(essayId: Long, onResult: (List<EssayComment>?) -> Unit) {
@@ -84,6 +105,11 @@ class EssayPagingSource(
             if (res.flag && res.data != null) {
                 val d = res.data
                 val content = d.content
+                // 第一页成功即写三层缓存，供下次进入秒显（旧缓存被新数据覆盖）
+                if (page == 1 && content.isNotEmpty()) {
+                    MemoryCache.essayMoments = content
+                    ContentStore.writeEssayFirstPage(content)
+                }
                 val next = if (content.isNotEmpty() && page < d.totalPages) page + 1 else null
                 LoadResult.Page(data = content, prevKey = if (page == 1) null else page - 1, nextKey = next)
             } else {

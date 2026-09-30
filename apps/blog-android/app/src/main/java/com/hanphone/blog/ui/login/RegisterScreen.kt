@@ -1,6 +1,7 @@
 package com.hanphone.blog.ui.login
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,11 +42,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.hanphone.blog.R
 import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
@@ -87,7 +91,8 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
         scope.launch {
             try {
                 val res = repo.sendRegisterCaptcha(email.trim())
-                toast(res.message.ifBlank { "验证码已发送，请查收邮箱" })
+                if (!res.flag) toast(res.message.ifBlank { "发送失败" })
+                // 成功无需 toast：按钮随即进入 60s 倒计时即反馈
                 countdown = 60
             } catch (e: Exception) {
                 toast(e.message ?: "发送失败")
@@ -110,7 +115,7 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
                     val uid = d.user.id
                     TokenStore.restore(d.token, uid, d.user.nickname, d.user.avatar, d.user.type)
                     context.saveAuth(AuthData(d.token, uid, d.user.nickname, d.user.avatar, d.user.type))
-                    toast("注册成功，欢迎 ${d.user.nickname ?: username}")
+                    // 成功无需 toast：自动登录并返回「我的」即是反馈
                     onSuccess()
                 } else {
                     toast(res.message.ifBlank { "注册失败" })
@@ -133,12 +138,12 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).align(Alignment.CenterHorizontally),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("云", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-            }
+            Image(
+                painter = painterResource(R.drawable.ic_blog),
+                contentDescription = "云林有风",
+                modifier = Modifier.size(68.dp).clip(CircleShape).align(Alignment.CenterHorizontally),
+                contentScale = ContentScale.Crop
+            )
             Text("注册云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp))
 
             OutlinedTextField(username, { username = it }, label = { Text("用户名") }, singleLine = true, modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyMedium)

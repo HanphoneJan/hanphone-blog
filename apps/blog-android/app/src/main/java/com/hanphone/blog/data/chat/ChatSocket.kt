@@ -3,6 +3,7 @@ package com.hanphone.blog.data.chat
 import io.socket.client.IO
 import io.socket.client.Socket
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.ContentStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -68,6 +69,26 @@ object ChatSocket {
     private val heartbeatScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var heartbeatJob: Job? = null
 
+    // ===== 本地缓存（消息页首进秒显，连接后台刷新）=====
+    private var lastPublicPersistAt = 0L
+
+    /** 冷启动恢复：socket 尚未产出数据时，先用本地缓存秒显（已有更新则不覆盖） */
+    fun restoreMessages(list: List<PublicChatMessage>) {
+        if (!list.isNullOrEmpty() && _messages.value.isEmpty()) {
+            _messages.value = list
+        }
+    }
+
+    /** 持久化公共聊天室（节流 5s；force 用于断线/退出时立即落盘） */
+    private fun persistPublic(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastPublicPersistAt < 5_000) return
+        lastPublicPersistAt = now
+        heartbeatScope.launch {
+            ContentStore.writePublicChat(_messages.value.filter { it.tempId == null })
+        }
+    }
+
     private fun startHeartbeat(s: Socket) {
         heartbeatJob?.cancel()
         heartbeatJob = heartbeatScope.launch {
@@ -114,6 +135,7 @@ object ChatSocket {
         s.on(Socket.EVENT_DISCONNECT) {
             // 非手动断开时 socket.io 会自动重连，此间视为"重连中"而非失败
             stopHeartbeat()
+            persistPublic(force = true) // 断线前把最新消息落盘
             _state.value = if (manuallyClosed) ChatConnectionState.DISCONNECTED else ChatConnectionState.CONNECTING
         }
         s.on("reconnect_attempt") {
@@ -124,17 +146,24 @@ object ChatSocket {
             _state.value = ChatConnectionState.ERROR
         }
         s.on("notification") { args ->
-            args.firstOrNull()?.let { _notice.value = it.toString() }
+            args.firstOrNull()?.let {
+                val text = it.toString()
+                // 「认证成功」是每次连接都发的例行状态，弹 toast 只产生干扰——不进 notice 通道；
+                // 其余为错误/操作类notification，仍会 toast 提示
+                if (!text.startsWith("认证成功")) _notice.value = text
+            }
         }
         s.on("publicHistory") { args ->
             val arr = args.firstOrNull() as? JSONArray ?: return@on
             _messages.value = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let(::parse) }
+            persistPublic()
         }
         s.on("publicMessageBroadcast") { args ->
             val obj = args.firstOrNull() as? JSONObject ?: return@on
             val msg = parse(obj)
             if (_messages.value.none { it.id == msg.id }) {
                 _messages.value = _messages.value + msg
+                persistPublic()
             }
         }
         s.on("publicOnlineCount") { args ->
@@ -144,6 +173,7 @@ object ChatSocket {
             val obj = args.firstOrNull() as? JSONObject ?: return@on
             val id = obj.optLong("messageId")
             _messages.value = _messages.value.filterNot { it.id == id }
+            persistPublic(force = true)
         }
         // AI 流式
         s.on("publicAiStreamStart") { args ->
@@ -204,8 +234,19 @@ object ChatSocket {
         s.on("userListUpdated") { args ->
             val arr = args.firstOrNull() as? JSONArray ?: return@on
             _userList.value = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let(::parseChatUser) }
+            heartbeatScope.launch { ContentStore.writeChatUsers(_userList.value) }
         }
         s.connect()
+    }
+
+    /** 设置页「数据管理」：清空聊天相关的内存态（联动删除磁盘缓存） */
+    fun clearLocalData() {
+        _messages.value = emptyList()
+        _privateMessages.value = emptyList()
+        _lastPrivate.value = null
+        _userList.value = emptyList()
+        _onlineCount.value = 0
+        _notice.value = null
     }
 
     fun send(content: String) {

@@ -2,6 +2,7 @@ package com.hanphone.blog.ui.login
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +33,9 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,6 +45,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.hanphone.blog.R
 import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.auth
 import com.hanphone.blog.core.saveAuth
@@ -82,7 +86,7 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
                     val uid = d.user.id
                     TokenStore.restore(d.token, uid, d.user.nickname, d.user.avatar, d.user.type)
                     context.saveAuth(AuthData(d.token, uid, d.user.nickname, d.user.avatar, d.user.type))
-                    toast("欢迎回来，${d.user.nickname ?: username}")
+                    // 成功无需 toast：页面随即返回「我的」，已切换为登录态即是最好的反馈
                     onSuccess()
                 } else {
                     Log.e("BlogLogin", "登录被拒: ${res.message}")
@@ -108,12 +112,12 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("云", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-            }
+            Image(
+                painter = painterResource(R.drawable.ic_blog),
+                contentDescription = "云林有风",
+                modifier = Modifier.size(76.dp).clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
             Text("登录云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 12.dp, bottom = 20.dp))
 
             OutlinedTextField(

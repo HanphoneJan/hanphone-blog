@@ -94,13 +94,31 @@ fun EssayListScreen(onOpenEssay: (Long) -> Unit, onLogin: () -> Unit) {
     val appendError = items.loadState.append is LoadState.Error
     val appendEnd = items.loadState.append.endOfPaginationReached
 
+    // 只有用户主动下拉才显示 Refresh 圈圈；首帧（冷启动缓存/骨架）时的 Paging 后台刷新保持静默
+    var userPulled by remember { mutableStateOf(false) }
+
     Box(Modifier.fillMaxSize()) {
         PullToRefreshBox(
-            isRefreshing = refreshing,
-            onRefresh = { items.refresh() },
+            isRefreshing = refreshing && userPulled,
+            onRefresh = { userPulled = true; items.refresh() },
             modifier = Modifier.fillMaxSize()
         ) {
             when {
+                // 冷启动秒显：Paging 首屏未到前先展示缓存内容，替代骨架屏（键一致，数据到达后无缝替换）
+                items.itemCount == 0 && !vm.coldFeed.isNullOrEmpty() -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    items(vm.coldFeed.orEmpty(), key = { it.id }) { essay ->
+                        MomentsRow(
+                            essay = essay,
+                            onOpen = { onOpenEssay(essay.id) },
+                            onLogin = onLogin
+                        )
+                    }
+                }
                 items.itemCount == 0 && refreshing -> MomentsSkeleton(Modifier.padding(top = 10.dp))
                 items.itemCount == 0 && refreshError -> ErrorBox("加载失败", onRetry = { items.retry() })
                 items.itemCount == 0 -> EmptyBox("还没有随笔动态")

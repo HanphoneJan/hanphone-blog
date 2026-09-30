@@ -36,6 +36,22 @@ object MemoryCache {
     var projects: List<Project>? = null
     var docs: List<Doc>? = null
 
+    /** 设置页「数据管理 清除全部」：重置全部会话级缓存 */
+    fun resetAll() {
+        homeBlogs = null
+        homePage = 1
+        homeTotalPages = 1
+        essayMoments = null
+        essayPage = 1
+        essayTotalPages = 1
+        siteStats = null
+        visitCount = null
+        boardMessages = null
+        friendLinks = null
+        projects = null
+        docs = null
+    }
+
     // ===== 详情缓存（LRU，最多 12 篇） =====
     private const val MAX_DETAILS = 12
 
