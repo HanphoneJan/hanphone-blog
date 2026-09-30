@@ -48,6 +48,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 | `photo-wall-server` | `photo-wall-server/` | Express.js 5 + PostgreSQL                               |
 | `uni-preset-vue`    | `apps/gomoku/`       | Uni-app 3 + Vue 3                                       |
 | `atlas`             | `apps/photo-wall/`   | Vue 3 + Vite + Element Plus + Pinia                     |
+| `blog-android`      | `apps/blog-android/` | Kotlin 2.0 + Jetpack Compose (M3) + Retrofit            |
 
 ### Data Flow
 
@@ -92,3 +93,4 @@ Three jobs on push/PR to main: server tests (Maven), web unit tests (Vitest), bu
 - [测试指南](TESTING.md)
 - [部署指南](server/DEPLOYMENT.md)（Systemd / Docker）
 - [Swagger 使用说明](server/SWAGGER_USAGE.md)
+- [Android 客户端 AI 交接文档](apps/blog-android/HANDOVER.md)（架构/接口坑/设计规范/踩坑记录/开发规矩 —— 接手 Android 开发必读）
