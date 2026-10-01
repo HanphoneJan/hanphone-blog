@@ -64,6 +64,8 @@ import com.hanphone.blog.ui.message.MessageScreen
 import com.hanphone.blog.ui.profile.ProfileScreen
 import com.hanphone.blog.ui.projects.ProjectsScreen
 import com.hanphone.blog.ui.search.SearchScreen
+import com.hanphone.blog.ui.settings.AppearanceScreen
+import com.hanphone.blog.ui.settings.DataManagementScreen
 import com.hanphone.blog.ui.settings.SettingsScreen
 import com.hanphone.blog.ui.webview.WebViewScreen
 import com.hanphone.blog.ui.theme.BlogTheme
@@ -258,8 +260,15 @@ private fun MainScaffold() {
             composable("settings") {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onLogin = { navController.navigate("login") }
+                    onOpenAppearance = { navController.navigate("settings/appearance") },
+                    onOpenData = { navController.navigate("settings/data") }
                 )
+            }
+            composable("settings/appearance") {
+                AppearanceScreen(onBack = { navController.popBackStack() })
+            }
+            composable("settings/data") {
+                DataManagementScreen(onBack = { navController.popBackStack() })
             }
 
             composable("search") {

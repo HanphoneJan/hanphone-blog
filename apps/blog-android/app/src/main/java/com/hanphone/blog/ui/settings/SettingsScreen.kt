@@ -1,188 +1,110 @@
 package com.hanphone.blog.ui.settings
 
-import android.net.Uri
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.hanphone.blog.BuildConfig
+import com.hanphone.blog.R
 import com.hanphone.blog.ui.components.AppBackBar
-import com.hanphone.blog.core.backgroundBlur
-import com.hanphone.blog.core.backgroundPath
-import com.hanphone.blog.core.clearAuth
-import com.hanphone.blog.core.guestAvatar
-import com.hanphone.blog.core.setBackgroundBlur
-import com.hanphone.blog.core.setBackgroundPath
-import com.hanphone.blog.core.setGuestAvatar
-import com.hanphone.blog.core.setThemeMode
-import com.hanphone.blog.core.themeMode
-import com.hanphone.blog.data.auth.TokenStore
-import com.hanphone.blog.data.cache.ContentStore
-import com.hanphone.blog.data.cache.MemoryCache
-import com.hanphone.blog.data.chat.ChatSocket
-import com.hanphone.blog.data.repo.FileRepository
-import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
-import com.hanphone.blog.util.resolveImageUrl
-import androidx.compose.material3.AlertDialog
-import coil.compose.LocalImageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import kotlin.math.roundToInt
+import java.net.URL
+import java.nio.charset.Charset
+import org.json.JSONObject
 
 /**
- * 设置页：账号（头像上传/登录退出）+ 外观（主题：白日/黑夜、自定义背景与模糊）。
- * 收纳自「我的」页，符合国内 App 的信息架构。
+ * 设置页：入口列表（外观 / 数据管理 / 检查更新）+ App 关于。
+ * 功能详情拆分到独立子页（AppearanceScreen / DataManagementScreen），避免设置页过长。
+ * 账号区并入「我的」页（去重）；版本号只在「检查更新」入口显示一次。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLogin: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenAppearance: () -> Unit,
+    onOpenData: () -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val fileRepo = remember { FileRepository() }
-
-    val themeMode by context.themeMode.collectAsState(initial = "system")
-    val token by TokenStore.token.collectAsState()
-    val userName by TokenStore.nickname.collectAsState()
-    val userAvatar by TokenStore.avatar.collectAsState()
-    val myAvatar by context.guestAvatar.collectAsState(initial = null)
-    val bgPath by context.backgroundPath.collectAsState(initial = null)
-    val bgBlur by context.backgroundBlur.collectAsState(initial = 10)
-    var blurNow by remember { mutableIntStateOf(10) }
-    LaunchedEffect(bgBlur) { blurNow = bgBlur }
-
-    // ===== 数据管理状态 =====
-    val imageLoader = LocalImageLoader.current
-    var cacheSizes by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
-    var imageCacheSize by remember { mutableStateOf(0L) }
-    var pendingClear by remember { mutableStateOf<PendingClear?>(null) }
-
-    fun refreshSizes() {
-        scope.launch {
-            cacheSizes = ContentStore.cacheSizes()
-            val disk = imageLoader.diskCache?.size?.toLong() ?: 0L
-            val mem = imageLoader.memoryCache?.size?.toLong() ?: 0L
-            imageCacheSize = disk + mem
-        }
-    }
-
-    LaunchedEffect(Unit) { refreshSizes() }
-
-    fun onCacheCleared(files: List<String>, prefix: ((String) -> Boolean)?, resetMemory: () -> Unit) {
-        scope.launch {
-            withContext(Dispatchers.IO) {
-                files.forEach { ContentStore.delete(it) }
-                if (prefix != null) ContentStore.deleteWhere(prefix)
-            }
-            resetMemory()
-            pendingClear = null
-            refreshSizes()
-        }
-    }
-
-    /** 该功能组占用字节数（精确文件名 + 前缀匹配） */
-    fun featureSize(files: List<String>, prefix: String?): Long =
-        cacheSizes.entries.filter { (name, _) ->
-            files.contains(name) || (prefix != null && name.startsWith(prefix))
-        }.sumOf { it.value }
-
-    fun onImageCacheClear() {
-        scope.launch {
-            imageLoader.diskCache?.clear()
-            imageLoader.memoryCache?.clear()
-            refreshSizes()
-        }
-    }
-
-    fun clearAllData() {
-        scope.launch {
-            withContext(Dispatchers.IO) { ContentStore.clearAll() }
-            MemoryCache.resetAll()
-            ChatSocket.clearLocalData()
-            imageLoader.diskCache?.clear()
-            imageLoader.memoryCache?.clear()
-            pendingClear = null
-            refreshSizes()
-        }
-    }
+    val uriHandler = LocalUriHandler.current
 
     fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
 
-    suspend fun copyToFile(uri: Uri, name: String): File? = withContext(Dispatchers.IO) {
-        try {
-            val dest = File(context.filesDir, name)
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                dest.outputStream().use { out -> input.copyTo(out) }
-            }
-            dest
-        } catch (e: Exception) { null }
-    }
+    // ===== 检查更新（GitHub Release）=====
+    var checking by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
 
-    // 点头像 → 上传新头像
-    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            scope.launch {
-                val file = copyToFile(it, "avatar_tmp.jpg")
-                if (file == null) { toast("图片读取失败"); return@launch }
-                try {
-                    val res = fileRepo.uploadAvatar(file)
-                    if (res.url != null) {
-                        context.setGuestAvatar(res.url)
-                    } else toast(res.message.ifBlank { "上传失败" })
-                } catch (e: Exception) { toast(e.message ?: "上传失败") }
+    fun checkUpdate() {
+        if (checking || updateInfo != null) return
+        scope.launch {
+            checking = true
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    URL("https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest")
+                        .openStream().bufferedReader(Charset.forName("UTF-8")).use { it.readText() }
+                }
+                val obj = JSONObject(json)
+                val tag = obj.optString("tag_name", "")
+                val body = obj.optString("body", "")
+                var apkUrl = ""
+                val assets = obj.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val a = assets.getJSONObject(i)
+                        if (a.optString("name", "").endsWith(".apk")) {
+                            apkUrl = a.optString("browser_download_url", "")
+                            break
+                        }
+                    }
+                }
+                if (tag.isNotBlank() && isNewerVersion(tag, BuildConfig.VERSION_NAME) && apkUrl.isNotBlank()) {
+                    updateInfo = UpdateInfo(version = tag, body = body, apkUrl = apkUrl)
+                } else {
+                    toast("已是最新版本")
+                }
+            } catch (e: Exception) {
+                toast("检查更新失败")
             }
-        }
-    }
-
-    // 自定义背景
-    val bgPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            scope.launch {
-                val file = copyToFile(it, "background.jpg")
-                if (file == null) { toast("图片读取失败"); return@launch }
-                context.setBackgroundPath(file.absolutePath)
-            }
+            checking = false
         }
     }
 
@@ -192,200 +114,127 @@ fun SettingsScreen(onBack: () -> Unit, onLogin: () -> Unit) {
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // ===== 账号 =====
-            SectionTitle("账号")
+            // ===== 设置项入口 =====
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Row(
-                    Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Avatar(
-                        url = resolveImageUrl(myAvatar ?: userAvatar),
-                        name = userName ?: "我",
-                        size = 54.dp,
-                        modifier = Modifier.clickable { avatarPicker.launch("image/*") }
-                    )
-                    Column(Modifier.weight(1f)) {
-                        Text(if (token != null) (userName ?: "用户") else "未登录", style = MaterialTheme.typography.titleMedium)
-                        Text("点头像可上传（匿名评论显示）", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (token != null) {
-                        OutlinedButton(onClick = {
-                            scope.launch {
-                                context.clearAuth()
-                                TokenStore.clear()
-                            }
-                        }) { Text("退出") }
-                    } else {
-                        TextButton(onClick = onLogin) { Text("登录 / 注册") }
-                    }
+                Column {
+                    SettingsRow("外观", "主题 · 背景 · 模糊", onOpenAppearance)
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    SettingsRow("数据管理", "各页缓存占用与清理", onOpenData)
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    SettingsRow("检查更新", if (checking) "检查中…" else "当前 v${BuildConfig.VERSION_NAME}", onClick = ::checkUpdate)
                 }
             }
 
-            // ===== 外观 =====
-            SectionTitle("外观")
+            // ===== 关于 =====
+            SectionTitle("关于")
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(Modifier.padding(vertical = 6.dp)) {
-                    SettingLabel("主题")
-                    ThemeRow("跟随系统", themeMode == "system") { scope.launch { context.setThemeMode("system") } }
-                    ThemeRow("白日（浅色）", themeMode == "light") { scope.launch { context.setThemeMode("light") } }
-                    ThemeRow("黑夜（深色）", themeMode == "dark") { scope.launch { context.setThemeMode("dark") } }
-
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-
-                    SettingLabel("自定义背景")
+                Column(Modifier.padding(vertical = 8.dp)) {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                if (bgPath != null) "已启用（模糊 $bgBlur）" else "从相册选择一张图片",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        OutlinedButton(onClick = { bgPicker.launch("image/*") }) {
-                            Text(if (bgPath != null) "更换" else "选择")
-                        }
-                        if (bgPath != null) {
-                            TextButton(onClick = { scope.launch { context.setBackgroundPath(null) } }) { Text("清除") }
-                        }
-                    }
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text("模糊", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Slider(
-                            value = blurNow.toFloat(),
-                            onValueChange = { blurNow = it.roundToInt() },
-                            onValueChangeFinished = { scope.launch { context.setBackgroundBlur(blurNow) } },
-                            valueRange = 0f..25f,
-                            modifier = Modifier.weight(1f)
+                        Image(
+                            painter = painterResource(R.drawable.ic_blog),
+                            contentDescription = "云林有风图标",
+                            modifier = Modifier.size(44.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
                         )
-                        Text("$blurNow", style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
-
-            // ===== 数据管理 =====
-            SectionTitle("数据管理")
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(Modifier.padding(vertical = 6.dp)) {
-                    CacheRow("首页 · 站点统计", featureSize(listOf("home_blogs.json", "site_stats.json", "visit_count.json"), null)) {
-                        onCacheCleared(listOf("home_blogs.json", "site_stats.json", "visit_count.json"), null) {
-                            MemoryCache.homeBlogs = null; MemoryCache.homePage = 1; MemoryCache.homeTotalPages = 1
-                            MemoryCache.siteStats = null; MemoryCache.visitCount = null
-                        }
-                    }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("随笔", featureSize(listOf("essay_first_page.json"), null)) {
-                        onCacheCleared(listOf("essay_first_page.json"), null) { MemoryCache.essayMoments = null }
-                    }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("留言板 · 友链", featureSize(listOf("board_messages.json", "friend_links.json"), null)) {
-                        onCacheCleared(listOf("board_messages.json", "friend_links.json"), null) {
-                            MemoryCache.boardMessages = null; MemoryCache.friendLinks = null
-                        }
-                    }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("项目", featureSize(listOf("projects.json"), null)) {
-                        onCacheCleared(listOf("projects.json"), null) { MemoryCache.projects = null }
-                    }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("文库", featureSize(listOf("docs.json"), null)) {
-                        onCacheCleared(listOf("docs.json"), null) { MemoryCache.docs = null }
-                    }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("图片缓存", imageCacheSize) { onImageCacheClear() }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("消息（聊天）", featureSize(listOf("chat_public.json", "chat_users.json"), "chat_private_")) {
-                        onCacheCleared(listOf("chat_public.json", "chat_users.json"), { it.startsWith("chat_private_") }) {
-                            ChatSocket.clearLocalData()
-                        }
-                    }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
                         Column(Modifier.weight(1f)) {
-                            Text("清除全部", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text("清空本机全部缓存数据", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("云林有风", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text("原生 Kotlin + Jetpack Compose 博客客户端", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        TextButton(onClick = { pendingClear = PendingClear("全部", ::clearAllData) }) { Text("全部清除") }
                     }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    AboutLinkRow("访问博客网站", "hanphone.cn") { uriHandler.openUri("https://hanphone.cn") }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    AboutLinkRow("作者 GitHub", "HanphoneJan") { uriHandler.openUri("https://github.com/HanphoneJan") }
                 }
             }
         }
     }
 
-    pendingClear?.let { p ->
+    // ===== 更新提示对话框 =====
+    updateInfo?.let { info ->
         AlertDialog(
-            onDismissRequest = { pendingClear = null },
-            title = { Text("清除${p.label}数据") },
-            text = { Text("确定清除本机的${p.label}缓存数据吗？仅影响本机，不会删除服务器上的数据。") },
-            confirmButton = { TextButton(onClick = { p.run.invoke() }) { Text("清除") } },
-            dismissButton = { TextButton(onClick = { pendingClear = null }) { Text("取消") } }
+            onDismissRequest = { updateInfo = null },
+            title = { Text("发现新版本 ${info.version}") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("当前版本 v${BuildConfig.VERSION_NAME}，可升级到 ${info.version}。", style = MaterialTheme.typography.bodyMedium)
+                    if (info.body.isNotBlank()) {
+                        Text(
+                            info.body,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 8,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    uriHandler.openUri(info.apkUrl) // 浏览器下载 APK 安装
+                    updateInfo = null
+                }) { Text("去更新") }
+            },
+            dismissButton = {
+                TextButton(onClick = { updateInfo = null }) { Text("稍后") }
+            }
         )
     }
 }
 
-/** 设置页里待确认的清除动作 */
-private data class PendingClear(val label: String, val run: () -> Unit)
-
+/** 设置项入口行：标题 + 描述 + 箭头 */
 @Composable
-private fun SettingLabel(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-    )
-}
-
-/** 数据管理行：功能名 + 占用 + 清除 */
-@Composable
-private fun CacheRow(label: String, sizeB: Long, onClear: () -> Unit) {
+private fun SettingsRow(title: String, desc: String, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(formatBytes(sizeB), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-        TextButton(onClick = onClear) { Text("清除") }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(desc, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline)
     }
 }
 
-private fun formatBytes(b: Long): String = when {
-    b <= 0 -> "未缓存"
-    b >= 1024L * 1024L -> "%.1f MB".format(b / (1024f * 1024f))
-    else -> "%.1f KB".format(b / 1024f)
+/** 关于区链接行：标题 + 副标题 + 箭头，点击外部打开 */
+@Composable
+private fun AboutLinkRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline)
+    }
 }
 
-@Composable
-private fun ThemeRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 4.dp))
+/** 检查更新：GitHub 最新 Release 信息 */
+private data class UpdateInfo(val version: String, val body: String, val apkUrl: String)
+
+/** 语义化版本比较：latest 是否比 current 新（支持 v 前缀与可不齐的段） */
+internal fun isNewerVersion(latest: String, current: String): Boolean {
+    fun parse(v: String): List<Int> = v.trim().removePrefix("v").split('.').map { it.toIntOrNull() ?: 0 }
+    val l = parse(latest)
+    val c = parse(current)
+    for (i in 0 until maxOf(l.size, c.size)) {
+        val a = l.getOrElse(i) { 0 }
+        val b = c.getOrElse(i) { 0 }
+        if (a != b) return a > b
     }
+    return false
 }

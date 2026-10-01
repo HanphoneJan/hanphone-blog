@@ -73,11 +73,10 @@ suspend fun Context.clearAuth() = dataStore.edit {
     it.remove(KEY_USER_TYPE)
 }
 
-// ===== 个性化：自定义背景图 + 模糊 + 访客头像 =====
+// ===== 个性化：自定义背景图 + 模糊 =====
 
 private val KEY_BG_PATH = stringPreferencesKey("bg_path")
 private val KEY_BG_BLUR = intPreferencesKey("bg_blur")
-private val KEY_GUEST_AVATAR = stringPreferencesKey("guest_avatar")
 
 /** 自定义背景图文件路径（App 私有 filesDir 内），null = 未设置 */
 val Context.backgroundPath: Flow<String?> get() = dataStore.data.map { it[KEY_BG_PATH] }
@@ -85,15 +84,10 @@ val Context.backgroundPath: Flow<String?> get() = dataStore.data.map { it[KEY_BG
 /** 背景模糊半径（dp） */
 val Context.backgroundBlur: Flow<Int> get() = dataStore.data.map { it[KEY_BG_BLUR] ?: 10 }
 
-/** 访客头像（上传 admin-file 后得到的 URL，匿名评论时使用） */
-val Context.guestAvatar: Flow<String?> get() = dataStore.data.map { it[KEY_GUEST_AVATAR] }
-
 suspend fun Context.setBackgroundPath(path: String?) = dataStore.edit {
     if (path == null) it.remove(KEY_BG_PATH) else it[KEY_BG_PATH] = path
 }
 
 suspend fun Context.setBackgroundBlur(radius: Int) = dataStore.edit { it[KEY_BG_BLUR] = radius }
-
-suspend fun Context.setGuestAvatar(url: String) = dataStore.edit { it[KEY_GUEST_AVATAR] = url }
 
 private fun String?.nullIfBlank(): String? = this?.takeIf { it.isNotBlank() }

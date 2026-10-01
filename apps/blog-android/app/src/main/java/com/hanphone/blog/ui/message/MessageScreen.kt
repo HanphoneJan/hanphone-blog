@@ -48,7 +48,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.ui.components.AppBackBar
-import com.hanphone.blog.core.guestAvatar
 import com.hanphone.blog.core.saveGuest
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.Message
@@ -166,10 +165,9 @@ private fun MessageDialog(replyTo: Message?, onDismiss: () -> Unit, onPosted: ()
     var sending by remember { mutableStateOf(false) }
 
     val vm: MessageBoardViewModel = hiltViewModel()
-    // 对齐网页版：不填昵称——作者取登录昵称；未登录固定「匿名用户」；头像优先登录/设置头像
+    // 对齐网页版：不填昵称——作者取登录昵称；未登录固定「匿名用户」；头像优先登录头像
     val nickname by TokenStore.nickname.collectAsState()
     val avatar by TokenStore.avatar.collectAsState()
-    val guestAvatarUrl by context.guestAvatar.collectAsState(initial = null)
 
     AlertDialog(
         onDismissRequest = { if (!sending) onDismiss() },
@@ -198,7 +196,7 @@ private fun MessageDialog(replyTo: Message?, onDismiss: () -> Unit, onPosted: ()
                     vm.postMessage(
                         nickname ?: "匿名用户",
                         content.trim(),
-                        avatar ?: guestAvatarUrl ?: "",
+                        avatar ?: "",
                         replyTo?.id ?: -1L
                     ) { message ->
                         sending = false

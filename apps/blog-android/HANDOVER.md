@@ -11,7 +11,7 @@
 博客「云林有风」的 Android 原生客户端。Kotlin + Jetpack Compose (Material 3)，对接博客 REST API 与 hanphone-chat 实时聊天。后端代码零改动。
 
 - 导航：**底部 4 Tab**：首页 / 随笔 / 消息 / 我的
-- 子页：文章详情、随笔详情、搜索、留言板、友链、设置、登录、注册
+- 子页：文章详情、随笔详情、搜索、留言板、友链、设置（设置→外观/数据管理 为二级子页）、登录、注册
 - 聊天：原生 Socket.IO（**非 WebView**），复用博客 JWT
 
 ## 2. 代码地图（`app/src/main/java/com/hanphone/blog/`）
@@ -125,13 +125,13 @@ ui/
 - **notification toast 过滤**：服务端每次连接都会发 `notification:"认证成功，已连接到聊天服务器"`（server.ts:519），已在 `ChatSocket` 源头过滤（`startsWith("认证成功")` 不进入 notice），避免每次进消息页/重连都弹认证成功 toast；其余错误/操作类 notification 仍会保留提示。
 
 ### 我的 / 设置
-- 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（项目/留言板/友链/设置）**、关于。
+- 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（项目/文库/留言板/友链/设置）**；关于信息已移入设置页。
 - 「项目」= 独立页：类型筛选 chips（全部/完整项目/工具箱/小游戏/小练习）+ 分组卡片（完整项目=大卡片、其余=双列网格；推荐角标、技术栈标签），数据来自 `GET /projects`（推荐在前、type 分组，与 web ProjectClient 一致）；点击卡片用 **WebView** 内开项目链接（`ui/webview/WebViewScreen.kt`：JS 开启、加载进度条、系统返回先回退 WebView 历史、右上角菜单可在浏览器打开）。
 - 「文库」= 独立页：数据来自 `GET /docs`，按 `docNamespace` 构建文件夹树（`blog/docs/子目录` → 顶层文件夹，对齐 web DocLoader）；文件夹浏览 + 面包屑、名称/路径搜索、类型筛选 pills（Word/PDF/MD/HTML 带计数，对齐 web DocsFilter）；文件行 = 彩色类型徽标 + 名称 + 推荐星 + 日期；打开文件：**HTML → WebView**、**MD → 应用内 Markdown 预览**（`DocMarkdownScreen`，文件服务原文去 frontmatter 后渲染）、**PDF/DOCX → 系统打开/下载**；文件 URL = `https://hanphone.top/{docNamespace}/{文件名}` 逐段 URI 编码（`util/buildDocFileUrl`），打开即上报浏览量 `POST /docs/{docId}/view`。
-- 「设置」独立页：账号（点头像上传头像、登录/退出）+ 外观（**主题：跟随系统/白日（浅色）/黑夜（深色）**；自定义背景：相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）。
+- 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub 链接）。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
 - **资料编辑**（「我的」点头像，对齐网页 UserInfoForm）：昵称 + 头像 + **邮箱**（改邮箱需向新邮箱发通用验证码 `scene=general`，非管理员必填；管理员免验证码）+ **新密码**（可选，≥6 位含字母数字，`md5` 传输）。保存走 `POST /user/current/update`（body 根级带 `captcha`），后端 `UserServiceImpl.updateCurrentUser` 会对 `user.password` 做 bcrypt。
-- 「我的 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + `versionName`（BuildConfig） + 简介 + 链接行（**检查更新** / 访问博客网站 hanphone.cn / 作者 GitHub），点击走系统浏览器。
-- **检查更新**（关于→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 去更新(浏览器下载 APK)/稍后」，无新版 toast「已是最新版本」。API 与下载链在**直连网络可用**。
+- 「设置 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + 单行简介 + 链接行（**访问博客网站 hanphone.cn / 作者 GitHub**），点击走系统浏览器。版本号只在「检查更新」区显示一次（不重复）。
+- **检查更新**（设置→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 去更新(浏览器下载 APK)/稍后」，无新版 toast「已是最新版本」。API 与下载链在**直连网络可用**。
 - **发布渠道**：GitHub Release `v{versionName}`（debug 密钥签名的 release APK，`assembleRelease` 已配 `signingConfig = debug`，可覆盖升级；正式签名留 S5）。
 - **占位图规范**：未登录头像/登录页/注册页/关于徽标一律用 `R.drawable.ic_blog`（CircleShape 裁剪），**不再用文字「云」**。
 
