@@ -6,7 +6,7 @@
 [![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-4.4-646CFF.svg)](https://vitejs.dev/)
-[![Ant Design](https://img.shields.io/badge/Ant%20Design-5.8-red.svg)](https://ant.design/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-0.7-black.svg)](https://ui.shadcn.com/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.7-white.svg)](https://socket.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../LICENSE)
 
@@ -17,7 +17,7 @@
 - 🚀 **实时通信** - 基于 Socket.IO 的 WebSocket 双向通信，消息即时推送
 - 👥 **用户角色系统** - 支持普通用户和管理员两种角色，不同的界面和功能
 - 🤖 **AI 对话模式** - 通过 Server 转发至 Agent Service，支持 AI/真人模式切换
-- 🎨 **现代化 UI** - 使用 Ant Design 组件库 + Tailwind CSS，界面美观简洁
+- 🎨 **现代化 UI** - 使用 shadcn/ui（Radix primitives）+ Tailwind CSS，界面美观简洁
 - 📱 **响应式设计** - 完美适配桌面端和移动端，支持小屏幕自适应
 - 🎤 **语音输入** - 支持浏览器原生语音识别功能（Chrome 等现代浏览器）
 - 🔐 **JWT 认证** - 基于 Token 的身份认证机制，安全可靠
@@ -32,7 +32,7 @@
 | React | 18.2.0 | 前端框架 |
 | TypeScript | 5.0.2 | 类型安全的 JavaScript 超集 |
 | Vite | 4.4.5 | 下一代前端构建工具 |
-| Ant Design | 5.8.4 | 企业级 UI 组件库 |
+| shadcn/ui | 0.7（Radix primitives） | UI 组件（cva 变体 + Tailwind） |
 | React Router | 6.14.2 | React 路由管理 |
 | Socket.IO Client | 4.7.2 | WebSocket 客户端库 |
 | Axios | 1.4.0 | HTTP 客户端 |
