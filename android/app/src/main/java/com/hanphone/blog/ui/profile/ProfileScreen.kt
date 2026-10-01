@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -80,7 +81,8 @@ fun ProfileScreen(
     onOpenFriendLinks: () -> Unit,
     onOpenProjects: () -> Unit,
     onOpenDocs: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenPhotoWall: () -> Unit
 ) {
     val vm: ProfileViewModel = hiltViewModel()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -223,6 +225,8 @@ fun ProfileScreen(
                 MoreRow(Icons.Filled.Build, "项目", "完整项目 · 工具箱 · 小游戏", onOpenProjects)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.List, "文库", "文件 · 教程 · 参考资料", onOpenDocs)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                MoreRow(Icons.Filled.PhotoLibrary, "照片墙", "云林有风的影像记录", onOpenPhotoWall)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Email, "留言板", "给博主留言", onOpenMessage)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))

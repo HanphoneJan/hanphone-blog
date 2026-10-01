@@ -1,6 +1,6 @@
 # Android 客户端（云林有风 App）对接协议要点
 
-> 消费方：`hanphone-blog/apps/blog-android` 的 `ChatSocket.kt` / `ChatScreen.kt`。
+> 消费方：`android/` 的 `ChatSocket.kt` / `ChatScreen.kt`。
 > 修改本服务的 socket 事件、鉴权流程、超时参数前，务必核对本文档，避免悄悄打破 App 端。
 
 ## 连接参数

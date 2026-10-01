@@ -1,5 +1,10 @@
 # HanPhone Chat 生产环境部署指南
 
+> 📦 本服务原属独立仓库 `HanphoneJan/hanphone-chat`，现已并入本仓库：源码在 `chat-server/`、
+> 前端在 `apps/chat-client/`（nginx `/chat/` 托管）、协议见本目录 `android-protocol.md`。
+> 生产仍按以下 PM2（进程名 `hanphone-chat-server`）或 Docker 方式部署；改动源码后需
+> `pnpm --filter chat-server build` 再重启进程。
+
 > 覆盖两种生产部署方式：**方案 A：Docker Compose（推荐，一键全栈）** 与
 > **方案 B：PM2 + Nginx 裸机部署（进程可控，便于运维）**。
 > 全部 Node.js 组件统一使用 **pnpm**（>= 9）作为包管理器。

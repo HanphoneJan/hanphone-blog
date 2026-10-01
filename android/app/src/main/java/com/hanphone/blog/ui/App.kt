@@ -199,7 +199,12 @@ private fun MainScaffold() {
                     onOpenFriendLinks = { navController.navigate("friendlinks") },
                     onOpenProjects = { navController.navigate("projects") },
                     onOpenDocs = { navController.navigate("docs") },
-                    onOpenSettings = { navController.navigate("settings") }
+                    onOpenSettings = { navController.navigate("settings") },
+                    onOpenPhotoWall = {
+                        navController.navigate(
+                            "webview?url=${Uri.encode("https://hanphone.cn/atlas/")}&title=${Uri.encode("照片墙")}"
+                        )
+                    }
                 )
             }
             composable("messages") {

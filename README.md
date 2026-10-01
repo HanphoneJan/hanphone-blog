@@ -11,7 +11,7 @@
 
 [工具](https://hanphone.cn/tools) · [有趣网页](https://hanphone.cn/play) · [小游戏](https://hanphone.cn/games) · [照片墙](https://hanphone.cn/atlas/)
 
-采用 **pnpm workspace** 管理多包（Monorepo）：web 前端 + apps（gomoku / photo-wall）+ admin-file 文件服务 + photo-wall-server 后端。
+采用 **pnpm workspace** 管理多包（Monorepo）：web 前端 + apps（gomoku / photo-wall / chat-client）+ admin-file 文件服务 + photo-wall-server + chat-server 聊天服务 + mcp-server；Android 原生客户端为独立 Gradle 工程（`android/`）。
 
 [在线演示](https://hanphone.cn) · [快速开始](#快速开始) · [文档索引](#文档) · [测试指南](#测试)
 
@@ -49,9 +49,12 @@
 
 - **前端主站**: Next.js 15 + React 18 + TypeScript + Tailwind CSS + Tauri
 - **照片墙**: Vue 3 + Vite + Element Plus + Pinia
+- **聊天前端**: React 18 + Vite + shadcn/ui（`apps/chat-client`，`/chat/` 托管）
+- **Android 客户端**: Kotlin 2.0 + Jetpack Compose (M3)（`android/`）
 - **后端**: Spring Boot 3.2.12 + Java 17 + JPA + MyBatis Plus 3.5.9 + PostgreSQL + Redis（统一认证）
 - **文件服务**: Express.js 5 + Multer + JWT（独立文件存储服务）
 - **照片墙后端**: Express.js 5 + PostgreSQL（照片墙专属业务）
+- **聊天服务**: Express 4 + Socket.IO + PostgreSQL（`chat-server/`，App 原生直连 `/chat-api`；协议见 `docs/chat/`）
 - **小游戏**: Uni-app + Vue 3 + uni-h5
 
 ---
@@ -110,6 +113,15 @@ pnpm --filter atlas dev
 
 照片墙前端运行在 http://localhost:3000/atlas/
 
+### 启动聊天服务
+
+```bash
+# 根目录下执行，端口 4010，挂载 /chat-api
+pnpm --filter chat-server dev
+```
+
+协议与部署见 [聊天协议/部署文档](docs/chat/)（`android-protocol.md` 是 App 对接的"唯一事实来源"）。
+
 ---
 
 ## 测试
@@ -133,6 +145,9 @@ pnpm build:gomoku
 
 # 照片墙前端构建验证
 pnpm build:photo-wall
+
+# 聊天前端构建验证
+pnpm build:chat
 ```
 
 ### CI 状态
@@ -162,6 +177,10 @@ pnpm build:photo-wall
 | [文件服务](admin-file/README.md)             | admin-file 功能、API、配置   |
 | [照片墙前端](apps/photo-wall/README.md)      | Vue 3 照片墙开发指南         |
 | [照片墙后端](photo-wall-server/README.md)    | Express 照片墙后端说明       |
+| [聊天前端](apps/chat-client/README.md)       | React 聊天站开发指南         |
+| [聊天服务](chat-server/README.md)            | 聊天后端源码与运行说明       |
+| [聊天协议/部署](docs/chat/)                  | android-protocol（App 对接"唯一事实来源"）、DEPLOYMENT、设计文档 |
+| [Android 交接文档](android/HANDOVER.md)      | Android 客户端架构/坑/规矩，接手必读 |
 
 ---
 
@@ -174,7 +193,11 @@ hanphone-blog/
 │       └── ci.yml          # CI 配置
 ├── apps/                   # 前端独立应用 (Monorepo workspace)
 │   ├── gomoku/             # 五子棋小游戏源码 (uni-app)
-│   └── photo-wall/         # 照片墙前端 (Vue 3 + Vite)
+│   ├── photo-wall/         # 照片墙前端 (Vue 3 + Vite)
+│   └── chat-client/        # 聊天前端 (React 18 + Vite + shadcn/ui，/chat/)
+├── android/                # Android 原生客户端（Kotlin + Compose M3，独立 Gradle 工程）
+├── chat-server/            # 聊天服务（Express 4 + Socket.IO，/chat-api）
+├── docs/chat/              # 聊天协议/部署/设计文档（App 对接的"唯一事实来源"）
 ├── server/                 # 主后端 (Spring Boot 3，认证 + 博客业务)
 │   ├── src/test/           # 单元测试
 │   ├── docker-compose.yml  # Docker 部署

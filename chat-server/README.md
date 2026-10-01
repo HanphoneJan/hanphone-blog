@@ -1,5 +1,8 @@
 # HanPhone Chat - Server
 
+> 📦 已从独立仓库 `HanphoneJan/hanphone-chat` 迁移至此（本仓库 `chat-server/`）。
+> 协议与部署见仓库 `docs/chat/`（`android-protocol.md` 为 App 对接"唯一事实来源"）。
+
 [![Node.js](https://img.shields.io/badge/Node.js-20.5+-green.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.1-blue.svg)](https://www.typescriptlang.org/)
 [![Express](https://img.shields.io/badge/Express-4.18-gray.svg)](https://expressjs.com/)
