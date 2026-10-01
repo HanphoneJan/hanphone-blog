@@ -290,26 +290,35 @@ fun ProfileScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Column {
-                // 单行头部：图标 + 名称 + 版本（版本只在此展示一次）
-                Row(
-                    Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                // ===== 居中品牌头 =====
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
                         painter = painterResource(R.drawable.ic_blog),
                         contentDescription = "云林有风图标",
-                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                        modifier = Modifier.size(56.dp).clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                    Column(Modifier.weight(1f)) {
-                        Text("云林有风", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            "v$appeVersion · 原生 Kotlin + Compose",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        "云林有风",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 10.dp)
+                    )
+                    Text(
+                        "v$appeVersion · 原生 Kotlin + Jetpack Compose",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Text(
+                        "个人博客客户端 · 记录与分享",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
