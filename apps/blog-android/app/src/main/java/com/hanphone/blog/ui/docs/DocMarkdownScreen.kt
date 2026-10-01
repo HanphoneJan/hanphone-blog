@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.ui.MarkdownContent
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.DetailSkeleton
 import com.hanphone.blog.ui.components.ErrorBox
 import kotlinx.coroutines.Dispatchers
@@ -59,18 +60,10 @@ fun DocMarkdownScreen(url: String, title: String, onBack: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {
-                Text(
-                    title.ifBlank { "文档" },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.SemiBold
-                )
-            },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
+        AppBackBar(
+            title = title.ifBlank { "文档" },
+            onBack = onBack,
+            actions = {}
         )
         Box(Modifier.weight(1f)) {
             when {

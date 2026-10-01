@@ -77,10 +77,10 @@ class ArticleDetailViewModel @Inject constructor(
         comments = comments + c
     }
 
-    /** 匿名发评论（后端要求昵称+邮箱）；结果经回调返回 */
-    fun postComment(content: String, nickname: String, email: String, avatar: String, onResult: (Comment?) -> Unit) {
+    /** 登录用户发表评论/回复（对齐网页版：登录后评论，按 uid 取本人资料；parentId 为回复目标，-1 为顶级）；结果经回调返回 */
+    fun postCommentAsUser(content: String, userId: Long, parentId: Long = -1L, onResult: (Comment?) -> Unit) {
         viewModelScope.launch {
-            val res = repo.postComment(blogId, content, nickname, email, avatar)
+            val res = repo.postCommentAsUser(blogId, userId, content, parentId)
             onResult(if (res.flag) res.data else null)
         }
     }

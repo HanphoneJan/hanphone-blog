@@ -48,6 +48,7 @@ ui/
                                进度条/返回/浏览器外开；主框架加载失败显示「重试/在浏览器打开」错误层）
   profile/ProfileScreen.kt + ProfileViewModel.kt
   components/           ArticleCard/Avatar/Skeleton(骨架屏)/Loading/Error/Empty/BottomActionItem
+                      SearchField（40dp 紧凑搜索胶囊，替代 M3 OutlinedTextField 56dp）/详情底部栏=细分割线+单行图标文字
   theme/                Material3 Light/Dark 双主题
 ```
 
@@ -79,8 +80,9 @@ ui/
   - 仓库层已统一为 1 起始（内部转 0 起始）。
 
 ### 3.3 评论 / 点赞
-- 文章评论：匿名需 `nickname`+`email`（必填），可带 `avatar`。
-- 随笔评论：**必须登录**（body `userId`）；回复用 `parentCommentId`。
+- 文章评论：**登录后评论**（对齐网页版 CommentForm——网页未登录时表单禁用并引导登录）。App 端点「评论」时未登录→提示"请先登录"+去登录；已登录弹窗只填内容，请求带 `userId`（后端取本人资料），**无昵称/邮箱输入**（`repo.postCommentAsUser`）。旧匿名（nickname+email）请求仅后端兼容保留，App 不再使用。
+- **文章评论回复**（对齐网页版）：每条评论下有「回复」→ 弹窗标题「回复 @xxx」，提交带 `parentId`（`postCommentAsUser(...parentId)`）；后端 Comment 的 `parentComment` 被 `@JsonIgnore`（列表不回传父级），新回复的「回复 @x」标签由 UI 本地 `replyHints` 记录展示，历史回复呈扁平列表（与网页 GET 行为一致）。
+- 随笔评论：**必须登录**（body `userId`）；**列表项与详情页均支持回复**（`parentCommentId` 楼层回复，弹窗「回复 @昵称」）。
 - 点赞（文章/随笔）：需登录，body `{ userId, blogId/essayId, isLike }`。
 - 随笔评论 POST `/essays/{id}/comments` 也需要 `X-Request-Id`。
 
@@ -94,6 +96,11 @@ ui/
 - 私信事件：`userMessage`（普通用户发给管理员）、`adminMessage(userId, content)`（管理员回）、`message`（收到私信）、`userListUpdated`（管理员在线用户）。
 - 私信 REST（**Bearer**）：普通用户 `GET /chat-api/api/messages/admin`；管理员 `GET /chat-api/api/users/all` + `GET /chat-api/api/messages/{userId}`。
 - **管理员 vs 普通用户**：`/messages/admin` 对管理员返回 403；`/users/all` 对普通用户返回 403 —— 所有这类调用必须 try/catch，否则 Retrofit HttpException 会崩掉整个 App。
+
+### 3.6 留言板（对齐网页版：不填昵称、支持回复）
+- 网页版 `useMessages.publish` 里作者 = 登录 `nickname`，未登录固定 `"匿名用户"`，**无语名输入框**。
+- App 写留言弹窗只填内容；作者 = 登录昵称 ?: `"匿名用户"`，头像 = 登录头像 ?: 设置页上传头像（`repo.postMessage(nickname, content, avatar, parentId)` 已支持）。
+- **留言回复**（对齐网页版）：每条留言有「回复」→ 弹窗标题「回复 @xxx」，提交带 `parentId`；后端 Message 会**内嵌返回 `parentMessage`**（非 @JsonIgnore），列表直接展示「回复 @父昵称」标签。
 
 ## 4. 信息架构与每屏要点（含用户明确要求）
 
@@ -133,6 +140,7 @@ ui/
 ## 5. 主题与视觉规范（用户明确偏好，勿擅自改）
 
 - **只有两套主题**（Light / Dark），主色 #2C7BE5 派生，MD3 色彩角色齐全。**不要加第 3、4 套**。
+- **紧凑返回栏 `AppBackBar`**：所有子页统一 44dp（替代 M3 TopAppBar 的 64dp，含状态栏后更省空间）；搜索条 `SearchField` 40dp 胶囊（项目/文库/搜索页）。新增页面用这两个组件，勿再引入 TopAppBar/56dp OutlinedTextField 搜索框。
 - 配色避免“整体偏灰”：Light 用清爽蓝白（`background #F2F6FB`、`surface #FFFFFF`、容器蓝调）。
 - 底部导航：**自定义 Surface+Row**（内容区 54dp + `windowInsetsPadding(navigationBars)` 手势区有底色；图标 24dp、文字 11sp、图标与文字间距 2dp；选中主色）。
 - 按钮/输入框偏紧凑：输入框 48dp、主按钮 38dp、聊天输入单行 46dp、弹窗正文 minLines=2。

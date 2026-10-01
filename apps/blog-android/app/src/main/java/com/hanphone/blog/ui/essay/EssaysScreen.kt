@@ -63,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
@@ -442,12 +443,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {},
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
-        )
+        AppBackBar(title = "", onBack = onBack)
         when {
             loading && essay == null -> Box(Modifier.weight(1f).fillMaxWidth()) { DetailSkeleton() }
             error != null && essay == null -> Box(Modifier.weight(1f).fillMaxWidth()) { ErrorBox(error!!, onRetry = { }) }
@@ -512,35 +508,35 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                         }
                     }
                 }
-                // 底部操作栏
-                Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BottomActionItem(
-                            icon = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            label = "点赞 $likesCount",
-                            tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            onClick = { doLike() },
-                            modifier = Modifier.weight(1f)
-                        )
-                        BottomActionItem(
-                            icon = Icons.Filled.Email,
-                            label = "评论",
-                            onClick = {
-                                if (TokenStore.userId.value != null) showCommentDialog = true
-                                else { toast("请先登录"); onLogin() }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        BottomActionItem(
-                            icon = Icons.Filled.Share,
-                            label = "分享",
-                            onClick = { share() },
-                            modifier = Modifier.weight(1f)
-                        )
+                // 底部操作栏（轻量：细分割线 + 单行图标文字）
+                Column {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    Surface(color = MaterialTheme.colorScheme.background) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            BottomActionItem(
+                                icon = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                label = "点赞 $likesCount",
+                                tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                onClick = { doLike() }
+                            )
+                            BottomActionItem(
+                                icon = Icons.Filled.Email,
+                                label = "评论",
+                                onClick = {
+                                    if (TokenStore.userId.value != null) showCommentDialog = true
+                                    else { toast("请先登录"); onLogin() }
+                                }
+                            )
+                            BottomActionItem(
+                                icon = Icons.Filled.Share,
+                                label = "分享",
+                                onClick = { share() }
+                            )
+                        }
                     }
                 }
             }

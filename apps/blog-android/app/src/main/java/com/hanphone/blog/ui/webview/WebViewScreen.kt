@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.hanphone.blog.BuildConfig
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.EmptyBox
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -118,16 +119,9 @@ fun WebViewScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {
-                Text(
-                    title.ifBlank { "网页" },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.SemiBold
-                )
-            },
-            navigationIcon = { IconButton(onClick = { handleBack() }) { Icon(Icons.Filled.ArrowBack, "返回") } },
+        AppBackBar(
+            title = title.ifBlank { "网页" },
+            onBack = { handleBack() },
             actions = {
                 IconButton(onClick = { menuOpen = true }) { Icon(Icons.Filled.MoreVert, "更多") }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -139,9 +133,7 @@ fun WebViewScreen(
                         }
                     )
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
+            }
         )
 
         if (progress in 1..99) {

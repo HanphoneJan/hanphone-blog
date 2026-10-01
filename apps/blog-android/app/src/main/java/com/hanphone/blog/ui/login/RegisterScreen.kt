@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.R
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
@@ -128,12 +129,7 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {},
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
-        )
+        AppBackBar(title = "", onBack = onBack)
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

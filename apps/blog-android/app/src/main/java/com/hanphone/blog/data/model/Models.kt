@@ -104,7 +104,8 @@ data class Message(
     val avatar: String? = null,
     val content: String = "",
     val createTime: Date? = null,
-    val adminMessage: Boolean = false
+    val adminMessage: Boolean = false,
+    @Json(name = "parentMessage") val parentMessage: Message? = null
 )
 
 data class FriendLink(

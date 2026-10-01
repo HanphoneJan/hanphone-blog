@@ -23,9 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -33,7 +31,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -51,10 +48,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
 import com.hanphone.blog.ui.components.RowListSkeleton
+import com.hanphone.blog.ui.components.SearchField
 import com.hanphone.blog.util.buildDocFileUrl
 
 private val TYPE_PILLS = listOf(
@@ -103,27 +102,14 @@ fun DocsScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("文库", fontWeight = FontWeight.SemiBold) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
-        )
+        AppBackBar(title = "文库", onBack = onBack)
 
         // 搜索框
-        OutlinedTextField(
+        SearchField(
             value = vm.query,
             onValueChange = { vm.onQueryChange(it) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            placeholder = { Text("搜索文件…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            leadingIcon = { Icon(Icons.Filled.Search, null) },
-            trailingIcon = {
-                if (vm.query.isNotEmpty()) {
-                    IconButton(onClick = { vm.onQueryChange("") }) { Icon(Icons.Filled.Close, "清除搜索") }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(24.dp)
+            placeholder = "搜索文件…",
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
         )
 
         // 类型筛选 pills（含数量）

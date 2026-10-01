@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.core.backgroundBlur
 import com.hanphone.blog.core.backgroundPath
 import com.hanphone.blog.core.clearAuth
@@ -186,12 +187,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogin: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("设置", fontWeight = FontWeight.SemiBold) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
-        )
+        AppBackBar(title = "设置", onBack = onBack)
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)

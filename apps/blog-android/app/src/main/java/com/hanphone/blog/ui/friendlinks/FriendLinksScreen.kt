@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
@@ -47,12 +48,7 @@ fun FriendLinksScreen(onBack: () -> Unit) {
     val links = vm.links
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("友链", fontWeight = FontWeight.SemiBold) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
-        )
+        AppBackBar(title = "友链", onBack = onBack)
         Box(Modifier.weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = vm.refreshing,

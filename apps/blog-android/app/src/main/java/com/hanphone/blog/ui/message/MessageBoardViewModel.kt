@@ -43,10 +43,10 @@ class MessageBoardViewModel @Inject constructor(
         viewModelScope.launch { load(fromPull) }
     }
 
-    /** 写留言；结果经回调返回 */
-    fun postMessage(nickname: String, content: String, onResult: (Message?) -> Unit) {
+    /** 写留言/回复留言（对齐网页版：作者取登录身份，未登录固定"匿名用户"，无昵称输入）；结果经回调返回 */
+    fun postMessage(nickname: String, content: String, avatar: String = "", parentId: Long = -1L, onResult: (Message?) -> Unit) {
         viewModelScope.launch {
-            val res = repo.postMessage(nickname, content)
+            val res = repo.postMessage(nickname, content, avatar, parentId)
             onResult(if (res.flag) res.data else null)
         }
     }

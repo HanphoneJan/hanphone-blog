@@ -13,12 +13,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +31,7 @@ import com.hanphone.blog.data.model.SearchResultItem
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
 import com.hanphone.blog.ui.components.RowListSkeleton
+import com.hanphone.blog.ui.components.SearchField
 
 private fun typeLabel(t: String): String = when (t) {
     "BLOG" -> "博客"
@@ -80,14 +79,11 @@ fun SearchScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.Filled.ArrowBack, "返回")
             }
-            OutlinedTextField(
+            SearchField(
                 value = query,
                 onValueChange = { vm.onQueryChange(it) },
+                placeholder = "搜索博客 / 随笔 / 文档…",
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("搜索博客 / 随笔 / 文档…", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
-                leadingIcon = { Icon(Icons.Filled.Search, null) },
-                singleLine = true,
-                shape = RoundedCornerShape(24.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { vm.submit() })
             )

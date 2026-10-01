@@ -44,8 +44,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.hanphone.blog.core.guestNickname
+import com.hanphone.blog.ui.components.AppBackBar
+import com.hanphone.blog.core.guestAvatar
 import com.hanphone.blog.core.saveGuest
+import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.repo.MessageRepository
 import com.hanphone.blog.ui.components.Avatar
@@ -64,15 +66,11 @@ fun MessageScreen(onBack: () -> Unit) {
 
     val items = vm.items
     var showDialog by remember { mutableStateOf(false) }
+    var replyTarget by remember { mutableStateOf<Message?>(null) }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            TopAppBar(
-                title = { Text("留言板") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-                windowInsets = WindowInsets(0.dp)
-            )
+            AppBackBar(title = "留言板", onBack = onBack)
             Box(Modifier.weight(1f)) {
                 PullToRefreshBox(
                     isRefreshing = vm.refreshing,
@@ -89,7 +87,10 @@ fun MessageScreen(onBack: () -> Unit) {
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             items(items, key = { it.id }) { m ->
-                                MessageRow(m)
+                                MessageRow(
+                                    message = m,
+                                    onReply = { replyTarget = m; showDialog = true }
+                                )
                             }
                         }
                     }
@@ -97,7 +98,7 @@ fun MessageScreen(onBack: () -> Unit) {
             }
         }
         ExtendedFloatingActionButton(
-            onClick = { showDialog = true },
+            onClick = { replyTarget = null; showDialog = true },
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
             icon = { Icon(Icons.Filled.Send, null) },
             text = { Text("写留言") }
@@ -106,6 +107,7 @@ fun MessageScreen(onBack: () -> Unit) {
 
     if (showDialog) {
         MessageDialog(
+            replyTo = replyTarget,
             onDismiss = { showDialog = false },
             onPosted = { vm.refresh() }
         )
@@ -113,12 +115,20 @@ fun MessageScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun MessageRow(message: Message) {
+private fun MessageRow(message: Message, onReply: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Avatar(url = message.avatar, name = message.nickname, size = 40.dp)
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(message.nickname, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                // 回复 @父留言（后端内嵌 parentMessage）
+                message.parentMessage?.let { parent ->
+                    Text(
+                        "回复 @${parent.nickname}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 if (message.adminMessage) {
                     Surface(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
@@ -132,42 +142,44 @@ private fun MessageRow(message: Message) {
                 Text(formatDateTime(message.createTime), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
             }
             Text(message.content, style = MaterialTheme.typography.bodyLarge)
+            TextButton(
+                onClick = onReply,
+                contentPadding = PaddingValues(0.dp),
+                modifier = Modifier.padding(top = 2.dp)
+            ) { Text("回复", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
         }
     }
 }
 
 @Composable
-private fun MessageDialog(onDismiss: () -> Unit, onPosted: () -> Unit) {
+private fun MessageDialog(replyTo: Message?, onDismiss: () -> Unit, onPosted: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
-    var nickname by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
 
     val vm: MessageBoardViewModel = hiltViewModel()
-
-    val guestNick by context.guestNickname.collectAsState(initial = "")
-    LaunchedEffect(guestNick) { if (nickname.isEmpty()) nickname = guestNick }
+    // 对齐网页版：不填昵称——作者取登录昵称；未登录固定「匿名用户」；头像优先登录/设置头像
+    val nickname by TokenStore.nickname.collectAsState()
+    val avatar by TokenStore.avatar.collectAsState()
+    val guestAvatarUrl by context.guestAvatar.collectAsState(initial = null)
 
     AlertDialog(
         onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text("写留言") },
+        title = { Text(if (replyTo != null) "回复 @${replyTo!!.nickname}" else "写留言") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
-                    value = nickname,
-                    onValueChange = { nickname = it },
-                    label = { Text("昵称") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("想对博主说点什么…") },
+                    label = { Text(if (replyTo != null) "回复内容…" else "想对博主说点什么…") },
                     minLines = 2,
                     modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    if (nickname != null) "以「$nickname」身份留言" else "将以「匿名用户」身份留言",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
@@ -175,19 +187,19 @@ private fun MessageDialog(onDismiss: () -> Unit, onPosted: () -> Unit) {
             TextButton(
                 enabled = !sending && content.isNotBlank(),
                 onClick = {
-                    if (nickname.isBlank()) {
-                        Toast.makeText(context, "昵称不能为空", Toast.LENGTH_SHORT).show()
-                    } else {
-                        sending = true
-                        scope.launch { context.saveGuest(nickname.trim(), "") }
-                        vm.postMessage(nickname.trim(), content.trim()) { message ->
-                            sending = false
-                            if (message != null) {
-                                onDismiss()
-                                onPosted()
-                            } else {
-                                Toast.makeText(context, "留言失败", Toast.LENGTH_SHORT).show()
-                            }
+                    sending = true
+                    vm.postMessage(
+                        nickname ?: "匿名用户",
+                        content.trim(),
+                        avatar ?: guestAvatarUrl ?: "",
+                        replyTo?.id ?: -1L
+                    ) { message ->
+                        sending = false
+                        if (message != null) {
+                            onDismiss()
+                            onPosted()
+                        } else {
+                            Toast.makeText(context, "留言失败", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }

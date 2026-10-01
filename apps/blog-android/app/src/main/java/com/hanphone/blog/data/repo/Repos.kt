@@ -104,6 +104,24 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
         )
     }
 
+    /** 登录用户发表评论（对齐网页版：携带 userId，后端取本人资料，无需昵称/邮箱） */
+    suspend fun postCommentAsUser(
+        blogId: Long,
+        userId: Long,
+        content: String,
+        parentId: Long = -1L
+    ): ApiResult<Comment> = withContext(Dispatchers.IO) {
+        api.postComment(
+            requestId = ApiClient.newRequestId(),
+            body = mapOf(
+                "blogId" to blogId,
+                "content" to content,
+                "userId" to userId,
+                "parentId" to parentId
+            )
+        )
+    }
+
     suspend fun likeBlog(blogId: Long, userId: Long, isLike: Boolean): ApiResult<Void?> =
         withContext(Dispatchers.IO) {
             api.likeBlog(
@@ -228,7 +246,7 @@ class MessageRepository(private val api: BlogApi = ApiClient.api) {
     suspend fun messages(): ApiResult<List<Message>> =
         withContext(Dispatchers.IO) { api.messages() }
 
-    suspend fun postMessage(nickname: String, content: String): ApiResult<Message> =
+    suspend fun postMessage(nickname: String, content: String, avatar: String = "", parentId: Long = -1L): ApiResult<Message> =
         withContext(Dispatchers.IO) {
             api.postMessage(
                 requestId = ApiClient.newRequestId(),
@@ -236,8 +254,8 @@ class MessageRepository(private val api: BlogApi = ApiClient.api) {
                     "message" to mapOf(
                         "content" to content,
                         "nickname" to nickname,
-                        "avatar" to "",
-                        "parentId" to -1L
+                        "avatar" to avatar,
+                        "parentId" to parentId
                     )
                 )
             )

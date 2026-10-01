@@ -24,8 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,9 +48,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
+import com.hanphone.blog.ui.components.SearchField
 import com.hanphone.blog.ui.components.SkeletonBox
 import com.hanphone.blog.util.resolveImageUrl
 
@@ -79,27 +79,14 @@ fun ProjectsScreen(onBack: () -> Unit, onOpenUrl: (url: String, title: String) -
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("项目", fontWeight = FontWeight.SemiBold) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
-        )
+        AppBackBar(title = "项目", onBack = onBack)
 
         // 搜索（标题 / 内容 / 技术栈，实时过滤）
-        OutlinedTextField(
+        SearchField(
             value = vm.query,
             onValueChange = { vm.onQueryChange(it) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            placeholder = { Text("搜索项目标题、内容或技术栈…", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            leadingIcon = { Icon(Icons.Filled.Search, null) },
-            trailingIcon = {
-                if (vm.query.isNotEmpty()) {
-                    IconButton(onClick = { vm.onQueryChange("") }) { Icon(Icons.Filled.Close, "清除搜索") }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(24.dp)
+            placeholder = "搜索项目标题、内容或技术栈…",
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
         )
 
         // 类型筛选（全部 / 完整项目 / 工具箱 / 小游戏 / 小练习）

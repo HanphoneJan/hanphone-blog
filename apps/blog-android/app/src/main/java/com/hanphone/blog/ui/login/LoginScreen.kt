@@ -46,6 +46,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.R
+import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.auth
 import com.hanphone.blog.core.saveAuth
@@ -101,12 +102,7 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {},
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            windowInsets = WindowInsets(0.dp)
-        )
+        AppBackBar(title = "", onBack = onBack)
         Column(
             Modifier.fillMaxSize().padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
