@@ -27,6 +27,8 @@ cd server && mvn clean package -DskipTests  # Build JAR
 # === Sub-apps ===
 pnpm build:gomoku                  # Build gomoku game (Uni-app → web/public/games/gomoku/)
 pnpm build:photo-wall              # Build photo wall (Vite → apps/photo-wall/atlas/；生产由 nginx alias /home/hanphone/html/atlas 托管)
+pnpm build:chat                    # Build chat client (React → apps/chat-client/dist；nginx /chat/ 托管)
+pnpm --filter chat-server dev      # Chat server (port 4010，/chat-api；生产 pm2 hanphone-chat-server)
 
 # === File services ===
 pnpm --filter admin-file start     # Express file service (port 4000)
@@ -48,7 +50,9 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 | `photo-wall-server` | `photo-wall-server/` | Express.js 5 + PostgreSQL                               |
 | `uni-preset-vue`    | `apps/gomoku/`       | Uni-app 3 + Vue 3                                       |
 | `atlas`             | `apps/photo-wall/`   | Vue 3 + Vite + Element Plus + Pinia                     |
-| `blog-android`      | `apps/blog-android/` | Kotlin 2.0 + Jetpack Compose (M3) + Retrofit            |
+| `chat-client`       | `apps/chat-client/`  | React 18 + Vite + shadcn/ui + socket.io-client（聊天站，nginx `/chat/` 托管，base `/chat/`） |
+| `chat-server`       | `chat-server/`       | Express 4 + socket.io + PostgreSQL（聊天/私信实时服务，`/chat-api`，独立 pm2/DB） |
+| `android`           | `android/`           | Kotlin 2.0 + Jetpack Compose (M3) + Retrofit            |
 
 ### Data Flow
 
@@ -93,4 +97,5 @@ Three jobs on push/PR to main: server tests (Maven), web unit tests (Vitest), bu
 - [测试指南](TESTING.md)
 - [部署指南](server/DEPLOYMENT.md)（Systemd / Docker）
 - [Swagger 使用说明](server/SWAGGER_USAGE.md)
-- [Android 客户端 AI 交接文档](apps/blog-android/HANDOVER.md)（架构/接口坑/设计规范/踩坑记录/开发规矩 —— 接手 Android 开发必读）
+- [Android 客户端 AI 交接文档](android/HANDOVER.md)（架构/接口坑/设计规范/踩坑记录/开发规矩 —— 接手 Android 开发必读）
+- [聊天协议/部署文档](docs/chat/)（`android-protocol.md` ← App 对接 hanphone-chat 的协议"唯一事实来源"；`DEPLOYMENT.md` 生产部署；`technical/` 设计文档）

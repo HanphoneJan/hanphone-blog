@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HanPhone Chat · 设计提案</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --m-bg: #FEFCF9;
+      --m-surface: #FFFFFF;
+      --m-sent: #1A1A1A;
+      --m-sent-text: #FFFFFF;
+      --m-recv: #EDEAE4;
+      --m-recv-text: #1A1A1A;
+      --m-border: #E5E2DC;
+      --m-text-p: #1A1A1A;
+      --m-text-s: #9B958D;
+      --m-input-bg: #F5F3EF;
+      --m-online: #4A7C59;
+
+      --d-bg: #0E0E0F;
+      --d-sidebar: #171718;
+      --d-sent: #D4C4A8;
+      --d-sent-text: #0E0E0F;
+      --d-recv: #262628;
+      --d-recv-text: #F0EDE6;
+      --d-border: #262628;
+      --d-text-p: #F0EDE6;
+      --d-text-s: #6B6862;
+      --d-text-dim: #4A4844;
+      --d-input-bg: #1E1E20;
+      --d-online: #5A9A6E;
+
+      --accent: #1A1A1A;
+      --accent-sub: rgba(26,26,26,0.08);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+    }
+
+    *,*::before,*::after { margin:0; padding:0; box-sizing:border-box }
+    html { font-size:16px }
+    body {
+      font-family: 'DM Sans', 'Noto Sans SC', -apple-system, sans-serif;
+      background: #0E0E0F;
+      color: var(--d-text-p);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .page-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 50% 40% at 20% 30%, rgba(212,196,168,0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 50% at 80% 70%, rgba(74,124,89,0.03) 0%, transparent 60%),
+        #0E0E0F;
+    }
+
+    .page-wrapper { position: relative; z-index: 2; max-width: 1480px; margin: 0 auto; padding: 40px 28px 80px }
+
+    .top-bar {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 40px; margin-bottom: 56px; flex-wrap: wrap;
+      animation: fadeUp 0.8s ease-out;
+    }
+    .page-header { flex: 1; min-width: 300px }
+    .page-header .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      background: rgba(212,196,168,0.10); color: #D4C4A8;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; margin-bottom: 20px;
+    }
+    .page-header h1 {
+      font-size: clamp(32px, 5vw, 56px); font-weight: 800;
+      letter-spacing: -2px; line-height: 1.05; color: #F0EDE6;
+    }
+    .page-header h1 em { font-style: normal; color: #D4C4A8; }
+    .page-header p {
+      margin-top: 14px; font-size: 15px; color: var(--d-text-s);
+      font-weight: 400; max-width: 460px; line-height: 1.7;
+    }
+
+    .palette-panel {
+      background: rgba(23,23,24,0.8);
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--d-border); border-radius: 20px;
+      padding: 24px; min-width: 300px;
+    }
+    .palette-title {
+      font-size: 12px; font-weight: 600; color: var(--d-text-s);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .palette-title i { color: #D4C4A8; font-size: 13px }
+    .color-row { display: flex; gap: 8px; margin-bottom: 12px }
+    .color-chip {
+      flex: 1; height: 48px; border-radius: 10px;
+      display: flex; align-items: flex-end; padding: 6px 8px;
+      font-size: 10px; font-weight: 600; font-family: 'DM Sans', monospace;
+      letter-spacing: 0.3px; cursor: default;
+    }
+    .color-chip.light { color: rgba(0,0,0,0.5) }
+    .color-chip.dark { color: rgba(255,255,255,0.6) }
+
+    .showcase {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: start;
+    }
+    @media(max-width: 1100px) {
+      .showcase { grid-template-columns: 1fr; gap: 48px; justify-items: center }
+    }
+    .panel-title {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; padding-left: 4px;
+    }
+    .panel-title .icon-wrap {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .mobile-panel .icon-wrap { background: var(--m-input-bg); color: var(--m-text-s) }
+    .desktop-panel .icon-wrap { background: rgba(212,196,168,0.10); color: #D4C4A8 }
+    .mobile-panel h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; color: var(--m-text-p) }
+    .desktop-panel h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; color: var(--d-text-p) }
+    .mobile-panel span, .desktop-panel span { font-size: 13px; font-weight: 400; color: var(--d-text-s) }
+
+    .phone-frame {
+      width: 375px; height: 760px; background: #18181A;
+      border-radius: 48px; padding: 12px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.05),
+        0 24px 64px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      animation: fadeUp 0.8s ease-out 0.1s both;
+    }
+    .phone-screen {
+      width: 100%; height: 100%; background: var(--m-bg);
+      border-radius: 38px; overflow: hidden; position: relative;
+    }
+    .phone-notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 30px; background: #18181A;
+      border-radius: 0 0 18px 18px; z-index: 20;
+    }
+
+    .mobile-chat { display: flex; flex-direction: column; height: 100% }
+    .status-bar {
+      height: 46px; padding: 14px 26px 0;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; font-weight: 600; color: var(--m-text-p);
+      flex-shrink: 0; position: relative; z-index: 10;
+    }
+    .status-icons { display: flex; gap: 5px; font-size: 11px }
+    .mobile-nav {
+      padding: 4px 16px 10px; display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; border-bottom: 0.5px solid var(--m-border);
+      background: rgba(254,252,249,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-back { font-size: 18px; color: var(--m-text-s); cursor: pointer; display: flex; align-items: center }
+    .nav-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0 }
+    .nav-info { flex: 1; min-width: 0 }
+    .nav-name { font-size: 15px; font-weight: 700; color: var(--m-text-p); letter-spacing: -0.2px }
+    .nav-status { font-size: 11px; color: var(--m-online); font-weight: 500 }
+    .nav-actions { display: flex; gap: 4px }
+    .nav-action {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; color: var(--m-text-s);
+      font-size: 15px; cursor: pointer;
+    }
+    .nav-action:hover { background: var(--m-input-bg); color: var(--m-text-p) }
+
+    .mobile-messages {
+      flex: 1; overflow-y: auto; padding: 12px 16px 8px;
+      display: flex; flex-direction: column; gap: 2px; scroll-behavior: smooth;
+    }
+    .mobile-messages::-webkit-scrollbar { width: 0 }
+
+    .time-sep {
+      text-align: center; padding: 14px 0 8px;
+      font-size: 11px; color: var(--m-text-s); font-weight: 500;
+    }
+
+    .msg-row {
+      display: flex; flex-direction: column;
+      max-width: 78%; animation: msgIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .msg-row.sent { align-self: flex-end; align-items: flex-end }
+    .msg-row.recv { align-self: flex-start; align-items: flex-start }
+    .msg-row + .msg-row { margin-top: 1px }
+    .msg-row.gap { margin-top: 8px }
+
+    .bubble {
+      padding: 9px 14px; font-size: 14.5px; line-height: 1.5;
+      word-break: break-word; font-weight: 400;
+      box-shadow: var(--shadow-sm);
+    }
+    .msg-row.sent .bubble {
+      background: var(--m-sent); color: var(--m-sent-text);
+      border-radius: 18px 18px 5px 18px;
+    }
+    .msg-row.recv .bubble {
+      background: var(--m-recv); color: var(--m-recv-text);
+      border-radius: 18px 18px 18px 5px;
+    }
+    .msg-row.sent:not(.tail):not(.gap) .bubble { border-radius: 18px 5px 5px 18px }
+    .msg-row.recv:not(.tail):not(.gap) .bubble { border-radius: 5px 18px 18px 5px }
+
+    .msg-meta { display: flex; align-items: center; gap: 4px; margin-top: 2px; padding: 0 4px }
+    .msg-time { font-size: 10px; color: var(--m-text-s) }
+    .read-mark { font-size: 10px; color: var(--m-text-s); font-weight: 500 }
+
+    .mobile-input-bar {
+      padding: 8px 12px 24px; display: flex; align-items: flex-end; gap: 8px;
+      flex-shrink: 0; border-top: 0.5px solid var(--m-border);
+      background: rgba(254,252,249,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .input-actions { display: flex; gap: 2px }
+    .input-action-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; color: var(--m-text-s);
+      font-size: 16px; cursor: pointer;
+    }
+    .input-action-btn:hover { color: var(--m-text-p); background: var(--m-input-bg) }
+    .input-wrap {
+      flex: 1; background: var(--m-input-bg); border-radius: 20px;
+      border: 1px solid transparent; display: flex; align-items: center;
+      transition: border-color 0.2s;
+    }
+    .input-wrap:focus-within { border-color: var(--m-border) }
+    .input-wrap input {
+      width: 100%; border: none; outline: none; background: transparent;
+      padding: 8px 14px; font-size: 14px; font-family: inherit; color: var(--m-text-p);
+    }
+    .input-wrap input::placeholder { color: var(--m-text-s) }
+    .send-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: var(--m-sent); color: white; font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      box-shadow: var(--shadow-sm); transition: transform 0.15s, background 0.2s;
+    }
+    .send-btn:hover { background: #2A2A2A; transform: scale(1.08) }
+    .send-btn:active { transform: scale(0.95) }
+
+    /* ===== 桌面端 ===== */
+    .desktop-frame {
+      width: 100%; max-width: 920px; height: 600px;
+      background: var(--d-bg); border-radius: 14px; overflow: hidden; display: flex;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 24px 64px rgba(0,0,0,0.45);
+      animation: fadeUp 0.8s ease-out 0.2s both;
+    }
+    .desktop-sidebar {
+      width: 300px; flex-shrink: 0; background: var(--d-sidebar);
+      border-right: 1px solid var(--d-border); display: flex; flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 18px 18px 12px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .sidebar-header h3 { font-size: 20px; font-weight: 800; color: var(--d-text-p); letter-spacing: -0.5px }
+    .sidebar-header-actions { display: flex; gap: 4px }
+    .sidebar-header-actions button {
+      width: 30px; height: 30px; border-radius: 8px; border: none; background: transparent;
+      color: var(--d-text-s); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sidebar-header-actions button:hover { background: #262628; color: var(--d-text-p) }
+
+    .sidebar-search { padding: 4px 14px 10px }
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--d-input-bg); border-radius: 10px;
+      padding: 7px 11px; border: 1px solid transparent; transition: border-color 0.2s;
+    }
+    .search-box:focus-within { border-color: var(--d-border) }
+    .search-box i { color: var(--d-text-dim); font-size: 12px }
+    .search-box input {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-size: 13px; color: var(--d-text-p); font-family: inherit;
+    }
+    .search-box input::placeholder { color: var(--d-text-dim) }
+
+    .contact-list { flex: 1; overflow-y: auto; padding: 0 6px }
+    .contact-list::-webkit-scrollbar { width: 4px }
+    .contact-list::-webkit-scrollbar-thumb { background: #2A2A2C; border-radius: 4px }
+    .contact-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 11px; border-radius: 12px; cursor: pointer; transition: background 0.15s;
+    }
+    .contact-item:hover { background: rgba(255,255,255,0.03) }
+    .contact-item.active { background: rgba(255,255,255,0.06) }
+    .avatar-wrap { position: relative; flex-shrink: 0 }
+    .contact-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover }
+    .online-dot {
+      position: absolute; bottom: 1px; right: 1px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--d-online); border: 2px solid var(--d-sidebar);
+    }
+    .contact-info { flex: 1; min-width: 0 }
+    /* 第一行：名字 + 时间 */
+    .contact-name-row {
+      display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;
+    }
+    .contact-name {
+      font-size: 14px; font-weight: 600; color: var(--d-text-p);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .contact-time {
+      font-size: 11px; color: var(--d-text-dim);
+      flex-shrink: 0; margin-left: 8px;
+    }
+    /* 第二行：预览文字 + 未读徽标，水平对齐 */
+    .contact-preview-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .contact-preview {
+      font-size: 12.5px; color: var(--d-text-s); font-weight: 400;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex: 1; min-width: 0;
+    }
+    .unread-badge {
+      min-width: 18px; height: 18px; border-radius: 9px; background: #D4C4A8; color: #0E0E0F;
+      font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+      padding: 0 5px; flex-shrink: 0;
+    }
+
+    .desktop-chat-main { flex: 1; display: flex; flex-direction: column; position: relative }
+    .desktop-chat-header {
+      padding: 14px 22px; display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--d-border);
+      background: rgba(14,14,15,0.9);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      position: relative; z-index: 5;
+    }
+    .desktop-chat-header .nav-avatar { width: 36px; height: 36px }
+    .desktop-chat-header .nav-info { flex: 1 }
+    .desktop-chat-header .nav-name { font-size: 15px; color: var(--d-text-p); font-weight: 600 }
+    .desktop-chat-header .nav-status { font-size: 11px; color: var(--d-online) }
+    .desktop-header-actions { display: flex; gap: 3px }
+    .desktop-header-actions button {
+      width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent;
+      color: var(--d-text-s); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .desktop-header-actions button:hover { background: #262628; color: var(--d-text-p) }
+
+    .desktop-messages {
+      flex: 1; overflow-y: auto; padding: 16px 22px;
+      display: flex; flex-direction: column; gap: 2px;
+      position: relative; z-index: 1;
+    }
+    .desktop-messages::-webkit-scrollbar { width: 5px }
+    .desktop-messages::-webkit-scrollbar-thumb { background: #2A2A2C; border-radius: 5px }
+
+    .d-msg-row {
+      display: flex; flex-direction: column; max-width: 62%;
+      animation: msgIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .d-msg-row.sent { align-self: flex-end; align-items: flex-end }
+    .d-msg-row.recv { align-self: flex-start; align-items: flex-start }
+    .d-msg-row + .d-msg-row { margin-top: 1px }
+    .d-msg-row.gap { margin-top: 10px }
+    .d-bubble {
+      padding: 10px 15px; font-size: 14px; line-height: 1.55; word-break: break-word;
+      font-weight: 400; box-shadow: var(--shadow-sm);
+    }
+    .d-msg-row.sent .d-bubble {
+      background: var(--d-sent); color: var(--d-sent-text);
+      border-radius: 18px 18px 5px 18px;
+    }
+    .d-msg-row.recv .d-bubble {
+      background: var(--d-recv); color: var(--d-recv-text);
+      border-radius: 18px 18px 18px 5px; border: 1px solid rgba(255,255,255,0.04);
+    }
+    .d-msg-row.sent:not(.tail):not(.gap) .d-bubble { border-radius: 18px 5px 5px 18px }
+    .d-msg-row.recv:not(.tail):not(.gap) .d-bubble { border-radius: 5px 18px 18px 5px }
+    .d-msg-meta { display: flex; align-items: center; gap: 4px; margin-top: 2px; padding: 0 4px }
+    .d-msg-time { font-size: 10px; color: var(--d-text-dim) }
+    .d-read-mark { font-size: 10px; color: #D4C4A8; font-weight: 500 }
+
+    .desktop-input-bar {
+      padding: 12px 18px 16px; display: flex; align-items: flex-end; gap: 10px;
+      border-top: 1px solid var(--d-border);
+      background: rgba(14,14,15,0.9);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      position: relative; z-index: 5;
+    }
+    .d-input-actions { display: flex; gap: 2px }
+    .d-input-action-btn {
+      width: 34px; height: 34px; border-radius: 8px; border: none; background: transparent;
+      color: var(--d-text-dim); font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .d-input-action-btn:hover { color: var(--d-text-p); background: rgba(255,255,255,0.04) }
+    .d-input-wrap {
+      flex: 1; background: var(--d-input-bg); border-radius: 12px;
+      border: 1px solid var(--d-border); display: flex; align-items: center;
+      transition: border-color 0.2s;
+    }
+    .d-input-wrap:focus-within { border-color: rgba(255,255,255,0.12) }
+    .d-input-wrap input {
+      width: 100%; border: none; outline: none; background: transparent;
+      padding: 9px 13px; font-size: 14px; color: var(--d-text-p); font-family: inherit;
+    }
+    .d-input-wrap input::placeholder { color: var(--d-text-dim) }
+    .d-send-btn {
+      width: 34px; height: 34px; border-radius: 10px; border: none;
+      background: var(--d-sent); color: var(--d-sent-text); font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      box-shadow: var(--shadow-sm); transition: transform 0.15s;
+    }
+    .d-send-btn:hover { transform: scale(1.06) }
+    .d-send-btn:active { transform: scale(0.95) }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px) }
+      to { opacity: 1; transform: translateY(0) }
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.97) }
+      to { opacity: 1; transform: translateY(0) scale(1) }
+    }
+
+    @media(max-width: 500px) { .phone-frame { width: 340px; height: 700px } }
+    @media(prefers-reduced-motion: reduce) {
+      *,*::before,*::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-bg"></div>
+  <div class="page-wrapper">
+    <div class="top-bar">
+      <header class="page-header">
+        <div class="badge"><i class="fa-solid fa-feather" style="font-size:10px"></i> Design Proposal</div>
+        <h1>Inkstone <em>Messenger</em></h1>
+        <p>以「砚台」为灵感，取墨之深沉与纸之温润，构建一套克制而优雅的聊天界面。摒弃鲜艳色彩，以微妙灰度与暖调构建层次。</p>
+      </header>
+
+      <div class="palette-panel">
+        <div class="palette-title"><i class="fa-solid fa-palette"></i> 配色方案</div>
+        <div class="color-row">
+          <div class="color-chip dark" style="background:#FEFCF9">#FEFCF9<br>宣纸白</div>
+          <div class="color-chip dark" style="background:#1A1A1A">#1A1A1A<br>墨黑</div>
+          <div class="color-chip light" style="background:#EDEAE4">#EDEAE4<br>浅米</div>
+        </div>
+        <div class="color-row">
+          <div class="color-chip dark" style="background:#0E0E0F">#0E0E0F<br>深砚</div>
+          <div class="color-chip light" style="background:#D4C4A8">#D4C4A8<br>松烟金</div>
+          <div class="color-chip dark" style="background:#262628">#262628<br>深灰</div>
+        </div>
+        <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--d-border)">
+          <div style="font-size:11px; color:var(--d-text-dim); line-height:1.8">
+            <strong style="color:var(--d-text-s)">移动端</strong>：浅色主题，宣纸白背景，墨黑发自己消息，浅米收对方消息<br>
+            <strong style="color:var(--d-text-s)">桌面端</strong>：深色主题，深砚背景，松烟金发自己消息，深灰收对方消息
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase">
+      <section class="mobile-panel">
+        <div class="panel-title">
+          <div class="icon-wrap"><i class="fa-solid fa-mobile-screen-button"></i></div>
+          <div><h2>Mobile</h2><span>浅色主题 · iOS 风格</span></div>
+        </div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div class="mobile-chat">
+              <div class="status-bar">
+                <span>9:41</span>
+                <div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
+              </div>
+              <nav class="mobile-nav">
+                <div class="nav-back"><i class="fa-solid fa-chevron-left"></i></div>
+                <img class="nav-avatar" src="https://picsum.photos/seed/suyu/80/80.jpg" alt="头像">
+                <div class="nav-info">
+                  <div class="nav-name">寒枫</div>
+                  <div class="nav-status">在线</div>
+                </div>
+                <div class="nav-actions">
+                  <button class="nav-action"><i class="fa-solid fa-phone"></i></button>
+                  <button class="nav-action"><i class="fa-solid fa-video"></i></button>
+                </div>
+              </nav>
+              <div class="mobile-messages">
+                <div class="time-sep">今天 14:20</div>
+                <div class="msg-row recv tail gap"><div class="bubble">你好，我是 HanPhone 的 AI 助手</div></div>
+                <div class="msg-row sent tail gap"><div class="bubble">你好！请问你能帮我做什么？</div></div>
+                <div class="msg-row recv gap"><div class="bubble">我可以回答你的问题、搜索信息、翻译文字</div></div>
+                <div class="msg-row recv tail"><div class="bubble">甚至帮你写代码和总结文档</div></div>
+                <div class="msg-row sent tail gap"><div class="bubble">太棒了！那先帮我查一下天气吧</div></div>
+                <div class="msg-row recv gap"><div class="bubble">成都今天多云，气温 18-26°C</div></div>
+                <div class="msg-row recv tail"><div class="bubble">空气质量良，适合户外活动</div></div>
+                <div class="msg-row sent tail gap"><div class="bubble">谢谢！界面设计得真好看</div></div>
+                <div class="msg-row recv tail gap"><div class="bubble">哈哈，这是 Inkstone 风格的设计</div></div>
+                <div class="msg-row sent tail gap"><div class="bubble">很有质感，像墨和纸的结合</div><div class="msg-meta"><span class="msg-time">14:28</span><span class="read-mark">已读</span></div></div>
+              </div>
+              <div class="mobile-input-bar">
+                <div class="input-actions"><button class="input-action-btn"><i class="fa-solid fa-plus"></i></button></div>
+                <div class="input-wrap"><input type="text" placeholder="输入消息..."></div>
+                <button class="send-btn"><i class="fa-solid fa-arrow-up"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="desktop-panel">
+        <div class="panel-title">
+          <div class="icon-wrap"><i class="fa-solid fa-display"></i></div>
+          <div><h2>Desktop</h2><span>深色主题 · macOS 风格</span></div>
+        </div>
+        <div class="desktop-frame">
+          <aside class="desktop-sidebar">
+            <div class="sidebar-header">
+              <h3>对话</h3>
+              <div class="sidebar-header-actions">
+                <button><i class="fa-solid fa-pen-to-square"></i></button>
+                <button><i class="fa-solid fa-sliders"></i></button>
+              </div>
+            </div>
+            <div class="sidebar-search">
+              <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="搜索"></div>
+            </div>
+            <div class="contact-list">
+              <!-- 寒枫 - 选中态 -->
+              <div class="contact-item active">
+                <div class="avatar-wrap"><img class="contact-avatar" src="https://picsum.photos/seed/suyu/80/80.jpg"><div class="online-dot"></div></div>
+                <div class="contact-info">
+                  <div class="contact-name-row">
+                    <span class="contact-name">寒枫</span>
+                    <span class="contact-time">14:28</span>
+                  </div>
+                  <div class="contact-preview-row">
+                    <span class="contact-preview">很有质感，像墨和纸的结合</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 小明 - 有未读 -->
+              <div class="contact-item">
+                <div class="avatar-wrap"><img class="contact-avatar" src="https://picsum.photos/seed/mingze/80/80.jpg"><div class="online-dot"></div></div>
+                <div class="contact-info">
+                  <div class="contact-name-row">
+                    <span class="contact-name">小明</span>
+                    <span class="contact-time">13:45</span>
+                  </div>
+                  <div class="contact-preview-row">
+                    <span class="contact-preview">代码我推上去了，你 review 下</span>
+                    <span class="unread-badge">2</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 小安 -->
+              <div class="contact-item">
+                <div class="avatar-wrap"><img class="contact-avatar" src="https://picsum.photos/seed/yian/80/80.jpg"></div>
+                <div class="contact-info">
+                  <div class="contact-name-row">
+                    <span class="contact-name">小安</span>
+                    <span class="contact-time">昨天</span>
+                  </div>
+                  <div class="contact-preview-row">
+                    <span class="contact-preview">那幅画我装裱好了，改天给你看</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 婉清 -->
+              <div class="contact-item">
+                <div class="avatar-wrap"><img class="contact-avatar" src="https://picsum.photos/seed/wanqing/80/80.jpg"><div class="online-dot"></div></div>
+                <div class="contact-info">
+                  <div class="contact-name-row">
+                    <span class="contact-name">婉清</span>
+                    <span class="contact-time">周一</span>
+                  </div>
+                  <div class="contact-preview-row">
+                    <span class="contact-preview">下周三的提案会议改到周四了</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+          <main class="desktop-chat-main">
+            <div class="desktop-chat-header">
+              <img class="nav-avatar contact-avatar" src="https://picsum.photos/seed/suyu/80/80.jpg">
+              <div class="nav-info">
+                <div class="nav-name">寒枫</div>
+                <div class="nav-status">在线</div>
+              </div>
+              <div class="desktop-header-actions">
+                <button><i class="fa-solid fa-phone"></i></button>
+                <button><i class="fa-solid fa-video"></i></button>
+                <button><i class="fa-solid fa-ellipsis"></i></button>
+              </div>
+            </div>
+            <div class="desktop-messages">
+              <div class="time-sep" style="color:var(--d-text-dim)">今天 14:20</div>
+              <div class="d-msg-row recv tail gap"><div class="d-bubble">你好，我是 HanPhone 的 AI 助手</div></div>
+              <div class="d-msg-row sent tail gap"><div class="d-bubble">你好！请问你能帮我做什么？</div></div>
+              <div class="d-msg-row recv gap"><div class="d-bubble">我可以回答你的问题、搜索信息、翻译文字</div></div>
+              <div class="d-msg-row recv tail"><div class="d-bubble">甚至帮你写代码和总结文档</div></div>
+              <div class="d-msg-row sent tail gap"><div class="d-bubble">太棒了！那先帮我查一下天气吧</div></div>
+              <div class="d-msg-row recv gap"><div class="d-bubble">成都今天多云，气温 18-26°C</div></div>
+              <div class="d-msg-row recv tail"><div class="d-bubble">空气质量良，适合户外活动</div></div>
+              <div class="d-msg-row sent tail gap"><div class="d-bubble">谢谢！界面设计得真好看</div></div>
+              <div class="d-msg-row recv tail gap"><div class="d-bubble">哈哈，这是 Inkstone 风格的设计</div></div>
+              <div class="d-msg-row sent tail gap">
+                <div class="d-bubble">很有质感，像墨和纸的结合</div>
+                <div class="d-msg-meta"><span class="d-msg-time">14:28</span><span class="d-read-mark">已读</span></div>
+              </div>
+            </div>
+            <div class="desktop-input-bar">
+              <div class="d-input-actions">
+                <button class="d-input-action-btn"><i class="fa-solid fa-paperclip"></i></button>
+                <button class="d-input-action-btn"><i class="fa-regular fa-face-smile"></i></button>
+              </div>
+              <div class="d-input-wrap"><input type="text" placeholder="输入消息..."></div>
+              <button class="d-send-btn"><i class="fa-solid fa-arrow-up"></i></button>
+            </div>
+          </main>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

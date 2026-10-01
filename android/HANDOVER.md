@@ -1,8 +1,8 @@
 # 云林有风 Android 客户端 — AI 交接文档（HANDOVER）
 
 > 用途：供**新接手 AI** 快速理解项目、规避前人踩过的坑。
-> 位置：`apps/blog-android/`。配套文件：`PLAN.md`（路线图）、`README.md`（构建）、本文件（经验与规矩）。
-> 铁律：**改动前先读 `web/`（网站前端）与 `~/develop-projects/hanphone-chat/`（聊天服务）作为接口与交互的“唯一事实来源”，不要凭直觉假设。**
+> 位置：`android/`。配套文件：`PLAN.md`（路线图）、`README.md`（构建）、本文件（经验与规矩）。
+> 铁律：**改动前先读 `web/`（网站前端）与 `docs/chat/`（聊天协议，原 hanphone-chat 已并入本仓库）作为接口与交互的"唯一事实来源"，不要凭直觉假设。**
 
 ---
 
@@ -210,7 +210,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 3a. **缓存层扩展（加载体验专项）**：ContentStore 新增 types/tags/archive、essay_comments_{id}、article_{id}(+_comments)、essay_{id}、doc_{hash}(文库 MD/HTML 原文 24h TTL)、enrich_attempts(友链补全节流)，均并入数据管理分项清除；MemoryCache 新增 homeTypes/homeTags/archiveBlogs + 搜索结果缓存(5min/同词去重)。消息页私信历史与管理员用户列表状态迁入 ChatSocket 单例（REST 私信 30s/用户列表 60s 节流，Tab 切换/进出会话不再重建丢态、不重复拉）。首页 selectedYear 入 VM、loadLatest generation 防筛选竞态；搜索输入即搜+350ms 防抖（对齐 web）；留言板发送后本地回显 addMessageLocal（对齐 web ADD_MESSAGE）；文章/随笔详情正文+评论与文库原文落盘冷启动秒显。
 4. **Markdown**：mikepenz/multiplatform-markdown-renderer 0.31.0（m3 + coil2 + **code 高亮模块**）。`Markdown.kt` 只是薄封装：预处理（HTML 实体解码 + 相对 URL 绝对化）→ `Markdown(...)`。代码高亮 = `markdownComponents(codeFence/codeBlock → MarkdownHighlightedCodeFence/Block)`，Atom 主题随深浅色（`surface.luminance()` 判断）；表格列宽 `markdownDimens(tableCellWidth = 220.dp)` 让宽表自动进入横向滚动（库内建，列少时会 fillMaxWidth 不滚）。typography 必须覆盖：库默认 h1=displayLarge(57sp) 巨大，已按 web blog.css 收敛为 26/22/19/17sp。
 5. **文章详情导航**：正文按块级切分渲染（`splitMarkdownBlocks`），标题块 itemIndex 即锚点；TOC 入口 = 详情页右下角 SmallFloatingActionButton → ModalBottomSheet 列表 → `animateScrollToItem(blockIndex + 1)`（+1 跳过头部 item）。顶部 LinearProgressIndicator 显示阅读进度（firstVisibleItemIndex 占比）。
-4. **部署 hanphone-chat**：本机 `ssh blog` 免密（公钥已装）；源码 `~/server_chat/src`，pm2 进程名 `hanphone-chat-server`（跑 dist，改完需 `./node_modules/.bin/tsc` 再 `pm2 restart hanphone-chat-server`）。协议变更先看 `~/server_chat/docs/android-protocol.md`。
+4. **部署 hanphone-chat**：本机 `ssh blog` 免密（公钥已装）；源码在仓库 **`chat-server/`**（原 `~/server_chat/src`），pm2 进程名 `hanphone-chat-server`（跑 dist，改完需 `pnpm --filter chat-server build` 再 `pm2 restart hanphone-chat-server`）。协议变更先看仓库 **`docs/chat/android-protocol.md`**。
 
 ## 9. 给新 AI 的规矩（Rulebook）
 

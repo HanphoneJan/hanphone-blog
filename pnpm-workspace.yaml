@@ -2,6 +2,8 @@ packages:
   - 'web'
   - 'apps/gomoku'
   - 'apps/photo-wall'
+  - 'apps/chat-client'
   - 'admin-file'
   - 'photo-wall-server'
+  - 'chat-server'
   - 'mcp-server'

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", // 推荐使用较新的目标
+    "module": "NodeNext", // 推荐使用 NodeNext，它与 moduleResolution: NodeNext 配合得最好
+    "moduleResolution": "NodeNext", // <--- 关键！明确设置为 NodeNext
+
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true, // 现在这个选项可以安全地使用了
+    "sourceMap": true // 建议开启，方便调试
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

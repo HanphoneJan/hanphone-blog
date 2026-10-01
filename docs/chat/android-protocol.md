@@ -1,0 +1,48 @@
+# Android 客户端（云林有风 App）对接协议要点
+
+> 消费方：`hanphone-blog/apps/blog-android` 的 `ChatSocket.kt` / `ChatScreen.kt`。
+> 修改本服务的 socket 事件、鉴权流程、超时参数前，务必核对本文档，避免悄悄打破 App 端。
+
+## 连接参数
+
+| 项 | 值 | 说明 |
+|----|-----|------|
+| URL | `https://hanphone.cn` | |
+| path | `/chat-api/socket.io` | |
+| 认证 | 连接成功后 emit `authenticate`（**裸 token**，不带 Bearer 前缀） | 服务端 10s 内未认证成功会断开（`authTimeout`） |
+| 心跳 | 认证成功后每 **25s** emit `heartbeat` | 服务端 60s 无心跳强制断连（`HEARTBEAT_TIMEOUT_MS`）；Web 端同为 25s |
+| 重连 | socket.io 自动重连（1~5s 退避） | 每次 `connect` 后需重新 `authenticate` + `requestPublicHistory` |
+
+## 使用的事件（App 端已实现）
+
+### 聊天室（公共房间）
+- `requestPublicHistory` `{limit: 100}` → `publicHistory`（数组，snake_case 字段：`user_id`/`from_ai`...）
+- `publicMessage`（发消息）→ `publicMessageBroadcast`
+- `@AI` 流式：`publicAiStreamStart` / `publicAiStreamChunk` / `publicAiStreamEnd` / `publicAiStreamError`
+- `publicOnlineCount` `{count}`
+- `messageDeleted` `{messageId}`
+- `notification`（服务端提示，App 以 toast 展示）
+
+### 私信
+- 普通用户发：`userMessage`（content）→ 服务端向 `ADMIN_ROOM` 与本人 emit `message`
+- 管理员发：`adminMessage`(userId, content)
+- 接收：`message`（PrivateMessage，camelCase：`senderId`/`receiverId`/`fromAi`...）
+
+### REST（Bearer 鉴权）
+| 接口 | 说明 |
+|------|------|
+| `GET /chat-api/api/messages/admin` | 普通用户取与管理员的历史（`requireRegularUser`，管理员调用返回 403）；支持 `?limit=`（1~500，默认 200，返回最近 N 条） |
+| `GET /chat-api/api/messages/{userId}` | 管理员取与指定用户的历史（`requireAdmin`）；支持 `?limit=` 同上 |
+| `GET /chat-api/api/users/all` | 管理员收件箱用户列表 |
+
+## App 端已知约定（勿破坏）
+
+1. `publicHistory` / 私信 REST 的消息体字段大小写不同：公共房间 snake_case、私信 camelCase（历史遗留，两端均已适配）。
+2. `authenticateUser` 中间件会对**每个请求**查博客用户（现已加 60s 缓存）；若博客内部 API 长时间不可用，聊天鉴权会随之失败。
+3. 服务端断连（心跳超时/网络切换）对 App 是常规事件：App 会自动重连并重拉历史，服务端无需特殊处理；但**不要**在断连时下发需登录态才能处理的紧急逻辑。
+
+## 数据库（2026-10-01 起）
+
+- PostgreSQL 已从 139.199.212.103（已停用）迁移到 **blog 服务器本机**（`DB_HOST=127.0.0.1`，库/角色同名 `chat_db`）。
+- `postgresService` 的关键读查询走 `queryWithRetry`（连接类错误自动重试最多 3 次），池开启 `keepAlive`。
+- 若再出现 `Connection terminated unexpectedly` / `connection timeout` 刷屏，先确认 `DB_HOST` 是否被改回外部地址。

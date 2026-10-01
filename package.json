@@ -14,6 +14,7 @@
     "build:web": "pnpm --filter web build",
     "build:gomoku": "pnpm --filter uni-preset-vue build:h5",
     "build:photo-wall": "pnpm --filter atlas build",
+    "build:chat": "pnpm --filter chat-client build",
     "build:all": "pnpm -r build"
   }
 }

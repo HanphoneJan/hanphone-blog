@@ -1,4 +1,4 @@
-# apps/blog-android · 云林有风（Android 原生客户端）
+# android · 云林有风（Android 原生客户端）
 
 博客的 **Kotlin + Jetpack Compose** 原生客户端，直接对接现有后端 REST API（`https://hanphone.cn/api/`），后端零改动。
 
@@ -59,7 +59,7 @@ app/src/main/java/com/hanphone/blog/
 
 ```bash
 # 首次构建（自动下载 Gradle 发行版与依赖，约几分钟）
-cd apps/blog-android
+cd android
 ./gradlew :app:assembleDebug
 
 # 产物路径

@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  --text-base: 1rem;
+  --text-sm: 1rem;
+  --text-xs: 0.9125rem;
+  --text-2xs: 0.85rem;
+  --text-3xs: 0.7rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.35rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.625rem;
+
+  /* ===== 浅色主题原始令牌 (light) ===== */
+  --color-light-bg: #FEFCF9;
+  --color-light-surface: #FFFFFF;
+  --color-light-sidebar: #FAFAF8;
+  --color-light-sent: #1A1A1A;
+  --color-light-sent-text: #FFFFFF;
+  --color-light-recv: #EDEAE4;
+  --color-light-recv-text: #1A1A1A;
+  --color-light-border: #E5E2DC;
+  --color-light-text-p: #1A1A1A;
+  --color-light-text-s: #57534E;
+  --color-light-text-dim: #78716C;
+  --color-light-input-bg: #F5F3EF;
+  --color-light-online: #4A7C59;
+  --color-light-accent: #D4C4A8;
+
+  /* ===== 深色主题原始令牌 (dark) ===== */
+  --color-dark-bg: #0E0E0F;
+  --color-dark-surface: #171718;
+  --color-dark-sidebar: #141415;
+  --color-dark-sent: #D4C4A8;
+  --color-dark-sent-text: #0E0E0F;
+  --color-dark-recv: #262628;
+  --color-dark-recv-text: #F0EDE6;
+  --color-dark-border: #262628;
+  --color-dark-text-p: #F0EDE6;
+  --color-dark-text-s: #6B6862;
+  --color-dark-text-dim: #4A4844;
+  --color-dark-input-bg: #1E1E20;
+  --color-dark-online: #5A9A6E;
+  --color-dark-accent: #D4C4A8;
+
+  /* ===== 语义变量 (默认浅色主题) ===== */
+  --color-bg: var(--color-light-bg);
+  --color-surface: var(--color-light-surface);
+  --color-sidebar: var(--color-light-sidebar);
+  --color-sent: var(--color-light-sent);
+  --color-sent-text: var(--color-light-sent-text);
+  --color-recv: var(--color-light-recv);
+  --color-recv-text: var(--color-light-recv-text);
+  --color-border: var(--color-light-border);
+  --color-text-p: var(--color-light-text-p);
+  --color-text-s: var(--color-light-text-s);
+  --color-text-dim: var(--color-light-text-dim);
+  --color-input-bg: var(--color-light-input-bg);
+  --color-online: var(--color-light-online);
+  --color-accent: var(--color-light-accent);
+
+  /* ===== shadcn/ui 变量映射 ===== */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text-p);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text-p);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-text-p);
+  --color-primary: var(--color-sent);
+  --color-primary-foreground: var(--color-sent-text);
+  --color-secondary: var(--color-recv);
+  --color-secondary-foreground: var(--color-recv-text);
+  --color-muted: var(--color-recv);
+  --color-muted-foreground: var(--color-text-dim);
+  --color-accent-foreground: var(--color-sent-text);
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-input: var(--color-border);
+  --color-ring: var(--color-sent);
+
+  /* ===== 字体 ===== */
+  --font-display: 'DM Sans', 'Noto Sans SC', sans-serif;
+  --font-body: 'DM Sans', 'Noto Sans SC', sans-serif;
+
+  /* ===== 动画 ===== */
+  --animate-msg-in: msg-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-up: fade-up 0.8s ease-out forwards;
+  --animate-typing-dot: typing-dot 1.4s infinite ease-in-out;
+
+  @keyframes msg-in {
+    0% { opacity: 0; transform: translateY(10px) scale(0.97); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes fade-up {
+    0% { opacity: 0; transform: translateY(24px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes typing-dot {
+    0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+  }
+}
+
+/* ===== 深色主题覆盖 ===== */
+[data-theme="dark"] {
+  --color-bg: var(--color-dark-bg);
+  --color-surface: var(--color-dark-surface);
+  --color-sidebar: var(--color-dark-sidebar);
+  --color-sent: var(--color-dark-sent);
+  --color-sent-text: var(--color-dark-sent-text);
+  --color-recv: var(--color-dark-recv);
+  --color-recv-text: var(--color-dark-recv-text);
+  --color-border: var(--color-dark-border);
+  --color-text-p: var(--color-dark-text-p);
+  --color-text-s: var(--color-dark-text-s);
+  --color-text-dim: var(--color-dark-text-dim);
+  --color-input-bg: var(--color-dark-input-bg);
+  --color-online: var(--color-dark-online);
+  --color-accent: var(--color-dark-accent);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-body antialiased;
+    background-color: var(--color-bg);
+    color: var(--color-text-p);
+    overflow: hidden;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+}
+
+@layer utilities {
+  .im-bubble {
+    @apply px-3 py-2 text-xs leading-relaxed shadow-sm;
+  }
+
+  .ink-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .ink-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ink-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-text-dim) 20%, transparent);
+    border-radius: 9999px;
+  }
+  .ink-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--color-text-dim) 40%, transparent);
+  }
+}
