@@ -289,43 +289,32 @@ fun ProfileScreen(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-            Column {
-                // ===== 居中品牌头 =====
-                Column(
-                    Modifier.fillMaxWidth().padding(vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // 应用身份（博客图标）
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Image(
                         painter = painterResource(R.drawable.ic_blog),
                         contentDescription = "云林有风图标",
-                        modifier = Modifier.size(56.dp).clip(CircleShape),
+                        modifier = Modifier.size(52.dp).clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                    Text(
-                        "云林有风",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 10.dp)
-                    )
-                    Text(
-                        "v$appeVersion · 原生 Kotlin + Jetpack Compose",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                    Text(
-                        "个人博客客户端 · 记录与分享",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    Column {
+                        Text("云林有风", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text("版本 ${appeVersion}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
+                Text(
+                    "原生 Kotlin + Jetpack Compose（Material 3）开发的个人博客客户端，数据来自 hanphone.cn 博客 API。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
 
-                AboutLinkRow("检查更新", if (checking) "检查中…" else "") { checkUpdate() }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                // 链接区
                 AboutLinkRow("访问博客网站", "hanphone.cn") { uriHandler.openUri("https://hanphone.cn") }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                AboutLinkRow("检查更新", if (checking) "检查中…" else "当前 v$appeVersion") { checkUpdate() }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 AboutLinkRow("作者 GitHub", "HanphoneJan") { uriHandler.openUri("https://github.com/HanphoneJan") }
             }
