@@ -90,4 +90,16 @@ suspend fun Context.setBackgroundPath(path: String?) = dataStore.edit {
 
 suspend fun Context.setBackgroundBlur(radius: Int) = dataStore.edit { it[KEY_BG_BLUR] = radius }
 
+// ===== 评论/留言输入草稿（DataStore 持久化，不随「清除全部」缓存清理删除）=====
+
+private fun draftKey(kind: String) = stringPreferencesKey("draft_$kind")
+
+/** 读取某类输入的草稿（kind 如 article_comment_12 / message_comment / essay_comment_5） */
+fun Context.draftFlow(kind: String): Flow<String> = dataStore.data.map { it[draftKey(kind)] ?: "" }
+
+/** 保存/清除草稿（传入空串即清除） */
+suspend fun Context.saveDraft(kind: String, text: String) = dataStore.edit {
+    if (text.isBlank()) it.remove(draftKey(kind)) else it[draftKey(kind)] = text
+}
+
 private fun String?.nullIfBlank(): String? = this?.takeIf { it.isNotBlank() }

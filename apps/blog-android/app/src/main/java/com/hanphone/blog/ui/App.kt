@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -118,11 +120,13 @@ private fun MainScaffold() {
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = MainTab.entries.any { it.route == currentRoute }
     val selectedTab = MainTab.entries.firstOrNull { it.route == currentRoute }
+    // 键盘弹出时隐藏底部导航栏，让主 Tab（聊天/随笔内嵌等）底部输入能贴齐键盘顶
+    val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            if (showBottomBar) {
+            if (showBottomBar && !imeVisible) {
                 Surface(shadowElevation = 8.dp, color = MaterialTheme.colorScheme.surface) {
                     Row(
                         Modifier.fillMaxWidth()

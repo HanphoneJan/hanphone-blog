@@ -80,8 +80,8 @@ ui/
   - 仓库层已统一为 1 起始（内部转 0 起始）。
 
 ### 3.3 评论 / 点赞
-- 文章评论：**登录后评论**（对齐网页版 CommentForm——网页未登录时表单禁用并引导登录）。App 端点「评论」时未登录→提示"请先登录"+去登录；已登录弹窗只填内容，请求带 `userId`（后端取本人资料），**无昵称/邮箱输入**（`repo.postCommentAsUser`）。旧匿名（nickname+email）请求仅后端兼容保留，App 不再使用。
-- **文章评论回复**（对齐网页版）：**点击评论内容即回复**（无独立回复按钮，纵向更紧凑），弹窗标题「回复 @xxx」，提交带 `parentId`（`postCommentAsUser(...parentId)`）；后端 Comment 的 `parentComment` 被 `@JsonIgnore`（列表不回传父级），新回复的「回复 @x」标签由 UI 本地 `replyHints` 记录展示，历史回复呈扁平列表（与网页 GET 行为一致）。**评论内容可长按选中复制**（`SelectionContainer` + `detectTapGestures` 共存：点=回复、长按=选择）。
+- 文章评论：**登录后评论**（对齐网页版 CommentForm——网页未登录时表单禁用并引导登录）。App 文章详情页底部为**输入条**（点赞 + 输入胶囊 + 发送 + 分享，键盘弹出自动上浮），未登录点发送→提示"请先登录"+去登录；请求带 `userId`（后端取本人资料），**无昵称/邮箱输入**（`repo.postCommentAsUser`）。旧匿名（nickname+email）请求仅后端兼容保留，App 不再使用。
+- **文章评论回复**（对齐网页版）：**点击评论内容即回复**（无独立回复按钮，纵向更紧凑），输入条顶部出现「回复 @xxx」小条 + ✕ 取消；提交带 `parentId`（`postCommentAsUser(...parentId)`）；后端 Comment 的 `parentComment` 被 `@JsonIgnore`（列表不回传父级），新回复的「回复 @x」标签由 UI 本地 `replyHints` 记录展示，历史回复呈扁平列表（与网页 GET 行为一致）。**评论内容可长按选中复制**（`SelectionContainer` + `detectTapGestures` 共存：点=回复、长按=选择）。
 - 随笔评论：**必须登录**（body `userId`）；**列表项与详情页均支持回复**（`parentCommentId` 楼层回复，弹窗「回复 @昵称」）。
 - 点赞（文章/随笔）：需登录，body `{ userId, blogId/essayId, isLike }`。
 - 随笔评论 POST `/essays/{id}/comments` 也需要 `X-Request-Id`。
@@ -99,8 +99,8 @@ ui/
 
 ### 3.6 留言板（对齐网页版：不填昵称、支持回复）
 - 网页版 `useMessages.publish` 里作者 = 登录 `nickname`，未登录固定 `"匿名用户"`，**无语名输入框**。
-- App 写留言弹窗只填内容；作者 = 登录昵称 ?: `"匿名用户"`，头像 = 登录头像 ?: 设置页上传头像（`repo.postMessage(nickname, content, avatar, parentId)` 已支持）。
-- **留言回复**（对齐网页版）：**点击留言内容即回复**（无独立回复按钮），弹窗标题「回复 @xxx」，提交带 `parentId`；后端 Message 会**内嵌返回 `parentMessage`**（非 @JsonIgnore），列表直接展示「回复 @父昵称」标签。**留言内容可长按选中复制**。
+- App 留言板**底部输入条**（同文章评论输入条，未登录时条内小字提示"将以「匿名用户」身份留言"）；作者 = 登录昵称 ?: `"匿名用户"`，头像 = 登录头像（`repo.postMessage(nickname, content, avatar, parentId)` 已支持）。
+- **留言回复**（对齐网页版）：**点击留言内容即回复**（无独立回复按钮），底部输入条顶部出现「回复 @xxx」+ ✕ 取消；后端 Message 会**内嵌返回 `parentMessage`**（非 @JsonIgnore），列表直接展示「回复 @父昵称」标签。**留言内容可长按选中复制**。
 
 ## 4. 信息架构与每屏要点（含用户明确要求）
 
@@ -113,8 +113,10 @@ ui/
 - 归档已并入首页（视图=归档时显示按年列表；选中年份过滤）。**没有独立归档页**。
 
 ### 随笔 = 朋友圈（去卡片化）
-- **无 Card/容器**：扁平条目，头像（圆角方形 8dp）最左 → 蓝色昵称 → 正文（>90 字出现「全文」展开）→ 图片九宫格（单图 max 60%、2-3 一行、多图 3 列）→ 底部：小字时间 + **灰底胶囊赞/评条**。
-- 点「评 N」→ **内嵌评论列表** + 内联输入发评论；**点某条评论 →「回复 @昵称」弹窗（带 parentCommentId）**。详情页评论同样可点回复。
+- **无 Card/容器**：扁平条目，头像（圆角方形 8dp）最左 → 蓝色昵称 → 正文（>90 字出现「全文」展开）→ 图片九宫格（单图 max 60%、2-3 一行、多图 3 列）→ 底部：小字时间 + **灰底胶囊操作条**；**条目之间以细分割线分隔**（`HorizontalDivider` 插在同一条目 item 内 `index>0` 时渲染、上下各 4dp、条目间隔 `spacedBy(6.dp)`、列表内容 padding 上下 6dp——保持紧凑的「分割页」不留太多空白）。
+- **胶囊操作条三个按钮均为纯图标**（无文字，内容描述供无障碍）：赞（`Favorite/FavoriteBorder`）、写评论（`Create`）、评论折叠/展开（`Email`）。图标可点击区域 18dp/段内 8dp。**没有评论的随笔不再渲染评论区**（不显示"还没有评论"空态；评论数据经 VM `essayComments` 到达后自动出现）。
+- 点「评 N」→ 评论区**默认展开加载**（LazyColumn 可见项自动拉取评论，VM 内存缓存防重复请求）；评论过多时默认折叠显示前 5 条 + 「展开全部评论（N 条）」；胶囊按钮在展开时显示「收起评论」，可整区折叠/展开。**评论输入不在评论区内部**：胶囊条另有独立「写评论」按钮（与折叠/展开按钮不同），点击后在**页面底部弹出输入条并自动拉起键盘**（复用 `CommentInputBar` + `autoFocus`），评论数据收在 VM（`essayComments` 状态 map），提交后即时回显；点某条评论同理在底部输入条进入「回复 @昵称」模式。随笔详情页仍用弹窗输入（`EssayCommentDialog`，`minLines=2`）。
+- **输入草稿缓存**：文章评论 / 留言板 / 随笔内嵌与弹窗评论输入均按场景分键存入 DataStore（`core/Settings.kt` 的 `draftFlow/saveDraft`，kind 如 `article_comment_{id}` / `message_comment` / `essay_comment_{id}` / `essay_detail_comment_{id}`）；输入停顿约 400ms 落盘、发送/清空即删；**不随「数据管理 → 清除全部」删除**。
 - **首进不弹下拉圈圈**：`PullToRefreshBox.isRefreshing = refreshing && userPulled`（首屏冷加载/骨架不弹 Refresh 圈，仅用户主动下拉才有）。
 
 ### 消息 = Hub
@@ -223,3 +225,9 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 9a. **长按选择文字**：正文/评论/留言等可读文本统一包 `SelectionContainer`（博客正文按块、随笔正文、评论/留言内容）；「点内容=回复」的评论/留言内容用 `Modifier.pointerInput { detectTapGestures { ... } }` 与 `SelectionContainer` 共存（点=动作、长按=复制）。
 13. **网页版文库能看、App WebView 白屏**：文件服务（admin-file，hanphone.top）对所有文件响应带 `Content-Disposition: attachment`——WebView 直接 `loadUrl` 会把页面当**下载**，主框架 200 后立刻跳 `about:blank` 白屏（`onPageStarted` 不触发、子资源不加载、无 onReceivedError）。**修复：先 fetch 文件文本再用 `loadDataWithBaseURL(baseUrl=文件目录, html, "text/html","utf-8",null)` 渲染**（网页版 docLoader 也是 fetch 字节渲染，不是直接导航）。文库 .md 预览同理会 fetch 文本。判断「附件下载 vs 页面」看响应头 `content-disposition`。
 14. **Toast 原则**：非必要不弹。成功且 UI 已有可见反馈（列表插入新条目、点赞数字变化、头像预览更新）一律不弹；失败、表单校验、登录态提示才弹。聊天 socket 的连接失败走 ReconnectBanner，不发 toast。
+15. **软键盘适配（重要，勿用裸 imePadding）**：Manifest 里 MainActivity `android:windowSoftInputMode="adjustResize"`。Scaffold 已按系统 insets 预留底部导航栏空间，若对底部输入再直接 `imePadding()` 会「双抬升」——键盘上方出现整段导航栏高的空白（曾出现 ~1200px 缝隙）。统一改为 `imeLiftAboveKeyboard()`（`ui/components/Common.kt`，= `(IME − 导航栏) 内边距` 差值，键盘弹出时恰好贴齐键盘顶），覆盖场景：
+   - 文章评论 / 留言板底部输入条（`CommentInputBar`）
+   - 随笔列表容器（`Box(...imeLiftAboveKeyboard())`，内嵌评论胶囊输入不被键盘遮挡）
+   - 聊天会话页 `Column`（主 Tab，键盘弹出时底部导航栏自动隐藏——`App.kt` 里 `imeVisible` 判断 `WindowInsets.ime`，避免主 Tab 底栏占位挡住输入；消息 Hub 的**聊天室**与**私信**两个输入栏都要加）
+   - 登录/注册表单容器（垂直居中表单上移）
+   验证：`adb shell dumpsys window displays | grep 'type=ime'` 可查键盘顶位置，配合截图像素核对输入条是否贴齐。

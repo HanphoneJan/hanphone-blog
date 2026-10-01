@@ -2,6 +2,7 @@ package com.hanphone.blog.ui.essay
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
@@ -64,16 +65,31 @@ class EssayListViewModel @Inject constructor(
         }
     }
 
-    /** 列表条目内加载某条随笔的评论 */
-    fun loadComments(essayId: Long, onResult: (List<EssayComment>?) -> Unit) {
+    /** 列表条目内加载某条随笔的评论（内存缓存：同一 VM 生命周期内不再重复请求） */
+    private val commentsCache = mutableMapOf<Long, List<EssayComment>?>()
+
+    /** 各随笔评论（页面级状态：列表行与底部输入条共享，提交后即时更新） */
+    val essayComments = mutableStateMapOf<Long, List<EssayComment>>()
+
+    fun loadComments(essayId: Long, onResult: (List<EssayComment>?) -> Unit = {}) {
+        commentsCache[essayId]?.let { onResult(it); if (it != null) essayComments[essayId] = it; return }
         viewModelScope.launch {
             try {
                 val res = repo.comments(essayId)
-                onResult(if (res.flag) res.data ?: emptyList() else null)
+                val list = if (res.flag) res.data ?: emptyList() else null
+                commentsCache[essayId] = list
+                if (list != null) essayComments[essayId] = list
+                onResult(list)
             } catch (_: Exception) {
+                commentsCache[essayId] = null
                 onResult(null)
             }
         }
+    }
+
+    /** 评论提交成功后本地追加（即时回显，无需重拉） */
+    fun addEssayComment(essayId: Long, c: EssayComment) {
+        essayComments[essayId] = (essayComments[essayId] ?: emptyList()) + c
     }
 
     /** 列表条目内点赞 */

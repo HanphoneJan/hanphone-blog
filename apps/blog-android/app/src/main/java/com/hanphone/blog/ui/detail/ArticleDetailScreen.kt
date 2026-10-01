@@ -18,20 +18,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,11 +36,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,10 +51,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.hanphone.blog.core.draftFlow
+import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
@@ -68,12 +65,15 @@ import com.hanphone.blog.ui.extractTocHeadings
 import com.hanphone.blog.ui.splitMarkdownBlocks
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.ui.components.Avatar
-import com.hanphone.blog.ui.components.BottomActionItem
+import com.hanphone.blog.ui.components.CommentInputBar
 import com.hanphone.blog.ui.components.DetailSkeleton
 import com.hanphone.blog.ui.components.ErrorBox
+import com.hanphone.blog.ui.components.hideKeyboard
 import com.hanphone.blog.util.formatDate
 import com.hanphone.blog.util.formatDateTime
 import com.hanphone.blog.util.resolveImageUrl
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** 文章详情：正文 + 底部操作栏（点赞/评论/分享）+ 评论区 + 匿名发评论 */
@@ -100,12 +100,45 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
     val liked = vm.liked
     val likesCount = vm.likesCount
 
-    var showCommentDialog by remember { mutableStateOf(false) }
     // 回复目标（非空=回复该评论）；replyHints 记录「刚发布的回复 → 父昵称」用于展示"回复 @x"
     var replyTarget by remember { mutableStateOf<Comment?>(null) }
     val replyHints = remember { mutableStateOf<Map<Long, String>>(emptyMap()) }
 
+    // ===== 底部评论输入（草稿持久化到 DataStore，防误退丢失）=====
+    val view = LocalView.current
+    val draftKind = remember(blogId) { "article_comment_$blogId" }
+    var commentDraft by remember { mutableStateOf("") }
+    var sending by remember { mutableStateOf(false) }
+    // 进入页面恢复草稿；输入停顿 400ms 后落盘
+    LaunchedEffect(Unit) { commentDraft = context.draftFlow(draftKind).first() }
+    LaunchedEffect(commentDraft) {
+        delay(400)
+        context.saveDraft(draftKind, commentDraft)
+    }
+
     fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+
+    fun doComment() {
+        val uid = TokenStore.userId.value
+        if (uid == null) { toast("请先登录"); onLogin(); return }
+        if (sending) return
+        val text = commentDraft.trim()
+        if (text.isEmpty()) return
+        sending = true
+        vm.postCommentAsUser(text, uid, replyTarget?.id ?: -1L) { comment ->
+            sending = false
+            if (comment != null) {
+                replyTarget?.let { target -> replyHints.value = replyHints.value + (comment.id to target.nickname) }
+                replyTarget = null
+                commentDraft = ""
+                scope.launch { context.saveDraft(draftKind, "") }
+                hideKeyboard(context, view)
+                vm.addComment(comment)
+            } else {
+                toast("评论失败")
+            }
+        }
+    }
 
     fun share() {
         val url = "https://hanphone.cn/blog/$blogId"
@@ -199,7 +232,7 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                                 comment = comment,
                                 replyHint = replyHints.value[comment.id],
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                onReply = { replyTarget = comment; showCommentDialog = true }
+                                onReply = { replyTarget = comment }
                             )
                         }
                     }
@@ -223,55 +256,43 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
         }
 
         if (blog != null) {
-            Column {
-                // 细分割线 + 底色，替代原来的厚重投影面（视觉更轻、不突兀）
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-                Surface(color = MaterialTheme.colorScheme.background) {
+            // 底部操作栏：点赞 + 评论输入 + 分享（评论输入钉在底部，替代弹窗）
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+            CommentInputBar(
+                value = commentDraft,
+                onValueChange = { commentDraft = it },
+                onSend = { doComment() },
+                sendEnabled = commentDraft.isNotBlank() && !sending,
+                placeholder = if (replyTarget != null) "回复 @${replyTarget!!.nickname}…" else "说点什么…",
+                replyName = replyTarget?.nickname,
+                onCancelReply = { replyTarget = null },
+                leading = {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                        Modifier.clip(RoundedCornerShape(8.dp)).clickable { doLike() }.padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
-                        BottomActionItem(
-                            icon = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            label = "点赞 $likesCount",
-                            tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            onClick = { doLike() }
+                        Icon(
+                            if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            null,
+                            Modifier.size(20.dp),
+                            tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        BottomActionItem(
-                            icon = Icons.Filled.Email,
-                            label = "评论",
-                            onClick = {
-                                // 对齐网页版：登录后评论（未登录引导去登录，不再走匿名昵称/邮箱）
-                                if (TokenStore.userId.value != null) {
-                                    replyTarget = null
-                                    showCommentDialog = true
-                                } else { toast("请先登录"); onLogin() }
-                            }
-                        )
-                        BottomActionItem(
-                            icon = Icons.Filled.Share,
-                            label = "分享",
-                            onClick = { share() }
-                        )
+                        Text("$likesCount", style = MaterialTheme.typography.labelMedium, color = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                trailing = {
+                    Row(
+                        Modifier.clip(RoundedCornerShape(8.dp)).clickable { share() }.padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(Icons.Filled.Share, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("分享", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            }
+            )
         }
-    }
-
-    if (showCommentDialog) {
-        CommentDialog(
-            vm = vm,
-            replyTo = replyTarget,
-            onDismiss = { showCommentDialog = false },
-            onPosted = { newComment ->
-                // 刚发布的回复：记录父昵称用于展示「回复 @x」
-                replyTarget?.let { target -> replyHints.value = replyHints.value + (newComment.id to target.nickname) }
-                replyTarget = null
-                vm.addComment(newComment)
-            }
-        )
     }
 
     // 目录面板（对齐 web 版 MobileToc：点击标题滚动到对应位置）
@@ -388,63 +409,4 @@ private fun CommentRow(
             }
         }
     }
-}
-
-/** 发表评论/回复（对齐网页版）：登录后评论，只填内容；replyTo 非空时以 parentId 回复该评论 */
-@Composable
-private fun CommentDialog(
-    vm: ArticleDetailViewModel,
-    replyTo: Comment?,
-    onDismiss: () -> Unit,
-    onPosted: (Comment) -> Unit
-) {
-    val context = LocalContext.current
-    var content by remember { mutableStateOf("") }
-    var sending by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text(if (replyTo != null) "回复 @${replyTo!!.nickname}" else "发表评论") },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text(if (replyTo != null) "回复内容…" else "说点什么…") },
-                    minLines = 2,
-                    maxLines = 5,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = !sending && content.isNotBlank(),
-                onClick = {
-                    val uid = TokenStore.userId.value
-                    if (uid == null) {
-                        Toast.makeText(context, "请先登录", Toast.LENGTH_SHORT).show()
-                        onDismiss()
-                        return@TextButton
-                    }
-                    sending = true
-                    vm.postCommentAsUser(content.trim(), uid, replyTo?.id ?: -1L) { comment ->
-                        sending = false
-                        if (comment != null) {
-                            onPosted(comment)
-                            onDismiss()
-                        } else {
-                            Toast.makeText(context, "评论失败", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            ) { Text(if (sending) "发送中…" else "发送") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !sending) { Text("取消") }
-        }
-    )
 }

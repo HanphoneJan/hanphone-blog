@@ -73,6 +73,7 @@ import com.hanphone.blog.data.chat.PrivateChatMessage
 import com.hanphone.blog.data.chat.PublicChatMessage
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.ui.components.Avatar
+import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
 import com.hanphone.blog.util.resolveImageUrl
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -191,7 +192,7 @@ private fun PublicRoomContent(onLogin: () -> Unit) {
         hideKeyboard(context, view)
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().imeLiftAboveKeyboard()) {
         when {
             token == null -> Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -347,7 +348,7 @@ private fun AdminThreadContent(
         loadTick++
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().imeLiftAboveKeyboard()) {
         when {
             token == null -> Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
