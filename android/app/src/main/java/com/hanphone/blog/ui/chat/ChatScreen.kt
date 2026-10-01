@@ -31,7 +31,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -92,6 +94,8 @@ fun ChatScreen(onLogin: () -> Unit) {
     val state by ChatSocket.state.collectAsState()
     val onlineCount by ChatSocket.onlineCount.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
+    // 公告弹窗（公告横幅不再常驻占空间，改为标题旁按钮唤起）
+    var showNotice by remember { mutableStateOf(false) }
 
     // 连接/断连（token 变化即切换；单例已连接则忽略重复 connect）
     LaunchedEffect(token) {
@@ -125,8 +129,17 @@ fun ChatScreen(onLogin: () -> Unit) {
 
     Column(Modifier.fillMaxSize()) {
         // ===== 头部 =====
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("消息", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            // 公告按钮：点击弹出公告弹窗
+            IconButton(onClick = { showNotice = true }, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Filled.Notifications,
+                    "公告",
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             Spacer(Modifier.weight(1f))
             when {
                 token == null -> Text("未登录", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
@@ -140,14 +153,14 @@ fun ChatScreen(onLogin: () -> Unit) {
                 )
             }
         }
-
-        // ===== 公告横幅 =====
-        Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
-            Text(
-                "📢 欢迎来到云林有风聊天室：在聊天室 @寒枫 可召唤 AI 回复；私信可直接给博主留言。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        if (showNotice) {
+            AlertDialog(
+                onDismissRequest = { showNotice = false },
+                title = { Text("公告", fontWeight = FontWeight.SemiBold) },
+                text = { Text("📢 欢迎来到云林有风聊天室：在聊天室 @寒枫 可召唤 AI 回复；私信可直接给博主留言。") },
+                confirmButton = {
+                    TextButton(onClick = { showNotice = false }) { Text("知道了") }
+                }
             )
         }
 
@@ -553,11 +566,17 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
                         Text(u.nickname.ifBlank { u.username }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Text(
                             buildString {
-                                append(if (u.isOnline) "在线" else "离线")
+                                append(
+                                    when {
+                                        u.isOnline -> "在线"
+                                        u.lastSeenAt != null && u.lastSeenAt!! > 0 -> "最后在线 ${formatLastSeen(u.lastSeenAt!!)}"
+                                        else -> "离线"
+                                    }
+                                )
                                 if (unread > 0) append(" · $unread 条未读")
                             },
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (unread > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            color = if (u.isOnline || unread > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         )
                     }
                     if (unread > 0) {

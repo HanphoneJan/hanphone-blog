@@ -215,6 +215,19 @@ internal fun formatTime(iso: String): String {
     return SimpleDateFormat("HH:mm", Locale.getDefault()).format(p)
 }
 
+/** 最后活跃时间文案（对齐 QQ/Telegram）：刚刚 / N分钟前 / N小时前 / N天前 / X月X日 */
+internal fun formatLastSeen(epochMs: Long): String {
+    if (epochMs <= 0) return "离线"
+    val diff = System.currentTimeMillis() - epochMs
+    return when {
+        diff < 60_000 -> "刚刚"
+        diff < 60 * 60_000 -> "${diff / 60_000}分钟前"
+        diff < 24 * 60 * 60_000 -> "${diff / (60 * 60_000)}小时前"
+        diff < 7 * 24 * 60 * 60_000 -> "${diff / (24 * 60 * 60_000)}天前"
+        else -> SimpleDateFormat("M月d日", Locale.CHINESE).format(Date(epochMs))
+    }
+}
+
 /** 聊天消息的 ISO 时间解析（兼容毫秒带时区 / Zulu 两种格式） */
 private fun parseIso(iso: String): Date? {
     if (iso.isBlank()) return null

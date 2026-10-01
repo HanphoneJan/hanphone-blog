@@ -491,6 +491,7 @@ object ChatSocket {
         username = obj.optString("username"),
         nickname = obj.optString("nickname", obj.optString("username")),
         avatar = if (obj.isNull("avatar")) null else obj.optString("avatar"),
-        isOnline = obj.optBoolean("isOnline", false)
+        isOnline = obj.optBoolean("isOnline", false),
+        lastSeenAt = if (obj.has("lastSeenAt") && !obj.isNull("lastSeenAt")) obj.optLong("lastSeenAt") else null
     )
 }

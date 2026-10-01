@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Send, LogOut, User, Search, ChevronLeft,
   Home, MessageCircle, Bot,
@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_CONFIG } from '../config/api';
 import { PublicMessage } from '../types';
+import { buildChatDisplay, ChatSeparator, formatLastSeen } from '../lib/chatMsgDisplay';
 
 const AdminPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
@@ -222,6 +223,30 @@ const AdminPage: React.FC = () => {
     })
     : [];
 
+  // 私信会话展示项：日期/时间分隔 + 同发送者成组（时间只在组末显示，对齐 Android/普通用户端）
+  const privateDisplay = useMemo(() => {
+    const sources = filteredMessages.map((msg, i) => ({
+      key: String(msg.id ?? `p-${i}`),
+      senderId: Number(msg.senderId),
+      fromAi: !!msg.fromAi,
+      timestamp: msg.timestamp,
+    }));
+    const byKey = new Map<string, typeof filteredMessages[number]>(filteredMessages.map((m, i) => [String(m.id ?? `p-${i}`), m]));
+    return { items: buildChatDisplay(sources), byKey };
+  }, [filteredMessages]);
+
+  // 公共聊天室展示项：同上分组规则
+  const publicDisplay = useMemo(() => {
+    const sources = publicMessages.map((msg, i) => ({
+      key: `pub-${msg.id}-${i}`,
+      senderId: msg.user_id ?? 0,
+      fromAi: msg.from_ai,
+      timestamp: msg.timestamp,
+    }));
+    const byKey = new Map<string, PublicMessage>(publicMessages.map((msg, i) => [`pub-${msg.id}-${i}`, msg]));
+    return { items: buildChatDisplay(sources), byKey };
+  }, [publicMessages]);
+
   // 已读回执：管理员当前查看的会话变化时同步到 Context（公共聊天室 = null）
   useEffect(() => {
     setActivePeer(isPublicRoomSelected ? null : (selectedUser?.id ?? null));
@@ -305,6 +330,13 @@ const AdminPage: React.FC = () => {
                       <span className="font-semibold text-xs truncate">{u.nickname}</span>
                     </div>
                     <div className="flex justify-between items-center gap-2">
+                      <span className={`text-2xs ${u.isOnline ? 'text-online' : 'text-text-dim'}`}>
+                        {u.isOnline
+                          ? '在线'
+                          : u.lastSeenAt
+                            ? `最后在线 ${formatLastSeen(u.lastSeenAt)}`
+                            : '离线'}
+                      </span>
                       {unreadCounts[u.id] > 0 && selectedUser?.id !== u.id && (
                         <Badge className="bg-sent text-sent-text h-4 min-w-[18px] px-1 text-[9px] font-bold rounded-full">
                           {unreadCounts[u.id]}
@@ -406,11 +438,21 @@ const AdminPage: React.FC = () => {
             {/* 公共消息列表 */}
             <ScrollArea className="flex-1 px-6 md:px-10 py-6 ink-scrollbar bg-black/[0.02]">
               <div className="max-w-4xl mx-auto space-y-4">
-                {publicMessages.map((msg) => {
+                {publicDisplay.items.map((item) => {
+                  if (item.type === 'date-separator' || item.type === 'time-separator') {
+                    return (
+                      <ChatSeparator
+                        key={item.key}
+                        type={item.type === 'date-separator' ? 'date' : 'time'}
+                        text={item.text}
+                      />
+                    );
+                  }
+                  const msg = publicDisplay.byKey.get(item.msgKey)!;
                   const senderId = msg.user_id ?? 0;
                   const isOwn = msg.user_id === user.id;
                   return (
-                    <div key={msg.id} className="group relative">
+                    <div key={item.key} className="group relative">
                       <MessageBubble
                         message={{
                           id: String(msg.id),
@@ -423,6 +465,8 @@ const AdminPage: React.FC = () => {
                         }}
                         isOwn={isOwn}
                         senderAvatar={msg.avatar || undefined}
+                        showTime={item.isGroupEnd}
+                        isGroupEnd={item.isGroupEnd}
                       />
                       {/* Hover delete button */}
                       <button
@@ -488,7 +532,11 @@ const AdminPage: React.FC = () => {
                 <div className="min-w-0">
                   <h2 className="text-sm font-semibold leading-tight truncate">{selectedUser.nickname}</h2>
                   <p className={`text-3xs leading-snug transition-colors duration-300 ${selectedUser.isOnline ? 'text-online' : 'text-text-dim'}`}>
-                    {selectedUser.isOnline ? '在线' : '离线'}
+                    {selectedUser.isOnline
+                      ? '在线'
+                      : selectedUser.lastSeenAt
+                        ? `最后在线 ${formatLastSeen(selectedUser.lastSeenAt)}`
+                        : '离线'}
                   </p>
                 </div>
               </div>
@@ -515,15 +563,29 @@ const AdminPage: React.FC = () => {
             {/* 消息列表 */}
             <ScrollArea className="flex-1 px-6 md:px-10 py-6 ink-scrollbar bg-black/[0.02]">
               <div className="max-w-4xl mx-auto space-y-4">
-                {filteredMessages.map((msg) => (
-                  <MessageBubble
-                    key={msg.id ?? `${msg.senderId}-${msg.timestamp}`}
-                    message={msg}
-                    isOwn={Number(msg.senderId) === Number(user.id)}
-                    senderAvatar={Number(msg.senderId) === Number(user.id) ? user.avatar : selectedUser.avatar}
-                    showReadReceipt
-                  />
-                ))}
+                {privateDisplay.items.map((item) => {
+                  if (item.type === 'date-separator' || item.type === 'time-separator') {
+                    return (
+                      <ChatSeparator
+                        key={item.key}
+                        type={item.type === 'date-separator' ? 'date' : 'time'}
+                        text={item.text}
+                      />
+                    );
+                  }
+                  const msg = privateDisplay.byKey.get(item.msgKey)!;
+                  return (
+                    <MessageBubble
+                      key={item.key}
+                      message={msg}
+                      isOwn={Number(msg.senderId) === Number(user.id)}
+                      senderAvatar={Number(msg.senderId) === Number(user.id) ? user.avatar : selectedUser.avatar}
+                      showTime={item.isGroupEnd}
+                      isGroupEnd={item.isGroupEnd}
+                      showReadReceipt
+                    />
+                  );
+                })}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>

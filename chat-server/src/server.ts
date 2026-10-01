@@ -334,7 +334,7 @@ app.get('/chat-api/api/users', authenticateUser, requireAdmin, async (req: Reque
 app.get('/chat-api/api/users/all', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const allUsers = await PostgresService.getAllUsers();
-    res.json({ success: true, users: allUsers });
+    res.json({ success: true, users: enrichPresence(allUsers) });
   } catch (error) {
     console.error('获取所有用户列表失败:', error);
     res.status(500).json({ success: false, message: '服务器内部错误' });
@@ -345,7 +345,7 @@ app.get('/chat-api/api/users/all', authenticateUser, requireAdmin, async (req: R
 app.get('/chat-api/api/users/sorted', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const usersWithLatestMessage = await PostgresService.getAllUsersWithLatestMessage();
-    res.json({ success: true, users: usersWithLatestMessage });
+    res.json({ success: true, users: enrichPresence(usersWithLatestMessage) });
   } catch (error) {
     console.error('获取排序用户列表失败:', error);
     res.status(500).json({ success: false, message: '服务器内部错误' });
@@ -428,8 +428,22 @@ app.get('/chat-api/api/user/admin', authenticateUser, async (req: Request, res: 
 // ========== 在线状态追踪 ==========
 // 记录每个已认证 socket 的最后心跳时间
 const heartbeatMap = new Map<string, number>();
-// 记录所有已认证的在线 userId
+// 记录所有已认证的在线 userId（多设备可同时在线；下线宽限期内的用户也保留在集合中）
 const onlineUserIdSet = new Set<number>();
+// 用户最后活跃时间（连接/心跳），用于「最后在线」展示（对齐 Telegram last_seen 语义）
+const lastSeenAt = new Map<number, number>();
+// 下线宽限期定时器：最后一个连接断开后延迟 OFFLINE_GRACE_MS 才真正下线（避免移动端弱网闪断）
+const offlineGraceTimers = new Map<number, NodeJS.Timeout>();
+const OFFLINE_GRACE_MS = 60_000; // 60s：与心跳超时一致，期间重连接取消下线
+
+/** 附带在线状态与最后活跃时间（以 chat-server 内存态为权威，blog 落库仅作投影） */
+function enrichPresence<T extends { id: number }>(users: T[]): (T & { isOnline: boolean; lastSeenAt: number | null })[] {
+  return users.map(u => ({
+    ...u,
+    isOnline: onlineUserIdSet.has(u.id),
+    lastSeenAt: lastSeenAt.get(u.id) ?? null,
+  }));
+}
 
 // 注册公共聊天室事件处理
 registerPublicRoomHandler(io);
@@ -502,6 +516,15 @@ io.on('connection', (socket) => {
       const wasOnline = onlineUserIdSet.has(user.id);
       onlineUserIdSet.add(user.id);
       heartbeatMap.set(socket.id, Date.now());
+      lastSeenAt.set(user.id, Date.now());
+
+      // 若该用户正处于下线宽限期（最后一个连接刚断开后重连），取消延迟下线
+      const pendingOffline = offlineGraceTimers.get(user.id);
+      if (pendingOffline) {
+        clearTimeout(pendingOffline);
+        offlineGraceTimers.delete(user.id);
+        console.log(`[Socket.IO:authenticate] 用户 ${user.username} (ID: ${user.id}) 在下线宽限期内重连，取消下线`);
+      }
 
       // 根据用户类型加入不同房间
       if (user.type === '0') {
@@ -540,6 +563,8 @@ io.on('connection', (socket) => {
   // 客户端心跳
   socket.on('heartbeat', () => {
     heartbeatMap.set(socket.id, Date.now());
+    const user = socket.data.user;
+    if (user) lastSeenAt.set(user.id, Date.now());
   });
 
   // 处理用户消息
@@ -826,16 +851,24 @@ io.on('connection', (socket) => {
       const otherSocketOfSameUser = allSockets.find(
         s => s.id !== socket.id && s.data.user?.id === user.id
       );
-      if (!otherSocketOfSameUser) {
-        onlineUserIdSet.delete(user.id);
+      if (otherSocketOfSameUser) {
+        console.log(`[Socket.IO:disconnect] 用户 ${user.username} (ID: ${user.id}) 有其他活跃连接，保持在线状态`);
+        lastSeenAt.set(user.id, Date.now());
+        return;
       }
 
-      // 仅当用户无其他活跃连接时才标记离线
-      if (!otherSocketOfSameUser) {
+      // 最后一个连接断开：进入下线宽限期（对齐 Telegram/QQ 的软在线，移动端弱网重连不闪断）。
+      // 宽限期内用户若重连（authenticate）会取消定时器，状态保持不变；宽限期结束仍无连接才真正下线。
+      const existingTimer = offlineGraceTimers.get(user.id);
+      if (existingTimer) clearTimeout(existingTimer);
+      offlineGraceTimers.set(user.id, setTimeout(async () => {
+        offlineGraceTimers.delete(user.id);
+        // 宽限期结束：用户仍未重连 → 真正下线
+        onlineUserIdSet.delete(user.id);
         try {
-          // 设置用户离线状态
-          await PostgresService.setUserOnlineStatus(user.id, false);
-          console.log(`[DB] 用户 ${user.username} (ID: ${user.id}) 状态已设置为离线`);
+          PostgresService.setUserOnlineStatus(user.id, false).then(() => {
+            console.log(`[DB] 用户 ${user.username} (ID: ${user.id}) 状态已设置为离线`);
+          }).catch(err => console.error('[DB] 设置离线状态失败:', err));
 
           // 通知管理员用户已离线
           if (user.type === '0') {
@@ -854,11 +887,10 @@ io.on('connection', (socket) => {
         } catch (error) {
           console.error(`[Socket.IO:disconnect] 设置用户离线状态失败:`, error);
         }
+        console.log(`[Socket.IO:disconnect] 用户 ${user.username} (ID: ${user.id}) 下线宽限期结束，已离线`);
+      }, OFFLINE_GRACE_MS));
 
-        console.log(`[Socket.IO:disconnect] 用户 ${user.username} (ID: ${user.id}) 已断开连接`);
-      } else {
-        console.log(`[Socket.IO:disconnect] 用户 ${user.username} (ID: ${user.id}) 有其他活跃连接，保持在线状态`);
-      }
+      console.log(`[Socket.IO:disconnect] 用户 ${user.username} (ID: ${user.id}) 已断开连接，进入 ${OFFLINE_GRACE_MS / 1000}s 下线宽限期`);
     } else {
       console.log(`[Socket.IO:disconnect] 未认证用户 ${socket.id} 已断开连接`);
     }

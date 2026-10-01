@@ -15,6 +15,7 @@ export interface User {
   loginLat: number;
   loginLng: number;
   isOnline: boolean;
+  lastSeenAt?: number | null; // 最后活跃时间（epoch ms），管理员收件箱展示「最后在线」
 }
 
 // 私信消息类型定义

@@ -10,32 +10,11 @@ import { useToast } from '@/components/ui/toast';
 import MessageBubble from '../components/MessageBubble';
 import { authService } from '../utils/authService';
 import { Message } from '../types';
+import { buildChatDisplay, ChatSeparator } from '../lib/chatMsgDisplay';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-// ===== 辅助函数 =====
-
-function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear()
-    && a.getMonth() === b.getMonth()
-    && a.getDate() === b.getDate();
-}
-
-function formatDateSeparator(d: Date): string {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (isSameDay(d, today)) return '今天';
-  if (isSameDay(d, yesterday)) return '昨天';
-  const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-  return `${d.getMonth() + 1}月${d.getDate()}日 ${weekDays[d.getDay()]}`;
-}
-
-function formatTimeSeparator(d: Date): string {
-  return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-}
 
 // ===== 消息展示项类型 =====
 
@@ -43,18 +22,6 @@ type DisplayItem =
   | { key: string; type: 'date-separator'; text: string }
   | { key: string; type: 'time-separator'; text: string }
   | { key: string; type: 'message'; message: Message; isOwn: boolean; isGroupStart: boolean; isGroupEnd: boolean };
-
-// ===== 时间/日期分隔符组件 =====
-
-const ChatSeparator: React.FC<{ type: 'date' | 'time'; text: string }> = ({ type, text }) => (
-  <div className="flex items-center justify-center my-3">
-    {type === 'time' ? (
-      <span className="text-3xs text-text-dim/70 px-2">{text}</span>
-    ) : (
-      <span className="text-2xs text-text-dim/80 font-medium bg-muted/40 px-3 py-0.5 rounded-full">{text}</span>
-    )}
-  </div>
-);
 
 const ChatPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
@@ -210,57 +177,33 @@ const ChatPage: React.FC = () => {
     return user!.avatar;
   };
 
-  // ===== 消息分组计算 =====
+  // ===== 消息分组计算（共享 chatMsgDisplay：跨天日期胶囊 + 间隔>5min 时间分隔 + 同发送者成组） =====
   const displayItems = useMemo<DisplayItem[]>(() => {
-    const items: DisplayItem[] = [];
-    if (!user) return items;
+    if (!user) return [];
 
-    let prevMsg: Message | null = null;
+    const built = buildChatDisplay(messages.map((msg, i) => ({
+      key: String(msg.id ?? `p-${i}`),
+      senderId: Number(msg.senderId),
+      fromAi: !!msg.fromAi,
+      timestamp: msg.timestamp,
+      forceGroupStart: !!(msg.tempId && msg.content === ''), // 流式 AI 临时气泡自成一组
+    })));
+    const byKey = new Map<string, Message>(messages.map((m, i) => [String(m.id ?? `p-${i}`), m]));
 
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i];
-      const isAiStream = !!(msg.tempId && msg.content === '');
-
-      // 分组判断
-      const isNewSender = !prevMsg || Number(msg.senderId) !== Number(prevMsg.senderId);
-      const isDiffAi = !prevMsg || msg.fromAi !== prevMsg.fromAi;
-      const timeGap = prevMsg ? msg.timestamp.getTime() - prevMsg.timestamp.getTime() : Infinity;
-      const isBigTimeGap = timeGap > 5 * 60 * 1000;
-      const isNewDay = prevMsg && !isSameDay(new Date(msg.timestamp), new Date(prevMsg.timestamp));
-      const isGroupStart = !prevMsg || isNewSender || isDiffAi || isBigTimeGap || isAiStream;
-
-      // 日期分隔符
-      if (isNewDay) {
-        items.push({ key: `date-${msg.id}`, type: 'date-separator', text: formatDateSeparator(new Date(msg.timestamp)) });
+    return built.map(item => {
+      if (item.type === 'date-separator' || item.type === 'time-separator') {
+        return { key: item.key, type: item.type as 'date-separator' | 'time-separator', text: item.text };
       }
-      // 时间分隔符（同日但间隔 >5分钟）
-      if (isBigTimeGap && !isNewDay) {
-        items.push({ key: `time-${msg.id}`, type: 'time-separator', text: formatTimeSeparator(new Date(msg.timestamp)) });
-      }
-
-      const isOwn = Number(msg.senderId) === Number(user.id);
-      items.push({
-        key: msg.id,
+      const msg = byKey.get(item.msgKey)!;
+      return {
+        key: item.key,
         type: 'message',
         message: msg,
-        isOwn,
-        isGroupStart,
-        isGroupEnd: false, // 第二遍标记
-      });
-
-      prevMsg = msg;
-    }
-
-    // 第二遍：标记每条消息 run 的最后一条为 isGroupEnd
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type !== 'message') continue;
-      let j = i;
-      while (j + 1 < items.length && items[j + 1].type === 'message') j++;
-      (items[j] as Extract<DisplayItem, { type: 'message' }>).isGroupEnd = true;
-      i = j;
-    }
-
-    return items;
+        isOwn: Number(msg.senderId) === Number(user.id),
+        isGroupStart: item.isGroupStart,
+        isGroupEnd: item.isGroupEnd,
+      };
+    });
   }, [messages, user?.id]);
 
   if (!user) return null;

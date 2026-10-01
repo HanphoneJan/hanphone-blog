@@ -42,7 +42,8 @@ data class ChatUser(
     val username: String = "",
     val nickname: String = "",
     val avatar: String? = null,
-    val isOnline: Boolean = false
+    val isOnline: Boolean = false,
+    val lastSeenAt: Long? = null // 最后活跃时间（epoch ms），离线时展示「最后在线」
 )
 
 /** GET /chat-api/api/users/all 返回结构（管理员） */

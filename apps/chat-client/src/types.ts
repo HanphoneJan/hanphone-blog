@@ -9,6 +9,7 @@ export interface User {
   createTime: string;
   lastLoginTime: string;
   isOnline?: boolean;
+  lastSeenAt?: number; // 最后活跃时间（epoch ms），管理员收件箱展示「最后在线」
 }
 
 // 消息类型定义

@@ -43,6 +43,13 @@
 | `GET /chat-api/api/users/all` | 管理员收件箱用户列表 |
 | `GET /chat-api/api/users/unread` | 管理员收件箱未读数：`{ success, unread: [{ userId, count }] }`，`count` = 该用户发给管理员且未读的消息数 |
 
+## 在线状态
+
+- 连接（`authenticate` 成功）即在线；多设备可同时在线，任一连接存活即在线。
+- 最后一个连接断开后进入 **60s 下线宽限期**（`OFFLINE_GRACE_MS`）：期间重连则状态不变（移动弱网不闪断），
+  宽限期结束仍无连接才真正下线（写 blog `online=false` + 广播离线）。
+- 管理员用户来源接口（`/users/all`、`/users/sorted`）返回的 `isOnline` 以 chat-server 内存态为准，并附 **`lastSeenAt`**（epoch ms，最后活跃时间）——收件箱离线时展示「最后在线 N分钟前」。
+
 ## App 端已知约定（勿破坏）
 
 1. `publicHistory` / 私信 REST 的消息体字段大小写不同：公共房间 snake_case、私信 camelCase（历史遗留，两端均已适配）。
