@@ -1,7 +1,7 @@
 # 云林有风 Android 客户端 — AI 交接文档（HANDOVER）
 
 > 用途：供**新接手 AI** 快速理解项目、规避前人踩过的坑。
-> 位置：`android/`。配套文件：`PLAN.md`（路线图）、`README.md`（构建）、本文件（经验与规矩）。
+> 位置：`android/`。配套文件：`README.md`（构建）、本文件（经验与规矩）。
 > 铁律：**改动前先读 `web/`（网站前端）与 `docs/chat/`（聊天协议，原 hanphone-chat 已并入本仓库）作为接口与交互的"唯一事实来源"，不要凭直觉假设。**
 
 ---
@@ -196,7 +196,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 11. **Coil 缓存管理（设置页数据管理）**：图片缓存不进 ContentStore（它在 App 缓存目录），数据管理单独统计/清除 `LocalImageLoader.current` 的 `diskCache.size/clear() + memoryCache.size/clear()`。坑：`MemoryCache.size` 是 **Int**（与 `?: 0L` 合并会类型漂移成 Number 编译错，需 `.toLong()`）；`DiskCache.clear()` 是 suspend。
 12. **图片占位**：未登录头像/登录注册页/关于徽标统一用 `R.drawable.ic_blog`（拷贝自 web `icon-512x512.png`）——别用文字「云」当占位。
 
-## 8. 路线图（详见 PLAN.md）
+## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
 - ✅ 项目页 + 文库页（WebView 内开 HTML、fetch+loadDataWithBaseURL 渲染）、通用 WebView、文档/项目/文库/聊天(Chat 历史+私信+用户列表) 本地缓存、数据管理（分项清除 + Coil 图片缓存）、账号编辑（邮箱+验证码+管理员免验、密码 md5）、体验打磨（去认证成功 toast、@用户名防抖、随笔秒显、下拉圈圈门控）、版本 v1.0.0、App 图标与 PWA maskable 图标一致（ic_launcher_fg 复刻 WebAPK 52% 比例 + ic_blog 占位）。
