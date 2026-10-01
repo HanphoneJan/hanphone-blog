@@ -3,7 +3,7 @@ import http from 'http';
 import cors from 'cors';
 import { Server as SocketIOServer } from 'socket.io';
 import { AuthService } from './authService.js';
-import { PostgresService, ADMIN_ROOM } from './postgresService.js';
+import { PostgresService, ADMIN_ROOM, initializeDatabase } from './postgresService.js';
 import { registerPublicRoomHandler } from './publicRoomHandler.js';
 import { ServerToClientEvents, ClientToServerEvents } from './types.js';
 import publicRoomRoutes from './publicRoomRoutes.js';
@@ -352,6 +352,17 @@ app.get('/chat-api/api/users/sorted', authenticateUser, requireAdmin, async (req
   }
 });
 
+// 管理员收件箱未读数：每个用户发给管理员且未读的消息数
+app.get('/chat-api/api/users/unread', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const unread = await PostgresService.getUnreadCountsForAdmin();
+    res.json({ success: true, unread });
+  } catch (error) {
+    console.error('获取未读数列表失败:', error);
+    res.status(500).json({ success: false, message: '服务器内部错误' });
+  }
+});
+
 // 获取与管理员的聊天记录（普通用户使用）
 app.get('/chat-api/api/messages/admin', authenticateUser, requireRegularUser, async (req: Request, res: Response) => {
   try {
@@ -487,7 +498,8 @@ io.on('connection', (socket) => {
       // 设置用户在线状态
       await PostgresService.setUserOnlineStatus(user.id, true);
 
-      // 记录到在线追踪集合
+      // 记录到在线追踪集合（多设备可同时在线：同一 userId 可持有多个 socket，均保留在线）
+      const wasOnline = onlineUserIdSet.has(user.id);
       onlineUserIdSet.add(user.id);
       heartbeatMap.set(socket.id, Date.now());
 
@@ -509,8 +521,8 @@ io.on('connection', (socket) => {
         io.emit('adminOnlineStatus', { isOnline: true });
       }
       
-      // 广播用户上线通知
-      if (user.type === '0') {
+      // 广播用户上线通知（仅首次连接广播，多设备同开时不重复打扰管理员）
+      if (user.type === '0' && !wasOnline) {
         io.to(ADMIN_ROOM.toString()).emit('userConnected', user);
         console.log(`[Socket.IO:Event] 广播用户上线通知: ${user.username}`);
       }
@@ -767,6 +779,37 @@ io.on('connection', (socket) => {
       socket.emit('notification', '获取历史消息失败');
     }
   });
+
+  // 已读回执：进入会话即标记「对方发给本人」的消息已读，并广播给对方
+  // 向后兼容：旧客户端不会 emit 本事件；服务端也只在收到本事件后才广播 conversationRead
+  socket.on('markConversationRead', async (peerUserId: number) => {
+    const user = socket.data.user;
+    if (!user) return;
+    if (!Number.isInteger(peerUserId) || peerUserId <= 0) {
+      socket.emit('notification', '无效的用户ID');
+      return;
+    }
+    try {
+      const peer = await PostgresService.getUserById(peerUserId);
+      if (!peer) {
+        socket.emit('notification', '目标用户不存在');
+        return;
+      }
+      const readUpTo = await PostgresService.markMessagesAsRead(user.id, peerUserId);
+      if (readUpTo > 0) {
+        // 通知对方（peer）：你发出的、id <= readUpToMessageId 的消息已被读
+        const peerRoom = peer.type === '1' ? ADMIN_ROOM.toString() : peerUserId.toString();
+        io.to(peerRoom).emit('conversationRead', {
+          peerUserId: user.id,
+          readUpToMessageId: readUpTo,
+        });
+        console.log(`[Socket.IO:markConversationRead] 用户 ${user.id} 已读与 ${peerUserId} 的会话（读到 ${readUpTo}），已通知 ${peerRoom}`);
+      }
+    } catch (error) {
+      console.error('[Socket.IO:markConversationRead] 标记已读失败:', error);
+      socket.emit('notification', '标记已读失败');
+    }
+  });
   
   // 用户断开连接
   socket.on('disconnect', async (reason) => {
@@ -841,10 +884,18 @@ setInterval(async () => {
 setInterval(async () => {
   try {
     const blogOnlineUsers = await PostgresService.getOnlineUsers();
+    const blogOnlineIds = new Set(blogOnlineUsers.map(u => u.id));
     for (const u of blogOnlineUsers) {
       if (!onlineUserIdSet.has(u.id)) {
         console.log(`[StaleCleanup] 用户 ${u.username} (ID: ${u.id}) 在 Blog 中为在线但无活跃连接，修正为离线`);
         await PostgresService.setUserOnlineStatus(u.id, false);
+      }
+    }
+    // 反向兜底：chat 侧有活跃连接但 Blog 在线标记缺失（如认证时 Blog API 瞬时失败），补写在线
+    for (const userId of onlineUserIdSet) {
+      if (!blogOnlineIds.has(userId)) {
+        console.log(`[StaleCleanup] 用户 (ID: ${userId}) 有活跃连接但 Blog 在线标记缺失，补写在线`);
+        await PostgresService.setUserOnlineStatus(userId, true);
       }
     }
   } catch (error) {
@@ -854,12 +905,20 @@ setInterval(async () => {
 
 // 启动服务器
 const PORT = process.env.PORT || 4010;
-server.listen(PORT, () => {
-  console.log(`========================================`);
-  console.log(`[Server] 服务器正在运行，端口: ${PORT}`);
-  console.log(`[Server] Socket.IO 监听路径: ${io.path()}`);
-  console.log(`[Server] 请确保Nginx已正确配置代理到此端口`);
-  console.log(`========================================`);
+// 启动时建连检查（失败不阻塞启动，见 postgresService.initializeDatabase）
+initializeDatabase().then(() => {
+  server.listen(PORT, () => {
+    console.log(`========================================`);
+    console.log(`[Server] 服务器正在运行，端口: ${PORT}`);
+    console.log(`[Server] Socket.IO 监听路径: ${io.path()}`);
+    console.log(`[Server] 请确保Nginx已正确配置代理到此端口`);
+    console.log(`========================================`);
+  });
+}).catch((err) => {
+  console.error('[Server] 数据库初始化异常，仍尝试启动:', err);
+  server.listen(PORT, () => {
+    console.log(`[Server] 服务器正在运行，端口: ${PORT}（数据库初始化异常）`);
+  });
 });
 
 export default app;

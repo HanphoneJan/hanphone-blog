@@ -5,6 +5,7 @@ import com.hanphone.blog.data.api.BlogApi
 import com.hanphone.blog.data.api.FileApi
 import com.hanphone.blog.data.api.UploadAvatarResult
 import com.hanphone.blog.data.chat.ChatMessagesResponse
+import com.hanphone.blog.data.chat.ChatUnreadResponse
 import com.hanphone.blog.data.chat.ChatUsersResponse
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.Blog
@@ -171,6 +172,10 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
     /** 管理员：全部用户列表 */
     suspend fun chatUsers(token: String): ChatUsersResponse =
         withContext(Dispatchers.IO) { api.chatUsers("Bearer $token") }
+
+    /** 管理员：收件箱未读数 */
+    suspend fun chatUnread(token: String): ChatUnreadResponse =
+        withContext(Dispatchers.IO) { api.chatUnread("Bearer $token") }
 
     /** 管理员：与指定用户的历史记录 */
     suspend fun chatMessagesWithUser(token: String, userId: Long): ChatMessagesResponse =

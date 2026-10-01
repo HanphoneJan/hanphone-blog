@@ -94,7 +94,8 @@ ui/
 - 连接后 10 秒内发 `authenticate(blogJWT)`，否则被断开。
 - 公共聊天室事件：`requestPublicHistory`→`publicHistory`；`publicMessage`→`publicMessageBroadcast`；`publicOnlineCount`；AI：`publicAiStreamStart/Chunk/End/Error`（@寒枫 触发）；`messageDeleted`。
 - 私信事件：`userMessage`（普通用户发给管理员）、`adminMessage(userId, content)`（管理员回）、`message`（收到私信）、`userListUpdated`（管理员在线用户）。
-- 私信 REST（**Bearer**）：普通用户 `GET /chat-api/api/messages/admin`；管理员 `GET /chat-api/api/users/all` + `GET /chat-api/api/messages/{userId}`。
+- **已读回执**：进入会话即 emit `markConversationRead(peerUserId)`（普通用户=1000，管理员=对方 userId）；收到 `conversationRead { peerUserId, readUpToMessageId }` 时把自己发给对方、`id<=readUpToMessageId` 的消息标已读（`ChatSocket` 单例内存缓存 + 修订号 `privateCacheRevision` 驱动 UI 刷新）。管理员收件箱未读数 = REST `GET /chat-api/api/users/unread`（60s 节流）+ socket 新消息实时增量（未在查看该会话时 +1、查看时即时标记已读）。协议见 `docs/chat/android-protocol.md`。
+- 私信 REST（**Bearer**）：普通用户 `GET /chat-api/api/messages/admin`；管理员 `GET /chat-api/api/users/all` + `GET /chat-api/api/messages/{userId}` + `GET /chat-api/api/users/unread`。
 - **管理员 vs 普通用户**：`/messages/admin` 对管理员返回 403；`/users/all` 对普通用户返回 403 —— 所有这类调用必须 try/catch，否则 Retrofit HttpException 会崩掉整个 App。
 
 ### 3.6 留言板（对齐网页版：不填昵称、支持回复）

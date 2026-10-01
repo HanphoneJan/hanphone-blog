@@ -64,6 +64,23 @@ object ChatSocket {
     private val privateFetchedAt = ConcurrentHashMap<String, Long>()
     private const val PRIVATE_REFRESH_MS = 30_000L
 
+    /**
+     * 私信缓存修订号：conversationRead 已读回执更新缓存时自增一次。
+     * UI 收集后在 remember 依赖里带上，收到"对方已读"回执后能即时刷新已读标记。
+     */
+    private val _privateCacheRevision = MutableStateFlow(0L)
+    val privateCacheRevision: StateFlow<Long> = _privateCacheRevision
+
+    /** 管理员收件箱未读数（userId → 未读条数），REST /users/unread + socket 实时增量维护 */
+    private val _adminUnread = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val adminUnread: StateFlow<Map<Long, Int>> = _adminUnread
+    private val unreadFetchedAt = AtomicLong(0L)
+    private const val UNREAD_REFRESH_MS = 60_000L
+
+    /** 当前正在查看的会话对方 ID（null = 不在会话；决定新消息计入未读还是即时标记已读） */
+    @Volatile
+    var activeConversationUserId: Long? = null
+
     /** 进入会话时取内存缓存（无则 null，由页面兜底读磁盘缓存） */
     fun restorePrivateHistory(key: String): List<PrivateChatMessage>? = privateHistoryCache[key]
 
@@ -102,6 +119,20 @@ object ChatSocket {
     fun needsUsersRefresh(): Boolean {
         val now = System.currentTimeMillis()
         return _adminUsers.value.isEmpty() || now - usersFetchedAt.get() > USERS_REFRESH_MS
+    }
+
+    /** 管理员收件箱未读数：REST 结果合并进 adminUnread；fromRemote=true 记录节流时间 */
+    fun cacheAdminUnread(list: List<ChatUnreadItem>, fromRemote: Boolean = false) {
+        if (fromRemote) unreadFetchedAt.set(System.currentTimeMillis())
+        // REST 以 DB 为权威（未读消息 is_read=false 已在库），直接替换；保留 0 也清除旧计数
+        val merged = LinkedHashMap<Long, Int>()
+        list.forEach { item -> if (item.count > 0) merged[item.userId] = item.count }
+        _adminUnread.value = merged
+    }
+
+    fun needsUnreadRefresh(): Boolean {
+        val now = System.currentTimeMillis()
+        return _adminUnread.value.isEmpty() || now - unreadFetchedAt.get() > UNREAD_REFRESH_MS
     }
 
     // AI 流式临时状态
@@ -273,12 +304,32 @@ object ChatSocket {
             if (m.id != 0L && _privateMessages.value.none { it.id == m.id }) {
                 _privateMessages.value = _privateMessages.value + m
             }
-            // App 原生能力：离开消息页时收到私信 → 系统通知（自己的回显/AI 消息不通知）
+            // 已读回执/未读数：非自己发出的消息
             val myId = TokenStore.userId.value
             val isMine = m.senderId != 0L && m.senderId == myId
+            if (!isMine && m.id != 0L) {
+                val peerId = m.senderId
+                if (activeConversationUserId == peerId) {
+                    // 正在查看该会话 → 立即标记已读（对方收到回执），不累计未读
+                    runCatching { s.emit("markConversationRead", peerId) }
+                    _adminUnread.value = _adminUnread.value - peerId
+                } else {
+                    val cur = _adminUnread.value[peerId] ?: 0
+                    _adminUnread.value = _adminUnread.value + (peerId to (cur + 1))
+                }
+            }
+            // App 原生能力：离开消息页时收到私信 → 系统通知（自己的回显/AI 消息不通知）
             if (!chatUiVisible && !isMine && !m.fromAi && m.content.isNotBlank()) {
                 ChatNotifier.notifyPrivate("收到新私信", m.content)
             }
+        }
+        // 已读回执：对方读了你发出的消息 → 把自己发出的旧消息标记已读
+        s.on("conversationRead") { args ->
+            val obj = args.firstOrNull() as? JSONObject ?: return@on
+            val peerUserId = obj.optLong("peerUserId")
+            val readUpTo = obj.optLong("readUpToMessageId")
+            if (peerUserId <= 0) return@on
+            markOwnSentRead(peerUserId, readUpTo = readUpTo)
         }
         s.on("aiStreamEnd") { _ -> /* 私信 AI 流式结束：由 message 事件补全，无需处理 */ }
         // ===== 管理员：在线用户列表 =====
@@ -301,11 +352,15 @@ object ChatSocket {
         _lastPrivate.value = null
         _userList.value = emptyList()
         _adminUsers.value = emptyList()
+        _adminUnread.value = emptyMap()
         _onlineCount.value = 0
         _notice.value = null
         privateHistoryCache.clear()
         privateFetchedAt.clear()
         usersFetchedAt.set(0L)
+        unreadFetchedAt.set(0L)
+        _privateCacheRevision.value++
+        activeConversationUserId = null
     }
 
     fun send(content: String) {
@@ -326,6 +381,46 @@ object ChatSocket {
         val s = socket ?: return
         if (_state.value != ChatConnectionState.CONNECTED) return
         s.emit("adminMessage", userId, content.trim())
+    }
+
+    /**
+     * 进入会话标记已读：通知服务端把「对方发给本人」的消息置已读并回执给对方；
+     * 本地同步清零该会话未读、并把本人已发出的历史置已读（断线时由 REST 历史 isRead 兜底）。
+     */
+    fun markConversationRead(peerUserId: Long) {
+        if (peerUserId <= 0) return
+        val s = socket
+        if (s != null && _state.value == ChatConnectionState.CONNECTED) {
+            runCatching { s.emit("markConversationRead", peerUserId) }
+        }
+        _adminUnread.value = _adminUnread.value - peerUserId
+        markOwnSentRead(peerUserId, readUpTo = Long.MAX_VALUE)
+    }
+
+    /**
+     * 把发给 peerUserId 且 id <= readUpTo 的本人消息标记已读。
+     * 更新私信缓存 + admin 会话 StateFlow；bump 修订号让会话页即时刷新。
+     */
+    private fun markOwnSentRead(peerUserId: Long, readUpTo: Long) {
+        if (readUpTo <= 0) return
+        val myId = TokenStore.userId.value ?: return
+        val key = if (peerUserId == 1000L) "admin" else "u$peerUserId"
+        val cache = privateHistoryCache[key] ?: return
+        var changed = false
+        val updated = cache.map {
+            if (!it.isRead && it.senderId == myId && it.receiverId == peerUserId && it.id in 1..readUpTo) {
+                changed = true
+                it.copy(isRead = true)
+            } else it
+        }
+        if (changed) {
+            privateHistoryCache[key] = updated
+            _privateCacheRevision.value++
+            if (key == "admin") {
+                _privateMessages.value = updated
+                _lastPrivate.value = updated.lastOrNull() ?: _lastPrivate.value
+            }
+        }
     }
 
     /** 手动重连：复用现有 socket（保留已注册事件与历史消息），不销毁实例 */
@@ -354,11 +449,14 @@ object ChatSocket {
         _lastPrivate.value = null
         _userList.value = emptyList()
         _adminUsers.value = emptyList()
+        _adminUnread.value = emptyMap()
         _onlineCount.value = 0
         _state.value = ChatConnectionState.DISCONNECTED
         privateHistoryCache.clear()
         privateFetchedAt.clear()
         usersFetchedAt.set(0L)
+        unreadFetchedAt.set(0L)
+        activeConversationUserId = null
     }
 
     private fun removeAiTemp() {

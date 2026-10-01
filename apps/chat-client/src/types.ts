@@ -50,6 +50,8 @@ export interface ServerToClientEvents {
   aiStreamChunk: (data: { tempId: string, content: string }) => void;
   aiStreamEnd: (data: { tempId: string, content: string }) => void;
   aiMessageComplete: (message: Message) => void;
+  // 已读回执
+  conversationRead: (data: { peerUserId: number; readUpToMessageId: number }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -59,6 +61,7 @@ export interface ClientToServerEvents {
   adminMessage: (userId: number, message: string, tempId?: string) => void;
   aiAdminReply: (userId: number) => void;
   heartbeat: () => void;
+  markConversationRead: (peerUserId: number) => void; // 进入会话标记已读
   disconnect: () => void;
 }
 
@@ -80,6 +83,7 @@ export interface ChatContextType {
   messages: Message[];
   onlineUsers: User[];
   allUsers: User[]; // 所有用户列表（管理员使用）
+  unreadCounts: Record<number, number>; // 管理员收件箱未读数：userId → 未读消息数（实时）
   selectedUser: User | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -91,6 +95,9 @@ export interface ChatContextType {
   loadHistoryMessages: () => void; // 加载历史消息
   setUserFromLogin: (user: User, token: string) => void; // 直接设置用户信息
   loadAllUsersSorted: () => void; // 加载按最新消息时间排序的用户列表（管理员使用）
+  markConversationRead: (peerUserId: number) => void; // 进入会话标记已读
+  setActivePeer: (userId: number | null) => void; // 管理员当前正在查看的会话用户（决定新消息是否计入未读）
+  setChatPageActive: (active: boolean) => void; // 普通用户是否正在聊天页查看会话
 }
 
 // 公共聊天上下文类型

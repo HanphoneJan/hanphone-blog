@@ -67,9 +67,16 @@ const ChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { user, logout, sendMessage, messages, loadHistoryMessages, token, socket } = useChat();
+  const { user, logout, sendMessage, messages, loadHistoryMessages, token, socket, markConversationRead, setChatPageActive } = useChat();
   const { theme, toggleTheme } = useTheme();
   const recognitionRef = useRef<any>(null);
+
+  // 已读回执：进入聊天页即标记与会话已读；离开页面时注销 active 标记
+  useEffect(() => {
+    setChatPageActive(true);
+    if (user) markConversationRead(1000);
+    return () => setChatPageActive(false);
+  }, [user, markConversationRead, setChatPageActive]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -343,6 +350,7 @@ const ChatPage: React.FC = () => {
                     showTime={item.isGroupEnd}
                     isGroupEnd={item.isGroupEnd}
                     isLoading={item.message.fromAi && item.message.tempId === loadingAiMessageId}
+                    showReadReceipt
                   />
                 );
               })}

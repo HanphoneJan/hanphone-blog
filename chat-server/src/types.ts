@@ -74,6 +74,8 @@ export interface ServerToClientEvents {
   publicOnlineCount: (data: { count: number }) => void;
   messageDeleted: (data: { messageId: number }) => void;
   adminOnlineStatus: (data: { isOnline: boolean }) => void;
+  // 已读回执：对方已读你发出的、id <= readUpToMessageId 的消息
+  conversationRead: (data: { peerUserId: number; readUpToMessageId: number }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -84,6 +86,7 @@ export interface ClientToServerEvents {
   aiAdminReply: (userId: number) => void; // 管理员请求AI代回复
   heartbeat: () => void; // 客户端心跳
   requestUserMessages: (userId: number) => void; // 管理员请求用户历史消息
+  markConversationRead: (peerUserId: number) => void; // 进入会话标记已读
   // 公共聊天室事件
   publicMessage: (content: string, tempId?: string) => void;
   requestPublicHistory: (data?: { limit?: number }) => void;

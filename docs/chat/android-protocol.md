@@ -26,14 +26,22 @@
 ### 私信
 - 普通用户发：`userMessage`（content）→ 服务端向 `ADMIN_ROOM` 与本人 emit `message`
 - 管理员发：`adminMessage`(userId, content)
-- 接收：`message`（PrivateMessage，camelCase：`senderId`/`receiverId`/`fromAi`...）
+- 接收：`message`（PrivateMessage，camelCase：`senderId`/`receiverId`/`fromAi`/`isRead`...）
+
+### 已读回执
+- 客户端「进入会话即标记已读」：emit `markConversationRead(peerUserId)`（`peerUserId` = 对方用户 ID。
+  普通用户与管理员会话传 `1000`；管理员与某用户会话传该用户 ID）
+- 服务端处理：把「对方发给本人」的消息在 DB 置 `is_read = true`，并向**对方**的房间广播：
+  - `conversationRead` `{ peerUserId, readUpToMessageId }` —— 对方据此把自己发出的、`id <= readUpToMessageId`
+    的消息标记为已读（断线/延迟补拉历史时由 REST 的 `isRead` 兜底）
 
 ### REST（Bearer 鉴权）
 | 接口 | 说明 |
 |------|------|
-| `GET /chat-api/api/messages/admin` | 普通用户取与管理员的历史（`requireRegularUser`，管理员调用返回 403）；支持 `?limit=`（1~500，默认 200，返回最近 N 条） |
-| `GET /chat-api/api/messages/{userId}` | 管理员取与指定用户的历史（`requireAdmin`）；支持 `?limit=` 同上 |
+| `GET /chat-api/api/messages/admin` | 普通用户取与管理员的历史（`requireRegularUser`，管理员调用返回 403）；支持 `?limit=`（1~500，默认 200，返回最近 N 条）。消息 `isRead` 为 DB 真实已读状态 |
+| `GET /chat-api/api/messages/{userId}` | 管理员取与指定用户的历史（`requireAdmin`）；支持 `?limit=` 同上。`isRead` 同上 |
 | `GET /chat-api/api/users/all` | 管理员收件箱用户列表 |
+| `GET /chat-api/api/users/unread` | 管理员收件箱未读数：`{ success, unread: [{ userId, count }] }`，`count` = 该用户发给管理员且未读的消息数 |
 
 ## App 端已知约定（勿破坏）
 
@@ -41,8 +49,11 @@
 2. `authenticateUser` 中间件会对**每个请求**查博客用户（现已加 60s 缓存）；若博客内部 API 长时间不可用，聊天鉴权会随之失败。
 3. 服务端断连（心跳超时/网络切换）对 App 是常规事件：App 会自动重连并重拉历史，服务端无需特殊处理；但**不要**在断连时下发需登录态才能处理的紧急逻辑。
 
-## 数据库（2026-10-01 起）
+## 数据库
 
-- PostgreSQL 已从 139.199.212.103（已停用）迁移到 **blog 服务器本机**（`DB_HOST=127.0.0.1`，库/角色同名 `chat_db`）。
+- PostgreSQL 位于 **blog 服务器本机**（`DB_HOST=127.0.0.1`，库/角色同名 `chat_db`）。
+- **schema 唯一事实来源 = 仓库根 `init.sql`**：改表结构必须同步更新它；新库执行 `psql -U chat_db -d chat_db -f init.sql`（幂等）。
+- 消息表 `messages`：`conversation_id` = `conv_{sender}_{receiver}`，`role` user/assistant 决定方向；
+  **`is_read`（boolean NOT NULL DEFAULT false）** 表示接收方已读，供已读回执/收件箱未读使用。
 - `postgresService` 的关键读查询走 `queryWithRetry`（连接类错误自动重试最多 3 次），池开启 `keepAlive`。
 - 若再出现 `Connection terminated unexpectedly` / `connection timeout` 刷屏，先确认 `DB_HOST` 是否被改回外部地址。

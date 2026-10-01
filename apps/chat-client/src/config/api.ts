@@ -28,6 +28,7 @@ export const API_ENDPOINTS = {
   ADMIN_USER_INFO: `${API_BASE}/api/user/admin`,
   MESSAGES_USER_BASE: `${API_BASE}/api/messages`, // 用于拼接 ID 的基础路径
   PUBLIC_HISTORY: `${API_BASE}/api/public/history`,
+  USERS_UNREAD: `${API_BASE}/api/users/unread`, // 管理员收件箱未读数
 };
 
 // 获取带有ID的端点

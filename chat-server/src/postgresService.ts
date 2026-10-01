@@ -55,16 +55,13 @@ async function queryWithRetry(sql: string, params: unknown[]): Promise<pg.QueryR
   throw lastError;
 }
 
-// 初始化数据库
+// 初始化数据库（启动时建连检查；schema 结构以仓库根 init.sql 为准）
 export const initializeDatabase = async () => {
   try {
-    const client = await pool.connect();
+    await pool.query('SELECT 1');
     console.log('已连接到消息数据库 (chat_db)');
-    client.release();
-    console.log('数据库初始化完成');
   } catch (error) {
-    console.error('数据库初始化失败:', error);
-    process.exit(1);
+    console.error('数据库初始化失败（服务继续启动，后续查询将重试）:', error);
   }
 };
 
@@ -202,7 +199,7 @@ export class PostgresService {
           receiverId: isAssistant ? convSender : convReceiver,
           content: row.content,
           timestamp: row.timestamp,
-          isRead: false,
+          isRead: row.is_read === true,
           toAi: row.role === 'user' && convReceiver === 1000,
           fromAi: isAssistant,
         };
@@ -244,7 +241,7 @@ export class PostgresService {
           receiverId: isAssistant ? sender : receiver,
           content: row.content,
           timestamp: row.timestamp,
-          isRead: false,
+          isRead: row.is_read === true,
           toAi: row.role === 'user',
           fromAi: isAssistant,
         };
@@ -286,7 +283,7 @@ export class PostgresService {
           receiverId: isAssistant ? sender : receiver,
           content: row.content,
           timestamp: row.timestamp,
-          isRead: false,
+          isRead: row.is_read === true,
           toAi: row.role === 'user',
           fromAi: isAssistant,
         };
@@ -297,8 +294,75 @@ export class PostgresService {
     }
   }
 
-  static async markMessagesAsRead(userId1: number, userId2: number): Promise<void> {
-    console.log(`标记消息已读：用户 ${userId1} 和 ${userId2}`);
+  /**
+   * 把「peerId 发给 readerId」的消息标记为已读，返回本次已读的最大消息 id（readUpToMessageId）。
+   *
+   * 方向判定（chat_db.messages 无 sender/receiver 列，方向由 conversation_id + role 决定）：
+   * - `conv_{peer}_{reader}` + role='user'        → 发送方=peer，接收方=reader
+   * - `conv_{reader}_{peer}` + role='assistant'   → 发送方=peer，接收方=reader
+   * 其余组合（reader 发出的消息）不动。
+   */
+  static async markMessagesAsRead(readerId: number, peerId: number): Promise<number> {
+    try {
+      const convPeerReader = `conv_${peerId}_${readerId}`;
+      const convReaderPeer = `conv_${readerId}_${peerId}`;
+      const result = await queryWithRetry(`
+        WITH marked AS (
+          UPDATE messages SET is_read = TRUE
+          WHERE id IN (
+            SELECT id FROM messages
+            WHERE NOT is_read AND (
+              (conversation_id = $1 AND role = 'user')
+              OR (conversation_id = $2 AND role = 'assistant')
+            )
+          )
+          RETURNING id
+        )
+        SELECT COALESCE(MAX(id), 0)::int AS read_up_to FROM marked
+      `, [convPeerReader, convReaderPeer]);
+
+      const readUpTo = result.rows[0]?.read_up_to ?? 0;
+      if (readUpTo > 0) {
+        console.log(`[DB] 用户 ${readerId} 已读与 ${peerId} 的会话，读到消息 ${readUpTo}`);
+      }
+      return readUpTo;
+    } catch (error) {
+      console.error('标记消息已读失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 管理员收件箱未读数：每个普通用户发给管理员且未读的消息数。
+   * 返回 [{ userId, count }]，仅包含有未读消息的用户。
+   */
+  static async getUnreadCountsForAdmin(): Promise<Array<{ userId: number; count: number }>> {
+    try {
+      const adminStr = String(ADMIN_ROOM);
+      const result = await queryWithRetry(`
+        SELECT user_id, count(*)::int AS count FROM (
+          SELECT
+            CASE
+              WHEN role = 'user'      THEN NULLIF(substring(conversation_id FROM ('conv_([0-9]+)_' || $1 || '$')), '')::int
+              WHEN role = 'assistant' THEN NULLIF(substring(conversation_id FROM ('conv_' || $1 || '_([0-9]+)$')), '')::int
+            END AS user_id
+          FROM messages
+          WHERE NOT is_read
+            AND (
+              (role = 'user'      AND conversation_id ~ ('^conv_[0-9]+_' || $1 || '$'))
+              OR (role = 'assistant' AND conversation_id ~ ('^conv_' || $1 || '_[0-9]+$'))
+            )
+        ) t
+        WHERE user_id IS NOT NULL
+        GROUP BY user_id
+        ORDER BY user_id
+      `, [adminStr]);
+
+      return result.rows.map(row => ({ userId: row.user_id, count: row.count }));
+    } catch (error) {
+      console.error('获取未读数失败:', error);
+      throw error;
+    }
   }
 
   // ========== 公共聊天室消息方法 ==========

@@ -63,6 +63,19 @@ export const authService = {
     }
   },
 
+  // 管理员收件箱未读数（管理员专用）
+  async getUnreadCounts(token: string) {
+    try {
+      const response = await axios.get(API_ENDPOINTS.USERS_UNREAD, {
+        headers: getAuthHeaders(token),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('获取未读数列表失败:', error);
+      return { success: false, unread: [] };
+    }
+  },
+
   // 获取与管理员的聊天记录（普通用户使用）
   async getMessagesWithAdmin(token: string) {
     try {

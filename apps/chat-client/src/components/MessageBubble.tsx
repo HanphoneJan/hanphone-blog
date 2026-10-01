@@ -11,6 +11,7 @@ interface MessageBubbleProps {
   showTime?: boolean;
   isGroupEnd?: boolean;
   isLoading?: boolean;
+  showReadReceipt?: boolean; // 私聊场景展示"已读"回执
 }
 
 const formatTime = (date: Date) => {
@@ -24,6 +25,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   showTime = true,
   isGroupEnd = true,
   isLoading = false,
+  showReadReceipt = false,
 }) => {
   const isAiMessage = message.fromAi || false;
 
@@ -74,9 +76,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             )}
           </div>
 
-          {/* 时间 — 仅组末条显示 */}
+          {/* 时间 — 仅组末条显示；私聊时自己的已读消息带"已读"回执 */}
           {showTime && (
-            <div className="mt-1 px-1">
+            <div className="mt-1 px-1 flex items-center gap-1.5">
+              {showReadReceipt && isOwn && message.isRead && (
+                <span className="text-3xs text-sent font-medium">已读</span>
+              )}
               <span className="text-3xs text-text-dim">{formatTime(new Date(message.timestamp))}</span>
             </div>
           )}

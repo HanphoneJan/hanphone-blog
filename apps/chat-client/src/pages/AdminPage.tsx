@@ -37,7 +37,8 @@ const AdminPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     user, logout, sendAdminMessage, aiAdminReply, messages, allUsers,
-    selectedUser, selectUser, selectUserById, socket
+    selectedUser, selectUser, selectUserById, socket,
+    unreadCounts, setActivePeer
   } = useChat();
   const { theme, toggleTheme } = useTheme();
 
@@ -221,10 +222,10 @@ const AdminPage: React.FC = () => {
     })
     : [];
 
-  const hasUnreadMessages = (userId: number) => {
-    const userMessages = messages.filter(msg => msg.senderId === userId && !msg.isRead);
-    return userMessages.length > 0 && (!selectedUser || selectedUser?.id !== userId);
-  };
+  // 已读回执：管理员当前查看的会话变化时同步到 Context（公共聊天室 = null）
+  useEffect(() => {
+    setActivePeer(isPublicRoomSelected ? null : (selectedUser?.id ?? null));
+  }, [selectedUser?.id, isPublicRoomSelected, setActivePeer]);
 
   const filteredUsers = allUsers.filter(u => {
     const nickname = u.nickname || '';
@@ -304,9 +305,9 @@ const AdminPage: React.FC = () => {
                       <span className="font-semibold text-xs truncate">{u.nickname}</span>
                     </div>
                     <div className="flex justify-between items-center gap-2">
-                      {hasUnreadMessages(u.id) && (
+                      {unreadCounts[u.id] > 0 && selectedUser?.id !== u.id && (
                         <Badge className="bg-sent text-sent-text h-4 min-w-[18px] px-1 text-[9px] font-bold rounded-full">
-                          {messages.filter(m => m.senderId === u.id && !m.isRead).length}
+                          {unreadCounts[u.id]}
                         </Badge>
                       )}
                     </div>
@@ -520,6 +521,7 @@ const AdminPage: React.FC = () => {
                     message={msg}
                     isOwn={Number(msg.senderId) === Number(user.id)}
                     senderAvatar={Number(msg.senderId) === Number(user.id) ? user.avatar : selectedUser.avatar}
+                    showReadReceipt
                   />
                 ))}
                 <div ref={messagesEndRef} />

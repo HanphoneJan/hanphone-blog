@@ -16,7 +16,13 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]); // 所有用户列表（管理员使用）
+  const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({}); // 管理员收件箱未读数
   const loadMessagesSeqRef = useRef<number>(0); // 用于防止消息加载竞态
+  // 已读回执：管理员当前正查看的会话用户 / 普通用户是否在聊天页
+  const activePeerIdRef = useRef<number | null>(null);
+  const chatPageActiveRef = useRef<boolean>(false);
+  // 消息去重 + 未读去重：React StrictMode 双调 setState updater 时保证每条消息只计一次
+  const handledMessageIdsRef = useRef<Set<string>>(new Set());
 
   // 初始化，从localStorage获取用户信息
   useEffect(() => {
@@ -81,9 +87,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         newSocket.emit('authenticate', token);
         startHeartbeat();
 
-        // 如果是管理员，加载按最新消息时间排序的用户列表
+        // 如果是管理员，加载按最新消息时间排序的用户列表 + 未读数
         if (user.type === '1') {
           loadAllUsersSorted();
+          loadUnreadCounts();
         }
       });
 
@@ -104,6 +111,28 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...message,
           timestamp: new Date(message.timestamp)
         };
+
+        // 已读回执/未读数：仅对首次到达的新消息计一次（StrictMode 双调 updater 也不会重复计数）
+        const idKey = String(processedMessage.id);
+        if (!handledMessageIdsRef.current.has(idKey)) {
+          handledMessageIdsRef.current.add(idKey);
+          if (user.type === '1') {
+            const senderId = Number(processedMessage.senderId);
+            if (senderId !== 1000 && senderId !== user.id) {
+              if (activePeerIdRef.current === senderId) {
+                // 正在查看该用户会话 → 立即标记已读并清零未读（对方收到回执）
+                newSocket.emit('markConversationRead', senderId);
+                setUnreadCounts(prev => ({ ...prev, [senderId]: 0 }));
+              } else {
+                // 未在查看 → 未读 +1
+                setUnreadCounts(prev => ({ ...prev, [senderId]: (prev[senderId] || 0) + 1 }));
+              }
+            }
+          } else if (user.type === '0' && chatPageActiveRef.current && Number(processedMessage.senderId) === 1000) {
+            // 普通用户在聊天页查看时，管理员/AI 发来的消息立即标记已读
+            newSocket.emit('markConversationRead', 1000);
+          }
+        }
 
         // 检查消息是否已存在
         setMessages(prevMessages => {
@@ -139,6 +168,21 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
           return prevMessages;
         });
+      });
+
+      // 已读回执：对方读了你发出的消息 → 把自己发出的旧消息标记已读
+      newSocket.on('conversationRead', (data: { peerUserId: number; readUpToMessageId: number }) => {
+        setMessages(prevMessages =>
+          prevMessages.map(msg => {
+            const isMineToPeer =
+              Number(msg.senderId) === Number(user.id) &&
+              Number(msg.receiverId) === Number(data.peerUserId);
+            if (isMineToPeer && Number(msg.id) <= Number(data.readUpToMessageId)) {
+              return { ...msg, isRead: true };
+            }
+            return msg;
+          })
+        );
       });
 
       // 监听AI流式消息开始
@@ -248,6 +292,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         newSocket.off('connect_error');
         newSocket.off('disconnect');
         newSocket.off('message');
+        newSocket.off('conversationRead');
         newSocket.off('aiStreamStart');
         newSocket.off('aiStreamChunk');
         newSocket.off('aiStreamEnd');
@@ -300,7 +345,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setMessages([]);
     setOnlineUsers([]);
     setAllUsers([]);
+    setUnreadCounts({});
     setSelectedUser(null);
+    activePeerIdRef.current = null;
+    chatPageActiveRef.current = false;
+    handledMessageIdsRef.current.clear();
     localStorage.removeItem('token');
     localStorage.removeItem('userInfo');
   };
@@ -353,6 +402,42 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('加载排序用户列表时出错:', error);
     }
+  };
+
+  // 加载管理员收件箱未读数（管理员使用）
+  const loadUnreadCounts = async () => {
+    if (!user || !token || user.type !== '1') return;
+
+    try {
+      const response = await authService.getUnreadCounts(token);
+      if (response.success) {
+        const map: Record<number, number> = {};
+        (response.unread || []).forEach((item: { userId: number; count: number }) => {
+          map[Number(item.userId)] = Number(item.count) || 0;
+        });
+        setUnreadCounts(map);
+      }
+    } catch (error) {
+      console.error('加载未读数列表时出错:', error);
+    }
+  };
+
+  // 进入会话标记已读：本地清零未读 + 通知服务端
+  const markConversationRead = (peerUserId: number) => {
+    if (socket && socket.connected) {
+      socket.emit('markConversationRead', peerUserId);
+    }
+    setUnreadCounts(prev => ({ ...prev, [peerUserId]: 0 }));
+  };
+
+  // 管理员当前正在查看的会话（公共聊天室/未选用户传 null）
+  const setActivePeer = (userId: number | null) => {
+    activePeerIdRef.current = userId;
+  };
+
+  // 普通用户是否正在聊天页查看会话
+  const setChatPageActive = (active: boolean) => {
+    chatPageActiveRef.current = active;
   };
 
   // 发送消息（用户发送给管理员或AI）
@@ -434,6 +519,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const selectUser = async (selected: User) => {
     // 先更新选中的用户
     setSelectedUser(selected);
+    // 标记该会话已读（服务端写库 + 未读清零）
+    markConversationRead(selected.id);
     // 然后加载与该用户的聊天记录
     await loadUserMessages(selected.id);
   };
@@ -500,6 +587,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     messages,
     onlineUsers,
     allUsers,
+    unreadCounts,
     selectedUser,
     login,
     logout,
@@ -510,7 +598,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     selectUserById,
     loadHistoryMessages,
     setUserFromLogin,
-    loadAllUsersSorted
+    loadAllUsersSorted,
+    markConversationRead,
+    setActivePeer,
+    setChatPageActive
   };
 
   return (

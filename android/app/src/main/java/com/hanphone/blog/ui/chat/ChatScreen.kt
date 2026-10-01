@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -64,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.chat.ChatConnectionState
@@ -75,7 +75,6 @@ import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.RowListSkeleton
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
-import com.hanphone.blog.util.resolveImageUrl
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -179,10 +178,6 @@ private fun PublicRoomContent(onLogin: () -> Unit) {
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.scrollToItem(messages.size - 1)
-    }
-
     // 冷启动秒显：连接建立前先展示本地缓存历史（socket 数据到达后自然覆盖，不重复）
     LaunchedEffect(Unit) {
         if (ChatSocket.messages.value.isEmpty()) {
@@ -214,14 +209,46 @@ private fun PublicRoomContent(onLogin: () -> Unit) {
                             Text("还没有消息，来说第一句吧～", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
                         }
                     } else {
+                        val items = remember(messages, myUserId) {
+                            buildChatItems(messages.map { msg ->
+                                ChatMsgLike(
+                                    key = msg.tempId ?: "id_${msg.id}",
+                                    content = msg.content,
+                                    senderId = msg.userId ?: 0,
+                                    fromAi = msg.fromAi,
+                                    nickname = msg.nickname,
+                                    avatar = msg.avatar,
+                                    timestamp = msg.timestamp,
+                                    mine = msg.userId != null && msg.userId == myUserId,
+                                    showRead = false,
+                                    forceGroupStart = msg.tempId != null // 流式 AI 气泡自成一组
+                                )
+                            })
+                        }
+                        LaunchedEffect(items.size) {
+                            if (items.isNotEmpty()) listState.scrollToItem(items.size - 1)
+                        }
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                         ) {
-                            items(messages, key = { it.tempId ?: "id_${it.id}" }) { msg ->
-                                MessageBubble(msg.content, mine = msg.userId != null && msg.userId == myUserId, fromAi = msg.fromAi, nickname = msg.nickname, avatar = msg.avatar, timestamp = msg.timestamp, myAvatar = myAvatar)
+                            items(items, key = { it.key }) { item ->
+                                when (item) {
+                                    is ChatItem.DateDivider, is ChatItem.TimeDivider -> ChatDivider(item)
+                                    is ChatItem.Msg -> MessageBubble(
+                                        content = item.content,
+                                        mine = item.mine,
+                                        fromAi = item.fromAi,
+                                        nickname = item.nickname,
+                                        avatar = item.avatar,
+                                        timestamp = item.timestamp,
+                                        myAvatar = myAvatar,
+                                        groupStart = item.groupStart,
+                                        groupEnd = item.groupEnd,
+                                        modifier = Modifier.padding(top = 1.dp, bottom = if (item.groupEnd) 12.dp else 3.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -249,6 +276,7 @@ private fun AdminThreadContent(
     val state by ChatSocket.state.collectAsState()
     val socketPrivates by ChatSocket.privateMessages.collectAsState()
     val lastPrivate by ChatSocket.lastPrivate.collectAsState()
+    val cacheRevision by ChatSocket.privateCacheRevision.collectAsState()
     val repo = remember { BlogRepository() }
 
     // 本地缓存 key：普通用户与管理员=admin；管理员与某用户=u{userId}
@@ -275,6 +303,22 @@ private fun AdminThreadContent(
         }
     }
 
+    // 进入会话即视为已读：socket 标记已读 + 记录当前会话，离开时复位；
+    // state 变化（重连成功）会再次标记，避免冷启动 socket 未就绪时漏标记
+    LaunchedEffect(convKey, token, state) {
+        ChatSocket.activeConversationUserId = targetUserId ?: 1000L
+        if (token != null && state == ChatConnectionState.CONNECTED) {
+            ChatSocket.markConversationRead(targetUserId ?: 1000L)
+        }
+    }
+    DisposableEffect(convKey) {
+        onDispose {
+            if (ChatSocket.activeConversationUserId == (targetUserId ?: 1000L)) {
+                ChatSocket.activeConversationUserId = null
+            }
+        }
+    }
+
     // 历史加载（连接就绪后按 30s 节流拉取；重建/切 Tab 不再重复拉）
     LaunchedEffect(token, state, refreshTick, targetUserId) {
         val t = token
@@ -285,17 +329,27 @@ private fun AdminThreadContent(
                     history = resp.messages
                     historyError = null
                     ChatSocket.cachePrivateHistory(convKey, resp.messages, fromRemote = true) // 权威历史落内存 + 记节流
-                    ContentStore.writePrivateChat(convKey, resp.messages) // 权威历史落盘
+                    if (resp.messages.isEmpty()) {
+                        ContentStore.writePrivateChat(convKey, emptyList()) // 服务端已无消息，清掉磁盘缓存（避免已删消息冷启动闪现）
+                    } else {
+                        ContentStore.writePrivateChat(convKey, resp.messages) // 权威历史落盘
+                    }
                 } else historyError = "历史消息加载失败，点击重试"
             } catch (e: Exception) {
                 historyError = e.message?.ifBlank { null } ?: "历史消息加载失败，点击重试"
             }
         }
     }
-    // 实时合并（socket 事件追加）
-    val all = remember(history, socketPrivates, lastPrivate, refreshTick, myUserId, targetUserId) {
+    // 实时合并（socket 事件追加 + 已读回执覆盖）。cacheRevision 变化时重读 ChatSocket 缓存
+    val all = remember(history, socketPrivates, lastPrivate, refreshTick, myUserId, targetUserId, cacheRevision) {
         val map = LinkedHashMap<Long, PrivateChatMessage>()
         history.forEach { map[it.id] = it }
+        // 已读回执（markOwnSentRead 更新缓存后）：只把缓存里的 isRead 覆盖到已有消息上，
+        // 不追加缓存中已不存在（如服务端已删）的消息——成员关系以 history（REST/Disk 权威）为准
+        ChatSocket.restorePrivateHistory(convKey)?.forEach { cached ->
+            val existing = map[cached.id]
+            if (existing != null) map[cached.id] = existing.copy(isRead = cached.isRead)
+        }
         if (targetUserId != null) {
             val lp = lastPrivate
             if (lp != null && lp.id != 0L && (lp.senderId == targetUserId || lp.receiverId == targetUserId)) map[lp.id] = lp
@@ -305,11 +359,27 @@ private fun AdminThreadContent(
         map.values.toList()
     }
 
-    // 会话变化：滚动到底 + 节流落盘（5s 一次；id=0 的本地乐观气泡不写缓存）
+    // 会话变化：滚动到底 + 节流落盘（5s 一次；id=0 的本地乐观气泡不写缓存）。items 已含日期/时间分隔，用 items.size 定位底端
+    val items = remember(all, myUserId, peerName, peerAvatar) {
+        buildChatItems(all.map { m ->
+            val mine = m.senderId == myUserId
+            ChatMsgLike(
+                key = "p_${m.id}_${m.timestamp}",
+                content = m.content,
+                senderId = m.senderId,
+                fromAi = m.fromAi,
+                nickname = if (m.fromAi) "AI" else (if (mine) "我" else peerName),
+                avatar = if (m.fromAi || mine) null else peerAvatar,
+                timestamp = m.timestamp,
+                mine = mine,
+                showRead = mine && m.isRead && m.id != 0L
+            )
+        })
+    }
     var lastPrivatePersist by remember { mutableStateOf(0L) }
-    LaunchedEffect(all.size) {
-        if (all.isNotEmpty()) {
-            listState.scrollToItem(all.size - 1)
+    LaunchedEffect(items.size) {
+        if (items.isNotEmpty()) {
+            listState.scrollToItem(items.size - 1)
             val now = System.currentTimeMillis()
             if (now - lastPrivatePersist >= 5_000) {
                 lastPrivatePersist = now
@@ -329,7 +399,7 @@ private fun AdminThreadContent(
             receiverId = targetUserId ?: 1000,
             content = content,
             timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(Date()),
-            isRead = true
+            isRead = false // 乐观气泡：已读状态待服务端确认/对方已读回执
         )
         input = ""
         hideKeyboard(context, view)
@@ -372,12 +442,25 @@ private fun AdminThreadContent(
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                         ) {
-                            items(all, key = { "p_${it.id}_${it.timestamp}" }) { m ->
-                                val mine = m.senderId == myUserId
-                                MessageBubble(m.content, mine = mine, fromAi = m.fromAi, nickname = if (m.fromAi) "AI" else (if (mine) "我" else peerName), avatar = if (m.fromAi || mine) null else peerAvatar, timestamp = m.timestamp, myAvatar = myAvatar)
+                            items(items, key = { it.key }) { item ->
+                                when (item) {
+                                    is ChatItem.DateDivider, is ChatItem.TimeDivider -> ChatDivider(item)
+                                    is ChatItem.Msg -> MessageBubble(
+                                        content = item.content,
+                                        mine = item.mine,
+                                        fromAi = item.fromAi,
+                                        nickname = item.nickname,
+                                        avatar = item.avatar,
+                                        timestamp = item.timestamp,
+                                        myAvatar = myAvatar,
+                                        showRead = item.mine && item.groupEnd && item.showRead,
+                                        groupStart = item.groupStart,
+                                        groupEnd = item.groupEnd,
+                                        modifier = Modifier.padding(top = 1.dp, bottom = if (item.groupEnd) 12.dp else 3.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -394,6 +477,7 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
     val token by TokenStore.token.collectAsState()
     val userList by ChatSocket.userList.collectAsState()
     val adminUsers by ChatSocket.adminUsers.collectAsState()
+    val adminUnread by ChatSocket.adminUnread.collectAsState()
     val repo = remember { BlogRepository() }
     var open by remember { mutableStateOf<ChatUser?>(null) }
     // 列表状态在 ChatSocket 单例：Tab 切换/进出不再重建即丢、不闪骨架
@@ -416,6 +500,16 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
             }
         }
         loading = false
+    }
+
+    // REST 收件箱未读数：60s 节流；socket 新消息实时增量在 ChatSocket 内维护
+    LaunchedEffect(token) {
+        val t = token
+        if (t != null && ChatSocket.needsUnreadRefresh()) {
+            kotlin.runCatching { repo.chatUnread(t) }.onSuccess {
+                if (it.success) ChatSocket.cacheAdminUnread(it.unread, fromRemote = true)
+            }
+        }
     }
     val merged = remember(adminUsers, userList) {
         val map = LinkedHashMap<Long, ChatUser>()
@@ -441,6 +535,7 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
         adminUsers.isEmpty() && loading -> RowListSkeleton(Modifier.padding(top = 8.dp), count = 8)
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 6.dp)) {
             items(merged, key = { it.id }) { u ->
+                val unread = adminUnread[u.id] ?: 0
                 Row(
                     Modifier.fillMaxWidth().clickable { open = u }.padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -456,7 +551,29 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
                     }
                     Column(Modifier.weight(1f)) {
                         Text(u.nickname.ifBlank { u.username }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                        Text(if (u.isOnline) "在线" else "离线", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                        Text(
+                            buildString {
+                                append(if (u.isOnline) "在线" else "离线")
+                                if (unread > 0) append(" · $unread 条未读")
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (unread > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    if (unread > 0) {
+                        Box(
+                            Modifier.size(width = 20.dp, height = 20.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                if (unread > 99) "99+" else "$unread",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 10.sp
+                            )
+                        }
                     }
                     Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline)
                 }
@@ -516,72 +633,9 @@ private fun ChatInput(
     }
 }
 
-/** 聊天气泡：我的靠右（primaryContainer，头像在右），他人靠左，AI 特殊色 */
-@Composable
-private fun MessageBubble(
-    content: String,
-    mine: Boolean,
-    fromAi: Boolean,
-    nickname: String,
-    avatar: String?,
-    timestamp: String,
-    myAvatar: String? = null
-) {
-    val bg = when {
-        fromAi -> MaterialTheme.colorScheme.tertiaryContainer
-        mine -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-    val fg = when {
-        fromAi -> MaterialTheme.colorScheme.onTertiaryContainer
-        mine -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
-        if (!mine) {
-            Avatar(url = if (fromAi) resolveImageUrl(avatar) else avatar, name = nickname, size = 32.dp, modifier = Modifier.padding(end = 8.dp))
-        }
-        Box(Modifier.weight(1f, fill = false)) {
-            Column(
-                horizontalAlignment = if (mine) Alignment.End else Alignment.Start,
-                modifier = Modifier.widthIn(max = 300.dp).then(if (mine) Modifier.align(Alignment.CenterEnd) else Modifier.align(Alignment.CenterStart))
-            ) {
-                if (!mine) Text(nickname, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Surface(
-                    shape = RoundedCornerShape(topStart = if (mine) 16.dp else 4.dp, topEnd = if (mine) 4.dp else 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
-                    color = bg,
-                    contentColor = fg,
-                    modifier = Modifier.padding(top = 2.dp)
-                ) {
-                    Text(content, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
-                }
-                if (timestamp.isNotBlank()) {
-                    Text(formatTime(timestamp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(top = 2.dp))
-                }
-            }
-        }
-        if (mine) {
-            Avatar(url = resolveImageUrl(myAvatar), name = "我", size = 32.dp, modifier = Modifier.padding(start = 8.dp))
-        }
-    }
-}
-
 private fun hideKeyboard(context: android.content.Context, view: android.view.View) {
     try {
         (context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
             ?.hideSoftInputFromWindow(view.windowToken, 0)
     } catch (_: Exception) { }
-}
-
-private fun formatTime(iso: String): String {
-    if (iso.isBlank()) return ""
-    return try {
-        val p = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).parse(iso) ?: return ""
-        SimpleDateFormat("HH:mm", Locale.getDefault()).format(p)
-    } catch (e: Exception) {
-        try {
-            val p = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).parse(iso.replace("Z", "")) ?: return ""
-            SimpleDateFormat("HH:mm", Locale.getDefault()).format(p)
-        } catch (e2: Exception) { "" }
-    }
 }

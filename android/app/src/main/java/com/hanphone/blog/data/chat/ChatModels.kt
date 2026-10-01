@@ -50,3 +50,15 @@ data class ChatUsersResponse(
     val success: Boolean = false,
     val users: List<ChatUser> = emptyList()
 )
+
+/** GET /chat-api/api/users/unread 返回结构（管理员收件箱未读数） */
+data class ChatUnreadResponse(
+    val success: Boolean = false,
+    val unread: List<ChatUnreadItem> = emptyList()
+)
+
+/** 单个用户未读数 */
+data class ChatUnreadItem(
+    val userId: Long = 0,
+    val count: Int = 0
+)

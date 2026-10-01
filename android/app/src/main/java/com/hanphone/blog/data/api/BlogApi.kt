@@ -1,6 +1,7 @@
 package com.hanphone.blog.data.api
 
 import com.hanphone.blog.data.chat.ChatMessagesResponse
+import com.hanphone.blog.data.chat.ChatUnreadResponse
 import com.hanphone.blog.data.chat.ChatUsersResponse
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.Blog
@@ -154,6 +155,10 @@ interface BlogApi {
 
     @GET("https://hanphone.cn/chat-api/api/users/all")
     suspend fun chatUsers(@Header("Authorization") auth: String?): ChatUsersResponse
+
+    // 管理员收件箱未读数
+    @GET("https://hanphone.cn/chat-api/api/users/unread")
+    suspend fun chatUnread(@Header("Authorization") auth: String?): ChatUnreadResponse
 
     @GET("https://hanphone.cn/chat-api/api/messages/{userId}")
     suspend fun chatMessagesWithUser(
