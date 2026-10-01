@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,7 +32,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
@@ -128,15 +129,15 @@ fun ChatScreen(onLogin: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        // ===== 头部 =====
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("消息", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        // ===== 头部（紧凑） =====
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("消息", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             // 公告按钮：点击弹出公告弹窗
-            IconButton(onClick = { showNotice = true }, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = { showNotice = true }, modifier = Modifier.size(30.dp)) {
                 Icon(
                     Icons.Filled.Notifications,
                     "公告",
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
@@ -164,10 +165,24 @@ fun ChatScreen(onLogin: () -> Unit) {
             )
         }
 
-        // ===== Tab：聊天室 / 私信 =====
-        TabRow(selectedTabIndex = tab) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("聊天室") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("私信") })
+        // ===== Tab：聊天室 / 私信（紧凑：requiredHeight 强制压低 M3 默认 48dp 高度） =====
+        TabRow(
+            selectedTabIndex = tab,
+            containerColor = Color.Transparent,
+            divider = {}
+        ) {
+            Tab(
+                selected = tab == 0,
+                onClick = { tab = 0 },
+                text = { Text("聊天室") },
+                modifier = Modifier.requiredHeight(34.dp)
+            )
+            Tab(
+                selected = tab == 1,
+                onClick = { tab = 1 },
+                text = { Text("私信") },
+                modifier = Modifier.requiredHeight(34.dp)
+            )
         }
 
         when (tab) {
@@ -550,35 +565,40 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
             items(merged, key = { it.id }) { u ->
                 val unread = adminUnread[u.id] ?: 0
                 Row(
-                    Modifier.fillMaxWidth().clickable { open = u }.padding(horizontal = 16.dp, vertical = 12.dp),
+                    Modifier.fillMaxWidth().clickable { open = u }.padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Box(Modifier.size(40.dp)) {
-                        Avatar(url = u.avatar, name = u.nickname.ifBlank { u.username }, size = 40.dp)
+                    // 头像（44dp）+ 在线状态点（白描边贴合头像边缘）
+                    Box(Modifier.size(44.dp)) {
+                        Avatar(url = u.avatar, name = u.nickname.ifBlank { u.username }, size = 44.dp)
                         Box(
                             Modifier.align(Alignment.BottomEnd).size(12.dp)
                                 .clip(CircleShape)
                                 .background(if (u.isOnline) Color(0xFF27AE60) else Color(0xFFB0B7C3))
+                                .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
                         )
                     }
+                    // 两行文字：昵称 + 在线/最后在线（行高压缩，与头像垂直居中对齐）
                     Column(Modifier.weight(1f)) {
-                        Text(u.nickname.ifBlank { u.username }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Text(
-                            buildString {
-                                append(
-                                    when {
-                                        u.isOnline -> "在线"
-                                        u.lastSeenAt != null && u.lastSeenAt!! > 0 -> "最后在线 ${formatLastSeen(u.lastSeenAt!!)}"
-                                        else -> "离线"
-                                    }
-                                )
-                                if (unread > 0) append(" · $unread 条未读")
+                            u.nickname.ifBlank { u.username },
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 21.sp),
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            when {
+                                u.isOnline -> "在线"
+                                u.lastSeenAt != null && u.lastSeenAt!! > 0 -> "最后在线 ${formatLastSeen(u.lastSeenAt!!)}"
+                                else -> "离线"
                             },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (u.isOnline || unread > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 17.sp),
+                            color = if (u.isOnline) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         )
                     }
+                    // 未读数：数字角标（状态行不再重复展示）
                     if (unread > 0) {
                         Box(
                             Modifier.size(width = 20.dp, height = 20.dp)
@@ -594,7 +614,6 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
                             )
                         }
                     }
-                    Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline)
                 }
             }
         }
