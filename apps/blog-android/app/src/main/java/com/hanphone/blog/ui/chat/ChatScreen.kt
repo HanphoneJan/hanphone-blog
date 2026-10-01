@@ -251,35 +251,40 @@ private fun AdminThreadContent(
     val lastPrivate by ChatSocket.lastPrivate.collectAsState()
     val repo = remember { BlogRepository() }
 
-    var history by remember { mutableStateOf<List<PrivateChatMessage>>(emptyList()) }
-    var historyError by remember { mutableStateOf<String?>(null) }
-    var loadTick by remember { mutableIntStateOf(0) }
-    var input by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
-
     // 本地缓存 key：普通用户与管理员=admin；管理员与某用户=u{userId}
     val convKey = remember(targetUserId) { if (targetUserId != null) "u$targetUserId" else "admin" }
 
-    // 冷启动秒显：连接未就绪时先用本地缓存填充（REST 历史到达后覆盖）
+    var history by remember(convKey) {
+        mutableStateOf<List<PrivateChatMessage>>(ChatSocket.restorePrivateHistory(convKey) ?: emptyList())
+    }
+    var historyError by remember(convKey) { mutableStateOf<String?>(null) }
+    // 发送后触发一次 REST 确认刷新（服务端把乐观 id=0 消息替换为权威记录）
+    var refreshTick by remember(convKey) { mutableIntStateOf(0) }
+    var input by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+
+    // 冷启动秒显：单例内存缓存 → 磁盘缓存（写入内存缓存但不污染 REST 节流时间）
     LaunchedEffect(convKey) {
         if (history.isEmpty()) {
             val cached = ContentStore.readPrivateChat(convKey)
             if (!cached.isNullOrEmpty()) {
                 history = cached
                 historyError = null
+                ChatSocket.cachePrivateHistory(convKey, cached)
             }
         }
     }
 
-    // 历史加载（连接就绪后拉取）
-    LaunchedEffect(token, state, loadTick, targetUserId) {
+    // 历史加载（连接就绪后按 30s 节流拉取；重建/切 Tab 不再重复拉）
+    LaunchedEffect(token, state, refreshTick, targetUserId) {
         val t = token
-        if (t != null && state == ChatConnectionState.CONNECTED) {
+        if (t != null && state == ChatConnectionState.CONNECTED && ChatSocket.needsPrivateRefresh(convKey)) {
             try {
                 val resp = if (targetUserId != null) repo.chatMessagesWithUser(t, targetUserId) else repo.adminMessages(t)
                 if (resp.success) {
                     history = resp.messages
                     historyError = null
+                    ChatSocket.cachePrivateHistory(convKey, resp.messages, fromRemote = true) // 权威历史落内存 + 记节流
                     ContentStore.writePrivateChat(convKey, resp.messages) // 权威历史落盘
                 } else historyError = "历史消息加载失败，点击重试"
             } catch (e: Exception) {
@@ -288,7 +293,7 @@ private fun AdminThreadContent(
         }
     }
     // 实时合并（socket 事件追加）
-    val all = remember(history, socketPrivates, lastPrivate, loadTick, myUserId, targetUserId) {
+    val all = remember(history, socketPrivates, lastPrivate, refreshTick, myUserId, targetUserId) {
         val map = LinkedHashMap<Long, PrivateChatMessage>()
         history.forEach { map[it.id] = it }
         if (targetUserId != null) {
@@ -328,7 +333,9 @@ private fun AdminThreadContent(
         )
         input = ""
         hideKeyboard(context, view)
-        loadTick++
+        // 标记会话需要服务端确认，触发一次节流 REST 刷新（乐观消息替换为权威记录）
+        ChatSocket.markPrivateDirty(convKey)
+        refreshTick++
     }
 
     Column(Modifier.fillMaxSize().imeLiftAboveKeyboard()) {
@@ -357,7 +364,7 @@ private fun AdminThreadContent(
                                     color = if (historyError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
                                 )
                                 if (historyError != null) {
-                                    TextButton(onClick = { historyError = null; loadTick++ }, modifier = Modifier.padding(top = 6.dp)) { Text("重试") }
+                                    TextButton(onClick = { historyError = null; ChatSocket.markPrivateDirty(convKey); refreshTick++ }, modifier = Modifier.padding(top = 6.dp)) { Text("重试") }
                                 }
                             }
                         }
@@ -386,37 +393,33 @@ private fun AdminThreadContent(
 private fun AdminInboxContent(onLogin: () -> Unit) {
     val token by TokenStore.token.collectAsState()
     val userList by ChatSocket.userList.collectAsState()
+    val adminUsers by ChatSocket.adminUsers.collectAsState()
     val repo = remember { BlogRepository() }
-    var users by remember { mutableStateOf<List<ChatUser>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
     var open by remember { mutableStateOf<ChatUser?>(null) }
+    // 列表状态在 ChatSocket 单例：Tab 切换/进出不再重建即丢、不闪骨架
+    var loading by remember { mutableStateOf(adminUsers.isEmpty()) }
 
-    // 冷启动秒显：REST 到达前先用本地缓存渲染列表（在线状态随后由 socket 覆盖）
+    // 冷启动秒显：单例为空时读磁盘（不污染 REST 节流时间）
     LaunchedEffect(Unit) {
-        if (users.isEmpty()) {
+        if (ChatSocket.adminUsers.value.isEmpty()) {
             val cached = ContentStore.readChatUsers()
-            if (!cached.isNullOrEmpty()) {
-                users = cached
-                loading = false
-            }
+            if (!cached.isNullOrEmpty()) ChatSocket.cacheAdminUsers(cached)
         }
     }
 
+    // REST 全量用户：60s 节流，重建/切 Tab 不重复拉
     LaunchedEffect(token) {
         val t = token
-        if (t != null) {
+        if (t != null && ChatSocket.needsUsersRefresh()) {
             kotlin.runCatching { repo.chatUsers(t) }.onSuccess {
-                if (it.success) {
-                    users = it.users
-                    ContentStore.writeChatUsers(it.users)
-                }
+                if (it.success) ChatSocket.cacheAdminUsers(it.users, fromRemote = true)
             }
         }
         loading = false
     }
-    val merged = remember(users, userList) {
+    val merged = remember(adminUsers, userList) {
         val map = LinkedHashMap<Long, ChatUser>()
-        users.forEach { map[it.id] = it }
+        adminUsers.forEach { map[it.id] = it }
         userList.forEach { u -> map[u.id] = map[u.id]?.copy(isOnline = true) ?: u }
         map.values.toList().sortedByDescending { it.isOnline }
     }
@@ -435,7 +438,7 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
             peerAvatar = open!!.avatar,
             onBack = { open = null }
         )
-        users.isEmpty() && loading -> RowListSkeleton(Modifier.padding(top = 8.dp), count = 8)
+        adminUsers.isEmpty() && loading -> RowListSkeleton(Modifier.padding(top = 8.dp), count = 8)
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 6.dp)) {
             items(merged, key = { it.id }) { u ->
                 Row(

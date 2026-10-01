@@ -350,7 +350,7 @@ private fun DetailHeader(blog: Blog) {
             }
             val authorName = blog.user?.nickname?.ifBlank { null }
             if (authorName != null) {
-                Avatar(url = blog.user?.avatar, name = authorName, size = 18.dp)
+                Avatar(url = blog.user?.avatar, name = authorName, size = 18.dp, feature = ImageCaches.Feature.BLOG)
                 Text(authorName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text("·", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
@@ -380,7 +380,7 @@ private fun CommentRow(
     onReply: (Comment) -> Unit
 ) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Avatar(url = comment.avatar, name = comment.nickname, size = 36.dp)
+        Avatar(url = comment.avatar, name = comment.nickname, size = 36.dp, feature = ImageCaches.Feature.BLOG)
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(comment.nickname, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)

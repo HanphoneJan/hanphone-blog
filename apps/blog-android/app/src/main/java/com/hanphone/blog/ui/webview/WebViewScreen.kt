@@ -48,8 +48,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.hanphone.blog.BuildConfig
+import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.EmptyBox
+import com.hanphone.blog.ui.docs.DOC_TEXT_TTL_MS
+import com.hanphone.blog.ui.docs.docCacheKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.URL
@@ -101,17 +104,26 @@ fun WebViewScreen(
         if (wv == null) return@LaunchedEffect
         loadFailed = false
         if (loadAsHtml) {
-            val html = runCatching {
-                withContext(Dispatchers.IO) {
-                    URL(url).openStream().bufferedReader(Charset.forName("UTF-8")).use { it.readText() }
-                }
-            }.getOrNull()
-            if (html == null) {
-                loadFailed = true
-                progress = 0
+            val baseUrl = url.substringBeforeLast('/') + "/"
+            // 磁盘缓存秒显（24h 内重复打开不再重新下载；避免每次进页白屏等 fetch）
+            val cacheKey = docCacheKey(url, "html")
+            val cached = ContentStore.readRawText(cacheKey, maxAgeMs = DOC_TEXT_TTL_MS)
+            if (cached != null) {
+                wv.loadDataWithBaseURL(baseUrl, cached, "text/html", "utf-8", null)
             } else {
-                // baseUrl 指向文件所在目录，页内相对资源/锚点可正常解析
-                wv.loadDataWithBaseURL(url.substringBeforeLast('/') + "/", html, "text/html", "utf-8", null)
+                val html = runCatching {
+                    withContext(Dispatchers.IO) {
+                        URL(url).openStream().bufferedReader(Charset.forName("UTF-8")).use { it.readText() }
+                    }
+                }.getOrNull()
+                if (html == null) {
+                    loadFailed = true
+                    progress = 0
+                } else {
+                    ContentStore.writeRawText(cacheKey, html)
+                    // baseUrl 指向文件所在目录，页内相对资源/锚点可正常解析
+                    wv.loadDataWithBaseURL(baseUrl, html, "text/html", "utf-8", null)
+                }
             }
         } else {
             wv.loadUrl(url)

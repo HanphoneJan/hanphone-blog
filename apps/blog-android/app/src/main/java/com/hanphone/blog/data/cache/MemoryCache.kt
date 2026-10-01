@@ -6,7 +6,10 @@ import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.model.Project
+import com.hanphone.blog.data.model.SearchResultItem
 import com.hanphone.blog.data.model.SiteStats
+import com.hanphone.blog.data.model.Tag
+import com.hanphone.blog.data.model.Type
 
 /**
  * 会话级内存缓存（进程存活期间有效）：
@@ -20,6 +23,11 @@ object MemoryCache {
     var homeBlogs: List<Blog>? = null
     var homePage: Int = 1
     var homeTotalPages: Int = 1
+
+    // ===== 首页筛选元数据（分类/标签）+ 归档（冷启动秒显筛选面板/归档视图） =====
+    var homeTypes: List<Type>? = null
+    var homeTags: List<Tag>? = null
+    var archiveBlogs: Map<String, List<Blog>>? = null
 
     // ===== 随笔动态流 =====
     var essayMoments: List<Essay>? = null
@@ -41,6 +49,9 @@ object MemoryCache {
         homeBlogs = null
         homePage = 1
         homeTotalPages = 1
+        homeTypes = null
+        homeTags = null
+        archiveBlogs = null
         essayMoments = null
         essayPage = 1
         essayTotalPages = 1
@@ -50,7 +61,30 @@ object MemoryCache {
         friendLinks = null
         projects = null
         docs = null
+        searchCache.clear()
+        searchInFlight = null
     }
+
+    // ===== 搜索结果缓存（query → 结果，5 分钟有效，防重复搜索重复请求）=====
+    private const val SEARCH_TTL = 5 * 60_000L
+    private val searchCache = mutableMapOf<String, Pair<Long, List<SearchResultItem>>>()
+    private var searchInFlight: String? = null
+
+    fun searchResult(query: String): List<SearchResultItem>? =
+        searchCache[query]?.takeIf { System.currentTimeMillis() - it.first < SEARCH_TTL }?.second
+
+    fun putSearchResult(query: String, results: List<SearchResultItem>) {
+        searchCache[query] = System.currentTimeMillis() to results
+    }
+
+    /** 同词请求去重：已在飞行中的搜索词返回 true（VM 侧短路） */
+    fun beginSearch(query: String): Boolean {
+        if (searchInFlight == query) return false
+        searchInFlight = query
+        return true
+    }
+
+    fun endSearch() { searchInFlight = null }
 
     // ===== 详情缓存（LRU，最多 12 篇） =====
     private const val MAX_DETAILS = 12

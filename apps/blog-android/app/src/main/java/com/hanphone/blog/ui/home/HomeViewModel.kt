@@ -32,11 +32,13 @@ class HomeViewModel @Inject constructor(
         private set
     var selectedTagId by mutableStateOf<Long?>(null)
         private set
+    var selectedYear by mutableStateOf<String?>(null)     // 归档年份筛选（VM 持有，Tab 切回不丢）
+        private set
     var sortBy by mutableStateOf("newest")
         private set
-    var types by mutableStateOf<List<Type>>(emptyList())
+    var types by mutableStateOf<List<Type>>(MemoryCache.homeTypes ?: emptyList())
         private set
-    var tags by mutableStateOf<List<Tag>>(emptyList())
+    var tags by mutableStateOf<List<Tag>>(MemoryCache.homeTags ?: emptyList())
         private set
 
     var items by mutableStateOf(MemoryCache.homeBlogs ?: emptyList())
@@ -54,12 +56,15 @@ class HomeViewModel @Inject constructor(
     var error by mutableStateOf<String?>(null)
         private set
 
-    var archive by mutableStateOf<Map<String, List<Blog>>>(emptyMap())
+    var archive by mutableStateOf<Map<String, List<Blog>>>(MemoryCache.archiveBlogs ?: emptyMap())
         private set
     var archiveLoading by mutableStateOf(false)
         private set
     var archiveError by mutableStateOf<String?>(null)
         private set
+
+    /** 请求代数：每次新筛选/刷新/加载更多使旧的过期响应作废，防快速切换被旧结果覆盖 */
+    private var loadGeneration = 0
 
     init {
         // 冷启动：先读磁盘缓存，再走网络
@@ -70,9 +75,30 @@ class HomeViewModel @Inject constructor(
                 isLoading = false
             }
         }
+        // 冷启动：筛选元数据（分类/标签）+ 归档（筛选面板/归档视图秒显）
         viewModelScope.launch {
-            runCatching { repo.fullTypes() }.onSuccess { if (it.flag) types = it.data ?: emptyList() }
-            runCatching { repo.fullTags() }.onSuccess { if (it.flag) tags = it.data ?: emptyList() }
+            val cachedTypes = ContentStore.readTypes()
+            if (cachedTypes != null && types.isEmpty()) types = cachedTypes
+            val cachedTags = ContentStore.readTags()
+            if (cachedTags != null && tags.isEmpty()) tags = cachedTags
+            val a = ContentStore.readArchive()
+            if (a != null && archive.isEmpty()) archive = a
+        }
+        viewModelScope.launch {
+            if (types.isEmpty()) runCatching { repo.fullTypes() }.onSuccess {
+                if (it.flag) {
+                    types = it.data ?: emptyList()
+                    MemoryCache.homeTypes = types
+                    ContentStore.writeTypes(types)
+                }
+            }
+            if (tags.isEmpty()) runCatching { repo.fullTags() }.onSuccess {
+                if (it.flag) {
+                    tags = it.data ?: emptyList()
+                    MemoryCache.homeTags = tags
+                    ContentStore.writeTags(tags)
+                }
+            }
         }
         // 首次加载文章列表
         viewModelScope.launch { loadLatest(reset = true) }
@@ -90,9 +116,14 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { loadLatest(reset = true) }
     }
 
+    fun selectYear(year: String?) {
+        selectedYear = year
+    }
+
     fun clearFilter() {
         selectedTypeId = null
         selectedTagId = null
+        selectedYear = null
         viewModelScope.launch { loadLatest(reset = true) }
     }
 
@@ -117,6 +148,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun loadLatest(reset: Boolean, fromPull: Boolean = false) {
+        val gen = ++loadGeneration
         val target = if (reset) 1 else page + 1
         if (fromPull) isRefreshing = true else if (reset) isLoading = true else loadingMore = true
         try {
@@ -125,6 +157,8 @@ class HomeViewModel @Inject constructor(
                 selectedTypeId != null -> repo.blogsByType(selectedTypeId!!, target, 10)
                 else -> repo.blogs(target, 10)
             }
+            // 期间有更新的筛选/刷新/翻页请求 → 丢弃过期响应，防止旧结果覆盖新筛选
+            if (gen != loadGeneration) return
             if (res.flag && res.data != null) {
                 val d = res.data
                 items = if (reset) d.content else items + d.content
@@ -153,6 +187,8 @@ class HomeViewModel @Inject constructor(
             val res = repo.archiveBlog()
             if (res.flag && res.data != null) {
                 archive = res.data
+                MemoryCache.archiveBlogs = res.data
+                ContentStore.writeArchive(res.data)
                 archiveError = null
             } else archiveError = res.message.ifBlank { "加载失败" }
         } catch (e: Exception) {

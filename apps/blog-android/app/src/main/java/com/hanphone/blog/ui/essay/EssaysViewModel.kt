@@ -74,11 +74,22 @@ class EssayListViewModel @Inject constructor(
     fun loadComments(essayId: Long, onResult: (List<EssayComment>?) -> Unit = {}) {
         commentsCache[essayId]?.let { onResult(it); if (it != null) essayComments[essayId] = it; return }
         viewModelScope.launch {
+            // 磁盘缓存秒显：缓存命中不再走网络（减少冷启动首屏并发评论请求；权威更新看详情页/下拉刷新）
+            val cached = ContentStore.readEssayComments(essayId)
+            if (cached != null) {
+                commentsCache[essayId] = cached
+                essayComments[essayId] = cached
+                onResult(cached)
+                return@launch
+            }
             try {
                 val res = repo.comments(essayId)
                 val list = if (res.flag) res.data ?: emptyList() else null
                 commentsCache[essayId] = list
-                if (list != null) essayComments[essayId] = list
+                if (list != null) {
+                    essayComments[essayId] = list
+                    if (list.isNotEmpty()) ContentStore.writeEssayComments(essayId, list)
+                }
                 onResult(list)
             } catch (_: Exception) {
                 commentsCache[essayId] = null
@@ -87,9 +98,12 @@ class EssayListViewModel @Inject constructor(
         }
     }
 
-    /** 评论提交成功后本地追加（即时回显，无需重拉） */
+    /** 评论提交成功后本地追加（即时回显，无需重拉）；同步更新内存与磁盘缓存 */
     fun addEssayComment(essayId: Long, c: EssayComment) {
-        essayComments[essayId] = (essayComments[essayId] ?: emptyList()) + c
+        val updated = (essayComments[essayId] ?: emptyList()) + c
+        essayComments[essayId] = updated
+        commentsCache[essayId] = updated
+        viewModelScope.launch { ContentStore.writeEssayComments(essayId, updated) }
     }
 
     /** 列表条目内点赞 */
@@ -165,7 +179,24 @@ class EssayDetailViewModel @Inject constructor(
     var likesCount by mutableIntStateOf(0)
         private set
 
-    init { load() }
+    init {
+        // 冷启动秒显：磁盘详情/评论（网络已到则不覆盖；与随笔列表共享同一评论缓存键）
+        viewModelScope.launch {
+            if (essay == null) {
+                val cached = ContentStore.readEssayDetail(essayId)
+                if (essay == null && cached != null) {
+                    essay = cached
+                    MemoryCache.putEssayDetail(essayId, cached)
+                    loading = false
+                }
+            }
+            if (comments.isEmpty()) {
+                val cachedComments = ContentStore.readEssayComments(essayId)
+                if (comments.isEmpty() && cachedComments != null) comments = cachedComments
+            }
+        }
+        load()
+    }
 
     fun load() {
         viewModelScope.launch {
@@ -177,9 +208,13 @@ class EssayDetailViewModel @Inject constructor(
                     liked = e.data.liked
                     likesCount = e.data.likes
                     MemoryCache.putEssayDetail(essayId, e.data)
+                    ContentStore.writeEssayDetail(essayId, e.data)
                 } else error = e.message.ifBlank { "加载失败" }
                 val c = repo.comments(essayId)
-                if (c.flag) comments = c.data ?: emptyList()
+                if (c.flag) {
+                    comments = c.data ?: emptyList()
+                    ContentStore.writeEssayComments(essayId, c.data ?: emptyList())
+                }
             } catch (ex: Exception) {
                 error = ex.message ?: "网络错误"
             }
@@ -200,5 +235,6 @@ class EssayDetailViewModel @Inject constructor(
 
     fun addComment(c: EssayComment) {
         comments = comments + c
+        viewModelScope.launch { ContentStore.writeEssayComments(essayId, comments) }
     }
 }

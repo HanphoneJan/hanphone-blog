@@ -102,31 +102,41 @@ fun DataManagementScreen(onBack: () -> Unit) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(Modifier.padding(vertical = 6.dp)) {
-                    CacheRow("首页 · 站点统计", featureSize(listOf("home_blogs.json", "site_stats.json", "visit_count.json"), null)) {
-                        onCacheCleared(listOf("home_blogs.json", "site_stats.json", "visit_count.json"), null) {
+                    CacheRow(
+                        "首页 · 站点统计",
+                        featureSize(
+                            listOf("home_blogs.json", "site_stats.json", "visit_count.json", "types.json", "tags.json", "archive.json"),
+                            "article_"
+                        )
+                    ) {
+                        onCacheCleared(
+                            listOf("home_blogs.json", "site_stats.json", "visit_count.json", "types.json", "tags.json", "archive.json"),
+                            { it.startsWith("article_") }
+                        ) {
                             MemoryCache.homeBlogs = null; MemoryCache.homePage = 1; MemoryCache.homeTotalPages = 1
+                            MemoryCache.homeTypes = null; MemoryCache.homeTags = null; MemoryCache.archiveBlogs = null
                             MemoryCache.siteStats = null; MemoryCache.visitCount = null
                         }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("随笔 · 内容", featureSize(listOf("essay_first_page.json"), null)) {
-                        onCacheCleared(listOf("essay_first_page.json"), null) { MemoryCache.essayMoments = null }
+                    CacheRow("随笔 · 内容", featureSize(listOf("essay_first_page.json"), "essay_")) {
+                        onCacheCleared(listOf("essay_first_page.json"), { it.startsWith("essay_") }) { MemoryCache.essayMoments = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     CacheRow("留言板", featureSize(listOf("board_messages.json"), null)) {
                         onCacheCleared(listOf("board_messages.json"), null) { MemoryCache.boardMessages = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("友链", featureSize(listOf("friend_links.json"), null)) {
-                        onCacheCleared(listOf("friend_links.json"), null) { MemoryCache.friendLinks = null }
+                    CacheRow("友链", featureSize(listOf("friend_links.json", "enrich_attempts.json"), null)) {
+                        onCacheCleared(listOf("friend_links.json", "enrich_attempts.json"), null) { MemoryCache.friendLinks = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     CacheRow("项目", featureSize(listOf("projects.json"), null)) {
                         onCacheCleared(listOf("projects.json"), null) { MemoryCache.projects = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("文库", featureSize(listOf("docs.json"), null)) {
-                        onCacheCleared(listOf("docs.json"), null) { MemoryCache.docs = null }
+                    CacheRow("文库", featureSize(listOf("docs.json"), "doc_")) {
+                        onCacheCleared(listOf("docs.json"), { it.startsWith("doc_") }) { MemoryCache.docs = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     CacheRow("消息（聊天）", featureSize(listOf("chat_public.json", "chat_users.json"), "chat_private_")) {

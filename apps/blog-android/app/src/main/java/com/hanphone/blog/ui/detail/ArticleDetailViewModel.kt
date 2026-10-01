@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
@@ -37,7 +38,24 @@ class ArticleDetailViewModel @Inject constructor(
     var likesCount by mutableIntStateOf(0)
         private set
 
-    init { load() }
+    init {
+        // 冷启动秒显：磁盘详情/评论（网络已到则不覆盖网络结果）
+        viewModelScope.launch {
+            if (blog == null) {
+                val cached = ContentStore.readArticleDetail(blogId)
+                if (blog == null && cached != null) {
+                    blog = cached
+                    MemoryCache.putArticleDetail(blogId, cached)
+                    loading = false
+                }
+            }
+            if (comments.isEmpty()) {
+                val cachedComments = ContentStore.readArticleComments(blogId)
+                if (comments.isEmpty() && cachedComments != null) comments = cachedComments
+            }
+        }
+        load()
+    }
 
     fun retry() { load() }
 
@@ -52,9 +70,13 @@ class ArticleDetailViewModel @Inject constructor(
                     liked = b.data.liked
                     likesCount = b.data.likes
                     MemoryCache.putArticleDetail(blogId, b.data)
+                    ContentStore.writeArticleDetail(blogId, b.data)
                 } else error = b.message.ifBlank { "加载失败" }
                 val c = repo.comments(blogId)
-                if (c.flag) comments = c.data ?: emptyList()
+                if (c.flag) {
+                    comments = c.data ?: emptyList()
+                    ContentStore.writeArticleComments(blogId, c.data ?: emptyList())
+                }
             } catch (e: Exception) {
                 error = e.message ?: "网络错误"
             }

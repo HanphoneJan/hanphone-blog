@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 原生聊天 Socket 服务（socket.io-client）。
@@ -52,6 +54,55 @@ object ChatSocket {
     /** 在线用户列表（管理员收件箱用，userListUpdated 事件） */
     private val _userList = MutableStateFlow<List<ChatUser>>(emptyList())
     val userList: StateFlow<List<ChatUser>> = _userList
+
+    /**
+     * 私信会话历史内存缓存（单例常驻）：消息页 Tab 切换/收件箱进出不再重建即丢，
+     * 进入会话先吃内存缓存秒显；REST 历史按 30s 节流刷新，避免重复拉取。
+     * key：普通用户与管理员 "admin"、管理员与某用户 "u{userId}"（与 ContentStore 一致）。
+     */
+    private val privateHistoryCache = ConcurrentHashMap<String, List<PrivateChatMessage>>()
+    private val privateFetchedAt = ConcurrentHashMap<String, Long>()
+    private const val PRIVATE_REFRESH_MS = 30_000L
+
+    /** 进入会话时取内存缓存（无则 null，由页面兜底读磁盘缓存） */
+    fun restorePrivateHistory(key: String): List<PrivateChatMessage>? = privateHistoryCache[key]
+
+    /** REST/磁盘结果写入内存缓存；fromRemote=true 才记录拉取时间（磁盘恢复不延迟下次 REST） */
+    fun cachePrivateHistory(key: String, messages: List<PrivateChatMessage>, fromRemote: Boolean = false) {
+        if (messages.isEmpty()) return
+        privateHistoryCache[key] = messages
+        if (fromRemote) privateFetchedAt[key] = System.currentTimeMillis()
+    }
+
+    /** 是否需要重新拉 REST 历史：无缓存 / 超过节流窗口 / 被 markPrivateDirty 强制 */
+    fun needsPrivateRefresh(key: String): Boolean {
+        val last = privateFetchedAt[key] ?: return true
+        return System.currentTimeMillis() - last > PRIVATE_REFRESH_MS
+    }
+
+    /** 发送私信后标记该会话需要服务端确认（乐观消息由一次 REST 刷新替换） */
+    fun markPrivateDirty(key: String) {
+        privateFetchedAt.remove(key)
+    }
+
+    /** 管理员收件箱：REST /users/all 全量列表（与 socket 在线态分离），60s 节流 */
+    private val _adminUsers = MutableStateFlow<List<ChatUser>>(emptyList())
+    val adminUsers: StateFlow<List<ChatUser>> = _adminUsers
+    private val usersFetchedAt = AtomicLong(0L)
+    private const val USERS_REFRESH_MS = 60_000L
+
+    /** 合并 REST 全量用户进 adminUsers（保留当前在线标记）；fromRemote=true 记录节流时间 */
+    fun cacheAdminUsers(users: List<ChatUser>, fromRemote: Boolean = false) {
+        if (users.isEmpty()) return
+        if (fromRemote) usersFetchedAt.set(System.currentTimeMillis())
+        val onlines = _userList.value.associateBy { it.id }
+        _adminUsers.value = users.map { u -> onlines[u.id]?.let { u.copy(isOnline = true) } ?: u }
+    }
+
+    fun needsUsersRefresh(): Boolean {
+        val now = System.currentTimeMillis()
+        return _adminUsers.value.isEmpty() || now - usersFetchedAt.get() > USERS_REFRESH_MS
+    }
 
     // AI 流式临时状态
     private var aiTempId: String? = null
@@ -233,8 +284,12 @@ object ChatSocket {
         // ===== 管理员：在线用户列表 =====
         s.on("userListUpdated") { args ->
             val arr = args.firstOrNull() as? JSONArray ?: return@on
-            _userList.value = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let(::parseChatUser) }
-            heartbeatScope.launch { ContentStore.writeChatUsers(_userList.value) }
+            val online = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let(::parseChatUser) }
+            _userList.value = online
+            // 同步在线标记到全量列表（在线的置 true，离线保留原值）
+            val onlineIds = online.map { it.id }.toSet()
+            _adminUsers.value = _adminUsers.value.map { if (it.id in onlineIds) it.copy(isOnline = true) else it }
+            heartbeatScope.launch { ContentStore.writeChatUsers(_adminUsers.value) }
         }
         s.connect()
     }
@@ -245,8 +300,12 @@ object ChatSocket {
         _privateMessages.value = emptyList()
         _lastPrivate.value = null
         _userList.value = emptyList()
+        _adminUsers.value = emptyList()
         _onlineCount.value = 0
         _notice.value = null
+        privateHistoryCache.clear()
+        privateFetchedAt.clear()
+        usersFetchedAt.set(0L)
     }
 
     fun send(content: String) {
@@ -294,8 +353,12 @@ object ChatSocket {
         _privateMessages.value = emptyList()
         _lastPrivate.value = null
         _userList.value = emptyList()
+        _adminUsers.value = emptyList()
         _onlineCount.value = 0
         _state.value = ChatConnectionState.DISCONNECTED
+        privateHistoryCache.clear()
+        privateFetchedAt.clear()
+        usersFetchedAt.set(0L)
     }
 
     private fun removeAiTemp() {

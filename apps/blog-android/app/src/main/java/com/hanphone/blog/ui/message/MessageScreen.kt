@@ -93,7 +93,8 @@ fun MessageScreen(onBack: () -> Unit) {
                 replyTarget = null
                 scope.launch { context.saveDraft(draftKind, "") }
                 hideKeyboard(context, view)
-                vm.refresh()
+                // 本地即时回显（对齐 web ADD_MESSAGE），不再全量重拉
+                vm.addMessageLocal(message)
             } else {
                 toast("留言失败")
             }

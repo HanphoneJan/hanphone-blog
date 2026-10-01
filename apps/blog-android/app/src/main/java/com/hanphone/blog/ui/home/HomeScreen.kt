@@ -78,11 +78,11 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
     val listState = rememberLazyListState()
 
     var showFilter by remember { mutableStateOf(false) }
-    var selectedYear by remember { mutableStateOf<String?>(null) }
 
     val mode = vm.mode
     val items = vm.items
     val sortBy = vm.sortBy
+    val selectedYear = vm.selectedYear
 
     // 是否有激活的筛选（分类/标签/年份）——给漏斗按钮与「已选筛选行」用
     val hasFilter = vm.selectedTypeId != null || vm.selectedTagId != null || selectedYear != null
@@ -179,7 +179,7 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
                         item {
                             InputChip(
                                 selected = true,
-                                onClick = { selectedYear = null },
+                                onClick = { vm.selectYear(null) },
                                 label = { Text("${selectedYear} 年") },
                                 trailingIcon = {
                                     Icon(Icons.Filled.Close, "移除年份", Modifier.size(16.dp))
@@ -189,10 +189,7 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
                     }
                     item {
                         SuggestionChip(
-                            onClick = {
-                                vm.clearFilter()
-                                selectedYear = null
-                            },
+                            onClick = { vm.clearFilter() },
                             label = { Text("清除") }
                         )
                     }
@@ -298,12 +295,9 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
                 years = years,
                 archive = vm.archive,
                 selectedYear = selectedYear,
-                onYearSelect = { selectedYear = it },
+                onYearSelect = { vm.selectYear(it) },
                 hasFilter = hasFilter,
-                onClearAll = {
-                    vm.clearFilter()
-                    selectedYear = null
-                }
+                onClearAll = { vm.clearFilter() }
             )
         }
     }

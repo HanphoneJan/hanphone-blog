@@ -76,6 +76,10 @@ class FriendLinksViewModel @Inject constructor(
     var activeType by mutableStateOf<String?>(null)
         private set
 
+    /** 补全尝试记录（linkId → 上次尝试时间）：拉不到 meta 的站点 1 小时内不重试 */
+    private val enrichAttempts = mutableMapOf<String, Long>()
+    private val enrichRetryMs = 60L * 60 * 1000
+
     /** 推荐在前，再按类型筛选（与 web 友链页一致） */
     val filtered: List<FriendLink>
         get() {
@@ -90,6 +94,9 @@ class FriendLinksViewModel @Inject constructor(
                 links = normalizeLinks(cached)
                 loading = false
             }
+        }
+        viewModelScope.launch {
+            enrichAttempts.putAll(ContentStore.readEnrichAttempts() ?: emptyMap())
         }
         // 首次加载友链列表
         refresh()
@@ -196,16 +203,22 @@ class FriendLinksViewModel @Inject constructor(
         }
     }
 
-    /** 批量补齐缺失信息（分组 5 个，对齐 web 的批量拉取；仅填空、不覆盖已有内容） */
+    /** 批量补齐缺失信息（分组 5 个，对齐 web 的批量拉取；仅填空、不覆盖已有内容）。
+     *  拉不到 meta 的站点记录尝试时间，1 小时内不重试，避免每次进页重复请求。 */
     private fun enrichMissing(initial: List<FriendLink>) {
         viewModelScope.launch {
-            val toEnrich = initial.filter { needsEnrich(it) }
+            val now = System.currentTimeMillis()
+            val toEnrich = initial.filter {
+                needsEnrich(it) && (now - (enrichAttempts[it.id.toString()] ?: 0L)) > enrichRetryMs
+            }
             if (toEnrich.isEmpty()) return@launch
             val updated = initial.toMutableList()
             toEnrich.chunked(5).forEach { batch ->
                 batch.forEach { link ->
                     val idx = updated.indexOfFirst { it.id == link.id }
                     if (idx == -1) return@forEach
+                    // 无论成败先记录尝试，失败不会再反复重试
+                    enrichAttempts[link.id.toString()] = now
                     val meta = fetchMeta(link) ?: return@forEach
                     val orig = updated[idx]
                     updated[idx] = orig.copy(
@@ -218,6 +231,7 @@ class FriendLinksViewModel @Inject constructor(
             links = updated
             MemoryCache.friendLinks = updated
             ContentStore.writeFriendLinks(updated)
+            ContentStore.writeEnrichAttempts(enrichAttempts)
         }
     }
 }

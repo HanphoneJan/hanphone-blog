@@ -51,6 +51,12 @@ class MessageBoardViewModel @Inject constructor(
         }
     }
 
+    /** 发送成功本地即时回显（对齐 web ADD_MESSAGE；避免全量重拉，下次进页/下拉刷新取权威列表） */
+    fun addMessageLocal(m: Message) {
+        items = listOf(m) + items
+        MemoryCache.boardMessages = items
+    }
+
     private suspend fun load(fromPull: Boolean = false) {
         if (fromPull) refreshing = true else loading = true
         try {

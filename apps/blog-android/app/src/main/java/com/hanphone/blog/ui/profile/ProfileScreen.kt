@@ -62,6 +62,7 @@ import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.clearAuth
 import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.User
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
@@ -120,7 +121,7 @@ fun ProfileScreen(
                     Modifier.clickable { showEditProfile = true },
                     contentAlignment = Alignment.Center
                 ) {
-                    Avatar(url = displayAvatar, name = displayName, size = 72.dp)
+                    Avatar(url = displayAvatar, name = displayName, size = 72.dp, feature = ImageCaches.Feature.PROFILE)
                 }
                 Text(displayName, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp))
                 // 用户名行固定占位：网络资料加载出来后出现 @用户名 时不再顶动下方内容（防抖动）
@@ -174,7 +175,7 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Avatar(url = resolveImageUrl(userAvatar), name = userName ?: "友", size = 48.dp)
+                    Avatar(url = resolveImageUrl(userAvatar), name = userName ?: "友", size = 48.dp, feature = ImageCaches.Feature.PROFILE)
                     Column(Modifier.weight(1f)) {
                         Text(userName ?: "用户", style = MaterialTheme.typography.titleMedium)
                         Text("已登录", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -360,7 +361,7 @@ private fun ProfileEditDialog(
                     Modifier.clickable(enabled = !uploading) { picker.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
-                    Avatar(url = avatarUrl.ifBlank { null }, name = nickname.ifBlank { "友" }, size = 72.dp)
+                    Avatar(url = avatarUrl.ifBlank { null }, name = nickname.ifBlank { "友" }, size = 72.dp, feature = ImageCaches.Feature.PROFILE)
                     if (uploading) CircularProgressIndicator(Modifier.size(72.dp))
                 }
                 Text("点击头像更换（自动上传）", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)

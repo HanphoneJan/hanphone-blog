@@ -495,7 +495,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
         AppBackBar(title = "", onBack = onBack)
         when {
             loading && essay == null -> Box(Modifier.weight(1f).fillMaxWidth()) { DetailSkeleton() }
-            error != null && essay == null -> Box(Modifier.weight(1f).fillMaxWidth()) { ErrorBox(error!!, onRetry = { }) }
+            error != null && essay == null -> Box(Modifier.weight(1f).fillMaxWidth()) { ErrorBox(error!!, onRetry = { vm.load() }) }
             essay != null -> {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(bottom = 24.dp)) {
                     item {

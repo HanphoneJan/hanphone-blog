@@ -6,12 +6,16 @@ import com.hanphone.blog.data.chat.ChatUser
 import com.hanphone.blog.data.chat.PrivateChatMessage
 import com.hanphone.blog.data.chat.PublicChatMessage
 import com.hanphone.blog.data.model.Blog
+import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
+import com.hanphone.blog.data.model.EssayComment
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.SiteStats
+import com.hanphone.blog.data.model.Tag
+import com.hanphone.blog.data.model.Type as BlogType
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -69,6 +73,21 @@ object ContentStore {
     suspend fun readHomeBlogs(): List<Blog>? = read("home_blogs.json", blogListType)
     suspend fun writeHomeBlogs(items: List<Blog>) = write("home_blogs.json", blogListType, items)
 
+    // ===== 首页筛选元数据（分类/标签）+ 归档（筛选面板与归档视图复用，冷启动秒显）=====
+    private val typeListType: Type = Types.newParameterizedType(List::class.java, BlogType::class.java)
+    suspend fun readTypes(): List<BlogType>? = read("types.json", typeListType)
+    suspend fun writeTypes(items: List<BlogType>) = write("types.json", typeListType, items)
+
+    private val tagListType: Type = Types.newParameterizedType(List::class.java, Tag::class.java)
+    suspend fun readTags(): List<Tag>? = read("tags.json", tagListType)
+    suspend fun writeTags(items: List<Tag>) = write("tags.json", tagListType, items)
+
+    private val archiveType: Type = Types.newParameterizedType(
+        Map::class.java, String::class.java, List::class.java, Blog::class.java
+    )
+    suspend fun readArchive(): Map<String, List<Blog>>? = read("archive.json", archiveType)
+    suspend fun writeArchive(map: Map<String, List<Blog>>) = write("archive.json", archiveType, map)
+
     // ===== 随笔动态流（Paging 接管后仅存最近一页，供极端弱网兜底） =====
     private val essayListType: Type = Types.newParameterizedType(List::class.java, Essay::class.java)
     suspend fun readEssayFirstPage(): List<Essay>? = read("essay_first_page.json", essayListType)
@@ -84,6 +103,39 @@ object ContentStore {
     private val messageListType: Type = Types.newParameterizedType(List::class.java, Message::class.java)
     suspend fun readBoardMessages(): List<Message>? = read("board_messages.json", messageListType)
     suspend fun writeBoardMessages(items: List<Message>) = write("board_messages.json", messageListType, items)
+
+    // ===== 随笔评论（列表内嵌评论冷启动秒显；与随笔详情共享同一键）=====
+    private val essayCommentsType: Type = Types.newParameterizedType(List::class.java, EssayComment::class.java)
+    suspend fun readEssayComments(essayId: Long): List<EssayComment>? = read("essay_comments_$essayId.json", essayCommentsType)
+    suspend fun writeEssayComments(essayId: Long, items: List<EssayComment>) = write("essay_comments_$essayId.json", essayCommentsType, items)
+
+    // ===== 文章详情 + 评论（冷启动进入详情秒显，正文/评论分别落盘）=====
+    suspend fun readArticleDetail(id: Long): Blog? = read("article_$id.json", Blog::class.java)
+    suspend fun writeArticleDetail(id: Long, blog: Blog) = write("article_$id.json", Blog::class.java, blog)
+
+    private val articleCommentsType: Type = Types.newParameterizedType(List::class.java, Comment::class.java)
+    suspend fun readArticleComments(id: Long): List<Comment>? = read("article_comments_$id.json", articleCommentsType)
+    suspend fun writeArticleComments(id: Long, items: List<Comment>) = write("article_comments_$id.json", articleCommentsType, items)
+
+    // ===== 随笔详情（冷启动进入详情秒显）=====
+    suspend fun readEssayDetail(id: Long): Essay? = read("essay_$id.json", Essay::class.java)
+    suspend fun writeEssayDetail(id: Long, essay: Essay) = write("essay_$id.json", Essay::class.java, essay)
+
+    // ===== 文库文档原文（MD 预览 / HTML WebView 的 fetch 文本；TTL 防重复下载）=====
+    suspend fun readRawText(name: String, maxAgeMs: Long = 0L): String? = withContext(Dispatchers.IO) {
+        val f = File(dir, name)
+        if (f.isFile && (maxAgeMs <= 0 || System.currentTimeMillis() - f.lastModified() <= maxAgeMs)) {
+            runCatching { f.readText() }.getOrNull()
+        } else null
+    }
+    suspend fun writeRawText(name: String, text: String) = writeText(name, text)
+
+    // ===== 友链补全尝试记录（拉不到 meta 的站点节流重试，避免每进页重打）=====
+    private val enrichAttemptsType: Type = Types.newParameterizedType(
+        Map::class.java, String::class.java, Long::class.javaObjectType
+    )
+    suspend fun readEnrichAttempts(): Map<String, Long>? = read("enrich_attempts.json", enrichAttemptsType)
+    suspend fun writeEnrichAttempts(map: Map<String, Long>) = write("enrich_attempts.json", enrichAttemptsType, map)
 
     private val linkListType: Type = Types.newParameterizedType(List::class.java, FriendLink::class.java)
     suspend fun readFriendLinks(): List<FriendLink>? = read("friend_links.json", linkListType)
