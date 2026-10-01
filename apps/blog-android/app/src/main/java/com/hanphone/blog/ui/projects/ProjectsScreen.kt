@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.hanphone.blog.ui.components.AppBackBar
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
@@ -182,6 +183,7 @@ private fun LargeProjectCard(project: Project, onClick: () -> Unit) {
             ) {
                 AsyncImage(
                     model = project.picUrl?.let { resolveImageUrl(it) },
+                    imageLoader = ImageCaches.loader(ImageCaches.Feature.PROJECT),
                     contentDescription = project.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -228,6 +230,7 @@ private fun SmallProjectCard(project: Project, modifier: Modifier = Modifier, on
             ) {
                 AsyncImage(
                     model = project.picUrl?.let { resolveImageUrl(it) },
+                    imageLoader = ImageCaches.loader(ImageCaches.Feature.PROJECT),
                     contentDescription = project.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

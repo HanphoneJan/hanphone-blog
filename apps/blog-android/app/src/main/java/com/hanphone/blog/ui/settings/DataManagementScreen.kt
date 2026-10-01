@@ -27,8 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.LocalImageLoader
 import com.hanphone.blog.data.cache.ContentStore
+import com.hanphone.blog.data.cache.ImageCaches
+import com.hanphone.blog.data.cache.ImageCaches.Feature
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.chat.ChatSocket
 import com.hanphone.blog.ui.components.AppBackBar
@@ -38,22 +39,22 @@ import kotlinx.coroutines.withContext
 
 /**
  * 数据管理：按功能分项显示缓存占用并一键清除。独立子页，由设置页入口进入。
+ * 内容缓存（ContentStore）与图片缓存（ImageCaches，按功能分区）都逐项单独管理。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataManagementScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val imageLoader = LocalImageLoader.current
     var cacheSizes by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
-    var imageCacheSize by remember { mutableStateOf(0L) }
+    var imageSizes by remember { mutableStateOf<Map<Feature, Long>>(emptyMap()) }
+    var imageMemorySize by remember { mutableStateOf(0L) }
     var pendingClear by remember { mutableStateOf<PendingClear?>(null) }
 
     fun refreshSizes() {
         scope.launch {
             cacheSizes = ContentStore.cacheSizes()
-            val disk = imageLoader.diskCache?.size?.toLong() ?: 0L
-            val mem = imageLoader.memoryCache?.size?.toLong() ?: 0L
-            imageCacheSize = disk + mem
+            imageSizes = ImageCaches.diskSizes()
+            imageMemorySize = ImageCaches.memorySize()
         }
     }
 
@@ -77,21 +78,13 @@ fun DataManagementScreen(onBack: () -> Unit) {
             files.contains(name) || (prefix != null && name.startsWith(prefix))
         }.sumOf { it.value }
 
-    fun onImageCacheClear() {
-        scope.launch {
-            imageLoader.diskCache?.clear()
-            imageLoader.memoryCache?.clear()
-            refreshSizes()
-        }
-    }
-
     fun clearAllData() {
         scope.launch {
             withContext(Dispatchers.IO) { ContentStore.clearAll() }
             MemoryCache.resetAll()
             ChatSocket.clearLocalData()
-            imageLoader.diskCache?.clear()
-            imageLoader.memoryCache?.clear()
+            ImageCaches.clearAll()
+            ImageCaches.clearMemory()
             pendingClear = null
             refreshSizes()
         }
@@ -116,14 +109,16 @@ fun DataManagementScreen(onBack: () -> Unit) {
                         }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("随笔", featureSize(listOf("essay_first_page.json"), null)) {
+                    CacheRow("随笔 · 内容", featureSize(listOf("essay_first_page.json"), null)) {
                         onCacheCleared(listOf("essay_first_page.json"), null) { MemoryCache.essayMoments = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("留言板 · 友链", featureSize(listOf("board_messages.json", "friend_links.json"), null)) {
-                        onCacheCleared(listOf("board_messages.json", "friend_links.json"), null) {
-                            MemoryCache.boardMessages = null; MemoryCache.friendLinks = null
-                        }
+                    CacheRow("留言板", featureSize(listOf("board_messages.json"), null)) {
+                        onCacheCleared(listOf("board_messages.json"), null) { MemoryCache.boardMessages = null }
+                    }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    CacheRow("友链", featureSize(listOf("friend_links.json"), null)) {
+                        onCacheCleared(listOf("friend_links.json"), null) { MemoryCache.friendLinks = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     CacheRow("项目", featureSize(listOf("projects.json"), null)) {
@@ -134,14 +129,25 @@ fun DataManagementScreen(onBack: () -> Unit) {
                         onCacheCleared(listOf("docs.json"), null) { MemoryCache.docs = null }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    CacheRow("图片缓存", imageCacheSize) { onImageCacheClear() }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     CacheRow("消息（聊天）", featureSize(listOf("chat_public.json", "chat_users.json"), "chat_private_")) {
                         onCacheCleared(listOf("chat_public.json", "chat_users.json"), { it.startsWith("chat_private_") }) {
                             ChatSocket.clearLocalData()
                         }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+
+                    // ===== 图片缓存（按功能/页面分区管理）=====
+                    Feature.entries.forEach { f ->
+                        CacheRow("图片 · ${f.label}", imageSizes[f] ?: 0L) {
+                            scope.launch { ImageCaches.clear(f); refreshSizes() }
+                        }
+                        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    }
+                    CacheRow("图片 · 内存", imageMemorySize) {
+                        scope.launch { ImageCaches.clearMemory(); refreshSizes() }
+                    }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically

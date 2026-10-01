@@ -73,6 +73,7 @@ import com.hanphone.blog.data.chat.PrivateChatMessage
 import com.hanphone.blog.data.chat.PublicChatMessage
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.ui.components.Avatar
+import com.hanphone.blog.ui.components.RowListSkeleton
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
 import com.hanphone.blog.util.resolveImageUrl
 import java.text.SimpleDateFormat
@@ -132,7 +133,12 @@ fun ChatScreen(onLogin: () -> Unit) {
                 token == null -> Text("未登录", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                 state == ChatConnectionState.CONNECTED -> Text("聊天室在线 ${onlineCount}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 state == ChatConnectionState.CONNECTING -> Text("连接中…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                else -> Text("网络异常，重连中", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                else -> Text(
+                    "网络异常，点击重连",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.clickable { ChatSocket.reconnect(token) }
+                )
             }
         }
 
@@ -204,27 +210,8 @@ private fun PublicRoomContent(onLogin: () -> Unit) {
             else -> {
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     if (messages.isEmpty()) {
-                        when (state) {
-                            ChatConnectionState.CONNECTED -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("还没有消息，来说第一句吧～", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
-                            }
-                            ChatConnectionState.CONNECTING -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    CircularProgressIndicator()
-                                    Text(
-                                        "连接中…",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 12.dp)
-                                    )
-                                }
-                            }
-                            else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("连接失败，请检查网络", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    TextButton(onClick = { ChatSocket.reconnect(token) }, modifier = Modifier.padding(top = 6.dp)) { Text("重新连接") }
-                                }
-                            }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("还没有消息，来说第一句吧～", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
                         }
                     } else {
                         LazyColumn(
@@ -236,10 +223,6 @@ private fun PublicRoomContent(onLogin: () -> Unit) {
                             items(messages, key = { it.tempId ?: "id_${it.id}" }) { msg ->
                                 MessageBubble(msg.content, mine = msg.userId != null && msg.userId == myUserId, fromAi = msg.fromAi, nickname = msg.nickname, avatar = msg.avatar, timestamp = msg.timestamp, myAvatar = myAvatar)
                             }
-                        }
-                        // 断线不覆盖内容：顶部悬浮重连提示条
-                        if (state != ChatConnectionState.CONNECTED) {
-                            ReconnectBanner(state = state, onRetry = { ChatSocket.reconnect(token) }, modifier = Modifier.align(Alignment.TopCenter))
                         }
                     }
                 }
@@ -366,34 +349,15 @@ private fun AdminThreadContent(
                 }
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     if (all.isEmpty()) {
-                        when (state) {
-                            ChatConnectionState.CONNECTED -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        historyError ?: "还没有留言，打个招呼吧～",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = if (historyError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
-                                    )
-                                    if (historyError != null) {
-                                        TextButton(onClick = { historyError = null; loadTick++ }, modifier = Modifier.padding(top = 6.dp)) { Text("重试") }
-                                    }
-                                }
-                            }
-                            ChatConnectionState.CONNECTING -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    CircularProgressIndicator()
-                                    Text(
-                                        "连接中…",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 12.dp)
-                                    )
-                                }
-                            }
-                            else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("连接失败，请检查网络", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    TextButton(onClick = { ChatSocket.reconnect(token) }, modifier = Modifier.padding(top = 6.dp)) { Text("重新连接") }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    historyError ?: "还没有留言，打个招呼吧～",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (historyError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
+                                )
+                                if (historyError != null) {
+                                    TextButton(onClick = { historyError = null; loadTick++ }, modifier = Modifier.padding(top = 6.dp)) { Text("重试") }
                                 }
                             }
                         }
@@ -408,10 +372,6 @@ private fun AdminThreadContent(
                                 val mine = m.senderId == myUserId
                                 MessageBubble(m.content, mine = mine, fromAi = m.fromAi, nickname = if (m.fromAi) "AI" else (if (mine) "我" else peerName), avatar = if (m.fromAi || mine) null else peerAvatar, timestamp = m.timestamp, myAvatar = myAvatar)
                             }
-                        }
-                        // 断线不覆盖内容：顶部悬浮重连提示条
-                        if (state != ChatConnectionState.CONNECTED) {
-                            ReconnectBanner(state = state, onRetry = { ChatSocket.reconnect(token) }, modifier = Modifier.align(Alignment.TopCenter))
                         }
                     }
                 }
@@ -428,13 +388,17 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
     val userList by ChatSocket.userList.collectAsState()
     val repo = remember { BlogRepository() }
     var users by remember { mutableStateOf<List<ChatUser>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
     var open by remember { mutableStateOf<ChatUser?>(null) }
 
     // 冷启动秒显：REST 到达前先用本地缓存渲染列表（在线状态随后由 socket 覆盖）
     LaunchedEffect(Unit) {
         if (users.isEmpty()) {
             val cached = ContentStore.readChatUsers()
-            if (!cached.isNullOrEmpty()) users = cached
+            if (!cached.isNullOrEmpty()) {
+                users = cached
+                loading = false
+            }
         }
     }
 
@@ -448,6 +412,7 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
                 }
             }
         }
+        loading = false
     }
     val merged = remember(users, userList) {
         val map = LinkedHashMap<Long, ChatUser>()
@@ -470,6 +435,7 @@ private fun AdminInboxContent(onLogin: () -> Unit) {
             peerAvatar = open!!.avatar,
             onBack = { open = null }
         )
+        users.isEmpty() && loading -> RowListSkeleton(Modifier.padding(top = 8.dp), count = 8)
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 6.dp)) {
             items(merged, key = { it.id }) { u ->
                 Row(
@@ -543,30 +509,6 @@ private fun ChatInput(
                 modifier = Modifier.size(20.dp),
                 tint = if (value.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
             )
-        }
-    }
-}
-
-/** 断连/重连提示条：悬浮在消息列表顶部，不遮挡历史内容；整体可点击重试 */
-@Composable
-private fun ReconnectBanner(state: ChatConnectionState, onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shadowElevation = 2.dp,
-        shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
-        modifier = modifier.fillMaxWidth().clickable(onClick = onRetry)
-    ) {
-        Row(
-            Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (state == ChatConnectionState.CONNECTING) {
-                CircularProgressIndicator(Modifier.size(13.dp), strokeWidth = 2.dp)
-                Text("正在连接…", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                Text("网络异常，点击重试", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
-            }
         }
     }
 }

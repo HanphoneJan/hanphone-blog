@@ -71,6 +71,7 @@ import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.core.draftFlow
 import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
 import com.hanphone.blog.ui.MarkdownContent
@@ -321,7 +322,8 @@ private fun MomentsRow(
             url = essay.user?.avatar,
             name = essay.user?.nickname ?: "友",
             size = 44.dp,
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(8.dp),
+            feature = ImageCaches.Feature.ESSAY
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -364,50 +366,30 @@ private fun MomentsRow(
             ) {
                 Text(
                     formatDateTime(essay.createTime),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.outline
                 )
                 Spacer(Modifier.weight(1f))
-                // 胶囊操作条：紧凑内边距 + 小图标，高度与时间行(约16dp)协调，不抢视觉
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh
-                ) {
-                    Row(
-                        Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // 赞（仅图标）
-                        Row(
-                            Modifier.clip(RoundedCornerShape(16.dp)).clickable { doLike() }.padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = "点赞",
-                                Modifier.size(14.dp),
-                                tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        // 写评论
-                        Row(
-                            Modifier.clip(RoundedCornerShape(16.dp)).clickable { onComment(essay.id) }.padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Filled.Create, contentDescription = "写评论", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        // 评论区折叠/展开
-                        Row(
-                            Modifier.clip(RoundedCornerShape(16.dp)).clickable { toggleComments() }.padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Filled.Email,
-                                contentDescription = if (commentsOpen) "收起评论" else "展开评论",
-                                Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                // 操作区：无胶囊背景盒（去掉「外部区域边框」），仅图标按钮与时间行视觉一致
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+                    IconButton(onClick = { doLike() }, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "点赞",
+                            Modifier.size(18.dp),
+                            tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { onComment(essay.id) }, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Filled.Create, contentDescription = "写评论", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { toggleComments() }, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            Icons.Filled.Email,
+                            contentDescription = if (commentsOpen) "收起评论" else "展开评论",
+                            Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -451,6 +433,7 @@ private fun MomentsImageGrid(urls: List<String>, onClick: () -> Unit) {
     when {
         resolved.size == 1 -> AsyncImage(
             model = resolved[0],
+            imageLoader = ImageCaches.loader(ImageCaches.Feature.ESSAY),
             contentDescription = null,
             modifier = Modifier.fillMaxWidth(0.6f).then(cell),
             contentScale = ContentScale.Crop
@@ -460,14 +443,14 @@ private fun MomentsImageGrid(urls: List<String>, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             resolved.forEach { url ->
-                AsyncImage(model = url, contentDescription = null, modifier = Modifier.weight(1f).then(cell), contentScale = ContentScale.Crop)
+                AsyncImage(model = url, imageLoader = ImageCaches.loader(ImageCaches.Feature.ESSAY), contentDescription = null, modifier = Modifier.weight(1f).then(cell), contentScale = ContentScale.Crop)
             }
         }
         else -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             resolved.chunked(3).forEach { rowUrls ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     rowUrls.forEach { url ->
-                        AsyncImage(model = url, contentDescription = null, modifier = Modifier.weight(1f).then(cell), contentScale = ContentScale.Crop)
+                        AsyncImage(model = url, imageLoader = ImageCaches.loader(ImageCaches.Feature.ESSAY), contentDescription = null, modifier = Modifier.weight(1f).then(cell), contentScale = ContentScale.Crop)
                     }
                 }
             }
@@ -517,7 +500,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(bottom = 24.dp)) {
                     item {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Avatar(url = essay!!.user?.avatar, name = essay!!.user?.nickname ?: "友", size = 42.dp, shape = RoundedCornerShape(8.dp))
+                            Avatar(url = essay!!.user?.avatar, name = essay!!.user?.nickname ?: "友", size = 42.dp, shape = RoundedCornerShape(8.dp), feature = ImageCaches.Feature.ESSAY)
                             Column(Modifier.weight(1f)) {
                                 Text(essay!!.user?.nickname ?: "友", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                                 Text(formatDateTime(essay!!.createTime), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
@@ -536,6 +519,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                                     resolveImageUrl(url)?.let { resolved ->
                                         AsyncImage(
                                             model = resolved,
+                                            imageLoader = ImageCaches.loader(ImageCaches.Feature.ESSAY),
                                             contentDescription = null,
                                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)),
                                             contentScale = ContentScale.FillWidth
@@ -554,7 +538,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                     if (comments.isNotEmpty()) {
                         items(comments, key = { it.id }) { c ->
                             Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clickable { replyTarget = c }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Avatar(url = c.user?.avatar, name = c.user?.nickname ?: "友", size = 36.dp)
+                                Avatar(url = c.user?.avatar, name = c.user?.nickname ?: "友", size = 36.dp, feature = ImageCaches.Feature.ESSAY)
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(c.user?.nickname ?: "友", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)

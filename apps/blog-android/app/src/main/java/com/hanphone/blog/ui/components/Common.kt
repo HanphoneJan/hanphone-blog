@@ -42,7 +42,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.util.resolveImageUrl
 import kotlinx.coroutines.delay
 
@@ -98,34 +102,49 @@ fun EmptyBox(message: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** 头像：有 URL 显图，否则显示首字符。shape 默认圆形，朋友圈可传圆角方形 */
+/** 头像：有 URL 显图，否则显示占位首字；图片加载失败同占位首字兜底。feature 决定图片归属的磁盘缓存分区 */
 @Composable
 fun Avatar(
     url: String?,
     name: String,
     size: Dp = 36.dp,
     modifier: Modifier = Modifier,
-    shape: Shape = CircleShape
+    shape: Shape = CircleShape,
+    feature: ImageCaches.Feature = ImageCaches.Feature.CHAT
 ) {
     val resolved = remember(url) { url?.let { resolveImageUrl(it) } }
-    if (resolved != null) {
+    var failed by remember(resolved) { mutableStateOf(false) }
+    if (resolved != null && !failed) {
         AsyncImage(
             model = resolved,
+            imageLoader = ImageCaches.loader(feature),
             contentDescription = name,
             modifier = modifier.size(size).clip(shape),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            onError = { failed = true }
         )
     } else {
-        Box(
-            modifier.then(Modifier.size(size).clip(shape).background(MaterialTheme.colorScheme.primaryContainer)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                name.firstOrNull()?.toString() ?: "匿",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
+        AvatarPlaceholder(name, size, modifier, shape)
+    }
+}
+
+/** 头像缺省占位：取名称首字符 */
+@Composable
+private fun AvatarPlaceholder(
+    name: String,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    shape: Shape = CircleShape
+) {
+    Box(
+        modifier.then(Modifier.size(size).clip(shape).background(MaterialTheme.colorScheme.primaryContainer)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            name.firstOrNull()?.toString() ?: "匿",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -106,23 +107,23 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
         // ===== 内容层 =====
         Column(Modifier.fillMaxSize()) {
             // 顶部筛选行：搜索 + 漏斗（有激活筛选时主色高亮 + 圆点）
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 10.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)) {
                 Surface(
-                    shape = RoundedCornerShape(22.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
-                    Row(Modifier.padding(start = 12.dp, end = 2.dp, top = 2.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.padding(start = 14.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Search, null, Modifier.size(18.dp))
                         Row(
-                            Modifier.weight(1f).padding(horizontal = 8.dp).clickable { onSearch() }.padding(vertical = 6.dp),
+                            Modifier.weight(1f).padding(horizontal = 8.dp).clickable { onSearch() },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("搜索博客、随笔、文档…", style = MaterialTheme.typography.bodyMedium)
                         }
                         Box {
-                            IconButton(onClick = { showFilter = !showFilter }) {
+                            IconButton(onClick = { showFilter = !showFilter }, modifier = Modifier.size(32.dp)) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.List,
                                     "筛选",
@@ -131,7 +132,7 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
                             }
                             if (hasFilter) {
                                 Box(
-                                    Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp)
+                                    Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp)
                                         .size(7.dp).clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.primary)
                                 )

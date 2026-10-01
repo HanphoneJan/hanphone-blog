@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.util.formatDate
 import com.hanphone.blog.util.resolveImageUrl
@@ -59,6 +60,7 @@ fun ArticleCard(
                         .data(cover)
                         .crossfade(180)
                         .build(),
+                    imageLoader = ImageCaches.loader(ImageCaches.Feature.BLOG),
                     contentDescription = blog.title,
                     modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
                     contentScale = ContentScale.Crop

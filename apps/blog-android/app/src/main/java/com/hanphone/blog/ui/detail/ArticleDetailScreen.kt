@@ -58,6 +58,7 @@ import coil.compose.AsyncImage
 import com.hanphone.blog.core.draftFlow
 import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.ui.MarkdownBlockContent
@@ -362,6 +363,7 @@ private fun DetailHeader(blog: Blog) {
         if (cover != null) {
             AsyncImage(
                 model = cover,
+                imageLoader = ImageCaches.loader(ImageCaches.Feature.BLOG),
                 contentDescription = blog.title,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp).clip(RoundedCornerShape(10.dp)),
                 contentScale = ContentScale.FillWidth

@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.core.draftFlow
 import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.Avatar
@@ -145,7 +146,7 @@ fun MessageScreen(onBack: () -> Unit) {
 @Composable
 private fun MessageRow(message: Message, onReply: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Avatar(url = message.avatar, name = message.nickname, size = 40.dp)
+        Avatar(url = message.avatar, name = message.nickname, size = 40.dp, feature = ImageCaches.Feature.MESSAGE)
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(message.nickname, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)

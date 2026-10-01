@@ -115,7 +115,8 @@ data class FriendLink(
     val url: String = "",
     val avatar: String? = null,
     val color: String? = null,
-    val recommend: Boolean = false
+    val recommend: Boolean = false,
+    val type: String = "friend"
 )
 
 /**
