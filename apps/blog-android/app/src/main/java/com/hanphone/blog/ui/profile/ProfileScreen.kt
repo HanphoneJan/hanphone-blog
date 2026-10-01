@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.BuildConfig
@@ -70,8 +71,13 @@ import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
 import com.hanphone.blog.util.md5Hex
 import com.hanphone.blog.util.resolveImageUrl
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
+import java.nio.charset.Charset
+import org.json.JSONObject
 
 private val appeVersion: String get() = BuildConfig.VERSION_NAME
 
@@ -103,6 +109,45 @@ fun ProfileScreen(
     LaunchedEffect(userId) { vm.loadProfile(userId) }
 
     fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+
+    // ===== 检查更新（GitHub Release）=====
+    var checking by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+
+    fun checkUpdate() {
+        if (checking || updateInfo != null) return
+        scope.launch {
+            checking = true
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    URL("https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest")
+                        .openStream().bufferedReader(Charset.forName("UTF-8")).use { it.readText() }
+                }
+                val obj = JSONObject(json)
+                val tag = obj.optString("tag_name", "")
+                val body = obj.optString("body", "")
+                var apkUrl = ""
+                val assets = obj.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val a = assets.getJSONObject(i)
+                        if (a.optString("name", "").endsWith(".apk")) {
+                            apkUrl = a.optString("browser_download_url", "")
+                            break
+                        }
+                    }
+                }
+                if (tag.isNotBlank() && isNewerVersion(tag, BuildConfig.VERSION_NAME) && apkUrl.isNotBlank()) {
+                    updateInfo = UpdateInfo(version = tag, body = body, apkUrl = apkUrl)
+                } else {
+                    toast("已是最新版本")
+                }
+            } catch (e: Exception) {
+                toast("检查更新失败")
+            }
+            checking = false
+        }
+    }
 
     // 展示优先级：网络资料 > 本地登录态缓存
     val displayName = vm.profile?.nickname?.takeIf { it.isNotBlank() } ?: (userName ?: "云林访客")
@@ -269,11 +314,44 @@ fun ProfileScreen(
                 // 链接区
                 AboutLinkRow("访问博客网站", "hanphone.cn") { uriHandler.openUri("https://hanphone.cn") }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                AboutLinkRow("检查更新", if (checking) "检查中…" else "当前 v$appeVersion") { checkUpdate() }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 AboutLinkRow("作者 GitHub", "HanphoneJan") { uriHandler.openUri("https://github.com/HanphoneJan") }
             }
         }
         } // Column
     } // PullToRefreshBox
+
+    // ===== 更新提示对话框 =====
+    updateInfo?.let { info ->
+        AlertDialog(
+            onDismissRequest = { updateInfo = null },
+            title = { Text("发现新版本 ${info.version}") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("当前版本 v$appeVersion，可升级到 ${info.version}。", style = MaterialTheme.typography.bodyMedium)
+                    if (info.body.isNotBlank()) {
+                        Text(
+                            info.body,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 8,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    uriHandler.openUri(info.apkUrl) // 浏览器下载 APK 安装
+                    updateInfo = null
+                }) { Text("去更新") }
+            },
+            dismissButton = {
+                TextButton(onClick = { updateInfo = null }) { Text("稍后") }
+            }
+        )
+    }
 
     // ===== 编辑资料对话框 =====
     if (showEditProfile) {
@@ -514,4 +592,20 @@ private fun ProfileEditDialog(
             TextButton(onClick = onDismiss, enabled = !saving && !uploading && !sendingCaptcha) { Text("取消") }
         }
     )
+}
+
+/** 检查更新：GitHub 最新 Release 信息 */
+private data class UpdateInfo(val version: String, val body: String, val apkUrl: String)
+
+/** 语义化版本比较：latest 是否比 current 新（支持 v 前缀与可不齐的段） */
+internal fun isNewerVersion(latest: String, current: String): Boolean {
+    fun parse(v: String): List<Int> = v.trim().removePrefix("v").split('.').map { it.toIntOrNull() ?: 0 }
+    val l = parse(latest)
+    val c = parse(current)
+    for (i in 0 until maxOf(l.size, c.size)) {
+        val a = l.getOrElse(i) { 0 }
+        val b = c.getOrElse(i) { 0 }
+        if (a != b) return a > b
+    }
+    return false
 }

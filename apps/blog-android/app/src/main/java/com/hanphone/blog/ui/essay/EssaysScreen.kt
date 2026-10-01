@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
@@ -458,7 +459,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                             }
                         }
                     }
-                    item { MarkdownContent(markdown = essay!!.content, modifier = Modifier.padding(horizontal = 16.dp)) }
+                    item { SelectionContainer { MarkdownContent(markdown = essay!!.content, modifier = Modifier.padding(horizontal = 16.dp)) } }
                     val images = essay!!.essayFileUrls.filter { it.urlType != "video" }.mapNotNull { it.url } + listOfNotNull(essay!!.image)
                     if (images.isNotEmpty()) {
                         item {

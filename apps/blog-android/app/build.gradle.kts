@@ -32,6 +32,8 @@ android {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "API_BASE_URL", "\"https://hanphone.cn/api/\"")
+            // 自分发：用 debug 密钥签名，便于直接安装/升级（正式商店签名留作 S5）
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

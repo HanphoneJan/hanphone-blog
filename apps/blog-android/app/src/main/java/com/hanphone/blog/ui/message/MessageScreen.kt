@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
@@ -141,12 +144,16 @@ private fun MessageRow(message: Message, onReply: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 Text(formatDateTime(message.createTime), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
             }
-            Text(message.content, style = MaterialTheme.typography.bodyLarge)
-            TextButton(
-                onClick = onReply,
-                contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.padding(top = 2.dp)
-            ) { Text("回复", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+            // 点击内容回复（替代独立回复按钮）；内容可长按选中复制
+            SelectionContainer {
+                Text(
+                    message.content,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.pointerInput(message.id) {
+                        detectTapGestures { onReply() }
+                    }
+                )
+            }
         }
     }
 }

@@ -81,7 +81,7 @@ ui/
 
 ### 3.3 评论 / 点赞
 - 文章评论：**登录后评论**（对齐网页版 CommentForm——网页未登录时表单禁用并引导登录）。App 端点「评论」时未登录→提示"请先登录"+去登录；已登录弹窗只填内容，请求带 `userId`（后端取本人资料），**无昵称/邮箱输入**（`repo.postCommentAsUser`）。旧匿名（nickname+email）请求仅后端兼容保留，App 不再使用。
-- **文章评论回复**（对齐网页版）：每条评论下有「回复」→ 弹窗标题「回复 @xxx」，提交带 `parentId`（`postCommentAsUser(...parentId)`）；后端 Comment 的 `parentComment` 被 `@JsonIgnore`（列表不回传父级），新回复的「回复 @x」标签由 UI 本地 `replyHints` 记录展示，历史回复呈扁平列表（与网页 GET 行为一致）。
+- **文章评论回复**（对齐网页版）：**点击评论内容即回复**（无独立回复按钮，纵向更紧凑），弹窗标题「回复 @xxx」，提交带 `parentId`（`postCommentAsUser(...parentId)`）；后端 Comment 的 `parentComment` 被 `@JsonIgnore`（列表不回传父级），新回复的「回复 @x」标签由 UI 本地 `replyHints` 记录展示，历史回复呈扁平列表（与网页 GET 行为一致）。**评论内容可长按选中复制**（`SelectionContainer` + `detectTapGestures` 共存：点=回复、长按=选择）。
 - 随笔评论：**必须登录**（body `userId`）；**列表项与详情页均支持回复**（`parentCommentId` 楼层回复，弹窗「回复 @昵称」）。
 - 点赞（文章/随笔）：需登录，body `{ userId, blogId/essayId, isLike }`。
 - 随笔评论 POST `/essays/{id}/comments` 也需要 `X-Request-Id`。
@@ -100,7 +100,7 @@ ui/
 ### 3.6 留言板（对齐网页版：不填昵称、支持回复）
 - 网页版 `useMessages.publish` 里作者 = 登录 `nickname`，未登录固定 `"匿名用户"`，**无语名输入框**。
 - App 写留言弹窗只填内容；作者 = 登录昵称 ?: `"匿名用户"`，头像 = 登录头像 ?: 设置页上传头像（`repo.postMessage(nickname, content, avatar, parentId)` 已支持）。
-- **留言回复**（对齐网页版）：每条留言有「回复」→ 弹窗标题「回复 @xxx」，提交带 `parentId`；后端 Message 会**内嵌返回 `parentMessage`**（非 @JsonIgnore），列表直接展示「回复 @父昵称」标签。
+- **留言回复**（对齐网页版）：**点击留言内容即回复**（无独立回复按钮），弹窗标题「回复 @xxx」，提交带 `parentId`；后端 Message 会**内嵌返回 `parentMessage`**（非 @JsonIgnore），列表直接展示「回复 @父昵称」标签。**留言内容可长按选中复制**。
 
 ## 4. 信息架构与每屏要点（含用户明确要求）
 
@@ -130,7 +130,9 @@ ui/
 - 「文库」= 独立页：数据来自 `GET /docs`，按 `docNamespace` 构建文件夹树（`blog/docs/子目录` → 顶层文件夹，对齐 web DocLoader）；文件夹浏览 + 面包屑、名称/路径搜索、类型筛选 pills（Word/PDF/MD/HTML 带计数，对齐 web DocsFilter）；文件行 = 彩色类型徽标 + 名称 + 推荐星 + 日期；打开文件：**HTML → WebView**、**MD → 应用内 Markdown 预览**（`DocMarkdownScreen`，文件服务原文去 frontmatter 后渲染）、**PDF/DOCX → 系统打开/下载**；文件 URL = `https://hanphone.top/{docNamespace}/{文件名}` 逐段 URI 编码（`util/buildDocFileUrl`），打开即上报浏览量 `POST /docs/{docId}/view`。
 - 「设置」独立页：账号（点头像上传头像、登录/退出）+ 外观（**主题：跟随系统/白日（浅色）/黑夜（深色）**；自定义背景：相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）。
 - **资料编辑**（「我的」点头像，对齐网页 UserInfoForm）：昵称 + 头像 + **邮箱**（改邮箱需向新邮箱发通用验证码 `scene=general`，非管理员必填；管理员免验证码）+ **新密码**（可选，≥6 位含字母数字，`md5` 传输）。保存走 `POST /user/current/update`（body 根级带 `captcha`），后端 `UserServiceImpl.updateCurrentUser` 会对 `user.password` 做 bcrypt。
-- 「我的 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + `versionName`（BuildConfig） + 简介 + 链接行（访问博客网站 hanphone.cn / 作者 GitHub），点击走系统浏览器。
+- 「我的 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + `versionName`（BuildConfig） + 简介 + 链接行（**检查更新** / 访问博客网站 hanphone.cn / 作者 GitHub），点击走系统浏览器。
+- **检查更新**（关于→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 去更新(浏览器下载 APK)/稍后」，无新版 toast「已是最新版本」。API 与下载链在**直连网络可用**。
+- **发布渠道**：GitHub Release `v{versionName}`（debug 密钥签名的 release APK，`assembleRelease` 已配 `signingConfig = debug`，可覆盖升级；正式签名留 S5）。
 - **占位图规范**：未登录头像/登录页/注册页/关于徽标一律用 `R.drawable.ic_blog`（CircleShape 裁剪），**不再用文字「云」**。
 
 ### 登录 / 注册
@@ -218,5 +220,6 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 7. **401 拦截器**：`ApiClient` 401 清登录态仅对博客 API 生效；`chat-api`（独立服务，鉴权失败原因不同）的 401 **不能**清 `TokenStore`，否则聊天偶发失败会把用户登出。
 8. **UI 组件尺寸**：M3 `OutlinedTextField` 最小 56dp、`Button` 最小 40dp，不要强制更小（label 会被挤压）；小字标签用 `labelSmall`（自带 16sp 行高），只改 `fontSize` 会继承 bodyLarge 的 26sp 行高导致间距过大。聊天输入栏用 `BasicTextField` 胶囊（44dp）。
 9. **加载体验**：新页面首载用骨架屏（`ui/components/Skeleton.kt`，勿用全屏转圈）；列表/详情返回秒显靠 `MemoryCache` + 静默刷新；"我的"页支持下拉刷新。
+9a. **长按选择文字**：正文/评论/留言等可读文本统一包 `SelectionContainer`（博客正文按块、随笔正文、评论/留言内容）；「点内容=回复」的评论/留言内容用 `Modifier.pointerInput { detectTapGestures { ... } }` 与 `SelectionContainer` 共存（点=动作、长按=复制）。
 13. **网页版文库能看、App WebView 白屏**：文件服务（admin-file，hanphone.top）对所有文件响应带 `Content-Disposition: attachment`——WebView 直接 `loadUrl` 会把页面当**下载**，主框架 200 后立刻跳 `about:blank` 白屏（`onPageStarted` 不触发、子资源不加载、无 onReceivedError）。**修复：先 fetch 文件文本再用 `loadDataWithBaseURL(baseUrl=文件目录, html, "text/html","utf-8",null)` 渲染**（网页版 docLoader 也是 fetch 字节渲染，不是直接导航）。文库 .md 预览同理会 fetch 文本。判断「附件下载 vs 页面」看响应头 `content-disposition`。
 14. **Toast 原则**：非必要不弹。成功且 UI 已有可见反馈（列表插入新条目、点赞数字变化、头像预览更新）一律不弹；失败、表单校验、登录态提示才弹。聊天 socket 的连接失败走 ReconnectBanner，不发 toast。

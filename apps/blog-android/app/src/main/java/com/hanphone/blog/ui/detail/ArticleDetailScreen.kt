@@ -21,6 +21,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.List
@@ -159,10 +162,12 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                 ) {
                     item { DetailHeader(blog!!) }
                     itemsIndexed(blocks) { index, block ->
-                        MarkdownBlockContent(
-                            block = block,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
-                        )
+                        SelectionContainer {
+                            MarkdownBlockContent(
+                                block = block,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                            )
+                        }
                         // 每块之间留少量间距（标题块自身由 typography 行距承担）
                         if (index < blocks.lastIndex) Spacer(Modifier.height(6.dp))
                     }
@@ -371,12 +376,16 @@ private fun CommentRow(
                 Spacer(Modifier.weight(1f))
                 Text(formatDateTime(comment.createTime), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
             }
-            Text(comment.content, style = MaterialTheme.typography.bodyMedium)
-            TextButton(
-                onClick = { onReply(comment) },
-                contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.padding(top = 2.dp)
-            ) { Text("回复", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+            // 点击内容回复（替代独立回复按钮，压缩纵向间距）；内容可长按选中复制
+            SelectionContainer {
+                Text(
+                    comment.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.pointerInput(comment.id) {
+                        detectTapGestures { onReply(comment) }
+                    }
+                )
+            }
         }
     }
 }
