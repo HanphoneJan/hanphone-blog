@@ -12,6 +12,7 @@ import com.example.blog.service.DocService;
 import com.example.blog.service.EssayService;
 import com.example.blog.service.FriendLinkService;
 import com.example.blog.service.ProjectService;
+import com.example.blog.util.EssayFileUrlFields;
 import com.example.blog.util.InternalKeyVerifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -125,6 +126,8 @@ public class McpContentApiController {
                         EssayFileUrl fileUrl = new EssayFileUrl();
                         fileUrl.setUrl(url);
                         fileUrl.setUrlType(urlType);
+                        // 缩略图元信息（可选，缺失则回退原图）
+                        EssayFileUrlFields.applyTo(fileUrlMap, fileUrl);
                         fileUrl.setEssay(essay);
                         fileUrls.add(fileUrl);
                     }

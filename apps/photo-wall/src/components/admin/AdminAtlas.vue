@@ -216,7 +216,7 @@
               
               <!-- 图片 -->
               <div class="photo-thumb">
-                <img :src="photo.path" :alt="photo.title" loading="lazy" />
+                <img :src="displayThumb(photo)" :alt="photo.title" loading="lazy" />
                 
                 <!-- 悬停遮罩 -->
                 <div class="photo-overlay" v-if="!isBatchMode">
@@ -279,7 +279,7 @@
           </div>
           
           <div class="list-cell thumb-cell">
-            <img :src="photo.path" :alt="photo.title" />
+            <img :src="displayThumb(photo)" :alt="photo.title" />
           </div>
           
           <div class="list-cell info-cell">
@@ -733,7 +733,15 @@ interface Photo {
   tags: Tag[];
   userId: number;
   username?: string;
+  /** 服务端上传时生成的缩略图 URL，老数据为 null */
+  thumb_path?: string | null;
 }
+
+/**
+ * 后台列表/网格里的缩略图地址。
+ * 管理页一次要渲染全部照片，如果直出原图（单张最大 12MB）会把浏览器和服务器一起打爆。
+ */
+const displayThumb = (photo: Photo): string => photo.thumb_path || photo.path;
 
 interface PhotoGroup {
   date: string;
@@ -1253,8 +1261,8 @@ const startUpload = async () => {
   uploadStatusText.value = '正在上传文件...';
   
   try {
-    // 上传文件
-    const urls: string[] = [];
+    // 上传文件。服务端会在写盘后同步生成多档 WebP 缩略图，并回传原图宽高与缩略图地址
+    const assets: Array<{ url: string; width: number | null; height: number | null; thumbPath: string | null }> = [];
     for (let i = 0; i < uploadFiles.value.length; i++) {
       const file = uploadFiles.value[i];
       const formData = new FormData();
@@ -1266,7 +1274,12 @@ const startUpload = async () => {
       });
       
       if (res.data?.url) {
-        urls.push(res.data.url);
+        assets.push({
+          url: res.data.url,
+          width: res.data.width ?? null,
+          height: res.data.height ?? null,
+          thumbPath: res.data.thumbPath ?? null,
+        });
       }
       
       uploadProgress.value = Math.round(((i + 1) / uploadFiles.value.length) * 50);
@@ -1275,20 +1288,21 @@ const startUpload = async () => {
     uploadStatusText.value = '正在保存信息...';
     
     // 提交照片信息
-    for (let i = 0; i < urls.length; i++) {
+    for (let i = 0; i < assets.length; i++) {
       const file = uploadFiles.value[i];
       const data = {
         title: file.customTitle || `${batchUploadForm.value.titlePrefix || '照片'} ${i + 1}`,
         author: batchUploadForm.value.author || '佚名',
         description: file.customDescription || batchUploadForm.value.description || '无',
         userId: userStore.userId,
-        urls: [urls[i]],
+        // 传对象而非裸 URL，服务端会一并落库 width/height/thumb_path
+        urls: [assets[i]],
         tags: batchUploadForm.value.tags,
         takenTime: file.takenTime || null
       };
       
       await api.post(ENDPOINTS.UPLOAD, data);
-      uploadProgress.value = 50 + Math.round(((i + 1) / urls.length) * 50);
+      uploadProgress.value = 50 + Math.round(((i + 1) / assets.length) * 50);
     }
     
     uploadStatus.value = 'success';

@@ -48,6 +48,7 @@ android {
 
 dependencies {
     implementation(libs.core.ktx)
+    implementation(libs.webkit)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.activity.compose)

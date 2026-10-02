@@ -86,24 +86,33 @@ export default defineConfig({
         //注意：runtimeCaching 的 cacheName 必须使用固定名称，否则每次构建旧缓存成为孤儿无法被清理
         runtimeCaching: [
           {
-            urlPattern: /\/api\/.*\.json$/,
+            // 实际接口路径是 /nodejs/atlas/*（原规则 /api/.*\.json$ 匹配不到，一直是死规则）
+            urlPattern: /\/nodejs\/atlas\/.*/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'atlas-api-cache',
+              cacheableResponse: { statuses: [200] },
+              networkTimeoutSeconds: 5,
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24,
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60,
               },
             },
           },
           {
-            urlPattern: /\.(?:png|jpe?g|gif|svg|webp|avif|bmp)(?:[?#].*)?$/i,// 匹配请求路径
-            handler: 'CacheFirst',  // 网络优先，如果请求失败，使用缓存
+            // 图片：原图可达 12MB/张，CacheFirst 会把跨域 opaque 响应整份塞进
+            // Cache Storage，条目一多就把配额撑爆，反而每次都要重新下载。
+            // 现在列表页走缩略图（几 KB~几百 KB），用 StaleWhileRevalidate 兼顾秒开与更新。
+            urlPattern: /\.(?:png|jpe?g|gif|svg|webp|avif|bmp)(?:[?#].*)?$/i,
+            handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'atlas-image-cache', // 固定名称，靠 expiration 控制缓存条目数量和过期
+              // v2：策略从 CacheFirst 换成 StaleWhileRevalidate，换名让旧缓存自然淘汰
+              cacheName: 'atlas-image-cache-v2',
+              cacheableResponse: { statuses: [0, 200] }, // 0 = 跨域 opaque 响应
               expiration: {
-                maxEntries: 100,  // 最大缓存数量
-                maxAgeSeconds: 60 * 60 * 24 * 3, // 缓存3天
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+                purgeOnQuotaError: true,
               },
             },
           },

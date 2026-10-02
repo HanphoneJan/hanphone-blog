@@ -10,6 +10,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { verifyToken } = require('./token');
 const { logger, httpLogger } = require('./logger');
+const { generateThumbnails, THUMB_WIDTHS } = require('./lib/thumbnail');
 const app = express();
 const PORT = process.env.PORT || 4000;
 const baseUploadDir = path.join(__dirname, "uploads");
@@ -388,6 +389,57 @@ function assertInsideUploadDir(targetPath) {
     const err = new Error("非法的路径");
     err.statusCode = 400;
     throw err;
+  }
+}
+
+/**
+ * 按路径段逐段编码（保留 / 分隔符）
+ * 整串 encodeURIComponent 会把 / 变成 %2F，虽然当前 nginx 能容错，但会让 URL 难读、
+ * 且部分 CDN / 代理对 %2F 处理不一致，因此统一按段编码。
+ */
+function encodeUrlPath(relPath) {
+  return relPath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+/**
+ * 为已落盘的图片生成缩略图，并组装成可直接返回给前端的字段。
+ * 缩略图失败不影响原图上传成功，因此这里吞掉所有异常，只记录日志。
+ *
+ * @param {string} absPath 源文件绝对路径
+ * @param {string} relPath 源文件相对 baseUploadDir 的路径（未编码）
+ * @returns {Promise<{width:number|null,height:number|null,thumbPath:string|null,thumbs:Object}>}
+ */
+async function buildImageMeta(absPath, relPath) {
+  try {
+    const { width, height, thumbs } = await generateThumbnails(absPath, relPath);
+
+    // 优先返回 800w 作为列表页默认缩略图（4 列瀑布流在 1440px 屏上约 360px/列，留足 2x  retina 余量）
+    const preferredWidth = 800;
+    const thumbRel =
+      thumbs[String(preferredWidth)] ||
+      thumbs[String(preferredWidth / 2)] ||
+      null;
+
+    const encodedThumbs = {};
+    for (const key of THUMB_WIDTHS.map(String)) {
+      encodedThumbs[key] = thumbs[key] ? `https://hanphone.top/${encodeUrlPath(thumbs[key])}` : null;
+    }
+
+    return {
+      width,
+      height,
+      thumbPath: thumbRel ? `https://hanphone.top/${encodeUrlPath(thumbRel)}` : null,
+      thumbs: encodedThumbs,
+    };
+  } catch (err) {
+    logger.warn("生成缩略图失败（已忽略，不影响原图）", {
+      file: relPath,
+      error: err.message,
+    });
+    return { width: null, height: null, thumbPath: null, thumbs: {} };
   }
 }
 
@@ -802,14 +854,13 @@ app.post("/upload", authenticateToken, upload.single("file"), async (req, res) =
     }
 
     // 按路径段逐段编码，保留 / 分隔符（避免整串编码产生 %2F）
-    const encodedUrlDir = urlDir
-      .split("/")
-      .map((segment) => encodeURIComponent(segment))
-      .join("/");
-    const encodedFilename = encodeURIComponent(req.file.filename);
-    const urlPath = `${encodedUrlDir}/${encodedFilename}`;
+    const urlPath = encodeUrlPath(`${urlDir}/${req.file.filename}`);
 
-    // 5. 返回成功响应
+    // 5. 生成缩略图（仅图片；失败不影响原图上传）
+    const relPath = `${urlDir}/${req.file.filename}`;
+    const imageMeta = await buildImageMeta(finalPath, relPath);
+
+    // 6. 返回成功响应
     res.json({
       code: 200,
       message: "文件上传成功",
@@ -820,6 +871,10 @@ app.post("/upload", authenticateToken, upload.single("file"), async (req, res) =
       originalName: fixedName,
       mimetype: req.file.mimetype,
       size: req.file.size,
+      width: imageMeta.width,
+      height: imageMeta.height,
+      thumbPath: imageMeta.thumbPath,
+      thumbs: imageMeta.thumbs,
     });
   } catch (err) {
     logger.error("处理上传文件时出错:", { error: err.message, stack: err.stack, filename: req.file?.filename });
@@ -933,12 +988,11 @@ app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (r
         urlDir = finalCategoryForResponse;
       }
 
-      const encodedUrlDir = urlDir
-        .split("/")
-        .map((segment) => encodeURIComponent(segment))
-        .join("/");
-      const encodedFilename = encodeURIComponent(file.filename);
-      const urlPath = `${encodedUrlDir}/${encodedFilename}`;
+      const urlPath = encodeUrlPath(`${urlDir}/${file.filename}`);
+
+      // 生成缩略图（仅图片；失败不影响原图上传）
+      const relPath = `${urlDir}/${file.filename}`;
+      const imageMeta = await buildImageMeta(finalPath, relPath);
 
       results.push({
         success: true,
@@ -949,6 +1003,10 @@ app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (r
         namespace: namespace || null,
         mimetype: file.mimetype,
         size: file.size,
+        width: imageMeta.width,
+        height: imageMeta.height,
+        thumbPath: imageMeta.thumbPath,
+        thumbs: imageMeta.thumbs,
       });
       successCount++;
     } catch (err) {

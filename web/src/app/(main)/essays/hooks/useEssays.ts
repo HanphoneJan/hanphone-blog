@@ -96,7 +96,14 @@ export function useEssays(userInfo: UserInfo | null, options: UseEssaysOptions =
           ? {
               Media: item.essayFileUrls
                 .filter(f => f.urlType === 'IMAGE' || f.urlType === 'VIDEO')
-                .map(f => ({ url: f.url, type: (f.urlType === 'VIDEO' ? 'video' : 'image') as FileType })),
+                .map(f => ({
+                  url: f.url,
+                  type: (f.urlType === 'VIDEO' ? 'video' : 'image') as FileType,
+                  // 图片才带小图；视频没有缩略图，回退原地址
+                  thumbUrl: f.urlType === 'IMAGE' ? f.thumbPath || null : null,
+                  width: f.width ?? null,
+                  height: f.height ?? null
+                })),
               Files: item.essayFileUrls
                 .filter(f => f.urlType === 'TEXT' || f.urlType === 'OTHER')
                 .map(f => ({ url: f.url, type: (f.urlType === 'OTHER' ? 'other' : 'text') as FileType }))

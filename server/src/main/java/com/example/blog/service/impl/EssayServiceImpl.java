@@ -85,6 +85,32 @@ public class EssayServiceImpl implements EssayService {
     }
 
     /**
+     * 汇总需要物理删除的 URL：原图 + 其缩略图。
+     *
+     * <p>缩略图由 admin-file 生成为与原图同目录下的 `<原名>-800w.<hash>.webp`。
+     * 如果只删原图不删缩略图，会同时留下孤儿 webp，并让
+     * {@code AdminFileServiceImpl} 删空目录的尝试失败（非递归删除遇到非空目录）。
+     */
+    private List<String> collectPhysicalUrls(List<EssayFileUrl> files) {
+        if (files == null || files.isEmpty()) {
+            return List.of();
+        }
+        List<String> urls = new ArrayList<>();
+        for (EssayFileUrl f : files) {
+            if (f == null) {
+                continue;
+            }
+            if (f.getUrl() != null) {
+                urls.add(f.getUrl());
+            }
+            if (f.getThumbPath() != null && !f.getThumbPath().isBlank()) {
+                urls.add(f.getThumbPath());
+            }
+        }
+        return urls;
+    }
+
+    /**
      * 批量填充随笔的关联数据（文件URL、点赞状态），避免 N+1 查询
      */
     private void fillEssayRelations(List<Essay> essays, Long userId) {
@@ -152,11 +178,8 @@ public class EssayServiceImpl implements EssayService {
                 throw new EntityNotFoundException("随笔不存在，ID: " + id);
             }
             // 删除前收集文件URL，用于回收物理文件
-            List<String> fileUrls = essayFileUrlRepository.getEssayFileUrlByEssay_Id(id)
-                    .stream()
-                    .map(EssayFileUrl::getUrl)
-                    .filter(Objects::nonNull)
-                    .toList();
+            List<EssayFileUrl> oldFiles = essayFileUrlRepository.getEssayFileUrlByEssay_Id(id);
+            List<String> fileUrls = collectPhysicalUrls(oldFiles);
             essayFileUrlRepository.deleteByEssay_Id(id);
             essayRepository.deleteById(id);
             // 回收物理文件（仅本站 blog/essay/ 下的文件，外链跳过）
@@ -217,7 +240,8 @@ public class EssayServiceImpl implements EssayService {
             List<String> removedFileUrls = List.of();
             if (essay.getEssayFileUrls() != null) {
                 // 记录更新前的文件URL，用于找出被移除的文件
-                List<String> oldUrls = existingEssay.getEssayFileUrls().stream()
+                List<EssayFileUrl> oldFiles = existingEssay.getEssayFileUrls();
+                List<String> oldUrls = oldFiles.stream()
                         .map(EssayFileUrl::getUrl)
                         .filter(Objects::nonNull)
                         .toList();
@@ -228,9 +252,8 @@ public class EssayServiceImpl implements EssayService {
                         keptUrls.add(fileUrl.getUrl());
                     }
                 }
-                removedFileUrls = oldUrls.stream()
-                        .filter(url -> !keptUrls.contains(url))
-                        .toList();
+                removedFileUrls = collectPhysicalUrls(
+                        oldFiles.stream().filter(f -> f.getUrl() != null && !keptUrls.contains(f.getUrl())).toList());
 
                 existingEssay.getEssayFileUrls().clear();
                 for (EssayFileUrl fileUrl : essay.getEssayFileUrls()) {

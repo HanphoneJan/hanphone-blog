@@ -39,33 +39,60 @@ const getGridCols = (count: number, isMobile: boolean): number => {
   }
 }
 
-// 图片项组件 - 容器有 maxHeight 限制，图片通过 max-width/max-height 约束且保持原始比例
+// 图片项组件 - 用缩略图占位渲染，容器按真实宽高比预留高度
+//
+// 原图单张可达十几 MB，一篇随笔最多挂 8 张（实测合计 ~38MB），
+// 直接用原图渲染网格会同时打爆浏览器和 2C2G 的服务器。
+// 这里 display 用 thumbPath（800w WebP，几 KB~几十 KB），点开放大才回原图。
+// 老数据与外链附件没有 thumbPath，displayUrl 回退到 url，行为与改造前一致。
 const ImageItem = ({
   url,
+  thumbUrl,
+  width,
+  height,
   index,
   onClick,
   maxHeight
 }: {
   url: string
+  thumbUrl?: string | null
+  width?: number | null
+  height?: number | null
   index: number
   onClick: () => void
   maxHeight: number
 }) => {
+  // 有宽高就用 aspect-ratio 预留位置：避免图片加载完成后撑开容器导致整行重排，
+  // 进而把下方视口外的图片拉进首屏并发请求（照片墙踩过的同一个坑）
+  const hasRatio = typeof width === 'number' && typeof height === 'number' && width > 0 && height > 0
+  const displayUrl = thumbUrl || url
+
   return (
     <div
       onClick={onClick}
       className="relative w-full cursor-pointer group overflow-hidden flex items-center justify-center"
-      style={{ maxHeight: `${maxHeight}px` }}
+      style={{
+        maxHeight: `${maxHeight}px`,
+        // 无宽高信息时给一个常见比例兜底，避免容器高度为 0 引起重排
+        ...(hasRatio ? { aspectRatio: `${width} / ${height}` } : { minHeight: '120px' })
+      }}
     >
       <Image
-        src={url}
+        src={displayUrl}
         alt={`图片 ${index + 1}`}
         width={0}
         height={0}
         sizes="100vw"
         loading={index < 4 ? 'eager' : 'lazy'}
         className="transition-transform duration-200 group-hover:scale-[1.02]"
-        style={{ display: 'block', maxWidth: '100%', maxHeight: `${maxHeight}px`, width: 'auto', height: 'auto' }}
+        style={{
+          display: 'block',
+          maxWidth: '100%',
+          maxHeight: `${maxHeight}px`,
+          width: 'auto',
+          height: hasRatio ? '100%' : 'auto',
+          objectFit: hasRatio ? 'cover' : 'contain'
+        }}
       />
     </div>
   )
@@ -144,6 +171,9 @@ export function FileGallery({ essay, isMobile, openFile }: FileGalleryProps) {
               {file.type === 'image' ? (
                 <ImageItem
                   url={file.url}
+                  thumbUrl={file.thumbUrl}
+                  width={file.width}
+                  height={file.height}
                   index={index}
                   onClick={() => openFile(file.url, 'image')}
                   maxHeight={imageMaxHeight}

@@ -137,5 +137,9 @@ dist
 nginx.conf
 ecosystem.config.cjs
 
+# 上传的文件与生成的缩略图（运行时数据，含大文件，不入库）
+uploads/**
+!uploads/images/.gitkeep
+
 .trae
 .codebuddy

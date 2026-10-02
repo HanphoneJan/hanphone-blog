@@ -34,6 +34,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +50,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.hanphone.blog.BuildConfig
+import com.hanphone.blog.core.AuthBridge
+import com.hanphone.blog.core.AuthData
+import com.hanphone.blog.core.auth
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.EmptyBox
@@ -80,6 +85,7 @@ fun WebViewScreen(
     loadAsHtml: Boolean = false
 ) {
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     var progress by remember { mutableIntStateOf(0) }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -89,6 +95,16 @@ fun WebViewScreen(
         val wv = webView
         if (wv != null && wv.canGoBack()) wv.goBack() else onBack()
     }
+
+    // 第一方页面（照片墙等）共用 App 登录态：把 DataStore 里的登录态注入其 localStorage。
+    //
+    // initial 必须是 null 而不是 AuthData()：null 表示「还没从 DataStore 读到」，
+    // 非 null 才表示「读到了（可能是空 = 未登录）」。若用 AuthData() 兜底，首帧就会
+    // 按「未登录」生成脚本并立刻 loadUrl，页面带着清除登录态的脚本加载完成，
+    // 照片墙会显示未登录——必须等读到真实登录态再注入、再加载。
+    val loadedAuth by context.auth.collectAsState(initial = null)
+    val currentAuth = loadedAuth ?: AuthData()
+    val authResolved = loadedAuth != null
 
     // 系统返回：先回退 WebView 内历史，退无可退再离开页面
     BackHandler { handleBack() }
@@ -100,8 +116,18 @@ fun WebViewScreen(
 
     // 实际加载：html 模式拉文本注入；否则直接 loadUrl
     val wv = webView
-    LaunchedEffect(wv, url, loadAsHtml) {
-        if (wv == null) return@LaunchedEffect
+
+    // 注入登录态。必须在 loadUrl 之前完成，且要等 DataStore 真的读到登录态。
+    // 两个 LaunchedEffect 按声明顺序启动，且 install() 是同步调用，
+    // 所以「先注入后加载」的顺序成立。
+    LaunchedEffect(wv, authResolved, currentAuth.token, currentAuth.userId) {
+        if (wv != null && authResolved) AuthBridge.install(wv, currentAuth)
+    }
+
+    // App 登录/退出后，已打开的 WebView 会重新挂一次脚本，
+    // 页面内的后续导航（含刷新）就会带上最新登录态。
+    LaunchedEffect(wv, url, loadAsHtml, authResolved) {
+        if (wv == null || !authResolved) return@LaunchedEffect
         loadFailed = false
         if (loadAsHtml) {
             val baseUrl = url.substringBeforeLast('/') + "/"
@@ -168,6 +194,9 @@ fun WebViewScreen(
                         settings.useWideViewPort = true
                         settings.builtInZoomControls = true
                         settings.displayZoomControls = false
+                        // 注意：这里不要注入登录态。factory 执行时 DataStore 大概率还没读到
+                        // 登录态（首帧只有 initial 兜底值），此时注入等于按未登录处理。
+                        // 注入统一放到下面的 LaunchedEffect，等 authResolved 再做。
                         webViewClient = object : WebViewClient() {
                             // 仅主框架失败才进入错误态（子资源错误忽略，避免误报）
                             override fun onReceivedError(

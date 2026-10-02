@@ -10,6 +10,11 @@ export interface EssayFile {
   isValid: boolean
   createTime: string
   name?: string
+  /** 原图宽高（px），用于占位避免布局抖动；老数据为 null */
+  width?: number | null
+  height?: number | null
+  /** 列表页/九宫格用的小图 URL；老数据与外链附件为 null，回退到 url */
+  thumbPath?: string | null
 }
 
 // 本地文件信息接口

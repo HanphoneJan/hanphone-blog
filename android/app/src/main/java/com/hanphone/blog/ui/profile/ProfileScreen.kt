@@ -59,6 +59,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.R
+import com.hanphone.blog.core.AuthBridge
 import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.clearAuth
 import com.hanphone.blog.core.saveAuth
@@ -186,6 +187,9 @@ fun ProfileScreen(
                         scope.launch {
                             context.clearAuth()
                             TokenStore.clear()
+                            // 第一方 WebView（照片墙）把登录态存在自己的 localStorage 里，
+                            // 不清的话退出登录后照片墙仍显示已登录、还能点赞/进管理页
+                            AuthBridge.clearWebStorage()
                         }
                     }) { Text("退出") }
                 }
@@ -257,7 +261,8 @@ fun ProfileScreen(
                             userId = userId,
                             nickname = user.nickname,
                             avatar = user.avatar,
-                            userType = userType
+                            userType = userType,
+                            username = user.username
                         )
                     )
                 }

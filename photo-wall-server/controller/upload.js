@@ -31,6 +31,13 @@ async function upload(req, res) {
       });
     }
 
+    // 兼容两种入参形态：
+    //   1) ['https://...']                     —— 旧版（前端只传 URL 字符串）
+    //   2) [{ url, width, height, thumbPath }] —— 新版（携带原图尺寸与缩略图地址）
+    const assets = urls.map((item) =>
+      typeof item === 'string' ? { url: item } : item || {}
+    );
+
     // 验证必要参数
     if (!author || !userId) {
       return res.status(400).json({ 
@@ -50,7 +57,8 @@ async function upload(req, res) {
     // 获取数据库连接
     client = await getDbConnection();
 
-    for (const url of urls) {
+    for (const asset of assets) {
+      const url = typeof asset === 'string' ? asset : asset.url;
       const result = { url: url };
       try {
         // 验证URL格式
@@ -71,13 +79,24 @@ async function upload(req, res) {
           ? String(takenTime).slice(0, 19)
           : null;
 
+        // 原图宽高与列表页缩略图地址；缺失/非法一律存 NULL，前端会回退到原图
+        const toPositiveInt = (v) =>
+          Number.isFinite(Number(v)) && Number(v) > 0 ? Math.round(Number(v)) : null;
+        const width = toPositiveInt(asset.width);
+        const height = toPositiveInt(asset.height);
+        const thumbPath =
+          typeof asset.thumbPath === 'string' && asset.thumbPath.length <= 512
+            ? asset.thumbPath
+            : null;
+
         // 插入数据库（使用自增主键，不指定id字段）
         const queryResult = await client.query(
           `INSERT INTO atlas_files (
-            path, author, description, title, type, upload_time, taken_time, likes, user_id
-          ) VALUES ($1, $2, $3, $4, 0, $5, $6, 0, $7)
+            path, author, description, title, type, upload_time, taken_time, likes, user_id,
+            width, height, thumb_path
+          ) VALUES ($1, $2, $3, $4, 0, $5, $6, 0, $7, $8, $9, $10)
           RETURNING id`,  // 添加RETURNING id获取自增主键
-          [url, author, description, title, uploadTime, taken, userId]
+          [url, author, description, title, uploadTime, taken, userId, width, height, thumbPath]
         );
 
         // 从返回结果中获取数据库生成的id

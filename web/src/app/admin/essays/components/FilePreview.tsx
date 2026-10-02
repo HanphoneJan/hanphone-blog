@@ -101,8 +101,10 @@ export function FilePreview({ file, isLocal, index, onDelete, onMove, canMoveUp,
   return (
     <div className="relative rounded-lg overflow-hidden h-24 border border-slate-300 dark:border-slate-700 group">
       {uploadedFile.urlType === 'IMAGE' ? (
+        // 后台一次渲染整页附件，直出原图（单张可达十几 MB）最容易打爆浏览器；
+        // 缩略图没有时回退原图，老数据不受影响
         <Image
-          src={uploadedFile.url}
+          src={uploadedFile.thumbPath || uploadedFile.url}
           alt={`文件 ${index + 1}`}
           width={144}
           height={144}

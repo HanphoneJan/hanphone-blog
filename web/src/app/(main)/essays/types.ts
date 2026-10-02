@@ -5,6 +5,14 @@ type FileType = 'image' | 'video' | 'text' | 'other'
 interface GalleryFile {
   url: string
   type: FileType
+  /**
+   * 列表页/九宫格用的小图 URL（WebP，800w 回退 320w）。
+   * 老数据与外链附件为 null，此时回退到 url（原图）。
+   */
+  thumbUrl?: string | null
+  /** 原图宽高（px），用于占位避免布局抖动；老数据为 null */
+  width?: number | null
+  height?: number | null
 }
 
 // 文件列表接口：Media 为图片/视频（按存储顺序，可混排），Files 为文档及其他文件（按存储顺序）
@@ -21,6 +29,11 @@ interface EssayFileUrl {
   urlDesc?: string | null
   isValid: boolean
   createTime: string
+  /** 原图宽高（px）；老数据为 null */
+  width?: number | null
+  height?: number | null
+  /** 小图 URL；老数据与外链附件为 null，前端回退原图 */
+  thumbPath?: string | null
 }
 
 // 评论接口

@@ -296,10 +296,14 @@ private fun MomentsRow(
         commentsOpen = !commentsOpen
     }
 
+    // 九宫格展示用缩略图（displayUrl 内部已做 thumbPath → url 回退）
+    //
+    // 注意大小写：后端 url_type 存的是大写 "VIDEO"，原先写的是 != "video"，
+    // 条件恒为真，视频被当图片丢进 AsyncImage 去加载。这里改成忽略大小写比较。
     val imageUrls = remember(essay) {
         (essay.essayFileUrls
-            .filter { it.urlType != "video" }
-            .mapNotNull { it.url }
+            .filter { !it.urlType.equals("video", ignoreCase = true) }
+            .mapNotNull { it.displayUrl() }
             + listOfNotNull(essay.image))
             .distinct()
     }
@@ -508,7 +512,11 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                         }
                     }
                     item { SelectionContainer { MarkdownContent(markdown = essay!!.content, modifier = Modifier.padding(horizontal = 16.dp)) } }
-                    val images = essay!!.essayFileUrls.filter { it.urlType != "video" }.mapNotNull { it.url } + listOfNotNull(essay!!.image)
+                    // 详情页大图：始终用原图保证画质（与列表九宫格用缩略图相反）
+                    // urlType 同样按忽略大小写过滤，避免把视频当图片加载
+                    val images = essay!!.essayFileUrls
+                        .filter { !it.urlType.equals("video", ignoreCase = true) }
+                        .mapNotNull { it.originalUrl() } + listOfNotNull(essay!!.image)
                     if (images.isNotEmpty()) {
                         item {
                             Column(

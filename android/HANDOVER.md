@@ -46,6 +46,7 @@ ui/
   docs/DocMarkdownScreen.kt                     文库 MD 预览（拉文件服务原文 → Markdown 渲染）
   webview/WebViewScreen.kt      通用 WebView（项目链接 loadUrl / 文库 HTML 文档 fetch+loadDataWithBaseURL；
                                进度条/返回/浏览器外开；主框架加载失败显示「重试/在浏览器打开」错误层）
+  core/AuthBridge.kt            第一方 WebView 页（照片墙 hanphone.cn/atlas）登录态注入 + 登出清理
   profile/ProfileScreen.kt + ProfileViewModel.kt
   components/           ArticleCard/Avatar/Skeleton(骨架屏)/Loading/Error/Empty/BottomActionItem
                       SearchField（40dp 紧凑搜索胶囊，替代 M3 OutlinedTextField 56dp）/详情底部栏=细分割线+单行图标文字
@@ -119,6 +120,8 @@ ui/
 - 点「评 N」→ 评论区**默认展开加载**（LazyColumn 可见项自动拉取评论，VM 内存缓存防重复请求）；评论过多时默认折叠显示前 5 条 + 「展开全部评论（N 条）」；胶囊按钮在展开时显示「收起评论」，可整区折叠/展开。**评论输入不在评论区内部**：胶囊条另有独立「写评论」按钮（与折叠/展开按钮不同），点击后在**页面底部弹出输入条并自动拉起键盘**（复用 `CommentInputBar` + `autoFocus`），评论数据收在 VM（`essayComments` 状态 map），提交后即时回显；点某条评论同理在底部输入条进入「回复 @昵称」模式。随笔详情页仍用弹窗输入（`EssayCommentDialog`，`minLines=2`）。
 - **输入草稿缓存**：文章评论 / 留言板 / 随笔内嵌与弹窗评论输入均按场景分键存入 DataStore（`core/Settings.kt` 的 `draftFlow/saveDraft`，kind 如 `article_comment_{id}` / `message_comment` / `essay_comment_{id}` / `essay_detail_comment_{id}`）；输入停顿约 400ms 落盘、发送/清空即删；**不随「数据管理 → 清除全部」删除**。
 - **首进不弹下拉圈圈**：`PullToRefreshBox.isRefreshing = refreshing && userPulled`（首屏冷加载/骨架不弹 Refresh 圈，仅用户主动下拉才有）。
+- **图片用缩略图，不要用原图**：`EssayFileUrl.displayUrl()` 给列表九宫格用（优先 `thumbPath`，缺失回退 `url`），`originalUrl()` 给详情页大图用。原图单张可达 12MB、单篇最多 9 张（实测合计约 40MB），直出会同时打爆 App 和 2C2G 的服务器。老数据与外链附件 `thumbPath` 为 null，自动回退原图，行为与改造前一致。
+- **url_type 是大写**：`essayFileUrls` 的 `urlType` 实际取值是 `IMAGE`/`VIDEO`/`TEXT`/`OTHER`（全大写）。判断视频必须用 `equals("video", ignoreCase = true)`，写成 `!= "video"` 条件恒为真，视频会被当图片丢进 `AsyncImage`。
 
 ### 消息 = Hub
 - 公告横幅（顶部）+ `TabRow[聊天室 | 私信]`。
@@ -129,13 +132,14 @@ ui/
 
 ### 我的 / 设置
 - 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（照片墙/项目/文库/留言板/友链/设置）**；关于信息已移入设置页。
-- **照片墙入口**（「我的」→ 更多）：用通用 WebView 打开 `https://hanphone.cn/atlas/`（nginx alias 托管，页面自带瀑布流/便利贴/时间线展示与筛选），路由复用 `webview?url=...`（`App.kt` 的 `onOpenPhotoWall`）。
+- **照片墙入口**（「我的」→ 更多）：用通用 WebView 打开 `https://hanphone.cn/atlas/`（nginx alias 托管，页面自带瀑布流/便利贴/时间线展示与筛选），路由复用 `webview?url=...`（`App.kt` 的 `onOpenPhotoWall`）。登录态由 `core/AuthBridge.kt` 注入，与 App 共用（详见坑点 15）。
+- **照片墙页面有独立加载态**：`Atlas.vue` 早期只有空态没有加载态，`atlasData` 初始 `[]` 导致接口返回前先闪「没有符合筛选条件的照片」。App 里必现——每次进入都是全新页面实例，而 WebView 的 `sessionStorage.atlasWelcomeShown` 会持久化，第二次起欢迎页被跳过，没有东西遮挡这段空窗（`/show` 冷启动实测约 2.3s）。已加 `isLoading`（初值 `true`，只在 `finally` 置 `false`）。**WebView 侧改这类「异步数据 vs 空态」时注意同样的坑**。
 - 「项目」= 独立页：类型筛选 chips（全部/完整项目/工具箱/小游戏/小练习）+ 分组卡片（完整项目=大卡片、其余=双列网格；推荐角标、技术栈标签），数据来自 `GET /projects`（推荐在前、type 分组，与 web ProjectClient 一致）；点击卡片用 **WebView** 内开项目链接（`ui/webview/WebViewScreen.kt`：JS 开启、加载进度条、系统返回先回退 WebView 历史、右上角菜单可在浏览器打开）。
 - 「文库」= 独立页：数据来自 `GET /docs`，按 `docNamespace` 构建文件夹树（`blog/docs/子目录` → 顶层文件夹，对齐 web DocLoader）；文件夹浏览 + 面包屑、名称/路径搜索、类型筛选 pills（Word/PDF/MD/HTML 带计数，对齐 web DocsFilter）；文件行 = 彩色类型徽标 + 名称 + 推荐星 + 日期；打开文件：**HTML → WebView**、**MD → 应用内 Markdown 预览**（`DocMarkdownScreen`，文件服务原文去 frontmatter 后渲染）、**PDF/DOCX → 系统打开/下载**；文件 URL = `https://hanphone.top/{docNamespace}/{文件名}` 逐段 URI 编码（`util/buildDocFileUrl`），打开即上报浏览量 `POST /docs/{docId}/view`。
 - 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub 链接）。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
 - **资料编辑**（「我的」点头像，对齐网页 UserInfoForm）：昵称 + 头像 + **邮箱**（改邮箱需向新邮箱发通用验证码 `scene=general`，非管理员必填；管理员免验证码）+ **新密码**（可选，≥6 位含字母数字，`md5` 传输）。保存走 `POST /user/current/update`（body 根级带 `captcha`），后端 `UserServiceImpl.updateCurrentUser` 会对 `user.password` 做 bcrypt。
 - 「设置 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + 单行简介 + 链接行（**访问博客网站 hanphone.cn / 作者 GitHub**），点击走系统浏览器。版本号只在「检查更新」区显示一次（不重复）。
-- **检查更新**（设置→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 去更新(浏览器下载 APK)/稍后」，无新版 toast「已是最新版本」。API 与下载链在**直连网络可用**。
+- **检查更新**（设置→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较 `isNewerVersion(tag, BuildConfig.VERSION_NAME)`，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 去更新(浏览器下载 APK)/稍后」，无新版 toast「已是最新版本」。API 与下载链在**直连网络可用**。⚠️ 因为是语义化比较，**同版本号重新发布 APK 不会让已装用户收到更新提示**——要让用户升级必须同时抬 `versionCode`。
 - **发布渠道**：GitHub Release `v{versionName}`（debug 密钥签名的 release APK，`assembleRelease` 已配 `signingConfig = debug`，可覆盖升级；正式签名留 S5）。
 - **占位图规范**：未登录头像/登录页/注册页/关于徽标一律用 `R.drawable.ic_blog`（CircleShape 裁剪），**不再用文字「云」**。
 
@@ -196,11 +200,25 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 10. **例行状态别当通知弹**：聊天 socket 每次连接服务端都会发 `notification:"认证成功…"`（server.ts:519）——已在 `ChatSocket` 源头过滤（`startsWith("认证成功")` 不进 notice）；且 `StateFlow.collect` 进页会**重放当前值**，收集通知要用 `notice.drop(1)`，否则每次进消息页重弹上次通知。
 11. **Coil 缓存管理（设置页数据管理）**：图片缓存不进 ContentStore（它在 App 缓存目录），数据管理单独统计/清除 `LocalImageLoader.current` 的 `diskCache.size/clear() + memoryCache.size/clear()`。坑：`MemoryCache.size` 是 **Int**（与 `?: 0L` 合并会类型漂移成 Number 编译错，需 `.toLong()`）；`DiskCache.clear()` 是 suspend。
 12. **图片占位**：未登录头像/登录注册页/关于徽标统一用 `R.drawable.ic_blog`（拷贝自 web `icon-512x512.png`）——别用文字「云」当占位。
+13. **列表图片一律走缩略图**：随笔九宫格用 `displayUrl()`，详情页大图才用 `originalUrl()`。原图单张可达 12MB、单篇最多 9 张（约 40MB），Coil 会把磁盘缓存撑爆且拖垮 2C2G 的服务器。服务端（admin-file）上传时已生成 320w/800w/1600w WebP，前端只要带上 `thumbPath` 就够了。
+14. **照片墙是 WebView，不是原生页**：`https://hanphone.cn/atlas/` 由 nginx alias 托管的 Vue SPA，图片走浏览器内核加载 + Service Worker 缓存，**不受 App「数据管理 → 图片缓存」控制**。登录态通过 `core/AuthBridge.kt` 注入（见下条），不再各存一份。
+
+15. **第一方 WebView 页面必须注入 App 登录态（`core/AuthBridge.kt`）**：
+    - 照片墙的登录态存在**它自己的 localStorage**（`token` / `userInfo` / `expire`），与 App 的 DataStore 是两套互不相通的存储。不注入就会出现「App 里退出登录、照片墙仍显示已登录还能点赞/进管理页」。
+    - 用 `WebViewCompat.addDocumentStartJavaScript`，**不是** `onPageFinished` + `evaluateJavascript`：照片墙的 Pinia store 在模块初始化时**同步**读 localStorage（`apps/photo-wall/src/store/store.ts`），晚一拍就来不及了。需 `androidx.webkit`（已加，`libs.versions.toml` 的 `webkit = 1.12.1`），WebView < 83 走 `evaluateJavascript` + `reload()` 降级。
+    - **只对 `AuthBridge.FIRST_PARTY_ORIGINS`（`hanphone.cn` / `www.hanphone.cn`）生效**。项目页会打开任意外链，加白名单前想清楚：进去的域名就等于拿到用户 token。
+    - App 未登录时脚本是**删除**这三个键（不是跳过）——否则用户在照片墙里单独登录过、之后又在 App 退出，照片墙会一直带着旧 token。
+    - 登出入口在 `ProfileScreen` 的「退出」：`clearAuth()` + `TokenStore.clear()` + **`AuthBridge.clearWebStorage()`**。用 `WebStorage.deleteAllData()` 而不是 `evaluateJavascript("localStorage.clear()")`：后者要求 WebView 实例存活，而登出时页面往往已销毁；`WebStorage` 也不会误删 Cache Storage（Service Worker 资源缓存）。
+    - **历史坑（已修，别再踩）**：早期没有注入，但照片墙却显示「已登录」，看起来像注入已经存在。真相是照片墙**自带的登录页**在 WebView 里被用过一次，`domStorageEnabled = true` 让 localStorage 按 origin 持久留在 App 数据目录里。**`domStorageEnabled=true` 意味着 WebView 里的状态会跨会话存活**，排查「为什么它记得我」时先想到这条。
+    - 注入的 `userInfo` 需要 `id` / `type` / `username` / `nickname` / `avatar` 五个字段。其中 `username`（登录名，非昵称）App 原本**没存**——为此给 `AuthData` 加了 `username` 字段并落到 DataStore，登录/注册/改资料三处都要传。漏了会导致照片墙管理页按登录名定位不到当前用户。
+    - ⚠️ **别踩这个顺序坑**：`context.auth.collectAsState(initial = AuthData())` 的 `initial` 必须写成 **`null`**，不能用 `AuthData()` 兜底。否则首帧 `currentAuth` 是空的 → 注入脚本按「未登录」生成（删除三个键）→ 紧接着 `loadUrl` 加载 → **页面带着清除登录态的脚本加载完成，App 明明已登录但照片墙显示未登录**，要进第二次才对。正确写法：用 `null` 表示「还没读到」，把注入和加载都 gate 在 `authResolved` 上，且注入的 `LaunchedEffect` 必须声明在加载的**前面**（Compose 按声明顺序启动，`install()` 又是同步调用）。同理**不要在 `AndroidView` 的 factory 里注入**——那里执行时 DataStore 大概率还没吐值。
 
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
 - ✅ 项目页 + 文库页（WebView 内开 HTML、fetch+loadDataWithBaseURL 渲染）、通用 WebView、文档/项目/文库/聊天(Chat 历史+私信+用户列表) 本地缓存、数据管理（分项清除 + Coil 图片缓存）、账号编辑（邮箱+验证码+管理员免验、密码 md5）、体验打磨（去认证成功 toast、@用户名防抖、随笔秒显、下拉圈圈门控）、版本 v1.0.0、App 图标与 PWA maskable 图标一致（ic_launcher_fg 复刻 WebAPK 52% 比例 + ic_blog 占位）。
+- ✅ 随笔图片缩略图（九宫格走 `displayUrl()`，详情页走 `originalUrl()`；21 张图 74.65 MB → 0.75 MB，100×）、修掉 `urlType != "video"` 大小写导致视频被当图片加载的 bug。详见 `docs/photo-wall-image-optimization.md`。
+- ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

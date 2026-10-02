@@ -64,7 +64,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.atlas_files (
     id bigint NOT NULL,
-    path character varying(128) NOT NULL,
+    path character varying(512) NOT NULL,
     author character varying(64) NOT NULL,
     description character varying(512) NOT NULL,
     title character varying(24) NOT NULL,
@@ -72,7 +72,10 @@ CREATE TABLE public.atlas_files (
     likes integer DEFAULT 0 NOT NULL,
     type integer DEFAULT 0 NOT NULL,
     user_id bigint,
-    taken_time character varying(24)
+    taken_time character varying(24),
+    width integer,
+    height integer,
+    thumb_path character varying(512)
 );
 
 
@@ -806,7 +809,10 @@ CREATE TABLE public.t_essay_url (
     url_desc character varying(255) DEFAULT NULL::character varying,
     is_valid boolean DEFAULT true,
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    create_user_id bigint
+    create_user_id bigint,
+    width integer,
+    height integer,
+    thumb_path character varying(512)
 );
 
 

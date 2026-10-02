@@ -29,6 +29,22 @@ public class EssayFileUrl {
     @Column(name = "url_desc")
     private String urlDesc;
 
+    // ---- 缩略图元信息（admin-file 上传时生成的 WebP 缩略图）----
+    // 原图可达十几 MB，列表页/九宫格直接用原图会把浏览器和 2C2G 的服务器一起打爆，
+    // 因此列表一律用 thumbPath，点开放大才回原图。老数据这三列为 NULL，前端回退到原图。
+
+    /** 原图宽度（px，已按 EXIF Orientation 修正） */
+    @Column(name = "width")
+    private Integer width;
+
+    /** 原图高度（px，已按 EXIF Orientation 修正） */
+    @Column(name = "height")
+    private Integer height;
+
+    /** 列表页/九宫格用的小图完整 URL（800w，回退 320w） */
+    @Column(name = "thumb_path", length = 512)
+    private String thumbPath;
+
     @Column(name = "is_valid")
     private Boolean isValid = true;
 
@@ -53,6 +69,7 @@ public class EssayFileUrl {
         return "EssayFileUrl{" +
                 "id=" + id +
                 ", fileUrl='" + url + '\'' +
+                ", thumbPath='" + thumbPath + '\'' +
                 ", createTime=" + createTime +
                 '}'; // 不包含 essay 字段，避免递归
     }

@@ -86,8 +86,24 @@ data class Essay(
 data class EssayFileUrl(
     val id: Long = 0,
     val url: String? = null,
-    val urlType: String? = null
-)
+    val urlType: String? = null,
+    /** 原图宽高（px），用于占位避免布局抖动；老数据为 null */
+    val width: Int? = null,
+    val height: Int? = null,
+    /** 列表/九宫格用的小图 URL；老数据与外链附件为 null，回退 url */
+    val thumbPath: String? = null
+) {
+    /**
+     * 九宫格展示地址：优先缩略图，缺失时回退原图。
+     *
+     * 原图单张可达十几 MB，一篇随笔最多挂 8 张（实测合计约 38MB），
+     * 直出会同时打爆 App 与 2C2G 的服务器。
+     */
+    fun displayUrl(): String? = thumbPath?.takeIf { it.isNotBlank() } ?: url
+
+    /** 详情页大图地址：始终用原图，保证画质 */
+    fun originalUrl(): String? = url
+}
 
 data class EssayComment(
     val id: Long,

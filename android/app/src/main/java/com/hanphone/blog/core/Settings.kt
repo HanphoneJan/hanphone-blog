@@ -38,13 +38,22 @@ private val KEY_USER_ID = stringPreferencesKey("auth_user_id")
 private val KEY_AUTH_NICKNAME = stringPreferencesKey("auth_nickname")
 private val KEY_AUTH_AVATAR = stringPreferencesKey("auth_avatar")
 private val KEY_USER_TYPE = stringPreferencesKey("auth_user_type")
+private val KEY_AUTH_USERNAME = stringPreferencesKey("auth_username")
 
 data class AuthData(
     val token: String? = null,
     val userId: Long? = null,
     val nickname: String? = null,
     val avatar: String? = null,
-    val userType: String? = null
+    val userType: String? = null,
+    /**
+     * 登录名（不是昵称）。
+     *
+     * App 自身界面不用它，但注入照片墙 WebView 时需要：照片墙的 store 会读
+     * `userInfo.username`（管理页按登录名定位当前用户、上传时作为作者名兜底）。
+     * 之前没存，导致注入时只能拿昵称顶替。
+     */
+    val username: String? = null
 )
 
 val Context.auth: Flow<AuthData> get() = dataStore.data.map {
@@ -53,7 +62,8 @@ val Context.auth: Flow<AuthData> get() = dataStore.data.map {
         userId = it[KEY_USER_ID]?.toLongOrNull(),
         nickname = it[KEY_AUTH_NICKNAME].nullIfBlank(),
         avatar = it[KEY_AUTH_AVATAR].nullIfBlank(),
-        userType = it[KEY_USER_TYPE].nullIfBlank()
+        userType = it[KEY_USER_TYPE].nullIfBlank(),
+        username = it[KEY_AUTH_USERNAME].nullIfBlank()
     )
 }
 
@@ -63,6 +73,7 @@ suspend fun Context.saveAuth(auth: AuthData) = dataStore.edit {
     it[KEY_AUTH_NICKNAME] = auth.nickname ?: ""
     it[KEY_AUTH_AVATAR] = auth.avatar ?: ""
     it[KEY_USER_TYPE] = auth.userType ?: ""
+    it[KEY_AUTH_USERNAME] = auth.username ?: ""
 }
 
 suspend fun Context.clearAuth() = dataStore.edit {
@@ -71,6 +82,7 @@ suspend fun Context.clearAuth() = dataStore.edit {
     it.remove(KEY_AUTH_NICKNAME)
     it.remove(KEY_AUTH_AVATAR)
     it.remove(KEY_USER_TYPE)
+    it.remove(KEY_AUTH_USERNAME)
 }
 
 // ===== 个性化：自定义背景图 + 模糊 =====

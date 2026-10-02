@@ -116,9 +116,15 @@ export function useEssayFiles(
       removeLocalFile(index)
     } else {
       const file = uploadedFiles[index]
+      // 尚未入库（id===0）的本站文件立即从服务器删除；已入库文件仅从表单移除，
+      // 保存随笔时由服务端连同缩略图一起回收
       if (file && file.id === 0 && isInternalFileUrl(file.url)) {
         try {
           await deletePhysicalFile(file.url)
+          // 缩略图与原图同目录，删掉原图后必须一并删除，否则会在磁盘留下孤儿 webp
+          if (file.thumbPath && isInternalFileUrl(file.thumbPath)) {
+            await deletePhysicalFile(file.thumbPath)
+          }
         } catch (error) {
           console.error('文件删除失败:', error)
           showAlert(ADMIN_ESSAY_LABELS.FILE_DELETE_FAIL)
@@ -157,7 +163,11 @@ export function useEssayFiles(
         urlDesc: null,
         isValid: true,
         createTime: new Date().toISOString(),
-        name: file.name // 保存原始文件名用于展示
+        name: file.name, // 保存原始文件名用于展示
+        // admin-file 上传时同步生成了多档 WebP 缩略图，这里带回宽高与小图地址
+        width: typeof data.width === 'number' ? data.width : null,
+        height: typeof data.height === 'number' ? data.height : null,
+        thumbPath: typeof data.thumbPath === 'string' ? data.thumbPath : null
       }
       return essayFile
     }

@@ -21,7 +21,11 @@
 
   <!-- 瀑布流布局 -->
   <div v-if="viewMode === 'masonry'" class="atlas-container" id="atlas-container">
-    <div v-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
+    <div v-if="isLoading" class="atlas-loading">
+      <el-icon class="is-loading"><Loading /></el-icon>
+      <span>正在加载照片...</span>
+    </div>
+    <div v-else-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
     <div class="masonry-columns">
       <div
         v-for="item in filteredAtlasData"
@@ -29,9 +33,9 @@
         class="grid-item"
       >
         <el-card :body-style="{ padding: '0px' }" class="photo-card">
-          <div class="photo-wrapper">
+          <div class="photo-wrapper" :style="photoStyle(item)">
             <el-image
-              :src="item.path"
+              :src="displaySrc(item)"
               class="image"
               lazy
               :preview-src-list="previewList"
@@ -39,6 +43,7 @@
               :preview-teleported="true"
               hide-on-click-modal
               :ref="(el: any) => setImageRef(item.id, el)"
+              @error="retry(item)"
             >
               <template #placeholder>
                 <div class="image-placeholder">
@@ -107,7 +112,11 @@
     <div class="geo-element geo-6"></div>
     
     <!-- 便利贴区域 -->
-    <div v-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
+    <div v-if="isLoading" class="atlas-loading">
+      <el-icon class="is-loading"><Loading /></el-icon>
+      <span>正在加载照片...</span>
+    </div>
+    <div v-else-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
     <div class="sticky-notes-area">
       <div
         v-for="(item, index) in filteredAtlasData"
@@ -122,7 +131,7 @@
         <!-- 照片 -->
         <div class="note-image-wrapper">
           <el-image
-            :src="item.path"
+            :src="displaySrc(item)"
             class="note-image"
             lazy
             :preview-src-list="previewList"
@@ -130,6 +139,7 @@
             :preview-teleported="true"
             hide-on-click-modal
             :ref="(el: any) => setImageRef(item.id, el)"
+            @error="retry(item)"
           >
             <template #placeholder>
               <div class="image-placeholder">
@@ -196,7 +206,11 @@
 
   <!-- 时间线布局 -->
   <div v-else class="timeline-container">
-    <div v-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
+    <div v-if="isLoading" class="atlas-loading">
+      <el-icon class="is-loading"><Loading /></el-icon>
+      <span>正在加载照片...</span>
+    </div>
+    <div v-else-if="filteredAtlasData.length === 0" class="atlas-empty">没有符合筛选条件的照片，换个标签试试吧</div>
     <div class="timeline">
       <template v-for="group in timelineGroups" :key="group.year">
         <div class="timeline-year">
@@ -207,7 +221,7 @@
           <div class="timeline-card">
             <div class="timeline-photo">
               <el-image
-                :src="item.path"
+                :src="displaySrc(item)"
                 class="timeline-image"
                 lazy
                 :preview-src-list="previewList"
@@ -215,6 +229,7 @@
                 :preview-teleported="true"
                 hide-on-click-modal
                 :ref="(el: any) => setImageRef(item.id, el)"
+                @error="retry(item)"
               >
                 <template #placeholder>
                   <div class="image-placeholder"><el-icon class="is-loading"><Loading /></el-icon></div>
@@ -261,6 +276,7 @@ import { ElMessage } from 'element-plus';
 import api from '@/api/interceptor';
 import { ENDPOINTS } from '@/api/api';
 import { useUserStore } from '@/store/store';
+import { useImageSrc } from '@/composables/useImageSrc';
 import { ArrowRightBold, Star, StarFilled, ZoomIn, Download, Loading, Picture } from '@element-plus/icons-vue';
 
 interface Tag {
@@ -281,6 +297,11 @@ interface AtlasItem {
   isLiked: boolean;
   tags: Tag[];
   username: string;
+  /** 原图宽高（px），用于预留瀑布流卡片高度，避免加载完成后重排 */
+  width?: number | null;
+  height?: number | null;
+  /** 上传时生成的缩略图 URL（老数据为 null，此时回退到原图） */
+  thumb_path?: string | null;
 }
 
 type SortMode = 'hot' | 'likes' | 'upload_desc' | 'upload_asc' | 'taken_desc';
@@ -291,6 +312,16 @@ const userStore = useUserStore();
 
 const tagsList = ref<Tag[]>([]);
 const atlasData = ref<AtlasItem[]>([]);
+
+/**
+ * 图集数据是否还在加载。
+ *
+ * 必须区分「还没加载完」和「加载完但没有结果」，否则数据到达前会先闪一下
+ * 「没有符合筛选条件的照片」—— 这在 Android App 的 WebView 里必现：
+ * 每次进入都是全新页面，而 sessionStorage 里 atlasWelcomeShown 已经置位，
+ * 欢迎页被跳过，接口冷启动实测要 2.3s，这段时间就会露出空态。
+ */
+const isLoading = ref(true);
 const selectedTags = ref<number[]>([]);
 const showWelcome = ref(true);
 const imageRefMap = new Map<number, any>();
@@ -465,16 +496,24 @@ const startReadTimeout = () => {
 };
 
 const atlasShow = async () => {
+  isLoading.value = true;
   try {
     const response = await api.get(ENDPOINTS.SHOW);
     if (response.data.status === 830) {
       atlasData.value = response.data.data.map((item: AtlasItem) => ({
         ...item,
-        isLiked: item.isLiked ?? false
+        isLiked: item.isLiked ?? false,
+        // 老数据没有缩略图/宽高字段，统一归一化成 null，由 displaySrc / aspectRatio 回退到原图
+        width: Number(item.width) > 0 ? Number(item.width) : null,
+        height: Number(item.height) > 0 ? Number(item.height) : null,
+        thumb_path: item.thumb_path || null,
       }));
     }
   } catch (error: any) {
     console.error('获取图集数据失败：', error.message);
+  } finally {
+    // 无论成功失败都要结束加载态，否则失败时页面会一直转圈
+    isLoading.value = false;
   }
 };
 
@@ -540,6 +579,22 @@ const handleLikes = async (item: AtlasItem, event: Event) => {
 
 // 图片预览：全部图片路径（供 el-image 内置 viewer 使用）
 const previewList = computed(() => filteredAtlasData.value.map(item => item.path));
+
+// 列表页展示用缩略图 + 失败退避重试（预览仍走原图）
+const { displaySrc, aspectRatio, retry } = useImageSrc();
+
+/**
+ * 瀑布流卡片外层样式。
+ *
+ * 瀑布流用 CSS `column-count` 实现，`.image` 是 `height: auto`，
+ * 加载前卡片只有 placeholder 的 180px，加载完变成真实高度 → 整列重排 →
+ * 视口外的卡片滑进视口 → el-image 的 lazy 被连环触发 → 进页面瞬间几十张原图并发请求。
+ * 提前用 aspect-ratio 锁死高度即可断掉这个连锁。
+ */
+const photoStyle = (item: AtlasItem) => {
+  const ratio = aspectRatio(item);
+  return ratio ? { aspectRatio: ratio } : {};
+};
 
 // 当前图片在预览列表中的下标
 const itemIndex = (item: AtlasItem) => filteredAtlasData.value.indexOf(item);
@@ -813,6 +868,26 @@ watchEffect(() => {
   font-family: "Noto Serif SC", "Songti SC", SimSun, "STSong", "Times New Roman", serif;
 }
 
+/* 加载态：与空态明确区分，避免数据到达前闪出「没有符合筛选条件的照片」 */
+.atlas-loading {
+  position: relative;
+  z-index: 1;
+  padding: 80px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: #8a9099;
+  font-family: "Noto Serif SC", "Songti SC", SimSun, "STSong", "Times New Roman", serif;
+}
+
+.atlas-loading .el-icon {
+  font-size: 20px;
+  color: var(--primary-color, #409eff);
+}
+
 .photo-card {
   border-radius: 0;
   overflow: hidden;
@@ -837,7 +912,10 @@ watchEffect(() => {
 
 .image {
   width: 100%;
-  height: auto;
+  /* 有 aspect-ratio 数据时铺满 .photo-wrapper（父级高度已确定），让 placeholder 占满预留区域；
+     老数据没有宽高时父级高度为 auto，height:100% 自动回退为 auto，行为与改造前一致 */
+  height: 100%;
+  object-fit: cover;
   display: block;
   transition: transform 0.3s;
   cursor: zoom-in;

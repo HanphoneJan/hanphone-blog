@@ -87,7 +87,7 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
                 if (res.flag && d != null && d.token != null && d.user != null) {
                     val uid = d.user.id
                     TokenStore.restore(d.token, uid, d.user.nickname, d.user.avatar, d.user.type)
-                    context.saveAuth(AuthData(d.token, uid, d.user.nickname, d.user.avatar, d.user.type))
+                    context.saveAuth(AuthData(d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.user.username))
                     // 成功无需 toast：页面随即返回「我的」，已切换为登录态即是最好的反馈
                     onSuccess()
                 } else {

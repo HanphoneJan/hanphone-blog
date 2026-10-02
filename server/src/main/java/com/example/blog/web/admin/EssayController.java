@@ -2,6 +2,7 @@ package com.example.blog.web.admin;
 
 import com.example.blog.po.*;
 import com.example.blog.service.EssayService;
+import com.example.blog.util.EssayFileUrlFields;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -84,6 +85,11 @@ public class EssayController {
                         EssayFileUrl fileUrl = new EssayFileUrl();
                         fileUrl.setUrl(url);
                         fileUrl.setUrlType(urlType);
+                        // 缩略图元信息：admin-file 上传时已生成；缺失存 null，
+                        // 前端会透明回退到原图（外链附件必然没有 thumbPath）
+                        fileUrl.setWidth(EssayFileUrlFields.toPositiveInt(fileUrlMap.get("width")));
+                        fileUrl.setHeight(EssayFileUrlFields.toPositiveInt(fileUrlMap.get("height")));
+                        fileUrl.setThumbPath(EssayFileUrlFields.toThumbPath(fileUrlMap.get("thumbPath")));
                         fileUrl.setEssay(essay);
                         fileUrls.add(fileUrl);
                     }
