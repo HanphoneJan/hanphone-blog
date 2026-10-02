@@ -90,6 +90,7 @@ const replacementFiles = [
     file: 'src/app/(main)/docs/[id]/page.tsx',
     pairs: [
       ["{ next: { revalidate: 0 } }", '{}'],
+      ["{ next: { revalidate: 300 } }", '{}'],
     ],
   },
   {
