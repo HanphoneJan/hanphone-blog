@@ -74,7 +74,9 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libkrb5-dev \
             patchelf \
-            build-essential
+            build-essential \
+            xdg-utils \
+            libfuse2
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -87,10 +89,11 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: linux-x64
+          if-no-files-found: error
           path: |
-            web/src-tauri/target/release/bundle/deb/*.deb
-            web/src-tauri/target/release/bundle/rpm/*.rpm
-            web/src-tauri/target/release/bundle/appimage/*.AppImage
+            web/src-tauri/target/**/bundle/deb/*.deb
+            web/src-tauri/target/**/bundle/rpm/*.rpm
+            web/src-tauri/target/**/bundle/appimage/*.AppImage
 
   # ============ Linux ARM64 ============
   build-linux-arm64:
@@ -131,7 +134,9 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libkrb5-dev \
             patchelf \
-            build-essential
+            build-essential \
+            xdg-utils \
+            libfuse2
 
       - name: Configure cross-compilation environment
         run: |
@@ -151,10 +156,11 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: linux-arm64
+          if-no-files-found: error
           path: |
-            web/src-tauri/target/release/bundle/deb/*.deb
-            web/src-tauri/target/release/bundle/rpm/*.rpm
-            web/src-tauri/target/release/bundle/appimage/*.AppImage
+            web/src-tauri/target/**/bundle/deb/*.deb
+            web/src-tauri/target/**/bundle/rpm/*.rpm
+            web/src-tauri/target/**/bundle/appimage/*.AppImage
 
   # ============ Windows x64 ============
   build-windows-x64:
@@ -191,9 +197,10 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: windows-x64
+          if-no-files-found: error
           path: |
-            web/src-tauri/target/release/bundle/msi/*.msi
-            web/src-tauri/target/release/bundle/nsis/*.exe
+            web/src-tauri/target/**/bundle/msi/*.msi
+            web/src-tauri/target/**/bundle/nsis/*.exe
 
   # ============ Windows ARM64 ============
   build-windows-arm64:
@@ -230,8 +237,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: windows-arm64
+          if-no-files-found: error
           path: |
-            web/src-tauri/target/release/bundle/nsis/*.exe
+            web/src-tauri/target/**/bundle/nsis/*.exe
 
   # ============ Release ============
   release:
