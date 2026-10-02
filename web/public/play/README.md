@@ -20,7 +20,6 @@
 |  📖  | [博客阅读器](./read/replicant/)                            | `read`                     |  `工具`  |
 |  📄  | [寒枫 - 个人简历](./resume/)                               | `resume`                   |  `工具`  |
 |  🎹  | [简易钢琴键盘](./simple-piano/)                            | `simple-piano`             |  `创意`  |
-|  ✅  | [高级待办应用](./todo/)                                    | `todo`                     |  `工具`  |
 |  🌀  | [WebGL 赛博核心展示 Three.js Demo](./torus-knot-geometry/) | `torus-knot-geometry`      |   `3d`   |
 |  🎵  | [音频可视化播放器](./visual-player/)                       | `visual-player`            |  `创意`  |
 

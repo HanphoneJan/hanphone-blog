@@ -106,10 +106,8 @@ web/
 │   ├── games/                      # 小游戏合集
 │   │   ├── 2048/
 │   │   ├── blackblocks/
-│   │   ├── breakout-bricks/
 │   │   ├── crossy-road/
 │   │   ├── minesweeper/
-│   │   ├── ping-pong/
 │   │   ├── shudu/
 │   │   ├── snake/
 │   │   ├── tetris/
@@ -127,7 +125,6 @@ web/
 │   │   ├── read/
 │   │   ├── resume/
 │   │   ├── simple-piano/
-│   │   ├── todo/
 │   │   ├── torus-knot-geometry/
 │   │   └── visual-player/
 │   ├── tools/                      # 实用工具
