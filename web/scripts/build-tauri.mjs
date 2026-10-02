@@ -92,6 +92,28 @@ const replacementFiles = [
       ["{ next: { revalidate: 0 } }", '{}'],
     ],
   },
+  {
+    file: 'src/app/next-api/music/route.ts',
+    pairs: [
+      ["export const runtime = 'nodejs'\n\n", "export const dynamic = 'force-static'\n\n"],
+      // 完全替换为静态响应，因为 request.url 无法静态导出
+      [/export async function GET[\s\S]*$/, `export async function GET() {\n  return NextResponse.json({ error: '音乐功能在桌面端不可用' }, { status: 503 })\n}`],
+    ],
+  },
+  {
+    file: 'src/app/next-api/admin/music/cookie/route.ts',
+    pairs: [
+      ["export const runtime = 'nodejs'\n\n", "export const dynamic = 'force-static'\n\n"],
+    ],
+  },
+  {
+    file: 'src/app/next-api/cron/refresh-netease-cookie/route.ts',
+    pairs: [
+      ["export const runtime = 'nodejs'\n\n", "export const dynamic = 'force-static'\n\n"],
+      // 完全替换为静态响应，因为 request.headers 无法静态导出
+      [/export async function GET[\s\S]*$/, `export async function GET() {\n  return NextResponse.json({ error: 'Cookie 刷新功能在桌面端不可用' }, { status: 503 })\n}`],
+    ],
+  },
 ]
 
 function applyPatches() {
@@ -123,7 +145,14 @@ function applyPatches() {
   const blogIdPath = path.join(webDir, 'src/app/(main)/blog/[id]/page.tsx')
   const blogIdContent = fs.readFileSync(blogIdPath, 'utf-8')
   // 正则匹配: , {\n  cache: 'no-store'\n} 或单行 , { cache: 'no-store' }
-  const blogIdReplaced = blogIdContent.replace(/,\s*\{\s*cache:\s*['"]no-store['"]\s*\}/g, '')
+  let blogIdReplaced = blogIdContent.replace(/,\s*\{\s*cache:\s*['"]no-store['"]\s*\}/g, '')
+  // 确保 generateStaticParams 返回占位符，避免构建时 API 不可用导致空数组
+  if (!blogIdReplaced.includes('placeholder')) {
+    blogIdReplaced = blogIdReplaced.replace(
+      'return []',
+      "return [{ id: 'placeholder' }]"
+    )
+  }
   if (blogIdReplaced !== blogIdContent) {
     fs.writeFileSync(blogIdPath, blogIdReplaced)
     console.log(`[replace-cache] src/app/(main)/blog/[id]/page.tsx`)
