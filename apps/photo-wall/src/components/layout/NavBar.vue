@@ -639,7 +639,7 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   width: 280px;
-  height: 100vh;
+  height: var(--app-vh, 100vh);
   background-color: #f8f9fa;
   transform: translateX(-100%);
   transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;

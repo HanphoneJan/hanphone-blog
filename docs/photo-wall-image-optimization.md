@@ -153,6 +153,9 @@ Android 上必现是因为两个因素叠加：
 `isLoading` 初值 `true`，只在 `atlasShow()` 的 `finally` 里置 `false`，
 所以请求失败时也会正常结束加载态（不会一直转圈）。
 
+加载遮罩用 `position: fixed; inset: 0` 覆盖整个视口并垂直居中（三种视图共用）。
+此前只有 `padding: 80px 20px` 撑起顶部一小条，下方露出空背景，观感上「高度不足」。
+
 编译产物可以验证互斥关系已生效：
 
 ```js
@@ -160,6 +163,80 @@ isLoading ? render(atlas-loading)
          : 0 === filtered.length ? render("没有符合筛选条件的照片…")
          : ""
 ```
+
+### 后续发现：旧包会被 Service Worker「钉死」，修复本身进不来
+
+只加 `isLoading` 还不够——它是**新包**才有的代码，而 WebView / 浏览器里的
+Service Worker 会把**旧包**长期留在本地：
+
+- `vite-plugin-pwa` 默认生成 `NavigationRoute(createHandlerBoundToURL("index.html"))`，
+  它匹配**所有导航请求、且忽略查询串**，永远返回预缓存里的那份 `index.html`；
+- 旧 SW 没换成新 SW 之前，服务端即使已是新包，页面仍跑旧的 `Atlas.vue`（无 `isLoading`）。
+
+为什么发版后旧 SW 迟迟不换，两个原因叠加：
+
+1. `index.html` / `sw.js` 在 nginx 上没有任何 `Cache-Control`，被 Cloudflare 按
+   `max-age=14400` 缓存，新 `sw.js` 最长约 4 小时后才可见；
+2. 预缓存约 1.9 MB，若在 App 里停留时间短，新 SW 的 `install` 可能还没跑完就被销毁。
+
+**修复（`apps/photo-wall/vite.config.ts`）**：不再预缓存入口、也不再用
+`NavigationRoute` 提供离线回退，改成「导航 NetworkFirst + 运行时缓存」：
+
+```ts
+workbox: {
+  navigateFallback: undefined,                 // 不再生成 NavigationRoute
+  runtimeCaching: [
+    { urlPattern: ({ request }) => request.mode === 'navigate',
+      handler: 'NetworkFirst',
+      options: { cacheName: 'atlas-pages', networkTimeoutSeconds: 3 } },
+    // …API / 图片规则保持不变
+  ],
+  globPatterns: ['**/*.{css,js,ico}'],          // 不预缓存 html 入口
+}
+```
+
+效果：新 SW 装上后，入口 HTML 每次都**先取网络**，发版即可见，不再被旧预缓存钉死；
+离线仍由 `atlas-pages` 运行时缓存兜底（首访后可用）。
+
+> **关于 CDN 把 SW 脚本缓存住**：nginx 给 `.js` 的 `max-age=14400` 会让 Cloudflare 缓存
+> `sw.js`（实测 `cf-cache-status: HIT`），新 SW 最长 4h 才可见。现已从构建层面绕过：
+> - **SW 文件名带构建版本**（`filename: sw-<version>.js`）：每次构建注册 URL 都不同，
+>   CDN 必然回源，不再命中旧的 `sw.js`；
+> - **注册代码内联进 `index.html`**（`injectRegister: 'inline'`）：`registerSW.js` 本身也会被
+>   CDN 按 `.js` 缓存，若用它注册，版本化文件名又会被旧注册脚本钉住；html 不被 CDN 缓存，
+>   内联后注册 URL 一定是最新的。
+>
+> 这样无需改 nginx 也能保证发版立即生效（仍带旧 SW 的客户端会在 CDN 过期一次后自愈）。
+> 若仍想根治，可给 `index.html`/`sw.js` 加 `Cache-Control: no-cache`（见下）。
+
+## Android WebView：CSS 视口单位 `vh` 被算成 0
+
+真机（RMX6699 / Android 16 / WebView 140）实测：`height:100vh`、`100dvh`、`100svh`、
+`100lvh` 的 `getBoundingClientRect().height` 全是 **0**，只有 fixed 元素上的 `height:100%`
+正常；而 `window.innerHeight` / `visualViewport.height` = 684 是正确的。原因是 WebView
+首次布局高度为 0，之后尺寸变化不会重算这些单位。
+
+后果：
+
+- 照片墙侧边栏 `.sidebar { height:100vh }` → 高度 0 → **侧边栏完全不可见**（点汉堡菜单看似没反应）；
+- 三种视图容器 `min-height:100vh` → 加载中（还没有照片）时容器塌成内容高 → 背景层撑不开、下方露白。
+
+修复（`apps/photo-wall/src/main.ts`）：
+
+```ts
+const setAppVh = () => document.documentElement.style.setProperty('--app-vh', `${window.innerHeight}px`);
+setAppVh();
+window.addEventListener('resize', setAppVh);
+window.addEventListener('orientationchange', setAppVh);
+requestAnimationFrame(setAppVh);
+setTimeout(setAppVh, 300);
+```
+
+CSS 里所有 `100vh` 改成 `var(--app-vh, 100vh)`（普通浏览器 / 未跑 JS 时走回退值）。
+覆盖 `Atlas.vue`（欢迎页与三种视图）、`NavBar.vue`（侧边栏）、`Login`/`ForgotPassword`、`Admin*`。
+
+> 排查提示：App 内 WebView 页面「高度不对 / 某层不可见」先量
+> `getComputedStyle(el).height` 与 `el.getBoundingClientRect()`，不要假设 `vh` 可用。
 
 ## 待办：nginx 加 immutable（需要 root）
 

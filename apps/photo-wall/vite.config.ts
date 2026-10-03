@@ -18,6 +18,10 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const now = new Date()
 const date = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`
 const buildVersion = `v${date}-${Date.now().toString(36).slice(-4)}`
+// SW 文件名带构建版本：nginx 给 .js 的 max-age=14400 会被 Cloudflare 缓存，若 SW 恒为
+// /atlas/sw.js，发版后旧 SW 最长 4h 才更新；旧 SW 的 NavigationRoute 会一直返回旧入口页面
+// （照片墙「旧包不生效」的根源）。每次构建换文件名 → 注册 URL 变化 → CDN 必然回源。
+const swFilename = `sw-${buildVersion.replace(/[^a-zA-Z0-9-]/g, '')}.js`
 // https://vite.dev/config/
 
 export default defineConfig({
@@ -58,8 +62,11 @@ export default defineConfig({
     // 注册 VitePWA 插件
     VitePWA({
       scope: '/atlas/',              // 限定作用域
+      filename: swFilename,        // 带构建版本，避免 CDN 缓存旧 SW（见上方 swFilename 注释）
       registerType: 'autoUpdate', // 自动更新 Service Worker  
-      injectRegister:'auto',
+      // 注册代码内联进 index.html（CF 不缓存 html，但会按 .js 缓存 registerSW.js，
+      // 后者会把版本化 SW 的注册脚本自己钉在旧版本上——所以必须内联）
+      injectRegister:'inline',
       //PWA可能会导致缓存问题
       devOptions: {
         enabled: false, // 开发环境中不启用 PWA
@@ -84,7 +91,27 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 将限制提高到 50MB
         //运行时缓存是在用户访问资源时执行的，会将请求的资源缓存到 Service Worker 中。
         //注意：runtimeCaching 的 cacheName 必须使用固定名称，否则每次构建旧缓存成为孤儿无法被清理
+        //
+        // 入口 HTML 不做预缓存、也不用 NavigationRoute 离线回退：
+        // 旧 SW 自动生成的 NavigationRoute 会无视查询串，对所有导航返回预缓存的旧
+        // index.html，导致发版后 App WebView / 浏览器一直跑修复前的旧包
+        // （照片墙表现为先闪「没有符合筛选条件的照片」再出照片）。
+        // 改为「导航 NetworkFirst + 运行时缓存」，入口永远先取网络，离线才回退。
+        navigateFallback: undefined,
         runtimeCaching: [
+          {
+            // 入口导航：网络优先（离线回退到运行时缓存）。这样每次发版入口 HTML 都是最新的。
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'atlas-pages',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+            },
+          },
           {
             // 实际接口路径是 /nodejs/atlas/*（原规则 /api/.*\.json$ 匹配不到，一直是死规则）
             urlPattern: /\/nodejs\/atlas\/.*/,
@@ -119,9 +146,10 @@ export default defineConfig({
         ],
         //预缓存是在Service Worker安装时执行的,会将指定的资源列表下载并存储在缓存中。
         // 这些资源在离线时可以直接从缓存中加载，无需再向服务器请求。
+        // 注意：这里**不能**包含 html/入口，否则等于把旧入口钉死在预缓存里（见上）。
         globPatterns: [
           // 预缓存的资源类型
-          '**/*.{html,css,js,ico}',
+          '**/*.{css,js,ico}',
         ],
       },
     }),

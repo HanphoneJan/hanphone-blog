@@ -2,7 +2,7 @@
   <!-- 欢迎页面内容 -->
   <transition name="slide-left" mode="out-in">
     <div v-if="showWelcome" key="welcome-page" class="welcome-container">
-      <el-row style="height: 100vh" class="welcome-row">
+      <el-row style="height: var(--app-vh, 100vh)" class="welcome-row">
         <el-col :span="24" style="height: 100%">
           <el-card shadow="hover" class="welcome">
             <h1 class="tit">
@@ -704,7 +704,7 @@ watchEffect(() => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100vh;
+  height: var(--app-vh, 100vh);
   z-index: 1000;
 }
 
@@ -798,7 +798,7 @@ watchEffect(() => {
   background: linear-gradient(135deg, #e8e8e8 0%, #d4d4d4 25%, #f0f0f0 50%, #dcdcdc 75%, #e8e8e8 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   overflow: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -868,11 +868,13 @@ watchEffect(() => {
   font-family: "Noto Serif SC", "Songti SC", SimSun, "STSong", "Times New Roman", serif;
 }
 
-/* 加载态：与空态明确区分，避免数据到达前闪出「没有符合筛选条件的照片」 */
+/* 加载态：与空态明确区分，避免数据到达前闪出「没有符合筛选条件的照片」。
+   做成覆盖整个视口的居中遮罩——三种视图共用；此前只有 padding 撑起的一小条，
+   只占页面顶部、下方露出空背景，观感上「高度不足」。 */
 .atlas-loading {
-  position: relative;
+  position: fixed;
+  inset: 0;
   z-index: 1;
-  padding: 80px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1058,7 +1060,7 @@ watchEffect(() => {
 
 /* ========== 野兽派便利贴布局 ========== */
 .brutalist-container {
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   width: 100vw;
   background: linear-gradient(135deg, #e8e8e8 0%, #d4d4d4 25%, #f0f0f0 50%, #dcdcdc 75%, #e8e8e8 100%);
   background-size: 400% 400%;
@@ -1540,7 +1542,7 @@ watchEffect(() => {
 
 /* ========== 时间线布局 ========== */
 .timeline-container {
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   width: 100vw;
   padding: 60px 20px 80px;
   box-sizing: border-box;

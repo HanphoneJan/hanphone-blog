@@ -371,7 +371,7 @@ html.dark .brutalist-login {
 }
 
 .brutalist-login {
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   width: 100vw;
   background: var(--bg-primary);
   display: flex;

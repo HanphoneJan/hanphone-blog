@@ -471,7 +471,7 @@ const wechatRegister = () => {
 }
 
 .brutalist-login {
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   width: 100vw;
   background: var(--bg-primary, #f5f5f5);
   display: flex;

@@ -1367,7 +1367,7 @@ watch(searchQuery, () => {
 .photo-manager {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: var(--app-vh, 100vh);
   background: #f5f5f5;
   position: relative;
   overflow-x: hidden;
@@ -1927,7 +1927,7 @@ watch(searchQuery, () => {
   top: 0;
   right: 0;
   width: 380px;
-  height: 100vh;
+  height: var(--app-vh, 100vh);
   background: white;
   box-shadow: -4px 0 24px rgba(0,0,0,0.1);
   z-index: 1100;
@@ -2528,8 +2528,8 @@ watch(searchQuery, () => {
   :deep(.upload-wizard) {
     width: 100% !important;
     max-width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
+    height: var(--app-vh, 100vh) !important;
+    max-height: var(--app-vh, 100vh) !important;
     margin: 0 !important;
     border-radius: 0 !important;
     display: flex;

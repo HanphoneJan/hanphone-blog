@@ -15,6 +15,20 @@ import en from 'element-plus/es/locale/lang/en';  // 引入 Element Plus 英文�
 import './styles/global.css';  // 导入全局样式表
 const app = createApp(App);
 
+// Android WebView 里 CSS 视口单位（vh/dvh/svh/lvh）会被算成 0：WebView 首次布局高度为 0，
+// 之后尺寸变化不会重算这些单位。照片墙大量用 100vh 撑高（侧边栏、三种视图容器、
+// 欢迎页），在 App 里就会高度为 0、侧边栏完全不可见。
+// 这里把真实视口高度写进 --app-vh；CSS 里的 100vh 一律写成 var(--app-vh, 100vh)，
+// 浏览器/其他 WebView 没这个 bug 时走 100vh 回退，行为不变。
+const setAppVh = () => {
+  document.documentElement.style.setProperty('--app-vh', `${window.innerHeight}px`);
+};
+setAppVh();
+window.addEventListener('resize', setAppVh);
+window.addEventListener('orientationchange', setAppVh);
+requestAnimationFrame(setAppVh);
+setTimeout(setAppVh, 300);
+
 // 使用Vue的createApp函数创建一个应用实例，传入根组件App
 const pinia = createPinia();
 app.use(pinia);  // 使用Pinia状态管理插件

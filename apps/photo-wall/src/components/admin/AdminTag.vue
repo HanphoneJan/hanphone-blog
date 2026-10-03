@@ -292,7 +292,7 @@ onMounted(getFullTagList);
 <style scoped>
 /* 野兽派管理后台 - 标签管理 */
 .brutalist-admin {
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   width: 100%;
   max-width: 100%;
   background: var(--bg-primary, #f5f5f5);
@@ -392,7 +392,7 @@ html.dark .brutalist-admin {
 /* 主容器 */
 .admin-container {
   display: flex;
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
   position: relative;
   z-index: 1;
   overflow-x: hidden;
@@ -409,7 +409,7 @@ html.dark .brutalist-admin {
   flex-direction: column;
   justify-content: space-between;
   position: fixed;
-  height: 100vh;
+  height: var(--app-vh, 100vh);
   left: 0;
   top: 0;
 }
