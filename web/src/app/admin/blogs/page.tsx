@@ -21,6 +21,8 @@ import { TypeDialog } from './components/dialogs/TypeDialog'
 import { FlagDialog } from './components/dialogs/FlagDialog'
 import { CoverDialog } from './components/dialogs/CoverDialog'
 import { EditDialog } from './components/dialogs/EditDialog'
+import { SyncDeleteImageToggle } from '@/components/shared/SyncDeleteImageToggle'
+import { useSyncDeleteImage } from '@/lib/syncDeleteImage'
 
 import type { Blog, Type, Tag, EditBlogForm } from './types'
 
@@ -61,6 +63,9 @@ const cardVariants: Variants = {
 }
 
 export default function BlogManagementPage() {
+  // 删除时是否同步删除封面图
+  const { syncDeleteImage, setSyncDeleteImage } = useSyncDeleteImage()
+
   // Hooks
   const {
     blogList,
@@ -196,7 +201,7 @@ export default function BlogManagementPage() {
 
   // 删除博客
   const handleRemoveBlog = (id: number) => {
-    removeBlogById(id, () => getBlogList(queryInfo, pagenum, pagesize))
+    removeBlogById(id, () => getBlogList(queryInfo, pagenum, pagesize), syncDeleteImage)
   }
 
   // 推荐状态切换
@@ -352,17 +357,24 @@ export default function BlogManagementPage() {
 
       <main className="max-w-7xl mx-auto lg:px-2 lg:py-2 relative z-10">
         {/* 搜索筛选区域 */}
-        <motion.div variants={fadeInUpVariants}>
-          <BlogFilters
-            queryTitle={queryInfo.title}
-            selectedType={selectedType}
-            typeList={typeList}
-            loading={loading}
-            onSearchChange={handleSearch}
-            onTypeSelect={handleTypeSelectWithList}
-            onClear={handleClearSearch}
-            onSearch={handleSearchClick}
-          />
+        <motion.div variants={fadeInUpVariants} className="flex items-center gap-3 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <BlogFilters
+              queryTitle={queryInfo.title}
+              selectedType={selectedType}
+              typeList={typeList}
+              loading={loading}
+              onSearchChange={handleSearch}
+              onTypeSelect={handleTypeSelectWithList}
+              onClear={handleClearSearch}
+              onSearch={handleSearchClick}
+            />
+          </div>
+
+          {/* 删除时是否同步删除封面图 */}
+          <div className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]">
+            <SyncDeleteImageToggle checked={syncDeleteImage} onChange={setSyncDeleteImage} />
+          </div>
         </motion.div>
 
         {/* 博客表格 - 桌面端 */}

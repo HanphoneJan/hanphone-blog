@@ -8,6 +8,7 @@ import com.example.blog.po.Blog;
 import com.example.blog.po.Type;
 import com.example.blog.po.User;
 import com.example.blog.po.UserBlogLike;
+import com.example.blog.service.AdminFileService;
 import com.example.blog.service.BlogService;
 import com.example.blog.util.MarkdownUtils;
 import com.example.blog.util.MyBeanUtils;
@@ -20,6 +21,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.CacheEvict;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.*;
@@ -32,16 +35,21 @@ import static java.util.Objects.requireNonNull;
 @Service
 public class BlogServiceImpl implements BlogService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BlogServiceImpl.class);
+
     private final BlogRepository blogRepository;
     private final UserRepository userRepository;
     private final UserBlogLikeRepository userBlogLikeRepository;
+    private final AdminFileService adminFileService;
 
     public BlogServiceImpl(BlogRepository blogRepository,
             UserBlogLikeRepository userBlogLikeRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AdminFileService adminFileService) {
         this.blogRepository = requireNonNull(blogRepository, "blogRepository must not be null");
         this.userRepository = requireNonNull(userRepository, "userRepository must not be null");
         this.userBlogLikeRepository = requireNonNull(userBlogLikeRepository, "userBlogLikeRepository must not be null");
+        this.adminFileService = requireNonNull(adminFileService, "adminFileService must not be null");
     }
 
     @Override
@@ -260,10 +268,28 @@ public class BlogServiceImpl implements BlogService {
     @CacheEvict(value = "siteStats", allEntries = true)
     @Transactional
     @Override
-    public void deleteBlog(Long id) {
+    public void deleteBlog(Long id, boolean syncDeleteImage) {
         requireNonNull(id, "blog id must not be null");
         try {
+            // 先取出封面图与所属分类图，记录删除后就查不到了
+            Blog existing = blogRepository.findById(id).orElse(null);
+            String coverUrl = existing == null ? null : existing.getFirstPicture();
+            String typePicUrl = existing == null || existing.getType() == null
+                    ? null
+                    : existing.getType().getPic_url();
             blogRepository.deleteById(id);
+            if (syncDeleteImage && coverUrl != null && !coverUrl.isBlank()) {
+                try {
+                    // 封面沿用分类图（saveBlog/updateBlog 会把空的 firstPicture 落库为分类图）时属于共用图片，不能删
+                    if (coverUrl.equals(typePicUrl)) {
+                        logger.info("博客 {} 的封面沿用分类图片，跳过物理删除: {}", id, coverUrl);
+                    } else {
+                        adminFileService.deleteManagedFiles(List.of(coverUrl));
+                    }
+                } catch (Exception fileEx) {
+                    logger.warn("回收博客封面失败，博客ID: {}", id, fileEx);
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException("Error deleting blog with id: " + id, e);
         }

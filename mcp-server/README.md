@@ -163,6 +163,10 @@ claude mcp add --transport http hanphone-blog https://hanphone.cn/mcp \
 
 `list_projects`（含未发布）、`get_project`、`search_projects`、`create_project`、`update_project`、`delete_project`、`set_project_recommend`、`set_project_published`
 
+> 删除类工具（`delete_project` / `delete_blog` / `delete_type` / `delete_essay`）都支持可选参数
+> `syncDeleteImage`，默认 `true`：为 `true` 时后端会连带删除 admin-file 上的图片（随笔附件、博客封面、分类图、项目图），
+> 为 `false` 时只删数据库记录、保留文件。共用图片会自动跳过（博客封面沿用分类图、分类图仍被文章引用）。
+
 ### 文档（8）
 
 `list_docs`（含未发布）、`get_doc`（按**字符串** docId）、`create_doc`、`update_doc`、`delete_doc`、`set_doc_recommend`、`set_doc_published`（后 4 个按**数字主键** id）

@@ -13,7 +13,13 @@ public interface EssayService {
 
     Page<Essay> listEssay(Long userId, Pageable pageable);
 
-    void deleteEssay(Long id);
+    /**
+     * 删除随笔
+     *
+     * @param id              随笔 ID
+     * @param syncDeleteImage 是否同步删除 admin-file 上的随笔附件（外链文件跳过）
+     */
+    void deleteEssay(Long id, boolean syncDeleteImage);
 
     Essay saveEssay(Essay essay);
 

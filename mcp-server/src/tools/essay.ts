@@ -146,14 +146,23 @@ export function registerEssayTools(server: McpServer, client: BlogApiClient): vo
     'delete_essay',
     {
       title: '删除随笔',
-      description: '按 ID 永久删除随笔（需要内部密钥，不可恢复）。',
+      description:
+        '按 ID 永久删除随笔（需要内部密钥，不可恢复）。syncDeleteImage 默认 true，会一并删除文件服务上的随笔附件（外链文件跳过）。',
       inputSchema: {
         id: z.number().int().describe('随笔 ID'),
+        syncDeleteImage: z
+          .boolean()
+          .optional()
+          .describe('是否同步删除文件服务上的随笔附件，默认 true；false 时只删数据库记录并保留文件'),
       },
     },
-    async ({ id }) => {
+    async ({ id, syncDeleteImage }) => {
       try {
-        await client.request(`/internal/mcp/essay/${id}`, { method: 'DELETE', internal: true });
+        await client.request(`/internal/mcp/essay/${id}`, {
+          method: 'DELETE',
+          internal: true,
+          params: { syncDeleteImage },
+        });
         return ok({ success: true, message: `随笔 ${id} 已删除` });
       } catch (err) {
         return fail(err);

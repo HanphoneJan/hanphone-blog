@@ -2,6 +2,7 @@ package com.example.blog.service.impl;
 
 import com.example.blog.dao.ProjectRepository;
 import com.example.blog.po.Project;
+import com.example.blog.service.AdminFileService;
 import com.example.blog.service.ProjectService;
 import com.example.blog.util.MyBeanUtils;
 import org.springframework.beans.BeanUtils;
@@ -12,6 +13,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.CacheEvict;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
@@ -25,13 +28,17 @@ import static java.util.Objects.requireNonNull;
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ProjectServiceImpl.class);
+
     private static final int MAX_LIST_SIZE = 200;
 
     private final ProjectRepository projectRepository;
+    private final AdminFileService adminFileService;
 
     // 构造函数注入时校验依赖非空
-    public ProjectServiceImpl(ProjectRepository projectRepository) {
+    public ProjectServiceImpl(ProjectRepository projectRepository, AdminFileService adminFileService) {
         this.projectRepository = Objects.requireNonNull(projectRepository, "projectRepository must not be null");
+        this.adminFileService = Objects.requireNonNull(adminFileService, "adminFileService must not be null");
     }
 
     @Override
@@ -164,12 +171,25 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @CacheEvict(value = "siteStats", allEntries = true)
+    @Transactional
     @Override
-    public void deleteProject(Long id) {
+    public void deleteProject(Long id, boolean syncDeleteImage) {
         // 校验id非空
         Objects.requireNonNull(id, "id must not be null");
         try {
+            // 先取出图片 URL，记录删除后就查不到了
+            String picUrl = projectRepository.findById(id)
+                    .map(Project::getPic_url)
+                    .orElse(null);
             projectRepository.deleteById(id);
+            // 回收物理图片（仅本站托管文件，外链跳过），失败不影响删除结果
+            if (syncDeleteImage && picUrl != null && !picUrl.isBlank()) {
+                try {
+                    adminFileService.deleteManagedFiles(List.of(picUrl));
+                } catch (Exception fileEx) {
+                    logger.warn("回收项目图片失败，项目ID: {}", id, fileEx);
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete project with id: " + id, e);
         }

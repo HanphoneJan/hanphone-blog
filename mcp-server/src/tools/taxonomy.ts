@@ -92,14 +92,23 @@ export function registerTaxonomyTools(server: McpServer, client: BlogApiClient):
     'delete_type',
     {
       title: '删除分类',
-      description: '按 ID 删除分类（需要内部密钥）。若分类下仍有文章可能失败，建议先把文章移到其他分类。',
+      description:
+        '按 ID 删除分类（需要内部密钥）。若分类下仍有文章可能失败，建议先把文章移到其他分类。syncDeleteImage 默认 true，会一并删除文件服务上的分类图（仍被文章引用时自动跳过）。',
       inputSchema: {
         id: z.number().int().describe('分类 ID'),
+        syncDeleteImage: z
+          .boolean()
+          .optional()
+          .describe('是否同步删除文件服务上的分类图，默认 true；false 时只删数据库记录并保留图片'),
       },
     },
-    async ({ id }) => {
+    async ({ id, syncDeleteImage }) => {
       try {
-        await client.request(`/internal/mcp/types/${id}`, { method: 'DELETE', internal: true });
+        await client.request(`/internal/mcp/types/${id}`, {
+          method: 'DELETE',
+          internal: true,
+          params: { syncDeleteImage },
+        });
         return ok({ success: true, message: `分类 ${id} 已删除` });
       } catch (err) {
         return fail(err);

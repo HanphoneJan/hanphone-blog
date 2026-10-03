@@ -21,7 +21,13 @@ public interface ProjectService {
 
     Page<Project> listProject(String query, Pageable pageable);
 
-    void deleteProject(Long id);
+    /**
+     * 删除项目
+     *
+     * @param id              项目 ID
+     * @param syncDeleteImage 是否同步删除 admin-file 上的项目图片（pic_url 指向本站托管文件时生效）
+     */
+    void deleteProject(Long id, boolean syncDeleteImage);
 
     Project saveProject(Project project);
 

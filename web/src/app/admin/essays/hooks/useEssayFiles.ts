@@ -120,11 +120,8 @@ export function useEssayFiles(
       // 保存随笔时由服务端连同缩略图一起回收
       if (file && file.id === 0 && isInternalFileUrl(file.url)) {
         try {
+          // 缩略图与原图同目录，由 admin-file 按命名规则级联删除，这里只删原图即可
           await deletePhysicalFile(file.url)
-          // 缩略图与原图同目录，删掉原图后必须一并删除，否则会在磁盘留下孤儿 webp
-          if (file.thumbPath && isInternalFileUrl(file.thumbPath)) {
-            await deletePhysicalFile(file.thumbPath)
-          }
         } catch (error) {
           console.error('文件删除失败:', error)
           showAlert(ADMIN_ESSAY_LABELS.FILE_DELETE_FAIL)

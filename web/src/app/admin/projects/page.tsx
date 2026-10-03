@@ -9,6 +9,9 @@ import { useProjectStats } from './hooks/useProjectStats'
 import ProjectForm from './components/ProjectForm'
 import ProjectList from './components/ProjectList'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { SyncDeleteImageToggle } from '@/components/shared/SyncDeleteImageToggle'
+import { useSyncDeleteImage, withSyncDeleteImage } from '@/lib/syncDeleteImage'
+import { ADMIN_SYNC_DELETE_IMAGE_LABELS } from '@/lib/labels'
 
 // 动画变体定义
 const pageVariants = {
@@ -47,6 +50,7 @@ const tabVariants: Variants = {
 
 const ProjectManagement = () => {
   const [activeTab, setActiveTab] = useState('list')
+  const { syncDeleteImage, setSyncDeleteImage } = useSyncDeleteImage()
 
   const {
     projectList,
@@ -161,6 +165,11 @@ const ProjectManagement = () => {
             >
               项目列表
             </motion.button>
+
+            {/* 删除时是否同步删除项目图 */}
+            <div className="flex items-center pl-4 pr-1">
+              <SyncDeleteImageToggle checked={syncDeleteImage} onChange={setSyncDeleteImage} />
+            </div>
           </div>
 
           {/* 发布项目内容 */}
@@ -285,11 +294,15 @@ const ProjectManagement = () => {
       <ConfirmDialog
         isOpen={!!deleteConfirm}
         title="确认删除"
-        message="确定要删除这个项目吗？此操作不可撤销。"
+        message={
+          syncDeleteImage
+            ? ADMIN_SYNC_DELETE_IMAGE_LABELS.CONFIRM_WITH_IMAGE('这个项目')
+            : ADMIN_SYNC_DELETE_IMAGE_LABELS.CONFIRM_KEEP_IMAGE('这个项目')
+        }
         confirmText="确认删除"
         cancelText="取消"
         variant="danger"
-        onConfirm={handleDeleteConfirm}
+        onConfirm={() => handleDeleteConfirm(syncDeleteImage)}
         onCancel={() => setDeleteConfirm(null)}
       />
     </motion.div>

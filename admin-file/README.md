@@ -75,7 +75,7 @@ http://localhost:4000/api-docs
 ### 认证接口（需要 JWT）
 
 - `POST /upload` - 上传文件（支持所有类型，≤1GB）
-- `DELETE /delete` - 删除文件或目录
+- `DELETE /delete` - 删除文件或目录（删图片时会连带删除同目录的 `-320w/-800w/-1600w` 缩略图，响应里返回 `thumbnailCount`）
 - `GET /files` - 获取文件列表
 - `GET /file` - 获取文件详情
 - `POST /directory` - 创建命名空间目录

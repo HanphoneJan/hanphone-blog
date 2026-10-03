@@ -153,11 +153,12 @@ public class McpContentApiController {
 
     @DeleteMapping("/essay/{id}")
     public Result<Void> deleteEssay(@PathVariable Long id,
-                                    @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key) {
+                                    @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key,
+                                    @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
         if (!keyVerifier.verify(key)) {
             return unauthorized();
         }
-        essayService.deleteEssay(id);
+        essayService.deleteEssay(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除随笔成功", null);
     }
 
@@ -248,11 +249,12 @@ public class McpContentApiController {
 
     @DeleteMapping("/project/{id}")
     public Result<Void> deleteProject(@PathVariable Long id,
-                                      @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key) {
+                                      @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key,
+                                      @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
         if (!keyVerifier.verify(key)) {
             return unauthorized();
         }
-        projectService.deleteProject(id);
+        projectService.deleteProject(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除项目成功");
     }
 

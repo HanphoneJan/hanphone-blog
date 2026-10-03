@@ -5,6 +5,7 @@ import { Project, ProjectFilters } from '../types'
 import { processProjectData, filterProjects, sortProjects } from '../utils'
 import { ENDPOINTS } from '@/lib/api'
 import { ADMIN_PROJECT_LABELS, ADMIN_LINK_LABELS } from '@/lib/labels'
+import { withSyncDeleteImage } from '@/lib/syncDeleteImage'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 
@@ -128,12 +129,16 @@ export const useProjects = () => {
   }, [getProjectList])
 
   // 删除项目
-  const handleDeleteConfirm = useCallback(async () => {
+  // syncDeleteImage 由页面上的开关传入：false 时只删数据库记录，保留文件服务上的项目图
+  const handleDeleteConfirm = useCallback(async (syncDeleteImage = true) => {
     if (!deleteConfirm) return
 
     try {
       setLoading(true)
-      const res = await fetchData(`${ENDPOINTS.ADMIN.PROJECT}/${deleteConfirm}`, 'DELETE')
+      const res = await fetchData(
+        withSyncDeleteImage(`${ENDPOINTS.ADMIN.PROJECT}/${deleteConfirm}`, syncDeleteImage),
+        'DELETE'
+      )
 
       if (res.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_PROJECT_LABELS.DELETE_SUCCESS)

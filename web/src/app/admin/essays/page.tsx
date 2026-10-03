@@ -6,6 +6,9 @@ import { Plus, FileText } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_ESSAY_LABELS } from '@/lib/labels'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { SyncDeleteImageToggle } from '@/components/shared/SyncDeleteImageToggle'
+import { useSyncDeleteImage } from '@/lib/syncDeleteImage'
+import { ADMIN_SYNC_DELETE_IMAGE_LABELS } from '@/lib/labels'
 import { useEssays } from './hooks/useEssays'
 import { useEssayForm } from './hooks/useEssayForm'
 import { useEssayFiles } from './hooks/useEssayFiles'
@@ -53,6 +56,7 @@ export default function EssayManagementPage() {
   const [activeKey, setActiveKey] = useState('first')
   const [deleteModalVisible, setDeleteModalVisible] = useState(false)
   const [currentDeleteId, setCurrentDeleteId] = useState<number | null>(null)
+  const { syncDeleteImage, setSyncDeleteImage } = useSyncDeleteImage()
 
   // 使用自定义Hooks
   const {
@@ -178,11 +182,11 @@ export default function EssayManagementPage() {
   const confirmDelete = useCallback(async () => {
     if (!currentDeleteId) return
 
-    const success = await deleteEssay(currentDeleteId)
+    const success = await deleteEssay(currentDeleteId, syncDeleteImage)
     if (success) {
       closeDeleteModal()
     }
-  }, [currentDeleteId, deleteEssay, closeDeleteModal])
+  }, [currentDeleteId, deleteEssay, syncDeleteImage, closeDeleteModal])
 
   // 处理文件删除确认
   const handleFileDeleteConfirm = useCallback(async () => {
@@ -247,6 +251,11 @@ export default function EssayManagementPage() {
               <FileText className="h-4 w-4 mr-2 inline-block" />
               随笔管理
             </motion.button>
+
+            {/* 删除时是否同步删除随笔附件 */}
+            <div className="flex items-center pl-4 pr-1">
+              <SyncDeleteImageToggle checked={syncDeleteImage} onChange={setSyncDeleteImage} />
+            </div>
           </div>
 
           {/* 新建随笔内容 */}
@@ -354,7 +363,11 @@ export default function EssayManagementPage() {
       <ConfirmDialog
         isOpen={deleteModalVisible}
         title="确认删除"
-        message="确定要删除这篇随笔吗？此操作不可撤销。"
+        message={
+          syncDeleteImage
+            ? ADMIN_SYNC_DELETE_IMAGE_LABELS.CONFIRM_WITH_IMAGE('这篇随笔')
+            : ADMIN_SYNC_DELETE_IMAGE_LABELS.CONFIRM_KEEP_IMAGE('这篇随笔')
+        }
         confirmText="确认删除"
         cancelText="取消"
         variant="danger"

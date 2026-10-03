@@ -84,8 +84,9 @@ public class TypeController {
     }
 
     @DeleteMapping("/types/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        typeService.deleteType(id);
+    public Result<Void> delete(@PathVariable Long id,
+                               @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
+        typeService.deleteType(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除成功");
     }
 }

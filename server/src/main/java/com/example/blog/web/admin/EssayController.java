@@ -22,8 +22,9 @@ public class EssayController {
     }
 
     @DeleteMapping("/essay/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        essayService.deleteEssay(id);
+    public Result<Void> delete(@PathVariable Long id,
+                               @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
+        essayService.deleteEssay(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除随笔成功", null);
     }
 

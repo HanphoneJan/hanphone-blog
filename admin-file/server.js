@@ -10,7 +10,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { verifyToken } = require('./token');
 const { logger, httpLogger } = require('./logger');
-const { generateThumbnails, THUMB_WIDTHS } = require('./lib/thumbnail');
+const { generateThumbnails, THUMB_WIDTHS, hasThumbnails, thumbnailNamePattern } = require('./lib/thumbnail');
 const app = express();
 const PORT = process.env.PORT || 4000;
 const baseUploadDir = path.join(__dirname, "uploads");
@@ -1069,7 +1069,7 @@ app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (r
  *         description: 删除成功
  *         content:
  *           application/json:
- *             example: { "code": 200, "message": "文件删除成功", "type": "file", "name": "xxx.jpg" }
+ *             example: { "code": 200, "message": "文件删除成功", "type": "file", "name": "xxx.jpg", "thumbnailCount": 3 }
  *       400:
  *         description: 请求错误（如目录不为空）
  *       401:
@@ -1079,6 +1079,45 @@ app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (r
  *       500:
  *         description: 删除时发生错误
  */
+/**
+ * 删除原图时顺带回收同目录下的缩略图。
+ * 缩略图与原图同目录，命名为 `<原名stem>-<档位>w.<版本hash>.webp`，
+ * 只删匹配模式的文件，best-effort：单个失败不影响原图删除结果。
+ *
+ * @param {string} absPath 已删除的原图绝对路径
+ * @returns {Promise<number>} 删除的缩略图数量
+ */
+async function deleteSiblingThumbnails(absPath) {
+  const base = path.basename(absPath);
+  if (!hasThumbnails(base)) return 0;
+
+  const dir = path.dirname(absPath);
+  const pattern = thumbnailNamePattern(base);
+
+  let entries;
+  try {
+    entries = await fs.readdir(dir);
+  } catch (err) {
+    logger.warn(`读取目录失败，跳过缩略图清理: ${dir}`, err.message);
+    return 0;
+  }
+
+  let count = 0;
+  for (const entry of entries) {
+    if (!pattern.test(entry)) continue;
+    try {
+      await fs.unlink(path.join(dir, entry));
+      count++;
+    } catch (err) {
+      logger.warn(`删除缩略图失败: ${entry}`, err.message);
+    }
+  }
+  if (count > 0) {
+    logger.info(`随原图删除缩略图 ${count} 个: ${base}`);
+  }
+  return count;
+}
+
 // 删除文件接口
 app.delete("/delete", authenticateToken, async (req, res) => {
   try {
@@ -1118,6 +1157,8 @@ app.delete("/delete", authenticateToken, async (req, res) => {
 
     if (stats.isFile()) {
       await fs.unlink(targetPath);
+      // 缩略图与原图同目录、名字带原图 stem，删原图时一并回收，避免留下孤儿 webp
+      const thumbnailCount = await deleteSiblingThumbnails(targetPath);
       res.json({
         code: 200,
         message: "文件删除成功",
@@ -1125,6 +1166,7 @@ app.delete("/delete", authenticateToken, async (req, res) => {
         name,
         namespace: namespace || parentNamespace || null,
         category: category || null,
+        thumbnailCount,
       });
     } else if (stats.isDirectory()) {
       const items = await fs.readdir(targetPath);

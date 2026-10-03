@@ -106,4 +106,7 @@ public interface BlogRepository extends JpaRepository<Blog, Long>, JpaSpecificat
 
     long countByPublishedTrue();
 
+    /** 统计封面图等于该 URL 的博客数量，用于删除分类/博客时判断图片是否被共用 */
+    long countByFirstPicture(String firstPicture);
+
 }

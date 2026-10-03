@@ -14,8 +14,10 @@ import {
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
-import { ADMIN_TYPE_LABELS, COMMON_LABELS } from '@/lib/labels'
+import { ADMIN_TYPE_LABELS, COMMON_LABELS, ADMIN_SYNC_DELETE_IMAGE_LABELS } from '@/lib/labels'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { SyncDeleteImageToggle } from '@/components/shared/SyncDeleteImageToggle'
+import { useSyncDeleteImage, withSyncDeleteImage } from '@/lib/syncDeleteImage'
 import { PicResponse } from '@/types/response'
 import Compressor from 'compressorjs'
 
@@ -104,6 +106,8 @@ export default function CategoryManagement() {
   const [uploading, setUploading] = useState(false) // 新增上传状态
   const [searchKeyword, setSearchKeyword] = useState('')
   const uploadRef = useRef<HTMLInputElement>(null) // 上传input的ref
+  // 删除时是否同步删除分类图
+  const { syncDeleteImage, setSyncDeleteImage } = useSyncDeleteImage()
 
   // 获取分类列表
   const getFullCategoryList = useCallback(async () => {
@@ -300,10 +304,11 @@ export default function CategoryManagement() {
   }
 
   // 删除分类
+  // syncDeleteImage 由页面上的开关传入：false 时只删数据库记录，保留文件服务上的分类图
   const handleDeleteCategory = async (id: number) => {
     try {
       setLoading(true)
-      const res = await fetchData(`${ENDPOINTS.ADMIN.TYPES}/${id}`, 'GET')
+      const res = await fetchData(withSyncDeleteImage(`${ENDPOINTS.ADMIN.TYPES}/${id}`, syncDeleteImage), 'DELETE')
 
       if (res.code === API_CODE.SUCCESS) {
         showAlert(res.message || ADMIN_TYPE_LABELS.DELETE_SUCCESS)
@@ -335,7 +340,7 @@ export default function CategoryManagement() {
           className="bg-[rgb(var(--card))] backdrop-blur-sm lg:rounded-xl shadow-sm border border-[rgb(var(--border))] overflow-hidden"
         >
           {/* 操作栏：使用网格布局确保内容始终完全显示在一行 */}
-          <div className="py-2 px-6 border-b border-[rgb(var(--border))] grid grid-cols-[auto_1fr_auto] items-center gap-4">
+          <div className="py-2 px-6 border-b border-[rgb(var(--border))] grid grid-cols-[auto_1fr_auto_auto] items-center gap-4">
             {/* 标题：固定宽度，保证完整显示 */}
             <h2 className="text-base sm:text-lg md:text-xl text-[rgb(var(--primary))] whitespace-nowrap">
               分类列表
@@ -351,6 +356,11 @@ export default function CategoryManagement() {
                 placeholder="搜索..."
                 className="pl-10 pr-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all w-full text-sm"
               />
+            </div>
+
+            {/* 删除时是否同步删除分类图 */}
+            <div className="whitespace-nowrap">
+              <SyncDeleteImageToggle checked={syncDeleteImage} onChange={setSyncDeleteImage} />
             </div>
 
             {/* 新建分类按钮：固定宽度，确保始终可见 */}
@@ -630,7 +640,11 @@ export default function CategoryManagement() {
       <ConfirmDialog
         isOpen={confirmDelete !== null}
         title="确认删除"
-        message="此操作将永久删除该分类，是否继续？"
+        message={
+          syncDeleteImage
+            ? ADMIN_SYNC_DELETE_IMAGE_LABELS.CONFIRM_WITH_IMAGE('该分类')
+            : ADMIN_SYNC_DELETE_IMAGE_LABELS.CONFIRM_KEEP_IMAGE('该分类')
+        }
         confirmText="确认删除"
         cancelText="取消"
         variant="danger"

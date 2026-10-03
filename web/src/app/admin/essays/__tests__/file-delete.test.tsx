@@ -128,7 +128,9 @@ describe('随笔管理页 - 删除随笔文件', () => {
     await user.click(screen.getAllByRole('button', { name: '删除' })[0])
 
     await waitFor(() => {
-      expect(screen.getAllByText('确定要删除这篇随笔吗？此操作不可撤销。').length).toBeGreaterThan(0)
+      expect(
+        screen.getAllByText('确定要删除这篇随笔吗？文件服务上的图片会一并删除，此操作不可撤销。').length
+      ).toBeGreaterThan(0)
     })
 
     await user.click(screen.getByRole('button', { name: '确认删除' }))
@@ -138,6 +140,70 @@ describe('随笔管理页 - 删除随笔文件', () => {
         call => call[0]?.method === 'DELETE' && String(call[0]?.url).includes('/admin/essay/42')
       )
       expect(deleteCall).toBeTruthy()
+      // 默认开启同步删除图片
+      expect(String(deleteCall![0]?.url)).toContain('syncDeleteImage=true')
+    })
+  })
+
+  it('关闭「删除时同步删除图片」开关后应传 syncDeleteImage=false', async () => {
+    apiClientMock.mockImplementation(({ url }: { url: string }) => {
+      if (String(url).includes('/admin/essays')) {
+        return Promise.resolve({
+          data: {
+            code: 200,
+            data: [
+              {
+                id: 42,
+                user_id: 1000,
+                title: '测试随笔',
+                content: '正文',
+                createTime: '2026-01-01T00:00:00Z',
+                essayFileUrls: [],
+                recommend: false,
+                published: true
+              }
+            ]
+          }
+        })
+      }
+      return Promise.resolve({ data: { code: 200, data: null } })
+    })
+
+    const user = userEvent.setup()
+    render(<EssayManagementPage />)
+
+    // 默认开关为开启
+    await waitFor(() => {
+      expect(screen.getByRole('switch', { name: '删除时同步删除图片' })).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+    })
+
+    await user.click(screen.getByRole('switch', { name: '删除时同步删除图片' }))
+
+    await user.click(screen.getByRole('button', { name: '随笔管理' }))
+    await waitFor(() => {
+      expect(screen.getAllByText('测试随笔').length).toBeGreaterThan(0)
+    })
+
+    apiClientMock.mockClear()
+    await user.click(screen.getAllByRole('button', { name: '删除' })[0])
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText('确定要删除这篇随笔吗？当前开关为「仅删除记录」，图片会保留在文件服务器上。').length
+      ).toBeGreaterThan(0)
+    })
+
+    await user.click(screen.getByRole('button', { name: '确认删除' }))
+
+    await waitFor(() => {
+      const deleteCall = apiClientMock.mock.calls.find(
+        call => call[0]?.method === 'DELETE' && String(call[0]?.url).includes('/admin/essay/42')
+      )
+      expect(deleteCall).toBeTruthy()
+      expect(String(deleteCall![0]?.url)).toContain('syncDeleteImage=false')
     })
   })
 })

@@ -24,6 +24,12 @@ public interface TypeService {
 
     Type updateType(Long id,Type type);
 
-    void deleteType(Long id);
+    /**
+     * 删除分类
+     *
+     * @param id              分类 ID
+     * @param syncDeleteImage 是否同步删除 admin-file 上的分类图片（pic_url 指向本站托管文件时生效）
+     */
+    void deleteType(Long id, boolean syncDeleteImage);
 
 }

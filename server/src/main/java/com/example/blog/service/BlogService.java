@@ -33,7 +33,13 @@ public interface BlogService {
 
     Blog updateBlog(Long id, Blog blog);
 
-    void deleteBlog(Long id);
+    /**
+     * 删除博客
+     *
+     * @param id              博客 ID
+     * @param syncDeleteImage 是否同步删除 admin-file 上的封面图；若封面沿用所属分类的 pic_url（共用图片）则跳过
+     */
+    void deleteBlog(Long id, boolean syncDeleteImage);
 
     Blog getAndConvert(Long userId,Long id);
 

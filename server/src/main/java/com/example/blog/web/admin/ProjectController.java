@@ -23,8 +23,9 @@ public class ProjectController {
     }
 
     @DeleteMapping("/project/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        projectService.deleteProject(id);
+    public Result<Void> delete(@PathVariable Long id,
+                               @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
+        projectService.deleteProject(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除项目成功");
     }
 

@@ -259,14 +259,23 @@ export function registerBlogTools(server: McpServer, client: BlogApiClient): voi
     'delete_blog',
     {
       title: '删除文章',
-      description: '按 ID 永久删除文章（需要内部密钥，不可恢复）。',
+      description:
+        '按 ID 永久删除文章（需要内部密钥，不可恢复）。syncDeleteImage 默认 true，会一并删除文件服务上的封面图（封面沿用分类图时自动跳过）。',
       inputSchema: {
         id: z.number().int().describe('要删除的文章 ID'),
+        syncDeleteImage: z
+          .boolean()
+          .optional()
+          .describe('是否同步删除文件服务上的封面图，默认 true；false 时只删数据库记录并保留图片'),
       },
     },
-    async ({ id }) => {
+    async ({ id, syncDeleteImage }) => {
       try {
-        await client.request(`/internal/mcp/blogs/${id}`, { method: 'DELETE', internal: true });
+        await client.request(`/internal/mcp/blogs/${id}`, {
+          method: 'DELETE',
+          internal: true,
+          params: { syncDeleteImage },
+        });
         return ok({ success: true, message: `文章 ${id} 已删除` });
       } catch (err) {
         return fail(err);

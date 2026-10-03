@@ -169,10 +169,36 @@ async function generateThumbnails(absPath, relPath) {
   return result;
 }
 
+/**
+ * 该文件是否可能有缩略图（按扩展名判断，与生成逻辑保持一致）
+ * @param {string} originalName 原文件名
+ * @returns {boolean}
+ */
+function hasThumbnails(originalName) {
+  return THUMBNAILABLE_EXTENSIONS.has(path.extname(originalName).toLowerCase());
+}
+
+/**
+ * 生成匹配某个原图全部缩略图文件名的正则。
+ * 缩略图名里的版本号是「mtime + size」的哈希（见 sourceVersion），删除原图时无法重算，
+ * 只能按 `<原名>-<档位>w.<8位hash>.webp` 的模式匹配，因此统一在这里维护，避免各处硬编码。
+ * @param {string} originalName 原文件名（含扩展名）
+ * @returns {RegExp}
+ */
+function thumbnailNamePattern(originalName) {
+  const ext = path.extname(originalName);
+  const stem = path.basename(originalName, ext);
+  const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const widths = THUMB_WIDTHS.join("|");
+  return new RegExp(`^${escaped}-(?:${widths})w\\.[0-9a-f]{8}\\.webp$`, "i");
+}
+
 module.exports = {
   generateThumbnails,
   thumbFileName,
   sourceVersion,
+  hasThumbnails,
+  thumbnailNamePattern,
   THUMB_WIDTHS,
   THUMBNAILABLE_EXTENSIONS,
 };

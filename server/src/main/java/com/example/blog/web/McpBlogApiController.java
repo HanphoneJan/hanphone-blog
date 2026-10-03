@@ -170,11 +170,12 @@ public class McpBlogApiController {
 
     @DeleteMapping("/blogs/{id}")
     public Result<Void> deleteBlog(@PathVariable Long id,
-                                   @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key) {
+                                   @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key,
+                                   @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
         if (!keyVerifier.verify(key)) {
             return unauthorized();
         }
-        blogService.deleteBlog(id);
+        blogService.deleteBlog(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除博客成功");
     }
 
@@ -254,11 +255,12 @@ public class McpBlogApiController {
 
     @DeleteMapping("/types/{id}")
     public Result<Void> deleteType(@PathVariable Long id,
-                                   @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key) {
+                                   @RequestHeader(value = "X-Internal-Key", defaultValue = "") String key,
+                                   @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
         if (!keyVerifier.verify(key)) {
             return unauthorized();
         }
-        typeService.deleteType(id);
+        typeService.deleteType(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除成功");
     }
 

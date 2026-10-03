@@ -5,6 +5,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_ESSAY_LABELS, ADMIN_LINK_LABELS } from '@/lib/labels'
+import { withSyncDeleteImage } from '@/lib/syncDeleteImage'
 import type { Essay } from '../types'
 
 import { API_CODE } from '@/lib/constants'
@@ -168,9 +169,13 @@ export function useEssays() {
   }
 
   // 删除随笔
-  const deleteEssay = async (id: number): Promise<boolean> => {
+  // syncDeleteImage 由页面上的开关传入：false 时只删数据库记录，保留文件服务上的附件
+  const deleteEssay = async (id: number, syncDeleteImage = true): Promise<boolean> => {
     try {
-      const data = await fetchData(`${ENDPOINTS.ADMIN.ESSAY}/${id}`, 'DELETE')
+      const data = await fetchData(
+        withSyncDeleteImage(`${ENDPOINTS.ADMIN.ESSAY}/${id}`, syncDeleteImage),
+        'DELETE'
+      )
       if (data.code === API_CODE.SUCCESS) {
         showAlert(ADMIN_ESSAY_LABELS.DELETE_SUCCESS)
         getEssayList()

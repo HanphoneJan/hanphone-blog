@@ -170,6 +170,17 @@ export const COMMON_LABELS = {
   UPDATE_FAIL: '更新失败'
 } as const
 
+// ==================== 管理后台 - 删除时同步删除图片开关 ====================
+export const ADMIN_SYNC_DELETE_IMAGE_LABELS = {
+  TOGGLE: '删除时同步删除图片',
+  TITLE_ON: '已开启：删除记录时会同步删除文件服务上的图片（含缩略图）',
+  TITLE_OFF: '已关闭：只删除数据库记录，文件服务上的图片会保留',
+  CONFIRM_WITH_IMAGE: (target: string) =>
+    `确定要删除${target}吗？文件服务上的图片会一并删除，此操作不可撤销。`,
+  CONFIRM_KEEP_IMAGE: (target: string) =>
+    `确定要删除${target}吗？当前开关为「仅删除记录」，图片会保留在文件服务器上。`
+} as const
+
 // ==================== 管理后台 - 友链 ====================
 export const ADMIN_LINK_LABELS = {
   FETCH_LIST_FAIL: '获取友链列表失败',

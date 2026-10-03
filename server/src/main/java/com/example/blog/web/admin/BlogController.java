@@ -164,8 +164,9 @@ public class BlogController {
     }
 
     @DeleteMapping("/blogs/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        blogService.deleteBlog(id);
+    public Result<Void> delete(@PathVariable Long id,
+                               @RequestParam(name = "syncDeleteImage", defaultValue = "true") boolean syncDeleteImage) {
+        blogService.deleteBlog(id, syncDeleteImage);
         return new Result<>(true, StatusCode.OK, "删除博客成功");
     }
 

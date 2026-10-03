@@ -32,6 +32,9 @@ public class AdminFileServiceImpl implements AdminFileService {
     private static final Logger logger = LoggerFactory.getLogger(AdminFileServiceImpl.class);
 
     private static final String ESSAY_NAMESPACE = "blog/essay";
+
+    /** 允许物理回收的上传根目录（一级目录），仅回收该目录下的文件，避免误删其他内容 */
+    private static final String MANAGED_NAMESPACE = "blog";
     private static final String DELETE_ENDPOINT = "/delete";
 
     private final RestTemplate restTemplate;
@@ -57,7 +60,37 @@ public class AdminFileServiceImpl implements AdminFileService {
     }
 
     @Override
+    public boolean isManagedFileUrl(String url) {
+        String relativePath = extractRelativePath(url);
+        if (relativePath == null) {
+            return false;
+        }
+        if (!relativePath.equals(MANAGED_NAMESPACE) && !relativePath.startsWith(MANAGED_NAMESPACE + "/")) {
+            return false;
+        }
+        // 目录本身（无文件名）不作为可删除文件，也拒绝带路径穿越的异常路径
+        if (!relativePath.contains("/")) {
+            return false;
+        }
+        return !relativePath.contains("..");
+    }
+
+    @Override
     public void deleteEssayFiles(List<String> urls) {
+        deleteFiles(urls, "随笔文件");
+    }
+
+    @Override
+    public void deleteManagedFiles(List<String> urls) {
+        deleteFiles(urls, "托管文件");
+    }
+
+    /**
+     * 删除一批本站托管文件，并顺带清理其所在的空目录
+     *
+     * @param label 日志用的业务名称
+     */
+    private void deleteFiles(List<String> urls, String label) {
         if (urls == null || urls.isEmpty()) {
             return;
         }
@@ -66,6 +99,9 @@ public class AdminFileServiceImpl implements AdminFileService {
         int deletedCount = 0;
 
         for (String url : urls) {
+            if (!isManagedFileUrl(url)) {
+                continue;
+            }
             String relativePath = extractRelativePath(url);
             if (relativePath == null) {
                 continue;
@@ -74,7 +110,8 @@ public class AdminFileServiceImpl implements AdminFileService {
                 deletedCount++;
             }
             int lastSlash = relativePath.lastIndexOf('/');
-            if (lastSlash > ESSAY_NAMESPACE.length()) {
+            // 只清理 blog/ 之下的子目录（blog/project、blog/essay/标题 等），blog 根目录不动
+            if (lastSlash > MANAGED_NAMESPACE.length()) {
                 directories.add(relativePath.substring(0, lastSlash));
             }
         }
@@ -84,7 +121,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
 
         if (deletedCount > 0) {
-            logger.info("随笔文件回收完成，共删除 {} 个物理文件", deletedCount);
+            logger.info("{}回收完成，共删除 {} 个物理文件", label, deletedCount);
         }
     }
 

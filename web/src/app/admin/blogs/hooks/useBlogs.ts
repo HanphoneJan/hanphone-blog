@@ -5,6 +5,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_BLOG_LABELS } from '@/lib/labels'
+import { withSyncDeleteImage } from '@/lib/syncDeleteImage'
 import type { Blog, QueryInfo } from '../types'
 
 import { API_CODE } from '@/lib/constants'
@@ -56,9 +57,10 @@ export function useBlogs() {
     setLoading(false)
   }, [])
 
-  const removeBlogById = async (id: number, onSuccess?: () => void) => {
+  // syncDeleteImage 由页面上的开关传入：false 时只删数据库记录，保留文件服务上的封面图
+  const removeBlogById = async (id: number, onSuccess?: () => void, syncDeleteImage = true) => {
     showAlert(ADMIN_BLOG_LABELS.DELETE_CONFIRM, { type: 'warning', duration: 3000 })
-    const data = await fetchData(`${ENDPOINTS.ADMIN.BLOGS}/${id}`, 'DELETE')
+    const data = await fetchData(withSyncDeleteImage(`${ENDPOINTS.ADMIN.BLOGS}/${id}`, syncDeleteImage), 'DELETE')
     if (data.code === API_CODE.SUCCESS) {
       showAlert(ADMIN_BLOG_LABELS.DELETE_SUCCESS)
       onSuccess?.()

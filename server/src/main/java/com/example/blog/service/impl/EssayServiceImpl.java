@@ -170,7 +170,7 @@ public class EssayServiceImpl implements EssayService {
     @CacheEvict(value = "siteStats", allEntries = true)
     @Override
     @Transactional
-    public void deleteEssay(Long id) {
+    public void deleteEssay(Long id, boolean syncDeleteImage) {
         Objects.requireNonNull(id, "essay id must not be null");
         try {
             // 先检查随笔是否存在
@@ -182,11 +182,13 @@ public class EssayServiceImpl implements EssayService {
             List<String> fileUrls = collectPhysicalUrls(oldFiles);
             essayFileUrlRepository.deleteByEssay_Id(id);
             essayRepository.deleteById(id);
-            // 回收物理文件（仅本站 blog/essay/ 下的文件，外链跳过）
-            try {
-                adminFileService.deleteEssayFiles(fileUrls);
-            } catch (Exception fileEx) {
-                logger.warn("回收随笔文件失败，随笔ID: {}", id, fileEx);
+            // 回收物理文件（仅本站 blog/essay/ 下的文件，外链跳过）；关闭开关时只删记录、保留文件
+            if (syncDeleteImage) {
+                try {
+                    adminFileService.deleteEssayFiles(fileUrls);
+                } catch (Exception fileEx) {
+                    logger.warn("回收随笔文件失败，随笔ID: {}", id, fileEx);
+                }
             }
         } catch (EntityNotFoundException e) {
             throw e; // 保留原始业务异常
