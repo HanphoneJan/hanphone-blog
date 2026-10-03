@@ -1,6 +1,6 @@
 # 寒枫小工具 · Hanphone Tool
 
-> 一组轻量、开箱即用的实用工具集合。纯前端实现，无需服务器，即开即用。
+> 一组轻量、开箱即用的实用工具集合。前端工具零依赖、纯浏览器实现；脚本类工具需自行准备运行环境。
 
 ---
 
@@ -10,11 +10,11 @@
 
 | 工具                  | 目录                                                          | 描述                                                                                            | 类型 |
 | --------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---- |
-| 🛡️ 跳转拦截器       | [`browser-extension-intercept/`](browser-extension-intercept/) | 在网页跳转时弹出确认框，避免误操作                                                              | 扩展 |
 | 🔍 iPhone风格计算器   | [`calculator/`](calculator/)                                   | 仿 iPhone 风格的网页计算器，支持四则运算、百分比、小数，精准浮点处理，响应式设计。              | 网页 |
 | 🗂️ Markdown 转换器  | [`markdown-converter/`](markdown-converter/)                   | 实时 Markdown 预览与富文本复制，支持 LaTeX 数学公式，一键复制到剪贴板，双栏响应式布局。         | 网页 |
 | 🗂️ 高效照片压缩工具 | [`photo-compressor/`](photo-compressor/)                       | 浏览器端图片压缩，支持 JPG / PNG / WebP，可调节质量，实时预览对比，文件不上传服务器，保护隐私。 | 网页 |
 | 🖼️ RGB调色板        | [`rgb-color-picker/`](rgb-color-picker/)                       | 交互式 RGB 颜色选择器，滑块实时调色，HEX 双向同步，随机颜色生成，一键复制颜色代码。             | 网页 |
+| ☁️ 腾讯云 ECS 抢购   | [`buy-tencent-ecs/`](buy-tencent-ecs/)                         | 腾讯云轻量应用服务器自动下单脚本，Selenium 驱动浏览器抢占新客特价，含重试与并发控制。            | 脚本 |
 
 <!-- TOOLS_END -->
 
@@ -24,47 +24,40 @@
 
 ### 网页工具（直接打开）
 
-克隆仓库后，直接用浏览器打开对应工具目录下的 `index.html`：
+工具收录在博客仓库的 `web/public/tools/` 下，开发时由 Next.js 直接以静态资源方式提供，无需单独启动服务：
 
 ```bash
-git clone https://github.com/hanphonejan/hanphone-tool.git
-cd hanphone-tool
-# 打开任意工具目录下的 index.html
+pnpm install
+pnpm --filter web dev
+# 打开 http://localhost:3000/tools/
 ```
 
-或通过根目录的 [`index.html`](index.html) 进入工具导航页。
+也可以直接用浏览器打开对应工具目录下的 `index.html`。
 
-## 🛡️ 浏览器扩展安装
+### 脚本类工具
 
-1. 打开 Chrome，地址栏输入 `chrome://extensions/`
-2. 开启右上角「**开发者模式**」
-3. 点击「**加载已解压的扩展程序**」
-4. 选择 `browser-extension-intercept/` 目录
-5. 安装完成后，点击扩展图标可配置拦截模式
+`buy-tencent-ecs/` 是独立脚本，不参与前端构建，需要单独准备依赖（Python `selenium` / Node.js）。
 
 ---
 
 ## 📦 项目结构
 
 ```
-hanphone-tool/
-├── index.html                    # 工具导航门户（可直接部署为 GitHub Pages 主页）
+tools/
+├── buy-tencent-ecs/            # 腾讯云 ECS 自动下单脚本
+│   ├── buy.py                  # Python + Selenium 版本
+│   └── buy2.js                 # Node.js 版本
 ├── calculator/
-│   └── index.html                # iPhone 风格计算器
+│   └── index.html              # iPhone 风格计算器
 ├── markdown-converter/
-│   ├── index.html                # Markdown 转换器主界面
-│   ├── marked.min.js             # Markdown 解析库
-│   └── latex.js                  # LaTeX 公式支持
+│   ├── index.html              # Markdown 转换器主界面
+│   ├── marked.min.js           # Markdown 解析库
+│   └── latex.js                # LaTeX 公式支持
 ├── photo-compressor/
-│   └── index.html                # 照片压缩工具
+│   └── index.html              # 照片压缩工具
 ├── rgb-color-picker/
-│   └── index.html                # RGB 调色板
-└── browser-extension-intercept/
-    ├── manifest.json             # 扩展配置（Manifest V2）
-    ├── background.js             # 后台拦截脚本
-    ├── content.js                # 页面内跳转拦截
-    ├── popup.html / popup.js     # 弹出窗口
-    └── options.html / options.js # 配置页面
+│   └── index.html              # RGB 调色板
+└── README.md                   # 项目说明文档
 ```
 
 ---
@@ -128,38 +121,20 @@ hanphone-tool/
 
 ---
 
-### 🛡️ 浏览器跳转拦截扩展
+### ☁️ 腾讯云 ECS 抢购脚本
 
-防止网页误操作跳转的 Chrome 扩展。
+用于抢新客特价服务器的自动化下单脚本，仅供学习交流，请遵守云厂商服务条款。
 
 **功能特性**
 
-- 拦截所有形式的页面跳转：
-  - 链接点击（`<a>` 标签）
-  - 表单提交（`<form>`）
-  - JavaScript `location` / `history` API
-  - `meta refresh` 自动刷新
-- 弹出确认框，由用户决定是否放行
-- 两种拦截模式：全局拦截 / 仅指定域名
-- 支持一键启用 / 停用
+- Selenium 驱动真实浏览器完成下单流程
+- 内置重试机制与异常兜底（元素失效 / 点击被拦截 / 超时）
+- Python 与 Node.js 两套实现可按需选择
 
 ---
 
-### 新增工具示例
+### 新增工具
 
-在 `index.html` 的 `TOOLS` 数组中添加：
-
-```js
-{
-  name: "新工具名称",
-  dir: "new-tool/",
-  href: "new-tool/index.html",
-  icon: "🔧",
-  iconBg: "rgba(96, 165, 250, 0.15)",
-  iconColor: "#60a5fa",
-  desc: "工具简要描述。",
-  tags: [
-    { label: "标签1", color: "rgba(96,165,250,0.15)", text: "#60a5fa" },
-  ],
-},
-```
+1. 在本目录新建文件夹，放入 `index.html`（或脚本入口文件）
+2. 手动更新上方的工具列表表格
+3. 到「项目展示」后台新增一条记录（`/tools` 页面从接口读取项目数据，新工具需入库后才会出现在前台卡片中）

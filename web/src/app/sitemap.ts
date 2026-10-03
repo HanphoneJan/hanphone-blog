@@ -35,20 +35,12 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
 
   // ===== 有趣网页 (hanphone-play) =====
   { url: `${SITE_URL}/play`, priority: 0.6, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/canvas-particle-universe`, priority: 0.5, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/play/congratulation`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/hanphonechat/browser`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/happy-birthday`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/lottery`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/love-chiikawa`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/love-guess-moss`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/love-memory`, priority: 0.5, changeFrequency: 'yearly' },
+  { url: `${SITE_URL}/play/letter/web/envelope.html`, priority: 0.5, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/play/read/replicant`, priority: 0.5, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/play/resume`, priority: 0.5, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/play/simple-piano`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/torus-knot-geometry`, priority: 0.5, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/play/visual-player`, priority: 0.5, changeFrequency: 'yearly' },
-  { url: `${SITE_URL}/play/letter/browser2`, priority: 0.5, changeFrequency: 'yearly' },
 
   // ===== 小游戏 (hanphone-game) =====
   { url: `${SITE_URL}/games`, priority: 0.6, changeFrequency: 'yearly' },

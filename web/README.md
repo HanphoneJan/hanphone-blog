@@ -114,21 +114,13 @@ web/
 │   │   ├── tower-blocks/
 │   │   └── toy-claw/
 │   ├── play/                       # 趣味小工具/页面
-│   │   ├── canvas-particle-universe/
 │   │   ├── congratulation/
-│   │   ├── happy-birthday/
 │   │   ├── letter/
-│   │   ├── lottery/
-│   │   ├── love-chiikawa/
-│   │   ├── love-guess-moss/
-│   │   ├── love-memory/
 │   │   ├── read/
 │   │   ├── resume/
 │   │   ├── simple-piano/
-│   │   ├── torus-knot-geometry/
 │   │   └── visual-player/
 │   ├── tools/                      # 实用工具
-│   │   ├── browser-extension-intercept/
 │   │   ├── buy-tencent-ecs/
 │   │   ├── calculator/
 │   │   ├── markdown-converter/
