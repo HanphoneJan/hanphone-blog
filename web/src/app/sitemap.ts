@@ -20,6 +20,7 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/messages`, priority: 0.4, changeFrequency: 'weekly' },
   { url: `${SITE_URL}/links`, priority: 0.3, changeFrequency: 'yearly' },
   { url: `${SITE_URL}/docs`, priority: 0.5, changeFrequency: 'weekly' },
+  { url: `${SITE_URL}/insight`, priority: 0.6, changeFrequency: 'daily' },
   { url: `${SITE_URL}/music`, priority: 0.5, changeFrequency: 'weekly' },
   { url: `${SITE_URL}/rss`, priority: 0.3, changeFrequency: 'daily' },
 

@@ -62,6 +62,33 @@ export const ENDPOINTS = {
   DOC_VIEW: (docId: string) => `${API_BASE_URL}/docs/${docId}/view`,
   DOCS_HOT: `${API_BASE_URL}/docs/hot`,
   DOCS_RECOMMENDED: `${API_BASE_URL}/docs/recommended`,
+  // 洞察（热点聚合）
+  HOT: {
+    OVERVIEW: `${API_BASE_URL}/hot/overview`,
+    FEED: (category?: string, limit = 40) =>
+      `${API_BASE_URL}/hot/feed?limit=${limit}${category ? `&category=${encodeURIComponent(category)}` : ''}`,
+    SOURCES: `${API_BASE_URL}/hot/sources`,
+    LEADERBOARDS: (modality: string) =>
+      `${API_BASE_URL}/hot/leaderboards?modality=${encodeURIComponent(modality)}`,
+    BENCHMARKS: `${API_BASE_URL}/hot/benchmarks`,
+    MODELS: (q: string, limit = 20) =>
+      `${API_BASE_URL}/hot/models?q=${encodeURIComponent(q)}&limit=${limit}`,
+    MODEL: (key: string) => `${API_BASE_URL}/hot/models/${encodeURIComponent(key)}`,
+    FEATURED: `${API_BASE_URL}/hot/models/featured`,
+    COMPARE: (keys: string[]) =>
+      `${API_BASE_URL}/hot/models/compare?keys=${keys.map(encodeURIComponent).join(',')}`,
+    LEADERBOARD_TREND: (modality: string, days = 30, top = 5) =>
+      `${API_BASE_URL}/hot/leaderboards/trend?modality=${encodeURIComponent(modality)}&days=${days}&top=${top}`,
+    MODEL_TREND: (key: string, days = 30) =>
+      `${API_BASE_URL}/hot/models/${encodeURIComponent(key)}/trend?days=${days}`,
+    ADMIN_SOURCES: `${API_BASE_URL}/admin/hot/sources`,
+    ADMIN_RUNS: `${API_BASE_URL}/admin/hot/runs`,
+    ADMIN_COLLECT: `${API_BASE_URL}/admin/hot/collect`,
+    ADMIN_COLLECT_MODELS: `${API_BASE_URL}/admin/hot/collect-models`,
+    ADMIN_STATUS: `${API_BASE_URL}/admin/hot/status`,
+    SUMMARY_SETTINGS: `${API_BASE_URL}/admin/hot/settings/summary`,
+    SUMMARY_TEST: `${API_BASE_URL}/admin/hot/settings/summary/test`
+  },
   OAUTH: {
     AUTHORIZE: (provider: string) => `${API_BASE_URL}/oauth/${provider}/authorize`,
   },

@@ -139,7 +139,8 @@ export const ADMIN_NAV_LABELS = {
   DOC_MANAGE: '文库管理',
   USER_MANAGE: '用户管理',
   LINK_MANAGE: '友链管理',
-  PERSONAL_CENTER: '个人中心'
+  PERSONAL_CENTER: '个人中心',
+  INSIGHT: '聚合数据'
 } as const
 
 // ==================== 个人主页 ====================

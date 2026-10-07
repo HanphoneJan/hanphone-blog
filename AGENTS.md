@@ -65,6 +65,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 ### Frontend Architecture (web/src/)
 
 - **App Router**: Pages in `app/(main)/` (public) and `app/admin/` (dashboard)
+- **热点聚合页** `/insight`（「分享」菜单 → 热点聚合）：GitHub / HF / AI 要闻 热点流 + 模型榜单（文本 / 代码 / Agent / Embedding / 生图 / 生视频 / 语音）+ 综合对比（能力雷达 / 价格散点 / 明细表，可导出图片与分享链接）。页面为 `force-dynamic` 按请求渲染，服务端经内网 `API_INTERNAL_BASE_URL` 取数；后台 `/admin/insight`（导航「聚合数据」）可异步触发采集并配置 AI 摘要（URL/Key/Model/自定义 Header）。
 - **Static sub-apps**: Gomoku builds to `web/public/games/` and is served by Next.js rewrites at `/games/`. Photo wall (`apps/photo-wall`) builds to its own `atlas/` and is served **by nginx alias** `/home/hanphone/html/atlas` at `/atlas/` (不在 Next.js / `web/public/` 内托管)
 - **PWA**: Serwist v9 service worker (`app/sw.ts`) with offline page
 - **Desktop**: Tauri 2 wrapper in `src-tauri/` packages as Windows desktop app
@@ -78,6 +79,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - **JWT interceptor**: `TokenInterceptor` protects `/admin/**` routes
 - **Swagger**: SpringDoc OpenAPI 3 at `/swagger-ui/index.html`; public and admin controllers separated
 - **Two query layers**: JPA repositories in `dao/` for most queries, MyBatis-Plus for some complex ones
+- **热点聚合（Insight）**：`hot/` 包，采集器接口 `HotCollector`（热点条目）与 `ModelLeaderboardCollector`（模型榜单），`HotCollectScheduler` 每日 03:30 采集、`HotTriggerService` 提供后台异步手动触发。表：`hot_source` / `hot_item` / `hot_item_snapshot` / `hot_collect_run` / `hot_setting` / `model_entity` / `model_alias` / `model_benchmark` / `model_benchmark_snapshot` / `model_pricing` / `benchmark_meta`。公开接口 `/hot/{overview,feed,sources,leaderboards,benchmarks,models}`，管理接口 `/admin/hot/*`（`collect` 异步、`status`、`settings/summary`）。信源：GitHub、Hugging Face（可用 `HF_ENDPOINT` 镜像）、AI 要闻（RSS）、Artificial Analysis、LMArena（可关）、MTEB、SWE-bench、Terminal-Bench、VBench、OpenRouter。
 
 ### Environment Variables
 
@@ -85,6 +87,8 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - Backend env: copy `server/env.example` → `server/.env`
 - Internal service auth: `INTERNAL_API_KEY` in backend `.env` for service-to-service calls (e.g., hanphone-chat → blog API)
 - Visitor IP geo stats: `GEO_DB_PATH` in backend `.env` points to a **DB-IP City Lite** mmdb file (globally covers IP→country/region; missing file degrades to "unknown region"). Auto-update monthly via `server/scripts/update-dbip.sh` (see `server/DEPLOYMENT.md` §7). Frontend world map displays country names in Chinese via `web/src/lib/countryZh.ts` mapping.
+- 热点聚合：`GITHUB_TOKEN`（GitHub 配额）、`AA_API_KEY`（Artificial Analysis 免费 key）、`HF_ENDPOINT`（国内可设 `https://hf-mirror.com`）、`HOT_LMARENA_ENABLED`、`HOT_COLLECT_ENABLED` / `HOT_COLLECT_CRON`；AI 摘要可用 `HOT_SUMMARY_*` 或在后台「聚合数据」配置 URL/Key/Model/自定义 Header。前端服务端取内网后端用 `API_INTERNAL_BASE_URL`（**直连 8090，无 `/api` 前缀**，nginx 才加 `/api`）。
+- 网易云音乐 Cookie 自动刷新：外部 cron 调用 `GET /next-api/cron/refresh-netease-cookie/`（须带尾斜杠 + `x-internal-key`），见 `web/CRON_SETUP.md`。
 
 ## CI (GitHub Actions)
 

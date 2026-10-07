@@ -7,9 +7,9 @@
 
 个人博客系统，采用前后端分离架构：Next.js + Spring Boot。
 
-博客内还集成了多个纯前端子项目（工具集合、有趣网页、小游戏、照片墙），部署在同一域名下。
+博客内还集成了多个纯前端子项目（工具集合、有趣网页、小游戏、照片墙），以及一个「热点聚合」页（GitHub / Hugging Face / AI 要闻热点 + 主流模型榜单 + 模型综合对比），部署在同一域名下。
 
-[工具](https://hanphone.cn/tools) · [有趣网页](https://hanphone.cn/play) · [小游戏](https://hanphone.cn/games) · [照片墙](https://hanphone.cn/atlas/)
+[工具](https://hanphone.cn/tools) · [有趣网页](https://hanphone.cn/play) · [小游戏](https://hanphone.cn/games) · [照片墙](https://hanphone.cn/atlas/) · [热点聚合](https://hanphone.cn/insight/)
 
 采用 **pnpm workspace** 管理多包（Monorepo）：web 前端 + apps（gomoku / photo-wall / chat-client）+ admin-file 文件服务 + photo-wall-server + chat-server 聊天服务 + mcp-server；Android 原生客户端为独立 Gradle 工程（`android/`）。
 

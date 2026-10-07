@@ -42,6 +42,7 @@
     "dompurify": "^3.3.3",
     "echarts": "^6.0.0",
     "framer-motion": "^12.38.0",
+    "html-to-image": "^1.11.13",
     "isomorphic-dompurify": "^2.26.0",
     "katex": "^0.16.25",
     "lucide-react": "^0.541.0",

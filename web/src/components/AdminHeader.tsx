@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import Image from 'next/image'
 import {
   Home,
@@ -18,15 +19,16 @@ import {
   BookOpen,
   Menu,
   X,
-  Link,
+  Link as LinkIcon,
   Sun,
   Moon,
   Heart,
-  Zap
+  Zap,
+  Radar
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useTheme } from '@/contexts/ThemeProvider'
-import { STORAGE_KEYS, ROUTES, ASSETS, HOME_CONFIG, TIME, Z_INDEX } from '@/lib/constants'
+import { ROUTES, ASSETS, HOME_CONFIG, TIME, Z_INDEX } from '@/lib/constants'
 import { ADMIN_NAV_LABELS } from '@/lib/labels'
 
 interface AdminHeaderProps {
@@ -42,8 +44,8 @@ interface MenuItem {
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
   const router = useRouter()
+  const pathname = usePathname() || ''
   const [isCollapse, setIsCollapse] = useState(false)
-  const [activePath, setActivePath] = useState('')
   const [screenWidth, setScreenWidth] = useState<number>(HOME_CONFIG.INIT_SCREEN_WIDTH)
   const [showUserOptions, setShowUserOptions] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -73,8 +75,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
     { id: 8, path: ROUTES.ADMIN_BLOG_FILES, authName: ADMIN_NAV_LABELS.FILE_MANAGE, icon: <ImageIcon size={20} /> },
     { id: 9, path: ROUTES.ADMIN_DOCS, authName: ADMIN_NAV_LABELS.DOC_MANAGE, icon: <BookOpen size={20} /> },
     { id: 10, path: ROUTES.ADMIN_USERS, authName: ADMIN_NAV_LABELS.USER_MANAGE, icon: <User size={20} /> },
-    { id: 11, path: ROUTES.ADMIN_LINKS, authName: ADMIN_NAV_LABELS.LINK_MANAGE, icon: <Link size={20} /> },
-    { id: 12, path: ROUTES.ADMIN_PERSONAL, authName: ADMIN_NAV_LABELS.PERSONAL_CENTER, icon: <UserCircle size={20} /> }
+    { id: 11, path: ROUTES.ADMIN_LINKS, authName: ADMIN_NAV_LABELS.LINK_MANAGE, icon: <LinkIcon size={20} /> },
+    { id: 12, path: ROUTES.ADMIN_INSIGHT, authName: ADMIN_NAV_LABELS.INSIGHT, icon: <Radar size={20} /> },
+    { id: 13, path: ROUTES.ADMIN_PERSONAL, authName: ADMIN_NAV_LABELS.PERSONAL_CENTER, icon: <UserCircle size={20} /> }
   ]
 
   // 计算下拉框位置
@@ -131,13 +134,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
     }
   }
 
-  const handleMenuClick = (path: string) => {
-    console.log(path)
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_PATH, path)
-    setActivePath(path)
-    router.push(path)
-    closeMobileMenu()
+  // 归一化路径（忽略尾斜杠）判断当前激活项
+  const normalizePath = (p: string) => {
+    const t = p.replace(/\/+$/, '')
+    return t === '' ? '/' : t
   }
+  const isActive = (path: string) => normalizePath(pathname) === normalizePath(path)
 
   // 点击页面其他区域关闭下拉框
   useEffect(() => {
@@ -178,18 +180,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    const savedPath = localStorage.getItem(STORAGE_KEYS.ACTIVE_PATH)
-    if (savedPath) {
-      setActivePath(savedPath)
-    } else {
-      setActivePath(ROUTES.ADMIN_DEFAULT)
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_PATH, ROUTES.ADMIN_DEFAULT)
-    }
-  }, [])
-
-  useEffect(() => {
     if (typeof window !== 'undefined') {
-      setActivePath(window.location.pathname)
+      setScreenWidth(window.innerWidth)
     }
   }, [])
 
@@ -295,30 +287,35 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
           }`}
         >
           <ul className="py-4">
-            {menulist.map(item => (
-              <li
-                key={item.id}
-                className={`flex items-center py-3 px-4 cursor-pointer transition-all duration-300 rounded-lg mx-2 ${
-                  activePath === item.path
-                    ? 'bg-[rgb(var(--primary))] text-white'
-                    : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
-                }`}
-                onClick={() => handleMenuClick(item.path)}
-              >
-                <span className={`${isCollapse && !isMobileView ? 'mx-auto' : ''} ${
-                  activePath === item.path
-                    ? 'text-white'
-                    : 'text-[rgb(var(--primary))]'
-                }`}>
-                  {item.icon}
-                </span>
-                {(!isCollapse || isMobileView) && (
-                  <span className={`ml-3 ${isMobileView ? 'font-medium' : ''}`}>
-                    {item.authName}
-                  </span>
-                )}
-              </li>
-            ))}
+            {menulist.map(item => {
+              const active = isActive(item.path)
+              return (
+                <li key={item.id} className="mx-2">
+                  <Link
+                    href={item.path}
+                    onClick={closeMobileMenu}
+                    className={`flex items-center py-3 px-4 rounded-lg transition-all duration-300 ${
+                      active
+                        ? 'bg-[rgb(var(--primary))] text-white'
+                        : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                    }`}
+                  >
+                    <span
+                      className={`${isCollapse && !isMobileView ? 'mx-auto' : ''} ${
+                        active ? 'text-white' : 'text-[rgb(var(--primary))]'
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    {(!isCollapse || isMobileView) && (
+                      <span className={`ml-3 ${isMobileView ? 'font-medium' : ''}`}>
+                        {item.authName}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
         </nav>
       </aside>

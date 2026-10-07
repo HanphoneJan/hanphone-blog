@@ -32,7 +32,8 @@ import {
   Wrench,
   Gamepad2,
   Code,
-  Music
+  Music,
+  TrendingUp
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import RegisterForm from './RegisterForm'
@@ -177,7 +178,8 @@ const Header: React.FC = () => {
     { id: 5, authName: '分享', enName: 'share', path: '', children: [
       { id: 51, authName: '文库', enName: 'docs', path: 'docs' },
       { id: 52, authName: '照片墙', enName: 'photo-wall', path: 'atlas', newTab: true },
-      { id: 53, authName: '音乐库', enName: 'music', path: 'music' }
+      { id: 53, authName: '音乐库', enName: 'music', path: 'music' },
+      { id: 54, authName: '热点聚合', enName: 'insight', path: 'insight' }
     ]},
     { id: 6, authName: '交流', enName: 'community', path: '', children: [
       { id: 61, authName: '留言', enName: 'messages', path: 'messages' },
@@ -214,6 +216,8 @@ const Header: React.FC = () => {
         return <ImageIcon className="w-4 h-4" />
       case 53:
         return <Music className="w-4 h-4" />
+      case 54:
+        return <TrendingUp className="w-4 h-4" />
       case 6:
         return <MessageCircle className="w-4 h-4" />
       case 61:
