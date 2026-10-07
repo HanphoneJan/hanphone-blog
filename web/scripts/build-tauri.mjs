@@ -61,12 +61,28 @@ function patchFile(content, insertText) {
   // 删除文件开头的多余空行
   cleaned = cleaned.replace(/^\n+/, '')
   // 在最后一个 import 之后插入（避免放在文件开头导致 SWC 解析异常）
+  // 注意：import 可能跨多行（如 `import type {\n ... \n} from './types'`），
+  // 需按大括号配平定位到整条语句结束行，否则会插入到 import 中间导致语法错误。
   const lines = cleaned.split('\n')
   let lastImportIndex = -1
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trimStart().startsWith('import ')) {
-      lastImportIndex = i
+    if (!lines[i].trimStart().startsWith('import ')) continue
+    let depth = 0
+    let end = i
+    for (let j = i; j < lines.length; j++) {
+      const line = lines[j]
+      for (const ch of line) {
+        if (ch === '{') depth++
+        else if (ch === '}') depth--
+      }
+      const isSingle = j === i && (/from\s+['"]/.test(line) || /^\s*import\s+['"]/.test(line))
+      if (isSingle || (j > i && depth <= 0)) {
+        end = j
+        break
+      }
     }
+    lastImportIndex = end
+    i = end
   }
   if (lastImportIndex >= 0) {
     lines.splice(lastImportIndex + 1, 0, '', "export const dynamic = 'force-static'")
