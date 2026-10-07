@@ -119,6 +119,7 @@ web/src/
 | `/privacy` | privacy/page.tsx | 隐私政策 |
 | `/terms` | terms/page.tsx | 用户协议 |
 | `/error` | error/page.tsx | 错误页面 |
+| `/insight` | insight/page.tsx | 热点聚合（热点流 / 模型榜单 / 模型对比） |
 
 ### 管理后台 (app/admin/)
 
@@ -137,6 +138,7 @@ web/src/
 | `/admin/users` | users/page.tsx | 用户管理 |
 | `/admin/comments` | comments/page.tsx | 评论管理 |
 | `/admin/personal` | personal/page.tsx | 个人资料设置 |
+| `/admin/insight` | insight/page.tsx | 聚合数据（手动采集 / 信源健康 / AI 摘要配置） |
 
 ---
 
@@ -198,6 +200,20 @@ web/src/
 - 请求拦截（添加 Token）
 - 响应拦截（错误处理）
 - 各模块 API 方法（blogApi, userApi 等）
+
+---
+
+## 热点聚合页 (app/(main)/insight)
+
+集热点流、模型榜单与模型对比于一体，数据来自后端 `/hot/*` 公开接口。
+
+- `page.tsx` 为 **`force-dynamic`** 按请求渲染（数据每日更新，避免构建期预渲染/缓存导致空数据）。服务端取数优先使用 `API_INTERNAL_BASE_URL`（**内网直连后端 8090，无 `/api` 前缀**），未配置时回落到 `NEXT_PUBLIC_API_BASE_URL`。
+- 同目录组件：
+  - `InsightClient.tsx` — 热点 / 榜单 / 对比 三视图、分区与模态切换、趋势图容器
+  - `ComparePanel.tsx` — 代表模型预设 + 搜索添加、能力雷达、价格-能力散点、明细表、**导出图片**（`html-to-image`）与**分享链接**（`?view=compare&models=...`）
+  - `LeaderboardTrend.tsx` — 榜单近 30 天分数趋势折线（echarts 按需加载）
+- 后台 `/admin/insight`（导航「聚合数据」）：**异步触发采集**（`POST /admin/hot/collect` + 轮询 `GET /admin/hot/status`）、信源健康、采集记录、**AI 摘要配置**（URL / Key / Model / 自定义 Header，如 `x-opencode-session`）。
+- 页面标题统一由 `createMetadata(title, desc, { path, keywords })` 生成，形如 `{title} | 云林有风 | 寒枫的博客`。
 
 ---
 

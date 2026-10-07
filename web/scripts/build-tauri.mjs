@@ -96,6 +96,7 @@ const forceStaticFiles = [
   'src/app/(main)/docs/page.tsx',
   'src/app/(main)/docs/[id]/page.tsx',
   'src/app/(main)/about/page.tsx',
+  'src/app/(main)/insight/page.tsx',
 ]
 
 // 需要精确替换的文件

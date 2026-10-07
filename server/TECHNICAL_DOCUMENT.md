@@ -189,6 +189,8 @@ User (用户)
 | TagShowController | `/tags` | 标签 |
 | TypeShowController | `/types` | 分类 |
 | VisitorTrackController | `/visit/track` | 页面访问埋点（POST，公开） |
+| HotShowController | `/hot` | 热点聚合：总览 / 热点流 / 信源状态（公开只读） |
+| ModelShowController | `/hot` | 模型榜单 / 检索 / 对比 / 趋势（公开只读） |
 
 ### 管理后台接口 (web/admin/)
 
@@ -204,6 +206,53 @@ User (用户)
 | ProjectController | `/admin/projects` | 项目管理 |
 | TagController | `/admin/tags` | 标签管理 |
 | TypeController | `/admin/types` | 分类管理 |
+| HotAdminController | `/admin/hot` | 聚合数据：异步采集、信源状态、采集记录、AI 摘要配置 |
+
+---
+
+## 热点聚合（Insight）
+
+后端新增 `hot/` 包，负责从多个外部信源采集「热点条目」与「模型榜单」，落库后经公开接口提供给前端 `/insight` 页与后台 `/admin/insight`。
+
+### 结构与调度
+
+```
+com.example.blog.hot/
+├── collector/                       # 热点条目采集器 + HotCollectService / HotCollectScheduler
+│   ├── HotCollector.java            # 采集器接口（GitHub / HuggingFace / AiNews）
+│   ├── HuggingFaceCollector.java    # HF 趋势（可用 HF_ENDPOINT 走镜像）
+│   └── AiNewsCollector.java         # AI 要闻（量子位 / TechCrunch / Ars / HN，RSS）
+├── model/                           # 模型榜单框架
+│   ├── ModelLeaderboardCollector.java / ModelLeaderboardService.java
+│   ├── ModelNormalizer.java         # 模型身份归一（跨源合并）
+│   ├── BenchmarkRegistry.java       # 榜单口径注册
+│   └── collector/                   # ArtificialAnalysis / LmArena / Mteb / SweBench / TerminalBench / VBench / OpenRouter
+├── summary/                         # AI 摘要（HotSummaryService + HotSummaryConfigService，配置存库）
+├── HotCollectService.java / HotCollectScheduler.java   # 每日 cron（默认 03:30）采集
+└── HotTriggerService.java           # 后台异步手动触发（单线程、去重）
+```
+
+- 定时：`@Scheduled(cron = "${hot.collect.cron:0 30 3 * * *}")`，失败按信源隔离并记录到 `hot_source.lastError`。
+- 手动：`POST /admin/hot/collect` 立即返回，后台线程执行；`GET /admin/hot/status` 返回 `running`。
+
+### 数据表
+
+`hot_source`、`hot_item`、`hot_item_snapshot`、`hot_collect_run`、`hot_setting`、`model_entity`、`model_alias`、`model_benchmark`、`model_benchmark_snapshot`、`model_pricing`、`benchmark_meta`（均由 `ddl-auto=update` 自动建表）。
+
+### 公开接口
+
+`/hot/overview`、`/hot/feed`、`/hot/sources`、`/hot/leaderboards`、`/hot/leaderboards/trend`、`/hot/benchmarks`、`/hot/models`、`/hot/models/featured`、`/hot/models/compare`、`/hot/models/{key}`、`/hot/models/{key}/trend`。
+
+### 关键配置项（`server/.env`）
+
+| 变量 | 说明 |
+|---|---|
+| `GITHUB_TOKEN` | GitHub 采集配额（建议配置） |
+| `AA_API_KEY` | Artificial Analysis 免费 key（LLM/图像/视频/语音竞技场） |
+| `HF_ENDPOINT` | Hugging Face Hub 地址（国内可设 `https://hf-mirror.com`） |
+| `HOT_LMARENA_ENABLED` | LMArena 采集开关（datasets-server 不可达时设 false） |
+| `HOT_COLLECT_ENABLED` / `HOT_COLLECT_CRON` | 采集开关与 cron |
+| `HOT_SUMMARY_*` | AI 摘要默认值（也可在后台「聚合数据」配置 URL/Key/Model/Header） |
 
 ---
 
