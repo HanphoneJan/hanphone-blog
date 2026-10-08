@@ -244,6 +244,8 @@ com.example.blog.hot/
 
 `/hot/overview`、`/hot/feed`、`/hot/sources`、`/hot/leaderboards`、`/hot/leaderboards/trend`、`/hot/benchmarks`、`/hot/models`（`q`/`vendor`/`sort=newest|name|price|context`/`limit`）、`/hot/vendors`（归一后的厂商，重点厂商置顶）、`/hot/models/compare`、`/hot/models/{key}`、`/hot/models/{key}/trend`。
 
+其中 `leaderboards` / `models` / `vendors` / `models/compare` 支持 `normalized`（默认 `true`）：**仅影响展示层**——`false` 时厂商名与模型行变体/日期后缀按信源原始展示（`Alibaba-ATH`、`z-ai`、`claude-opus-4-5-20251101`），实体合并不受影响（前端「名称归一」开关）。
+
 ### 关键配置项（`server/.env`）
 
 | 变量 | 说明 |
