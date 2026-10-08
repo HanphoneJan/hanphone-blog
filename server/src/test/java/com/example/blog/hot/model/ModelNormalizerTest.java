@@ -56,4 +56,12 @@ class ModelNormalizerTest {
         assertEquals(normalizer.canonicalKey("Z.ai", "GLM-5.3 (Low)"),
                 normalizer.canonicalKey("zai", "glm-5.3-max"));
     }
+
+    @Test
+    @DisplayName("去掉日期/上下文后缀：LMArena 检查点并入同名模型")
+    void canonicalKey_stripsDateAndContextSuffix() {
+        String base = normalizer.canonicalKey("Anthropic", "Claude Opus 4.5");
+        assertEquals(base, normalizer.canonicalKey("anthropic", "claude-opus-4-5-20251101"));
+        assertEquals(base, normalizer.canonicalKey("anthropic", "claude-opus-4-5-high-32k"));
+    }
 }

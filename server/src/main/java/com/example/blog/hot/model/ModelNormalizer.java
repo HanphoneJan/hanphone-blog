@@ -102,10 +102,20 @@ public class ModelNormalizer {
         return vendorSlug.isEmpty() ? nameSlug : vendorSlug + ":" + nameSlug;
     }
 
-    /** 推理强度/风格等变体后缀：部分信源把 "…(High)" 写成 "…-high"，归一时去掉以合并同一模型 */
+    /** 推理强度/风格等变体后缀 + 日期/上下文等噪声后缀：部分信源把 "…(High)" 写成 "…-high"、把检查点写成 "…-20251101" */
     private static final Set<String> VARIANT_TOKENS = Set.of(
             "high", "xhigh", "low", "medium", "minimal", "max",
-            "thinking", "reasoning", "reasoner", "non", "default", "fallback", "standard");
+            "thinking", "reasoning", "reasoner", "non", "default", "fallback", "standard",
+            "latest", "preview", "exp", "experimental", "batch");
+
+    private boolean isStrippableVariant(String token) {
+        if (VARIANT_TOKENS.contains(token)) {
+            return true;
+        }
+        return token.matches("beta\\d*")          // beta / beta1
+                || token.matches("\\d{6,}")        // 日期/时间戳，如 20251101
+                || token.matches("\\d+(k|m)");     // 上下文窗口，如 32k / 1m（不含 b，避免误删参数量）
+    }
 
     private String stripVariantSuffix(String slug) {
         if (slug == null || slug.isEmpty()) {
@@ -113,7 +123,7 @@ public class ModelNormalizer {
         }
         String[] parts = slug.split("-");
         int end = parts.length;
-        while (end > 1 && VARIANT_TOKENS.contains(parts[end - 1])) {
+        while (end > 1 && isStrippableVariant(parts[end - 1])) {
             end--;
         }
         if (end == parts.length) {
