@@ -7,9 +7,7 @@ import com.example.blog.po.ModelEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * 模型身份归一：把各信源的原始模型名映射到统一的 {@link ModelEntity}。
@@ -95,41 +93,11 @@ public class ModelNormalizer {
         if (nameSlug.isEmpty()) {
             nameSlug = slug(rawName);
         }
-        nameSlug = stripVariantSuffix(nameSlug);
+        nameSlug = ModelNameUtil.stripVariantSuffix(nameSlug);
         // 厂商也用 VendorRegistry 归一，避免同一公司不同写法（moonshot/Kimi、zai/z-ai）分裂成不同实体
         String canonicalVendor = vendorRegistry.label(vendorRegistry.key(vendor));
         String vendorSlug = slug(canonicalVendor != null ? canonicalVendor : vendor);
         return vendorSlug.isEmpty() ? nameSlug : vendorSlug + ":" + nameSlug;
-    }
-
-    /** 推理强度/风格等变体后缀 + 日期/上下文等噪声后缀：部分信源把 "…(High)" 写成 "…-high"、把检查点写成 "…-20251101" */
-    private static final Set<String> VARIANT_TOKENS = Set.of(
-            "high", "xhigh", "low", "medium", "minimal", "max",
-            "thinking", "reasoning", "reasoner", "non", "default", "fallback", "standard",
-            "latest", "preview", "exp", "experimental", "batch");
-
-    private boolean isStrippableVariant(String token) {
-        if (VARIANT_TOKENS.contains(token)) {
-            return true;
-        }
-        return token.matches("beta\\d*")          // beta / beta1
-                || token.matches("\\d{6,}")        // 日期/时间戳，如 20251101
-                || token.matches("\\d+(k|m)");     // 上下文窗口，如 32k / 1m（不含 b，避免误删参数量）
-    }
-
-    private String stripVariantSuffix(String slug) {
-        if (slug == null || slug.isEmpty()) {
-            return slug;
-        }
-        String[] parts = slug.split("-");
-        int end = parts.length;
-        while (end > 1 && isStrippableVariant(parts[end - 1])) {
-            end--;
-        }
-        if (end == parts.length) {
-            return slug;
-        }
-        return String.join("-", Arrays.copyOfRange(parts, 0, end));
     }
 
     /** 去掉括号限定词，便于跨信源合并（如 "gpt-oss-20B (high)" → "gpt-oss-20B"） */

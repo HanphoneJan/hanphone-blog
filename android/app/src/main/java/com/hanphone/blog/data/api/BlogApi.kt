@@ -209,7 +209,10 @@ interface BlogApi {
     suspend fun hotSources(): ApiResult<List<HotSourceStatus>>
 
     @GET("hot/leaderboards")
-    suspend fun hotLeaderboard(@Query("modality") modality: String): ApiResult<ModelLeaderboard>
+    suspend fun hotLeaderboard(
+        @Query("modality") modality: String,
+        @Query("normalized") normalized: Boolean = true
+    ): ApiResult<ModelLeaderboard>
 
     @GET("hot/benchmarks")
     suspend fun hotBenchmarks(): ApiResult<List<BenchmarkMeta>>
@@ -220,16 +223,20 @@ interface BlogApi {
         @Query("q") q: String?,
         @Query("vendor") vendor: String?,
         @Query("sort") sort: String,
-        @Query("limit") limit: Int = 30
+        @Query("limit") limit: Int = 30,
+        @Query("normalized") normalized: Boolean = true
     ): ApiResult<List<ModelBenchmarkRow>>
 
     /** 归一后的厂商列表（对比页「按公司」，重点厂商置顶） */
     @GET("hot/vendors")
-    suspend fun hotVendors(): ApiResult<List<Vendor>>
+    suspend fun hotVendors(@Query("normalized") normalized: Boolean = true): ApiResult<List<Vendor>>
 
     /** keys 重复查询参数（Spring @RequestParam List<String> 解析） */
     @GET("hot/models/compare")
-    suspend fun hotCompare(@Query("keys") keys: List<String>): ApiResult<ModelCompare>
+    suspend fun hotCompare(
+        @Query("keys") keys: List<String>,
+        @Query("normalized") normalized: Boolean = true
+    ): ApiResult<ModelCompare>
 
     @GET("hot/leaderboards/trend")
     suspend fun hotLeaderboardTrend(

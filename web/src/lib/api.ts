@@ -71,12 +71,13 @@ export const ENDPOINTS = {
     LEADERBOARDS: (modality: string) =>
       `${API_BASE_URL}/hot/leaderboards?modality=${encodeURIComponent(modality)}`,
     BENCHMARKS: `${API_BASE_URL}/hot/benchmarks`,
-    MODELS: (opts: { q?: string; vendor?: string; sort?: string; limit?: number } = {}) => {
+    MODELS: (opts: { q?: string; vendor?: string; sort?: string; limit?: number; normalized?: boolean } = {}) => {
       const params = new URLSearchParams()
       if (opts.q) params.set('q', opts.q)
       if (opts.vendor) params.set('vendor', opts.vendor)
       if (opts.sort) params.set('sort', opts.sort)
       params.set('limit', String(opts.limit ?? 30))
+      params.set('normalized', opts.normalized === false ? 'false' : 'true')
       return `${API_BASE_URL}/hot/models?${params.toString()}`
     },
     VENDORS: `${API_BASE_URL}/hot/vendors`,

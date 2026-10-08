@@ -88,6 +88,10 @@ class HotViewModel @Inject constructor(
     var modality by mutableStateOf("text")
         private set
 
+    /** 展示层是否归一（厂商名 + 模型行变体/日期后缀），默认开启 */
+    var normalized by mutableStateOf(true)
+        private set
+
     // ===== 榜单懒加载 / 趋势 =====
     var leaderboardsLoading by mutableStateOf(false)
         private set
@@ -180,6 +184,28 @@ class HotViewModel @Inject constructor(
         }
     }
 
+    /** 切换展示层归一（厂商名 + 行内变体后缀）：重新拉取已加载的榜单 / 厂商 / 对比数据 */
+    fun updateNormalized(value: Boolean) {
+        if (value == normalized) return
+        normalized = value
+        if (leaderboards.isNotEmpty()) loadLeaderboards()
+        viewModelScope.launch {
+            runCatching { repo.vendors(normalized) }.getOrNull()?.let { res ->
+                if (res.flag) {
+                    vendors = res.data ?: emptyList()
+                    MemoryCache.hotVendors = vendors
+                    ContentStore.writeHotVendors(vendors)
+                }
+            }
+        }
+        if (!pickerVendor.isNullOrBlank()) loadVendorModels()
+        if (modelQuery.isNotBlank()) {
+            searchJob?.cancel()
+            searchJob = viewModelScope.launch { runSearch(modelQuery.trim()) }
+        }
+        if (selected.isNotEmpty()) loadCompare()
+    }
+
     fun selectCategory(key: String) {
         activeCategory = key
     }
@@ -206,7 +232,7 @@ class HotViewModel @Inject constructor(
                 runCatching { repo.benchmarks() }.getOrNull()
             }
             val vendorsReq: Deferred<ApiResult<List<Vendor>>?> = async {
-                runCatching { repo.vendors() }.getOrNull()
+                runCatching { repo.vendors(normalized) }.getOrNull()
             }
             val feedReq: Map<String, Deferred<ApiResult<List<HotFeedItem>>?>> =
                 FEED_CATEGORIES.associateWith { c ->
@@ -275,7 +301,7 @@ class HotViewModel @Inject constructor(
         viewModelScope.launch {
             leaderboardsLoading = true
             val requests = MODALITIES.map { m ->
-                m to async { runCatching { repo.leaderboard(m) }.getOrNull() }
+                m to async { runCatching { repo.leaderboard(m, normalized) }.getOrNull() }
             }
             // 合并到已有 map：失败的模态保留旧数据，避免被空结果覆盖
             val map = leaderboards.toMutableMap()
@@ -337,7 +363,7 @@ class HotViewModel @Inject constructor(
         viewModelScope.launch {
             pickerLoading = true
             try {
-                val res = repo.listModels(null, vendor, modelSort, 100)
+                val res = repo.listModels(null, vendor, modelSort, 100, normalized)
                 if (res.flag) vendorModelList = res.data ?: emptyList()
             } catch (e: Exception) {
                 vendorModelList = emptyList()
@@ -364,7 +390,7 @@ class HotViewModel @Inject constructor(
     private suspend fun runSearch(q: String) {
         searching = true
         try {
-            val res = repo.listModels(q, null, modelSort, 30)
+            val res = repo.listModels(q, null, modelSort, 30, normalized)
             if (res.flag) modelResults = res.data ?: emptyList()
         } catch (e: Exception) {
             modelResults = emptyList()
@@ -408,7 +434,7 @@ class HotViewModel @Inject constructor(
         viewModelScope.launch {
             comparing = true
             try {
-                val res = repo.compare(keys)
+                val res = repo.compare(keys, normalized)
                 if (res.flag) {
                     val data = res.data
                     compare = data

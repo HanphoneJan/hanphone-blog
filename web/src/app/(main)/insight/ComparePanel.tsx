@@ -23,6 +23,7 @@ import type { BenchmarkMeta, ModelBenchmarkRow, ModelCompare, ModelLeaderboard, 
 interface ComparePanelProps {
   leaderboards: Record<string, ModelLeaderboard>
   vendors: Vendor[]
+  normalized: boolean
 }
 
 interface SelectedModel {
@@ -73,7 +74,7 @@ function formatContext(value?: number | null): string {
   return value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)
 }
 
-export default function ComparePanel({ leaderboards, vendors }: ComparePanelProps) {
+export default function ComparePanel({ leaderboards, vendors, normalized }: ComparePanelProps) {
   const [selected, setSelected] = useState<SelectedModel[]>([])
   const [compare, setCompare] = useState<ModelCompare | null>(null)
   const [loading, setLoading] = useState(false)
@@ -91,6 +92,7 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<ModelBenchmarkRow[]>([])
   const [searching, setSearching] = useState(false)
+  const [vendorList, setVendorList] = useState<Vendor[]>(vendors)
 
   const radarRef = useRef<HTMLDivElement>(null)
   const scatterRef = useRef<HTMLDivElement>(null)
@@ -116,8 +118,26 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
 
   const filteredVendors = useMemo(() => {
     const f = vendorFilter.trim().toLowerCase()
-    return f ? vendors.filter((v) => v.label.toLowerCase().includes(f)) : vendors
-  }, [vendors, vendorFilter])
+    return f ? vendorList.filter((v) => v.label.toLowerCase().includes(f)) : vendorList
+  }, [vendorList, vendorFilter])
+
+  // 归一开关：关闭时按原始厂商重新拉取公司列表（SSR 的 vendors 为归一数据）
+  useEffect(() => {
+    if (normalized) {
+      setVendorList(vendors)
+      return
+    }
+    let cancelled = false
+    apiClient
+      .get(`${ENDPOINTS.HOT.VENDORS}?normalized=false`)
+      .then((r) => {
+        if (!cancelled && r.data.code === API_CODE.SUCCESS) setVendorList(r.data.data || [])
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [normalized, vendors])
 
   // 从分享链接还原选择
   useEffect(() => {
@@ -215,7 +235,7 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
     let cancelled = false
     setLoading(true)
     apiClient
-      .get(ENDPOINTS.HOT.COMPARE(selectedKeys))
+      .get(ENDPOINTS.HOT.COMPARE(selectedKeys) + (normalized ? '' : '&normalized=false'))
       .then((res) => {
         if (!cancelled && res.data.code === API_CODE.SUCCESS) {
           setCompare(res.data.data as ModelCompare)
@@ -228,14 +248,14 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
     return () => {
       cancelled = true
     }
-  }, [selectedKeys])
+  }, [selectedKeys, normalized])
 
   // 进入「按公司」时默认选第一个（后端已把重点厂商排在前）
   useEffect(() => {
-    if (pickerTab === 'vendor' && !activeVendor && vendors.length > 0) {
-      setActiveVendor(vendors[0].key)
+    if (pickerTab === 'vendor' && !activeVendor && vendorList.length > 0) {
+      setActiveVendor(vendorList[0].key)
     }
-  }, [pickerTab, activeVendor, vendors])
+  }, [pickerTab, activeVendor, vendorList])
 
   // 拉取所选公司的模型（默认最新在前，可切换排序）
   useEffect(() => {
@@ -243,7 +263,7 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
     let cancelled = false
     setVendorLoading(true)
     apiClient
-      .get(ENDPOINTS.HOT.MODELS({ vendor: activeVendor, sort, limit: 100 }))
+      .get(ENDPOINTS.HOT.MODELS({ vendor: activeVendor, sort, limit: 100, normalized }))
       .then((res) => {
         if (!cancelled && res.data.code === API_CODE.SUCCESS) {
           setVendorModels(res.data.data || [])
@@ -256,7 +276,7 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
     return () => {
       cancelled = true
     }
-  }, [pickerTab, activeVendor, sort])
+  }, [pickerTab, activeVendor, sort, normalized])
 
   // 搜索模型（按名称或厂商），默认最新在前
   useEffect(() => {
@@ -267,7 +287,7 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
     const timer = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await apiClient.get(ENDPOINTS.HOT.MODELS({ q: query.trim(), sort, limit: 30 }))
+        const res = await apiClient.get(ENDPOINTS.HOT.MODELS({ q: query.trim(), sort, limit: 30, normalized }))
         if (res.data.code === API_CODE.SUCCESS) {
           setResults(res.data.data || [])
         }
@@ -278,7 +298,7 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [query, sort])
+  }, [query, sort, normalized])
 
   const toggleModel = useCallback((model: SelectedModel) => {
     setSelected((prev) => {

@@ -31,9 +31,10 @@ public class ModelShowController {
 
     @GetMapping("/hot/leaderboards")
     public Result<ModelLeaderboardVO> leaderboards(
-            @RequestParam(defaultValue = "text") String modality) {
+            @RequestParam(defaultValue = "text") String modality,
+            @RequestParam(defaultValue = "true") boolean normalized) {
         return new Result<>(true, StatusCode.OK, "获取模型榜单成功",
-                modelQueryService.getLeaderboard(modality));
+                modelQueryService.getLeaderboard(modality, normalized));
     }
 
     @GetMapping("/hot/leaderboards/trend")
@@ -52,9 +53,9 @@ public class ModelShowController {
     }
 
     @GetMapping("/hot/vendors")
-    public Result<List<VendorVO>> vendors() {
+    public Result<List<VendorVO>> vendors(@RequestParam(defaultValue = "true") boolean normalized) {
         return new Result<>(true, StatusCode.OK, "获取模型厂商成功",
-                modelQueryService.getVendors());
+                modelQueryService.getVendors(normalized));
     }
 
     @GetMapping("/hot/models")
@@ -62,20 +63,23 @@ public class ModelShowController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String vendor,
             @RequestParam(defaultValue = "newest") String sort,
-            @RequestParam(defaultValue = "30") int limit) {
+            @RequestParam(defaultValue = "30") int limit,
+            @RequestParam(defaultValue = "true") boolean normalized) {
         return new Result<>(true, StatusCode.OK, "获取模型列表成功",
-                modelQueryService.listModels(q, vendor, sort, limit));
+                modelQueryService.listModels(q, vendor, sort, limit, normalized));
     }
 
     @GetMapping("/hot/models/compare")
-    public Result<ModelCompareVO> compare(@RequestParam List<String> keys) {
+    public Result<ModelCompareVO> compare(@RequestParam List<String> keys,
+                                          @RequestParam(defaultValue = "true") boolean normalized) {
         return new Result<>(true, StatusCode.OK, "获取模型对比成功",
-                modelQueryService.compare(keys));
+                modelQueryService.compare(keys, normalized));
     }
 
     @GetMapping("/hot/models/{key}")
-    public Result<ModelBenchmarkRowVO> model(@PathVariable String key) {
-        ModelBenchmarkRowVO row = modelQueryService.getModel(key);
+    public Result<ModelBenchmarkRowVO> model(@PathVariable String key,
+                                             @RequestParam(defaultValue = "true") boolean normalized) {
+        ModelBenchmarkRowVO row = modelQueryService.getModel(key, normalized);
         if (row == null) {
             return new Result<>(false, StatusCode.ERROR, "模型不存在", null);
         }

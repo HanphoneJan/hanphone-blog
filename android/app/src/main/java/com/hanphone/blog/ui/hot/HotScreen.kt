@@ -160,6 +160,18 @@ fun HotScreen(
                 label = { Text("对比") },
                 leadingIcon = { Icon(Icons.Filled.Layers, null, Modifier.size(16.dp)) }
             )
+            FilterChip(
+                selected = vm.normalized,
+                onClick = { vm.updateNormalized(!vm.normalized) },
+                label = { Text("名称归一") },
+                leadingIcon = {
+                    Icon(
+                        if (vm.normalized) Icons.Filled.Check else Icons.Filled.Close,
+                        null,
+                        Modifier.size(16.dp)
+                    )
+                }
+            )
         }
 
         Box(Modifier.weight(1f)) {

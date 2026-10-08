@@ -7,6 +7,7 @@ import com.example.blog.dao.ModelEntityRepository;
 import com.example.blog.dao.ModelPricingRepository;
 import com.example.blog.hot.model.BenchmarkMetaData;
 import com.example.blog.hot.model.BenchmarkRegistry;
+import com.example.blog.hot.model.ModelNameUtil;
 import com.example.blog.hot.model.VendorRegistry;
 import com.example.blog.po.BenchmarkMeta;
 import com.example.blog.po.ModelBenchmark;
@@ -72,8 +73,8 @@ public class ModelQueryServiceImpl implements ModelQueryService {
     }
 
     @Override
-    @Cacheable(value = "modelLeaderboard", key = "T(java.util.Objects).toString(#modality, 'text')")
-    public ModelLeaderboardVO getLeaderboard(String modality) {
+    @Cacheable(value = "modelLeaderboard", key = "T(java.util.Objects).toString(#modality, 'text') + ':' + #normalized")
+    public ModelLeaderboardVO getLeaderboard(String modality, boolean normalized) {
         String mod = normalizeModality(modality);
         ModelLeaderboardVO vo = new ModelLeaderboardVO();
         vo.setModality(mod);
@@ -105,7 +106,7 @@ public class ModelQueryServiceImpl implements ModelQueryService {
                 continue;
             }
             rows.add(toRow(model, entry.getValue(),
-                    mergePricing(pricingByModel.get(entry.getKey())), primary));
+                    mergePricing(pricingByModel.get(entry.getKey())), primary, normalized));
         }
         rows.sort(Comparator.comparingDouble((ModelBenchmarkRowVO r) -> primaryScore(r, primary)).reversed());
         if (rows.size() > MAX_ROWS) {
@@ -141,34 +142,44 @@ public class ModelQueryServiceImpl implements ModelQueryService {
     }
 
     @Override
-    @Cacheable("modelVendors")
-    public List<VendorVO> getVendors() {
+    @Cacheable(value = "modelVendors", key = "#normalized")
+    public List<VendorVO> getVendors(boolean normalized) {
         // key → (原始写法 → 出现次数)；未知厂商取出现次数最多的写法作为展示名
         Map<String, Map<String, Integer>> variants = new LinkedHashMap<>();
         for (ModelEntity model : entityRepository.findAll()) {
-            String key = vendorRegistry.key(model.getVendor());
+            String raw = model.getVendor();
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String key = normalized ? vendorRegistry.key(raw) : raw.trim();
             if (key == null) {
                 continue;
             }
             variants.computeIfAbsent(key, k -> new LinkedHashMap<>())
-                    .merge(model.getVendor().trim(), 1, Integer::sum);
+                    .merge(raw.trim(), 1, Integer::sum);
         }
         List<VendorVO> list = new ArrayList<>();
         variants.forEach((key, raws) -> {
-            String label = vendorRegistry.label(key);
-            if (label == null) {
-                label = raws.entrySet().stream()
-                        .max(Comparator.<Map.Entry<String, Integer>>comparingInt(Map.Entry::getValue)
-                                .thenComparing(Map.Entry::getKey, Comparator.reverseOrder()))
-                        .map(Map.Entry::getKey)
-                        .orElse(key);
+            String label;
+            if (normalized) {
+                label = vendorRegistry.label(key);
+                if (label == null) {
+                    label = raws.entrySet().stream()
+                            .max(Comparator.<Map.Entry<String, Integer>>comparingInt(Map.Entry::getValue)
+                                    .thenComparing(Map.Entry::getKey, Comparator.reverseOrder()))
+                            .map(Map.Entry::getKey)
+                            .orElse(key);
+                }
+            } else {
+                label = key;
             }
             VendorVO vo = new VendorVO();
             vo.setKey(label);
             vo.setLabel(label);
             vo.setModelCount(raws.values().stream().mapToInt(Integer::intValue).sum());
-            vo.setFocused(vendorRegistry.isFocused(key));
-            vo.setPriority(vendorRegistry.focusRank(key));
+            String focusKey = vendorRegistry.key(label);
+            vo.setFocused(vendorRegistry.isFocused(focusKey));
+            vo.setPriority(vendorRegistry.focusRank(focusKey));
             list.add(vo);
         });
         list.sort(Comparator
@@ -179,22 +190,29 @@ public class ModelQueryServiceImpl implements ModelQueryService {
     }
 
     @Override
-    public List<ModelBenchmarkRowVO> listModels(String query, String vendor, String sort, int limit) {
+    public List<ModelBenchmarkRowVO> listModels(String query, String vendor, String sort, int limit, boolean normalized) {
         String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
-        String vendorKey = (vendor == null || vendor.isBlank()) ? null : vendorRegistry.key(vendor);
+        String vendorRaw = (vendor == null || vendor.isBlank()) ? null : vendor.trim();
+        String vendorCanonical = vendorRaw == null ? null : vendorRegistry.key(vendorRaw);
         int size = Math.max(1, Math.min(limit, MAX_LIST));
 
         List<ModelEntity> filtered = new ArrayList<>();
         for (ModelEntity model : entityRepository.findAll()) {
-            String key = vendorRegistry.key(model.getVendor());
-            if (vendorKey != null && !vendorKey.equals(key)) {
-                continue;
+            String raw = model.getVendor() == null ? "" : model.getVendor().trim();
+            String canonical = vendorRegistry.key(model.getVendor());
+            if (vendorRaw != null) {
+                boolean match = normalized
+                        ? vendorCanonical.equals(canonical)
+                        : vendorRaw.equalsIgnoreCase(raw);
+                if (!match) {
+                    continue;
+                }
             }
             if (!q.isEmpty()) {
                 String name = model.getDisplayName() == null ? "" : model.getDisplayName().toLowerCase(Locale.ROOT);
-                String keyLower = key == null ? "" : key;
-                String rawLower = model.getVendor() == null ? "" : model.getVendor().toLowerCase(Locale.ROOT);
-                String label = vendorRegistry.label(key);
+                String keyLower = canonical == null ? "" : canonical;
+                String rawLower = raw.toLowerCase(Locale.ROOT);
+                String label = vendorRegistry.label(canonical);
                 String labelLower = label == null ? "" : label.toLowerCase(Locale.ROOT);
                 if (!name.contains(q) && !keyLower.contains(q) && !rawLower.contains(q) && !labelLower.contains(q)) {
                     continue;
@@ -209,25 +227,25 @@ public class ModelQueryServiceImpl implements ModelQueryService {
 
         List<ModelBenchmarkRowVO> rows = new ArrayList<>();
         for (ModelEntity model : filtered) {
-            rows.add(toRow(model, List.of(), mergePricing(pricingByModel.get(model.getId())), null));
+            rows.add(toRow(model, List.of(), mergePricing(pricingByModel.get(model.getId())), null, normalized));
         }
         rows.sort(modelComparator(sort));
         return rows.size() > size ? new ArrayList<>(rows.subList(0, size)) : rows;
     }
 
     @Override
-    @Cacheable(value = "modelDetail", key = "#canonicalKey")
-    public ModelBenchmarkRowVO getModel(String canonicalKey) {
+    @Cacheable(value = "modelDetail", key = "#canonicalKey + ':' + #normalized")
+    public ModelBenchmarkRowVO getModel(String canonicalKey, boolean normalized) {
         ModelEntity model = entityRepository.findByCanonicalKey(canonicalKey).orElse(null);
         if (model == null) {
             return null;
         }
         return toRow(model, benchmarkRepository.findByModelId(model.getId()),
-                mergePricing(pricingRepository.findByModelId(model.getId())), null);
+                mergePricing(pricingRepository.findByModelId(model.getId())), null, normalized);
     }
 
     @Override
-    public ModelCompareVO compare(List<String> modelKeys) {
+    public ModelCompareVO compare(List<String> modelKeys, boolean normalized) {
         ModelCompareVO vo = new ModelCompareVO();
         if (modelKeys == null || modelKeys.isEmpty()) {
             return vo;
@@ -267,7 +285,7 @@ public class ModelQueryServiceImpl implements ModelQueryService {
                 }
             }
             vo.getModels().add(toRow(model, benchmarks,
-                    mergePricing(pricingRepository.findByModelId(model.getId())), null));
+                    mergePricing(pricingRepository.findByModelId(model.getId())), null, normalized));
         }
 
         for (String key : keys) {
@@ -441,13 +459,17 @@ public class ModelQueryServiceImpl implements ModelQueryService {
     }
 
     private ModelBenchmarkRowVO toRow(ModelEntity model, List<ModelBenchmark> benchmarks,
-                                      ModelPricing pricing, String primary) {
+                                      ModelPricing pricing, String primary, boolean normalized) {
         ModelBenchmarkRowVO row = new ModelBenchmarkRowVO();
         row.setModelKey(model.getCanonicalKey());
-        row.setDisplayName(model.getDisplayName());
-        String vendorKey = vendorRegistry.key(model.getVendor());
-        String vendorLabel = vendorRegistry.label(vendorKey);
-        row.setVendor(vendorLabel != null ? vendorLabel : model.getVendor());
+        row.setDisplayName(normalized ? ModelNameUtil.normalizeDisplayName(model.getDisplayName()) : model.getDisplayName());
+        if (normalized) {
+            String vendorKey = vendorRegistry.key(model.getVendor());
+            String vendorLabel = vendorRegistry.label(vendorKey);
+            row.setVendor(vendorLabel != null ? vendorLabel : model.getVendor());
+        } else {
+            row.setVendor(model.getVendor());
+        }
         row.setModality(model.getModality());
         row.setOpenWeights(model.getOpenWeights());
         row.setReleaseDate(model.getReleaseDate());

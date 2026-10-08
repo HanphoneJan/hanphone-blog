@@ -299,26 +299,27 @@ class HotRepository(private val api: BlogApi = ApiClient.api) {
     suspend fun sources(): ApiResult<List<HotSourceStatus>> =
         withContext(Dispatchers.IO) { api.hotSources() }
 
-    suspend fun leaderboard(modality: String): ApiResult<ModelLeaderboard> =
-        withContext(Dispatchers.IO) { api.hotLeaderboard(modality) }
+    suspend fun leaderboard(modality: String, normalized: Boolean = true): ApiResult<ModelLeaderboard> =
+        withContext(Dispatchers.IO) { api.hotLeaderboard(modality, normalized) }
 
     suspend fun benchmarks(): ApiResult<List<BenchmarkMeta>> =
         withContext(Dispatchers.IO) { api.hotBenchmarks() }
 
-    suspend fun vendors(): ApiResult<List<Vendor>> =
-        withContext(Dispatchers.IO) { api.hotVendors() }
+    suspend fun vendors(normalized: Boolean = true): ApiResult<List<Vendor>> =
+        withContext(Dispatchers.IO) { api.hotVendors(normalized) }
 
     /** 模型列表：按厂商（规范名）或关键词过滤；sort = newest/name/price/context */
     suspend fun listModels(
         query: String?,
         vendor: String?,
         sort: String = "newest",
-        limit: Int = 30
+        limit: Int = 30,
+        normalized: Boolean = true
     ): ApiResult<List<ModelBenchmarkRow>> =
-        withContext(Dispatchers.IO) { api.hotModels(query, vendor, sort, limit) }
+        withContext(Dispatchers.IO) { api.hotModels(query, vendor, sort, limit, normalized) }
 
-    suspend fun compare(keys: List<String>): ApiResult<ModelCompare> =
-        withContext(Dispatchers.IO) { api.hotCompare(keys) }
+    suspend fun compare(keys: List<String>, normalized: Boolean = true): ApiResult<ModelCompare> =
+        withContext(Dispatchers.IO) { api.hotCompare(keys, normalized) }
 
     suspend fun leaderboardTrend(modality: String, days: Int = 30, top: Int = 5): ApiResult<LeaderboardTrend> =
         withContext(Dispatchers.IO) { api.hotLeaderboardTrend(modality, days, top) }

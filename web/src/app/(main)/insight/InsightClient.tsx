@@ -17,6 +17,9 @@ import {
 } from 'lucide-react'
 import BgOverlay from '@/app/(main)/components/BgOverlay'
 import dynamic from 'next/dynamic'
+import apiClient from '@/lib/utils'
+import { ENDPOINTS } from '@/lib/api'
+import { API_CODE } from '@/lib/constants'
 import type {
   BenchmarkMeta,
   HotFeedItem,
@@ -134,6 +137,33 @@ export default function InsightClient({
   const [view, setView] = useState<'feed' | 'leaderboard' | 'compare'>('feed')
   const [active, setActive] = useState<string>('all')
   const [modality, setModality] = useState<string>('text')
+  const [normalized, setNormalized] = useState(true)
+  const [boards, setBoards] = useState<Record<string, ModelLeaderboard>>(initialLeaderboards)
+
+  // 关闭「名称归一」时按原始厂商/名称重新拉取榜单（服务端 SSR 的为归一数据，需客户端补拉）
+  useEffect(() => {
+    if (normalized) {
+      setBoards(initialLeaderboards)
+      return
+    }
+    let cancelled = false
+    Promise.all(
+      MODALITY_ORDER.map(async (m) => {
+        try {
+          const r = await apiClient.get(`${ENDPOINTS.HOT.LEADERBOARDS(m)}&normalized=false`)
+          const data = r.data.code === API_CODE.SUCCESS ? (r.data.data as ModelLeaderboard) : null
+          return [m, data ?? initialLeaderboards[m]] as const
+        } catch {
+          return [m, initialLeaderboards[m]] as const
+        }
+      })
+    ).then((entries) => {
+      if (!cancelled) setBoards(Object.fromEntries(entries.filter(([, v]) => v)))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [normalized, initialLeaderboards])
 
   // 分享链接直达对比视图
   useEffect(() => {
@@ -166,8 +196,8 @@ export default function InsightClient({
   )
 
   const availableModalities = useMemo(
-    () => MODALITY_ORDER.filter((m) => initialLeaderboards[m]?.rows?.length),
-    [initialLeaderboards]
+    () => MODALITY_ORDER.filter((m) => boards[m]?.rows?.length),
+    [boards]
   )
 
   const healthy = initialOverview?.sourceHealthy ?? 0
@@ -175,7 +205,7 @@ export default function InsightClient({
   const hasFailure = sourceTotal > 0 && healthy < sourceTotal
 
   const visibleCategories = active === 'all' ? CATEGORY_ORDER : [active]
-  const board = initialLeaderboards[modality]
+  const board = boards[modality]
 
   const renderCard = (item: HotFeedItem) => {
     const title = item.titleZh || item.title
@@ -284,7 +314,7 @@ export default function InsightClient({
               }`}
             >
               {MODALITY_LABELS[m] || m}
-              <span className="opacity-70 ml-1">({initialLeaderboards[m]?.rows.length ?? 0})</span>
+              <span className="opacity-70 ml-1">({boards[m]?.rows.length ?? 0})</span>
             </button>
           ))}
         </div>
@@ -456,6 +486,18 @@ export default function InsightClient({
               对比
             </button>
           </div>
+          <button
+            onClick={() => setNormalized((v) => !v)}
+            title="开启后厂商名与模型名后缀会归一显示；关闭则显示信源原始名称"
+            className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
+              normalized
+                ? 'bg-[rgb(var(--primary)/0.12)] text-[rgb(var(--primary))] border-[rgb(var(--primary)/0.4)]'
+                : 'bg-[rgb(var(--card))] text-[rgb(var(--text-muted))] border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))]'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            名称归一：{normalized ? '开' : '关'}
+          </button>
         </motion.header>
 
         {view === 'feed' ? (
@@ -494,7 +536,7 @@ export default function InsightClient({
         ) : view === 'leaderboard' ? (
           renderLeaderboard()
         ) : (
-          <ComparePanel leaderboards={initialLeaderboards} vendors={initialVendors} />
+          <ComparePanel leaderboards={initialLeaderboards} vendors={initialVendors} normalized={normalized} />
         )}
 
         {/* 信源说明 */}
