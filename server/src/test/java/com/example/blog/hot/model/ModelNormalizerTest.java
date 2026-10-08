@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 class ModelNormalizerTest {
 
-    private final ModelNormalizer normalizer = new ModelNormalizer(null, null);
+    private final ModelNormalizer normalizer = new ModelNormalizer(null, null, new VendorRegistry());
 
     @Test
     @DisplayName("去掉括号限定词并加厂商前缀")
@@ -37,5 +37,23 @@ class ModelNormalizerTest {
     @DisplayName("无厂商时仅用模型名 slug")
     void canonicalKey_withoutVendor() {
         assertEquals("some-model-v2", normalizer.canonicalKey(null, "Some Model v2"));
+    }
+
+    @Test
+    @DisplayName("去掉变体后缀：LMArena 的 -high 与 AA 的 (Xhigh) 归为同一模型")
+    void canonicalKey_stripsVariantSuffix() {
+        String fromLmArena = normalizer.canonicalKey("anthropic", "claude-opus-5-high");
+        String fromAa = normalizer.canonicalKey("Anthropic", "Claude Opus 5 (Xhigh)");
+        assertEquals(fromAa, fromLmArena);
+        assertEquals("anthropic:claude-opus-5", fromAa);
+    }
+
+    @Test
+    @DisplayName("厂商也归一：moonshot/Kimi、zai/z-ai 合并")
+    void canonicalKey_normalizesVendor() {
+        assertEquals(normalizer.canonicalKey("Kimi", "Kimi K3 (Low)"),
+                normalizer.canonicalKey("moonshot", "kimi-k3-max"));
+        assertEquals(normalizer.canonicalKey("Z.ai", "GLM-5.3 (Low)"),
+                normalizer.canonicalKey("zai", "glm-5.3-max"));
     }
 }
