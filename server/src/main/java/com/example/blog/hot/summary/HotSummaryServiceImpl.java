@@ -65,7 +65,7 @@ public class HotSummaryServiceImpl implements HotSummaryService {
             ObjectNode msg = messages.addObject();
             msg.put("role", "user");
             msg.put("content", prompt);
-            body.put("max_tokens", 1024);
+            body.put("max_tokens", 20000);
             body.put("temperature", 0.3);
 
             HttpHeaders headers = new HttpHeaders();

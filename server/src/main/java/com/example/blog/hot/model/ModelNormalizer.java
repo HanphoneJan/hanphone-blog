@@ -7,7 +7,9 @@ import com.example.blog.po.ModelEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * 模型身份归一：把各信源的原始模型名映射到统一的 {@link ModelEntity}。
@@ -90,8 +92,29 @@ public class ModelNormalizer {
         if (nameSlug.isEmpty()) {
             nameSlug = slug(rawName);
         }
+        nameSlug = stripVariantSuffix(nameSlug);
         String vendorSlug = slug(vendor);
         return vendorSlug.isEmpty() ? nameSlug : vendorSlug + ":" + nameSlug;
+    }
+
+    /** 推理强度/风格等变体后缀：部分信源把 "…(High)" 写成 "…-high"，归一时去掉以合并同一模型 */
+    private static final Set<String> VARIANT_TOKENS = Set.of(
+            "high", "xhigh", "low", "medium", "minimal", "max",
+            "thinking", "reasoning", "reasoner", "non", "default", "fallback", "standard");
+
+    private String stripVariantSuffix(String slug) {
+        if (slug == null || slug.isEmpty()) {
+            return slug;
+        }
+        String[] parts = slug.split("-");
+        int end = parts.length;
+        while (end > 1 && VARIANT_TOKENS.contains(parts[end - 1])) {
+            end--;
+        }
+        if (end == parts.length) {
+            return slug;
+        }
+        return String.join("-", Arrays.copyOfRange(parts, 0, end));
     }
 
     /** 去掉括号限定词，便于跨信源合并（如 "gpt-oss-20B (high)" → "gpt-oss-20B"） */

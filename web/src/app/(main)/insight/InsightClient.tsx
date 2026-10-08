@@ -499,21 +499,21 @@ export default function InsightClient({
 
         {/* 信源说明 */}
         {initialSources.length > 0 ? (
-          <footer className="mt-10 pt-4 border-t border-[rgb(var(--border))] text-xs text-[rgb(var(--text-muted))]">
-            数据来源：
-            {initialSources.map((s, i) => (
-              <span key={s.sourceKey}>
-                {i > 0 ? ' · ' : ' '}
+          <footer className="mt-10 pt-4 border-t border-[rgb(var(--border))]">
+            <div className="mb-2 text-xs font-medium text-[rgb(var(--text-muted))]">数据来源</div>
+            <div className="flex flex-wrap gap-x-3 gap-y-2">
+              {initialSources.map((s) => (
                 <a
+                  key={s.sourceKey}
                   href={s.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-[rgb(var(--primary))]"
+                  className="inline-flex items-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-2.5 py-1 text-xs text-[rgb(var(--text-muted))] transition-colors hover:border-[rgb(var(--primary)/0.4)] hover:text-[rgb(var(--primary))]"
                 >
                   {s.displayName || s.sourceKey}
                 </a>
-              </span>
-            ))}
+              ))}
+            </div>
           </footer>
         ) : null}
       </main>
