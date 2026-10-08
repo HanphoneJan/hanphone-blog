@@ -2,15 +2,20 @@ package com.example.blog.hot.model.collector;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URI;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,6 +26,9 @@ import java.util.Map;
 
 /**
  * 采集器共享的 HTTP / JSON 工具：统一超时、UA 与日期解析。
+ *
+ * <p>若配置了 {@code hot.proxy}（如 {@code http://127.0.0.1:7890}），
+ * 采集器可调用 {@link #getJsonViaProxy} 走该代理（用于服务器侧代理访问被墙信源）。</p>
  */
 @Component
 public class HttpJsonSupport {
@@ -30,6 +38,11 @@ public class HttpJsonSupport {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+
+    @Value("${hot.proxy:}")
+    private String proxyUrl;
+
+    private volatile RestTemplate proxyRestTemplate;
 
     public HttpJsonSupport(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper) {
         this.restTemplate = restTemplateBuilder
@@ -41,6 +54,49 @@ public class HttpJsonSupport {
 
     public JsonNode getJson(String url, Map<String, String> headers) throws Exception {
         return objectMapper.readTree(getRaw(url, headers, List.of(MediaType.APPLICATION_JSON)));
+    }
+
+    /** 走代理（若配置了 hot.proxy）获取 JSON；未配置时等同 {@link #getJson} */
+    public JsonNode getJsonViaProxy(String url, Map<String, String> headers) throws Exception {
+        RestTemplate rt = proxyTemplate();
+        if (rt == restTemplate) {
+            return getJson(url, headers);
+        }
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+        httpHeaders.set(HttpHeaders.USER_AGENT, "hanphone-insight-bot");
+        if (headers != null) {
+            headers.forEach(httpHeaders::set);
+        }
+        ResponseEntity<String> resp = rt.exchange(url, HttpMethod.GET, new HttpEntity<>(httpHeaders), String.class);
+        return objectMapper.readTree(resp.getBody());
+    }
+
+    private RestTemplate proxyTemplate() {
+        if (proxyUrl == null || proxyUrl.isBlank()) {
+            return restTemplate;
+        }
+        RestTemplate local = proxyRestTemplate;
+        if (local == null) {
+            synchronized (this) {
+                local = proxyRestTemplate;
+                if (local == null) {
+                    local = buildWithProxy(proxyUrl);
+                    proxyRestTemplate = local;
+                }
+            }
+        }
+        return local;
+    }
+
+    private RestTemplate buildWithProxy(String url) {
+        URI uri = URI.create(url.contains("://") ? url : "http://" + url);
+        int port = uri.getPort() > 0 ? uri.getPort() : 7890;
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setProxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(uri.getHost(), port)));
+        factory.setConnectTimeout(10000);
+        factory.setReadTimeout(30000);
+        return new RestTemplate(factory);
     }
 
     /** 直接以 URI 发起请求，避免 URL 二次编码 */

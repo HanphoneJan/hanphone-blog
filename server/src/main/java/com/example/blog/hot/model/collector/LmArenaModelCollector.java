@@ -92,7 +92,7 @@ public class LmArenaModelCollector implements ModelLeaderboardCollector {
         while (offset < MAX_ROWS) {
             String url = endpoint.replaceAll("/+$", "") + ROWS_PATH + "?dataset=" + DATASET + "&config=" + config.config()
                     + "&split=latest&offset=" + offset + "&length=" + PAGE_SIZE;
-            JsonNode root = http.getJson(url, null);
+            JsonNode root = http.getJsonViaProxy(url, null);
             JsonNode rows = root.path("rows");
             if (!rows.isArray() || rows.isEmpty()) {
                 return;
