@@ -1,12 +1,12 @@
 package com.example.blog.service;
 
 import com.example.blog.vo.BenchmarkMetaVO;
-import com.example.blog.vo.FeaturedGroupVO;
 import com.example.blog.vo.LeaderboardTrendVO;
 import com.example.blog.vo.ModelBenchmarkRowVO;
 import com.example.blog.vo.ModelCompareVO;
 import com.example.blog.vo.ModelLeaderboardVO;
 import com.example.blog.vo.ModelTrendVO;
+import com.example.blog.vo.VendorVO;
 
 import java.util.List;
 
@@ -19,12 +19,20 @@ public interface ModelQueryService {
 
     List<BenchmarkMetaVO> getBenchmarks();
 
-    List<ModelBenchmarkRowVO> searchModels(String query, int limit);
+    /** 归一后的厂商列表（对比页「按公司」，重点厂商置顶） */
+    List<VendorVO> getVendors();
+
+    /**
+     * 模型列表：按厂商（规范名）或关键词过滤，支持排序。
+     *
+     * @param query  名称/厂商关键词（可空）
+     * @param vendor 规范厂商名（可空）
+     * @param sort   newest / name / price / context
+     * @param limit  返回上限
+     */
+    List<ModelBenchmarkRowVO> listModels(String query, String vendor, String sort, int limit);
 
     ModelBenchmarkRowVO getModel(String canonicalKey);
-
-    /** 精选代表模型（对比页一键添加） */
-    List<FeaturedGroupVO> getFeatured();
 
     /** 多个模型的综合对比 */
     ModelCompareVO compare(List<String> modelKeys);

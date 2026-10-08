@@ -38,6 +38,12 @@ object ApiClient {
 
         @FromJson
         fun fromJson(reader: JsonReader): Date? {
+            // 显式 JSON null（如热点聚合的 publishedAt / releaseDate 常为 null）必须放行，
+            // 否则 nextString() 会在 NULL token 上抛异常，连累整个响应解析失败。
+            if (reader.peek() == JsonReader.Token.NULL) {
+                reader.nextNull<Unit>()
+                return null
+            }
             return if (reader.peek() == JsonReader.Token.NUMBER) {
                 Date(reader.nextLong())
             } else {

@@ -3,15 +3,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as echarts from 'echarts'
 import { toPng } from 'html-to-image'
-import { Plus, X, Search, Loader2, TrendingUp, Sparkles, Share2, Download } from 'lucide-react'
+import {
+  Plus,
+  X,
+  Search,
+  Loader2,
+  TrendingUp,
+  Share2,
+  Download,
+  Check,
+  Layers,
+} from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { API_CODE } from '@/lib/constants'
 import { alertError, alertSuccess } from '@/lib/Alert'
-import type { BenchmarkMeta, FeaturedGroup, ModelBenchmarkRow, ModelCompare } from './types'
+import type { BenchmarkMeta, ModelBenchmarkRow, ModelCompare, ModelLeaderboard, Vendor } from './types'
 
 interface ComparePanelProps {
-  featured: FeaturedGroup[]
+  leaderboards: Record<string, ModelLeaderboard>
+  vendors: Vendor[]
 }
 
 interface SelectedModel {
@@ -23,6 +34,22 @@ interface SelectedModel {
 const MAX_MODELS = 6
 const PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4']
 const MAX_RADAR_DIMS = 6
+const MODALITY_ORDER = ['text', 'coding', 'agent', 'embedding', 'image', 'video', 'speech']
+const MODALITY_LABELS: Record<string, string> = {
+  text: '文本',
+  coding: '代码',
+  agent: '智能体',
+  embedding: 'Embedding',
+  image: '生图',
+  video: '生视频',
+  speech: '语音',
+}
+const SORTS: Array<[string, string]> = [
+  ['newest', '最新'],
+  ['name', '名称'],
+  ['price', '价格'],
+  ['context', '上下文'],
+]
 
 function formatBenchmarkValue(value: number | undefined | null, meta?: BenchmarkMeta): string {
   if (value === undefined || value === null || Number.isNaN(value)) return '—'
@@ -30,7 +57,7 @@ function formatBenchmarkValue(value: number | undefined | null, meta?: Benchmark
   if (unit === 'elo') return String(Math.round(value))
   if (unit === '%') return `${value.toFixed(1)}%`
   if (unit === 'score') return value <= 1 ? value.toFixed(3) : value.toFixed(1)
-  return value.toFixed(2)
+  return value.toFixed(1)
 }
 
 function formatPrice(value?: number | null): string {
@@ -44,22 +71,51 @@ function formatContext(value?: number | null): string {
   return value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)
 }
 
-export default function ComparePanel({ featured }: ComparePanelProps) {
+export default function ComparePanel({ leaderboards, vendors }: ComparePanelProps) {
   const [selected, setSelected] = useState<SelectedModel[]>([])
   const [compare, setCompare] = useState<ModelCompare | null>(null)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  // 选择器
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerTab, setPickerTab] = useState<'leaderboard' | 'vendor' | 'search'>('leaderboard')
+  const [pickerModality, setPickerModality] = useState('text')
+  const [activeVendor, setActiveVendor] = useState<string | null>(null)
+  const [vendorFilter, setVendorFilter] = useState('')
+  const [vendorModels, setVendorModels] = useState<ModelBenchmarkRow[]>([])
+  const [vendorLoading, setVendorLoading] = useState(false)
+  const [sort, setSort] = useState('newest')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<ModelBenchmarkRow[]>([])
   const [searching, setSearching] = useState(false)
-  const [exporting, setExporting] = useState(false)
 
   const radarRef = useRef<HTMLDivElement>(null)
   const scatterRef = useRef<HTMLDivElement>(null)
   const resultRef = useRef<HTMLDivElement>(null)
   const radarChart = useRef<echarts.ECharts | null>(null)
   const scatterChart = useRef<echarts.ECharts | null>(null)
+  const seeded = useRef(false)
 
   const selectedKeys = useMemo(() => selected.map((s) => s.modelKey), [selected])
+
+  // 榜单模型（自动选前 2 名用）
+  const catalog = useMemo(() => {
+    const map = new Map<string, ModelBenchmarkRow>()
+    MODALITY_ORDER.forEach((m) => {
+      leaderboards[m]?.rows?.forEach((r) => {
+        if (!map.has(r.modelKey)) map.set(r.modelKey, r)
+      })
+    })
+    return [...map.values()]
+  }, [leaderboards])
+
+  const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys])
+
+  const filteredVendors = useMemo(() => {
+    const f = vendorFilter.trim().toLowerCase()
+    return f ? vendors.filter((v) => v.label.toLowerCase().includes(f)) : vendors
+  }, [vendors, vendorFilter])
 
   // 从分享链接还原选择
   useEffect(() => {
@@ -72,11 +128,21 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
         .filter(Boolean)
       if (keys.length > 0) {
         setSelected(keys.map((k) => ({ modelKey: k, displayName: k })))
+        seeded.current = true
       }
     }
   }, [])
 
-  // 对比数据回来后补全模型展示名（避免分享链接只显示 key）
+  // 未从链接还原时，默认选当前模态榜单前 2 名，让结果区一进来就是主体内容
+  useEffect(() => {
+    if (seeded.current || catalog.length === 0) return
+    const rows = leaderboards[pickerModality]?.rows ?? catalog
+    if (rows.length < 2) return
+    seeded.current = true
+    setSelected(rows.slice(0, 2).map((r) => ({ modelKey: r.modelKey, displayName: r.displayName, vendor: r.vendor })))
+  }, [catalog, leaderboards, pickerModality])
+
+  // 对比数据回来后补全展示名
   useEffect(() => {
     if (!compare) return
     setSelected((prev) => {
@@ -93,7 +159,7 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
     })
   }, [compare])
 
-  // 同步选择到地址栏，便于复制分享
+  // 同步选择到地址栏
   useEffect(() => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
@@ -158,7 +224,35 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
     }
   }, [selectedKeys])
 
-  // 搜索模型
+  // 进入「按公司」时默认选第一个（后端已把重点厂商排在前）
+  useEffect(() => {
+    if (pickerTab === 'vendor' && !activeVendor && vendors.length > 0) {
+      setActiveVendor(vendors[0].key)
+    }
+  }, [pickerTab, activeVendor, vendors])
+
+  // 拉取所选公司的模型（默认最新在前，可切换排序）
+  useEffect(() => {
+    if (pickerTab !== 'vendor' || !activeVendor) return
+    let cancelled = false
+    setVendorLoading(true)
+    apiClient
+      .get(ENDPOINTS.HOT.MODELS({ vendor: activeVendor, sort, limit: 100 }))
+      .then((res) => {
+        if (!cancelled && res.data.code === API_CODE.SUCCESS) {
+          setVendorModels(res.data.data || [])
+        }
+      })
+      .catch((err) => console.error('获取公司模型失败:', err))
+      .finally(() => {
+        if (!cancelled) setVendorLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [pickerTab, activeVendor, sort])
+
+  // 搜索模型（按名称或厂商），默认最新在前
   useEffect(() => {
     if (!query.trim()) {
       setResults([])
@@ -167,7 +261,7 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
     const timer = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await apiClient.get(ENDPOINTS.HOT.MODELS(query.trim(), 8))
+        const res = await apiClient.get(ENDPOINTS.HOT.MODELS({ q: query.trim(), sort, limit: 30 }))
         if (res.data.code === API_CODE.SUCCESS) {
           setResults(res.data.data || [])
         }
@@ -178,22 +272,19 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, sort])
 
-  const addModel = (model: SelectedModel) => {
+  const toggleModel = useCallback((model: SelectedModel) => {
     setSelected((prev) => {
-      if (prev.some((m) => m.modelKey === model.modelKey) || prev.length >= MAX_MODELS) {
-        return prev
+      if (prev.some((m) => m.modelKey === model.modelKey)) {
+        return prev.filter((m) => m.modelKey !== model.modelKey)
       }
+      if (prev.length >= MAX_MODELS) return prev
       return [...prev, model]
     })
-    setQuery('')
-    setResults([])
-  }
+  }, [])
 
-  const removeModel = (key: string) => {
-    setSelected((prev) => prev.filter((m) => m.modelKey !== key))
-  }
+  const removeModel = (key: string) => setSelected((prev) => prev.filter((m) => m.modelKey !== key))
 
   const modelColor = useCallback(
     (key: string) => {
@@ -226,10 +317,7 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
     instance.setOption({
       backgroundColor: 'transparent',
       tooltip: {},
-      legend: {
-        bottom: 0,
-        textStyle: { color: '#94a3b8', fontSize: 11 },
-      },
+      legend: { bottom: 0, textStyle: { color: '#94a3b8', fontSize: 11 } },
       radar: {
         indicator: dims.map((b) => ({ name: b.name, max: 100 })),
         radius: '62%',
@@ -256,9 +344,6 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
         },
       ],
     })
-    return () => {
-      /* 保持实例，交给卸载清理 */
-    }
   }, [compare, selectedKeys, modelColor])
 
   // 价格-能力散点
@@ -330,12 +415,8 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
         },
       ],
     })
-    return () => {
-      /* noop */
-    }
   }, [compare, selectedKeys, modelColor])
 
-  // 尺寸自适应
   useEffect(() => {
     const onResize = () => {
       radarChart.current?.resize()
@@ -360,125 +441,57 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
     return value === target
   }
 
+  const hasResult = compare !== null && compare.models.length > 0
+  const leaderboardRows = leaderboards[pickerModality]?.rows ?? []
+
   return (
-    <div className="space-y-4">
-      {/* 精选快捷添加 */}
-      {featured.length > 0 ? (
-        <div className="space-y-3 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-[rgb(var(--text))]">
-            <Sparkles className="w-4 h-4 text-[rgb(var(--primary))]" />
-            代表模型（点击添加）
-          </div>
-          {featured.map((group) => (
-            <div key={group.key} className="flex flex-wrap items-center gap-2">
-              <span className="w-20 shrink-0 text-xs text-[rgb(var(--text-muted))]">{group.label}</span>
-              {group.models.map((m) => {
-                const active = selectedKeys.includes(m.modelKey)
-                return (
-                  <button
-                    key={m.modelKey}
-                    disabled={active || selected.length >= MAX_MODELS}
-                    onClick={() =>
-                      addModel({ modelKey: m.modelKey, displayName: m.displayName, vendor: m.vendor })
-                    }
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border transition-colors ${
-                      active
-                        ? 'bg-[rgb(var(--primary)/0.15)] text-[rgb(var(--primary))] border-[rgb(var(--primary)/0.4)]'
-                        : 'bg-[rgb(var(--bg))] text-[rgb(var(--text))] border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))] disabled:opacity-40'
-                    }`}
-                    title={m.vendor || ''}
-                  >
-                    {active ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                    {m.displayName}
-                  </button>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {/* 搜索添加 */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(var(--text-muted))]" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜索任意模型加入对比…"
-          className="w-full pl-9 pr-3 py-2 rounded-lg text-sm bg-[rgb(var(--card))] border border-[rgb(var(--border))] text-[rgb(var(--text))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary)/0.5)]"
-        />
-        {searching ? (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[rgb(var(--text-muted))]" />
-        ) : null}
-        {results.length > 0 ? (
-          <ul className="absolute z-30 mt-1 w-full max-h-72 overflow-y-auto rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-lg">
-            {results.map((r) => (
-              <li key={r.modelKey}>
-                <button
-                  onClick={() =>
-                    addModel({ modelKey: r.modelKey, displayName: r.displayName, vendor: r.vendor })
-                  }
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-[rgb(var(--hover))] flex items-center justify-between gap-2"
-                >
-                  <span className="truncate text-[rgb(var(--text))]">{r.displayName}</span>
-                  <span className="shrink-0 text-xs text-[rgb(var(--text-muted))]">{r.vendor || ''}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-
-      {/* 已选 */}
-      <div className="flex flex-wrap items-center gap-2 min-h-[2rem]">
-        {selected.length === 0 ? (
-          <span className="text-sm text-[rgb(var(--text-muted))]">
-            从上方选择 2–{MAX_MODELS} 个模型开始对比
+    <div className="space-y-3">
+      {/* 紧凑工具栏：添加模型 + 已选 chips + 分享/导出（不再占大块空间） */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[rgb(var(--primary))] text-white hover:opacity-90"
+        >
+          <Plus className="w-4 h-4" />
+          添加模型
+        </button>
+        {selected.map((m) => (
+          <span
+            key={m.modelKey}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm border"
+            style={{ borderColor: modelColor(m.modelKey), color: modelColor(m.modelKey) }}
+          >
+            {m.displayName}
+            <button onClick={() => removeModel(m.modelKey)} aria-label="移除">
+              <X className="w-3.5 h-3.5" />
+            </button>
           </span>
-        ) : (
-          selected.map((m) => (
-            <span
-              key={m.modelKey}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm border"
-              style={{ borderColor: modelColor(m.modelKey), color: modelColor(m.modelKey) }}
-            >
-              {m.displayName}
-              <button onClick={() => removeModel(m.modelKey)} aria-label="移除">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </span>
-          ))
-        )}
+        ))}
         {loading ? <Loader2 className="w-4 h-4 animate-spin text-[rgb(var(--text-muted))]" /> : null}
+        <span className="flex-1" />
+        {hasResult ? (
+          <>
+            <button
+              onClick={copyLink}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+            >
+              <Share2 className="w-4 h-4" />
+              分享链接
+            </button>
+            <button
+              onClick={exportImage}
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:opacity-60"
+            >
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {exporting ? '导出中…' : '导出图片'}
+            </button>
+          </>
+        ) : null}
       </div>
 
-      {/* 分享 / 导出 */}
-      {compare && compare.models.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={copyLink}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
-          >
-            <Share2 className="w-4 h-4" />
-            复制分享链接
-          </button>
-          <button
-            onClick={exportImage}
-            disabled={exporting}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:opacity-60"
-          >
-            {exporting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            {exporting ? '导出中…' : '导出图片'}
-          </button>
-        </div>
-      ) : null}
-
-      {/* 结果 */}
-      {compare && compare.models.length > 0 ? (
+      {/* 结果区：页面主体 */}
+      {hasResult ? (
         <div ref={resultRef} className="space-y-4 rounded-xl bg-[rgb(var(--bg))] p-3">
           {/* 图表 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -514,44 +527,39 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
                   {compare.models.map((m) => (
                     <th key={m.modelKey} className="px-3 py-3 text-left font-medium">
                       <span style={{ color: modelColor(m.modelKey) }}>{m.displayName}</span>
-                      <div className="text-[11px] font-normal text-[rgb(var(--text-muted))]">
-                        {m.vendor || ''}
-                      </div>
+                      <div className="text-[11px] font-normal text-[rgb(var(--text-muted))]">{m.vendor || ''}</div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {compare.benchmarks.map((b) => {
-                  const allValues = compare.models.map((m) => m.scores[b.key])
-                  return (
-                    <tr
-                      key={b.key}
-                      className="border-b border-[rgb(var(--border))] last:border-0"
-                    >
-                      <td className="px-3 py-2.5 text-[rgb(var(--text-muted))]" title={`来源：${b.sourceKey ?? ''}`}>
-                        {b.name}
-                        <span className="ml-1 text-[10px] opacity-60">{b.unit}</span>
-                      </td>
-                      {compare.models.map((m) => {
-                        const v = m.scores[b.key]
-                        const best = v !== undefined && isBest(b, v, allValues)
-                        return (
-                          <td
-                            key={m.modelKey}
-                            className={`px-3 py-2.5 ${
-                              best
-                                ? 'font-semibold text-[rgb(var(--primary))]'
-                                : 'text-[rgb(var(--text))]'
-                            }`}
-                          >
-                            {formatBenchmarkValue(v, b)}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  )
-                })}
+                {compare.benchmarks
+                  .filter((b) => compare.models.some((m) => m.scores[b.key] !== undefined))
+                  .map((b) => {
+                    const allValues = compare.models.map((m) => m.scores[b.key])
+                    return (
+                      <tr key={b.key} className="border-b border-[rgb(var(--border))] last:border-0">
+                        <td className="px-3 py-2.5 text-[rgb(var(--text-muted))]" title={`来源：${b.sourceKey ?? ''}`}>
+                          {b.name}
+                          <span className="ml-1 text-[10px] opacity-60">{b.unit}</span>
+                        </td>
+                        {compare.models.map((m) => {
+                          const v = m.scores[b.key]
+                          const best = v !== undefined && isBest(b, v, allValues)
+                          return (
+                            <td
+                              key={m.modelKey}
+                              className={`px-3 py-2.5 ${
+                                best ? 'font-semibold text-[rgb(var(--primary))]' : 'text-[rgb(var(--text))]'
+                              }`}
+                            >
+                              {formatBenchmarkValue(v, b)}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    )
+                  })}
                 <tr className="border-b border-[rgb(var(--border))]">
                   <td className="px-3 py-2.5 text-[rgb(var(--text-muted))]">输入价 / 输出价</td>
                   {compare.models.map((m) => (
@@ -593,7 +601,240 @@ export default function ComparePanel({ featured }: ComparePanelProps) {
             提示：不同榜单口径（Elo / 百分比 / 归一化指数）不可直接比较；雷达图为所选模型在各自榜单内的相对归一化，仅供横向感受。
           </p>
         </div>
+      ) : (
+        <div className="min-h-[45vh] flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[rgb(var(--border))] text-center">
+          <Layers className="w-10 h-10 text-[rgb(var(--text-muted))] opacity-60" />
+          <p className="text-sm text-[rgb(var(--text-muted))]">选择 2–{MAX_MODELS} 个模型开始对比</p>
+          <p className="text-xs text-[rgb(var(--text-muted))]">可按榜单、按公司或搜索添加</p>
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[rgb(var(--primary))] text-white hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" />
+            添加模型
+          </button>
+        </div>
+      )}
+
+      {/* 模型选择器（弹层）：按榜单 / 按公司 / 搜索 */}
+      {pickerOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4"
+          onClick={() => setPickerOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl bg-[rgb(var(--card))] rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgb(var(--border))]">
+              <span className="text-sm font-semibold text-[rgb(var(--text))]">添加模型</span>
+              <span className="text-xs text-[rgb(var(--text-muted))]">
+                已选 {selected.length}/{MAX_MODELS}
+              </span>
+              <span className="flex-1" />
+              <button onClick={() => setPickerOpen(false)} aria-label="关闭">
+                <X className="w-4 h-4 text-[rgb(var(--text-muted))]" />
+              </button>
+            </div>
+
+            <div className="flex gap-1 px-3 pt-2">
+              {(
+                [
+                  ['leaderboard', '按榜单'],
+                  ['vendor', '按公司'],
+                  ['search', '搜索'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setPickerTab(key)}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    pickerTab === key
+                      ? 'bg-[rgb(var(--primary))] text-white'
+                      : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {pickerTab === 'leaderboard' ? (
+                <>
+                  <div className="flex flex-wrap gap-2 px-3 py-2 sticky top-0 bg-[rgb(var(--card))]">
+                    {MODALITY_ORDER.map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setPickerModality(m)}
+                        className={`px-3 py-1 rounded-lg text-sm border transition-colors ${
+                          pickerModality === m
+                            ? 'bg-[rgb(var(--primary))] text-white border-transparent'
+                            : 'bg-[rgb(var(--bg))] text-[rgb(var(--text))] border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))]'
+                        }`}
+                      >
+                        {MODALITY_LABELS[m] || m}
+                      </button>
+                    ))}
+                  </div>
+                  {leaderboardRows.length === 0 ? (
+                    <p className="py-10 text-center text-sm text-[rgb(var(--text-muted))]">暂无该榜单模型</p>
+                  ) : (
+                    leaderboardRows.map((r) => (
+                      <PickerRow
+                        key={r.modelKey}
+                        row={r}
+                        selected={selectedSet.has(r.modelKey)}
+                        full={selected.length >= MAX_MODELS}
+                        onToggle={() => toggleModel({ modelKey: r.modelKey, displayName: r.displayName, vendor: r.vendor })}
+                      />
+                    ))
+                  )}
+                </>
+              ) : pickerTab === 'vendor' ? (
+                <div className="flex flex-col">
+                  {/* 公司筛选 + 排序（单行，避免把模型列表挤下去） */}
+                  <div className="sticky top-0 bg-[rgb(var(--card))] px-3 py-2 space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(var(--text-muted))]" />
+                      <input
+                        value={vendorFilter}
+                        onChange={(e) => setVendorFilter(e.target.value)}
+                        placeholder="筛选公司…"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg text-sm bg-[rgb(var(--bg))] border border-[rgb(var(--border))] text-[rgb(var(--text))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary)/0.5)]"
+                      />
+                    </div>
+                    <SortBar sort={sort} onChange={setSort} />
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {filteredVendors.length === 0 ? (
+                        <span className="text-xs text-[rgb(var(--text-muted))]">未找到相关公司</span>
+                      ) : (
+                        filteredVendors.map((v) => (
+                          <button
+                            key={v.key}
+                            onClick={() => setActiveVendor(v.key)}
+                            className={`shrink-0 px-3 py-1 rounded-lg text-sm border transition-colors ${
+                              activeVendor === v.key
+                                ? 'bg-[rgb(var(--primary))] text-white border-transparent'
+                                : 'bg-[rgb(var(--bg))] text-[rgb(var(--text))] border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))]'
+                            }`}
+                          >
+                            {v.focused ? '★ ' : ''}
+                            {v.label}
+                            <span className="opacity-60 ml-1">({v.modelCount})</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  {vendorLoading ? (
+                    <p className="py-10 text-center text-sm text-[rgb(var(--text-muted))]">加载中…</p>
+                  ) : vendorModels.length === 0 ? (
+                    <p className="py-10 text-center text-sm text-[rgb(var(--text-muted))]">该公司暂无模型</p>
+                  ) : (
+                    vendorModels.map((r) => (
+                      <PickerRow
+                        key={r.modelKey}
+                        row={r}
+                        selected={selectedSet.has(r.modelKey)}
+                        full={selected.length >= MAX_MODELS}
+                        onToggle={() => toggleModel({ modelKey: r.modelKey, displayName: r.displayName, vendor: r.vendor })}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <div className="sticky top-0 bg-[rgb(var(--card))] px-3 py-2 space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(var(--text-muted))]" />
+                      <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="搜索模型名称或厂商…"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg text-sm bg-[rgb(var(--bg))] border border-[rgb(var(--border))] text-[rgb(var(--text))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary)/0.5)]"
+                      />
+                      {searching ? (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[rgb(var(--text-muted))]" />
+                      ) : null}
+                    </div>
+                    <SortBar sort={sort} onChange={setSort} />
+                  </div>
+                  {results.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-[rgb(var(--text-muted))]">
+                      {query.trim() ? '未找到相关模型' : '输入名称或厂商搜索任意模型'}
+                    </p>
+                  ) : (
+                    results.map((r) => (
+                      <PickerRow
+                        key={r.modelKey}
+                        row={r}
+                        selected={selectedSet.has(r.modelKey)}
+                        full={selected.length >= MAX_MODELS}
+                        onToggle={() => toggleModel({ modelKey: r.modelKey, displayName: r.displayName, vendor: r.vendor })}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
+  )
+}
+
+function SortBar({ sort, onChange }: { sort: string; onChange: (s: string) => void }) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-[rgb(var(--text-muted))]">
+      <span>排序</span>
+      <div className="flex gap-1 overflow-x-auto">
+        {SORTS.map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => onChange(key)}
+            className={`shrink-0 px-2.5 py-0.5 rounded-md border transition-colors ${
+              sort === key
+                ? 'bg-[rgb(var(--primary))] text-white border-transparent'
+                : 'bg-[rgb(var(--bg))] text-[rgb(var(--text))] border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PickerRow({
+  row,
+  selected,
+  full,
+  onToggle,
+}: {
+  row: ModelBenchmarkRow
+  selected: boolean
+  full: boolean
+  onToggle: () => void
+}) {
+  const disabled = !selected && full
+  return (
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-2 border-b border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))] disabled:opacity-40"
+    >
+      <span className="min-w-0">
+        <span className="block truncate text-sm text-[rgb(var(--text))]">{row.displayName}</span>
+        {row.vendor ? <span className="block text-xs text-[rgb(var(--text-muted))]">{row.vendor}</span> : null}
+      </span>
+      {selected ? (
+        <Check className="w-4 h-4 shrink-0 text-[rgb(var(--primary))]" />
+      ) : (
+        <Plus className="w-4 h-4 shrink-0 text-[rgb(var(--text-muted))]" />
+      )}
+    </button>
   )
 }

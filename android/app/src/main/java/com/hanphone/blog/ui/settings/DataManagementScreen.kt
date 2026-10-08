@@ -145,6 +145,16 @@ fun DataManagementScreen(onBack: () -> Unit) {
                         }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    CacheRow("热点聚合（洞察）", featureSize(emptyList(), "hot_")) {
+                        onCacheCleared(emptyList(), { it.startsWith("hot_") }) {
+                            MemoryCache.hotOverview = null
+                            MemoryCache.hotFeeds = null
+                            MemoryCache.hotSources = null
+                            MemoryCache.hotBenchmarks = null
+                            MemoryCache.hotLeaderboards = emptyMap()
+                        }
+                    }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
 
                     // ===== 图片缓存（按功能/页面分区管理）=====
                     Feature.entries.forEach { f ->

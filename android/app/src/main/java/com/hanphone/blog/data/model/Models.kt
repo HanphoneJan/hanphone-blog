@@ -194,3 +194,128 @@ data class LoginData(
     val token: String? = null,
     val expire: String? = null
 )
+
+// ===== 热点聚合（洞察 /hot/*，公开只读；字段与后端 VO camelCase 一致）=====
+
+/** 热点流条目（/hot/feed）；titleZh/summaryZh 为中文优先展示字段 */
+data class HotFeedItem(
+    val sourceKey: String = "",
+    val category: String = "",
+    val itemKey: String = "",
+    val title: String = "",
+    val titleZh: String? = null,
+    val summaryZh: String? = null,
+    val url: String = "",
+    val author: String? = null,
+    val tags: String? = null,
+    val score: Double? = null,
+    val rank: Int? = null,
+    val publishedAt: Date? = null,
+    val firstSeenAt: Date? = null,
+    val lastSeenAt: Date? = null
+)
+
+/** 洞察分类及条目数 */
+data class HotCategory(
+    val key: String = "",
+    val label: String = "",
+    val count: Long = 0
+)
+
+/** 洞察总览（/hot/overview） */
+data class HotOverview(
+    val updatedAt: Date? = null,
+    val sourceTotal: Int = 0,
+    val sourceHealthy: Int = 0,
+    val itemTotal: Long = 0,
+    val categories: List<HotCategory> = emptyList(),
+    val topItems: List<HotFeedItem> = emptyList()
+)
+
+/** 洞察信源健康状态（/hot/sources） */
+data class HotSourceStatus(
+    val sourceKey: String = "",
+    val category: String = "",
+    val displayName: String = "",
+    val sourceUrl: String = "",
+    val enabled: Boolean = true,
+    val itemCount: Int? = null,
+    val lastStatus: String? = null,
+    val lastRunAt: Date? = null,
+    val lastSuccessAt: Date? = null,
+    val lastError: String? = null
+)
+
+/** 榜单元数据（表头口径） */
+data class BenchmarkMeta(
+    val key: String = "",
+    val name: String = "",
+    val category: String = "",
+    val unit: String = "",
+    val higherIsBetter: Boolean = true,
+    val sourceKey: String? = null
+)
+
+/** 模型榜单行（某模态下单个模型的一条记录） */
+data class ModelBenchmarkRow(
+    val modelKey: String = "",
+    val displayName: String = "",
+    val vendor: String? = null,
+    val modality: String? = null,
+    val openWeights: Boolean? = null,
+    val releaseDate: Date? = null,
+    val link: String? = null,
+    val rank: Int? = null,
+    val rankChange: Int? = null,
+    val scores: Map<String, Double> = emptyMap(),
+    val inputPrice: Double? = null,
+    val outputPrice: Double? = null,
+    val contextWindow: Int? = null
+)
+
+/** 某模态的榜单视图（/hot/leaderboards） */
+data class ModelLeaderboard(
+    val modality: String = "",
+    val label: String = "",
+    val benchmarks: List<BenchmarkMeta> = emptyList(),
+    val rows: List<ModelBenchmarkRow> = emptyList()
+)
+
+/** 模型综合对比（/hot/models/compare） */
+data class ModelCompare(
+    val models: List<ModelBenchmarkRow> = emptyList(),
+    val benchmarks: List<BenchmarkMeta> = emptyList()
+)
+
+/** 模型厂商（归一后，/hot/vendors；对比页「按公司」） */
+data class Vendor(
+    val key: String = "",
+    val label: String = "",
+    val modelCount: Int = 0,
+    val focused: Boolean = false,
+    val priority: Int = 0
+)
+
+/** 趋势数据点 */
+data class TrendPoint(
+    val date: String = "",
+    val score: Double? = null,
+    val rank: Int? = null
+)
+
+/** 一条趋势序列（label 为模型名或榜单名） */
+data class TrendSeries(
+    val key: String = "",
+    val label: String = "",
+    val unit: String? = null,
+    val points: List<TrendPoint> = emptyList()
+)
+
+/** 榜单头部模型趋势（/hot/leaderboards/trend，序列 = 模型） */
+data class LeaderboardTrend(
+    val modality: String = "",
+    val benchmarkKey: String? = null,
+    val benchmarkName: String? = null,
+    val unit: String? = null,
+    val series: List<TrendSeries> = emptyList()
+)

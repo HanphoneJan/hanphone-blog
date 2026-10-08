@@ -76,7 +76,7 @@ public class ModelLeaderboardService {
         return (int) collectors.stream().filter(ModelLeaderboardCollector::enabled).count();
     }
 
-    @CacheEvict(value = {"modelLeaderboard", "modelBenchmarks", "modelDetail", "modelFeatured",
+    @CacheEvict(value = {"modelLeaderboard", "modelBenchmarks", "modelDetail", "modelVendors",
             "modelTrend", "leaderboardTrend", "hotSources"}, allEntries = true)
     public HotCollectRun collectAll(String triggerType) {
         Date startedAt = new Date();

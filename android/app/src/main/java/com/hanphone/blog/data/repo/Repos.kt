@@ -8,14 +8,22 @@ import com.hanphone.blog.data.chat.ChatMessagesResponse
 import com.hanphone.blog.data.chat.ChatUnreadResponse
 import com.hanphone.blog.data.chat.ChatUsersResponse
 import com.hanphone.blog.data.model.ApiResult
+import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
 import com.hanphone.blog.data.model.FriendLink
+import com.hanphone.blog.data.model.HotFeedItem
+import com.hanphone.blog.data.model.HotOverview
+import com.hanphone.blog.data.model.HotSourceStatus
+import com.hanphone.blog.data.model.LeaderboardTrend
 import com.hanphone.blog.data.model.LoginData
 import com.hanphone.blog.data.model.Message
+import com.hanphone.blog.data.model.ModelBenchmarkRow
+import com.hanphone.blog.data.model.ModelCompare
+import com.hanphone.blog.data.model.ModelLeaderboard
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.SearchResultItem
@@ -23,6 +31,7 @@ import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type
 import com.hanphone.blog.data.model.User
+import com.hanphone.blog.data.model.Vendor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -276,4 +285,41 @@ class FileRepository(private val api: FileApi = ApiClient.fileApi) {
         val part = MultipartBody.Part.createFormData("avatar", file.name, body)
         api.uploadAvatar(part)
     }
+}
+
+/** 热点聚合（洞察接口 /hot 路径，公开只读）。网络异常由 ViewModel 层 try/catch */
+class HotRepository(private val api: BlogApi = ApiClient.api) {
+
+    suspend fun overview(): ApiResult<HotOverview> =
+        withContext(Dispatchers.IO) { api.hotOverview() }
+
+    suspend fun feed(category: String?, limit: Int = 30): ApiResult<List<HotFeedItem>> =
+        withContext(Dispatchers.IO) { api.hotFeed(category, limit) }
+
+    suspend fun sources(): ApiResult<List<HotSourceStatus>> =
+        withContext(Dispatchers.IO) { api.hotSources() }
+
+    suspend fun leaderboard(modality: String): ApiResult<ModelLeaderboard> =
+        withContext(Dispatchers.IO) { api.hotLeaderboard(modality) }
+
+    suspend fun benchmarks(): ApiResult<List<BenchmarkMeta>> =
+        withContext(Dispatchers.IO) { api.hotBenchmarks() }
+
+    suspend fun vendors(): ApiResult<List<Vendor>> =
+        withContext(Dispatchers.IO) { api.hotVendors() }
+
+    /** 模型列表：按厂商（规范名）或关键词过滤；sort = newest/name/price/context */
+    suspend fun listModels(
+        query: String?,
+        vendor: String?,
+        sort: String = "newest",
+        limit: Int = 30
+    ): ApiResult<List<ModelBenchmarkRow>> =
+        withContext(Dispatchers.IO) { api.hotModels(query, vendor, sort, limit) }
+
+    suspend fun compare(keys: List<String>): ApiResult<ModelCompare> =
+        withContext(Dispatchers.IO) { api.hotCompare(keys) }
+
+    suspend fun leaderboardTrend(modality: String, days: Int = 30, top: Int = 5): ApiResult<LeaderboardTrend> =
+        withContext(Dispatchers.IO) { api.hotLeaderboardTrend(modality, days, top) }
 }

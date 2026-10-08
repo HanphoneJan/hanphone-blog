@@ -7,7 +7,7 @@ import com.example.blog.dao.ModelEntityRepository;
 import com.example.blog.dao.ModelPricingRepository;
 import com.example.blog.hot.model.BenchmarkMetaData;
 import com.example.blog.hot.model.BenchmarkRegistry;
-import com.example.blog.hot.model.FeaturedModelRegistry;
+import com.example.blog.hot.model.VendorRegistry;
 import com.example.blog.po.BenchmarkMeta;
 import com.example.blog.po.ModelBenchmark;
 import com.example.blog.po.ModelBenchmarkSnapshot;
@@ -15,8 +15,6 @@ import com.example.blog.po.ModelEntity;
 import com.example.blog.po.ModelPricing;
 import com.example.blog.service.ModelQueryService;
 import com.example.blog.vo.BenchmarkMetaVO;
-import com.example.blog.vo.FeaturedGroupVO;
-import com.example.blog.vo.FeaturedModelVO;
 import com.example.blog.vo.LeaderboardTrendVO;
 import com.example.blog.vo.ModelBenchmarkRowVO;
 import com.example.blog.vo.ModelCompareVO;
@@ -24,8 +22,8 @@ import com.example.blog.vo.ModelLeaderboardVO;
 import com.example.blog.vo.ModelTrendVO;
 import com.example.blog.vo.TrendPointVO;
 import com.example.blog.vo.TrendSeriesVO;
+import com.example.blog.vo.VendorVO;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -35,6 +33,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,7 +44,7 @@ public class ModelQueryServiceImpl implements ModelQueryService {
     private static final List<String> MODALITIES =
             List.of("text", "coding", "agent", "embedding", "image", "video", "speech");
     private static final int MAX_ROWS = 50;
-    private static final int MAX_SEARCH = 30;
+    private static final int MAX_LIST = 100;
     private static final int MAX_COMPARE = 8;
 
     private final ModelEntityRepository entityRepository;
@@ -54,7 +53,7 @@ public class ModelQueryServiceImpl implements ModelQueryService {
     private final ModelPricingRepository pricingRepository;
     private final BenchmarkMetaRepository benchmarkMetaRepository;
     private final BenchmarkRegistry benchmarkRegistry;
-    private final FeaturedModelRegistry featuredModelRegistry;
+    private final VendorRegistry vendorRegistry;
 
     public ModelQueryServiceImpl(ModelEntityRepository entityRepository,
                                  ModelBenchmarkRepository benchmarkRepository,
@@ -62,14 +61,14 @@ public class ModelQueryServiceImpl implements ModelQueryService {
                                  ModelPricingRepository pricingRepository,
                                  BenchmarkMetaRepository benchmarkMetaRepository,
                                  BenchmarkRegistry benchmarkRegistry,
-                                 FeaturedModelRegistry featuredModelRegistry) {
+                                 VendorRegistry vendorRegistry) {
         this.entityRepository = entityRepository;
         this.benchmarkRepository = benchmarkRepository;
         this.snapshotRepository = snapshotRepository;
         this.pricingRepository = pricingRepository;
         this.benchmarkMetaRepository = benchmarkMetaRepository;
         this.benchmarkRegistry = benchmarkRegistry;
-        this.featuredModelRegistry = featuredModelRegistry;
+        this.vendorRegistry = vendorRegistry;
     }
 
     @Override
@@ -130,20 +129,78 @@ public class ModelQueryServiceImpl implements ModelQueryService {
     }
 
     @Override
-    public List<ModelBenchmarkRowVO> searchModels(String query, int limit) {
-        if (query == null || query.isBlank()) {
-            return List.of();
+    @Cacheable("modelVendors")
+    public List<VendorVO> getVendors() {
+        // key → (原始写法 → 出现次数)；未知厂商取出现次数最多的写法作为展示名
+        Map<String, Map<String, Integer>> variants = new LinkedHashMap<>();
+        for (ModelEntity model : entityRepository.findAll()) {
+            String key = vendorRegistry.key(model.getVendor());
+            if (key == null) {
+                continue;
+            }
+            variants.computeIfAbsent(key, k -> new LinkedHashMap<>())
+                    .merge(model.getVendor().trim(), 1, Integer::sum);
         }
-        int size = Math.max(1, Math.min(limit, MAX_SEARCH));
-        List<ModelEntity> models = entityRepository
-                .findByDisplayNameContainingIgnoreCaseOrVendorContainingIgnoreCase(
-                        query.trim(), query.trim(), PageRequest.of(0, size));
+        List<VendorVO> list = new ArrayList<>();
+        variants.forEach((key, raws) -> {
+            String label = vendorRegistry.label(key);
+            if (label == null) {
+                label = raws.entrySet().stream()
+                        .max(Comparator.<Map.Entry<String, Integer>>comparingInt(Map.Entry::getValue)
+                                .thenComparing(Map.Entry::getKey, Comparator.reverseOrder()))
+                        .map(Map.Entry::getKey)
+                        .orElse(key);
+            }
+            VendorVO vo = new VendorVO();
+            vo.setKey(label);
+            vo.setLabel(label);
+            vo.setModelCount(raws.values().stream().mapToInt(Integer::intValue).sum());
+            vo.setFocused(vendorRegistry.isFocused(key));
+            vo.setPriority(vendorRegistry.focusRank(key));
+            list.add(vo);
+        });
+        list.sort(Comparator
+                .comparingInt(VendorVO::getPriority)
+                .thenComparing(VendorVO::getModelCount, Comparator.reverseOrder())
+                .thenComparing(VendorVO::getLabel, String.CASE_INSENSITIVE_ORDER));
+        return list;
+    }
+
+    @Override
+    public List<ModelBenchmarkRowVO> listModels(String query, String vendor, String sort, int limit) {
+        String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        String vendorKey = (vendor == null || vendor.isBlank()) ? null : vendorRegistry.key(vendor);
+        int size = Math.max(1, Math.min(limit, MAX_LIST));
+
+        List<ModelEntity> filtered = new ArrayList<>();
+        for (ModelEntity model : entityRepository.findAll()) {
+            String key = vendorRegistry.key(model.getVendor());
+            if (vendorKey != null && !vendorKey.equals(key)) {
+                continue;
+            }
+            if (!q.isEmpty()) {
+                String name = model.getDisplayName() == null ? "" : model.getDisplayName().toLowerCase(Locale.ROOT);
+                String keyLower = key == null ? "" : key;
+                String rawLower = model.getVendor() == null ? "" : model.getVendor().toLowerCase(Locale.ROOT);
+                String label = vendorRegistry.label(key);
+                String labelLower = label == null ? "" : label.toLowerCase(Locale.ROOT);
+                if (!name.contains(q) && !keyLower.contains(q) && !rawLower.contains(q) && !labelLower.contains(q)) {
+                    continue;
+                }
+            }
+            filtered.add(model);
+        }
+
+        Map<Long, List<ModelPricing>> pricingByModel = filtered.isEmpty() ? Map.of()
+                : pricingRepository.findByModelIdIn(filtered.stream().map(ModelEntity::getId).collect(Collectors.toList()))
+                .stream().collect(Collectors.groupingBy(ModelPricing::getModelId));
+
         List<ModelBenchmarkRowVO> rows = new ArrayList<>();
-        for (ModelEntity model : models) {
-            rows.add(toRow(model, benchmarkRepository.findByModelId(model.getId()),
-                    mergePricing(pricingRepository.findByModelId(model.getId())), null));
+        for (ModelEntity model : filtered) {
+            rows.add(toRow(model, List.of(), mergePricing(pricingByModel.get(model.getId())), null));
         }
-        return rows;
+        rows.sort(modelComparator(sort));
+        return rows.size() > size ? new ArrayList<>(rows.subList(0, size)) : rows;
     }
 
     @Override
@@ -155,35 +212,6 @@ public class ModelQueryServiceImpl implements ModelQueryService {
         }
         return toRow(model, benchmarkRepository.findByModelId(model.getId()),
                 mergePricing(pricingRepository.findByModelId(model.getId())), null);
-    }
-
-    @Override
-    @Cacheable("modelFeatured")
-    public List<FeaturedGroupVO> getFeatured() {
-        List<FeaturedGroupVO> groups = new ArrayList<>();
-        for (FeaturedModelRegistry.FeaturedGroup group : featuredModelRegistry.groups()) {
-            FeaturedGroupVO vo = new FeaturedGroupVO();
-            vo.setKey(group.key());
-            vo.setLabel(group.label());
-            vo.setModality(group.modality());
-            Set<String> seen = new HashSet<>();
-            for (FeaturedModelRegistry.FeaturedEntry entry : group.entries()) {
-                ModelEntity model = resolveFeatured(entry.keywords(), group.modality());
-                if (model == null || !seen.add(model.getCanonicalKey())) {
-                    continue;
-                }
-                FeaturedModelVO fm = new FeaturedModelVO();
-                fm.setModelKey(model.getCanonicalKey());
-                fm.setDisplayName(model.getDisplayName());
-                fm.setVendor(model.getVendor());
-                fm.setModality(model.getModality());
-                vo.getModels().add(fm);
-            }
-            if (!vo.getModels().isEmpty()) {
-                groups.add(vo);
-            }
-        }
-        return groups;
     }
 
     @Override
@@ -359,49 +387,27 @@ public class ModelQueryServiceImpl implements ModelQueryService {
         return prev;
     }
 
-    private ModelEntity resolveFeatured(List<String> keywords, String modality) {
-        if (keywords == null) {
-            return null;
-        }
-        for (String keyword : keywords) {
-            List<ModelEntity> candidates = entityRepository
-                    .findByDisplayNameContainingIgnoreCaseOrVendorContainingIgnoreCase(
-                            keyword, keyword, PageRequest.of(0, 100));
-            if (candidates.isEmpty()) {
-                continue;
-            }
-            List<ModelEntity> matched = candidates.stream()
-                    .filter(m -> modality.equalsIgnoreCase(m.getModality() == null ? "" : m.getModality()))
-                    .collect(Collectors.toList());
-            List<ModelEntity> pool = matched.isEmpty() ? candidates : matched;
-            // 按发布时间取较新的前 30 个作为候选池，再按榜单排名挑最优代表
-            pool = pool.stream()
-                    .sorted(Comparator
-                            .comparing(ModelEntity::getReleaseDate,
-                                    Comparator.nullsLast(Comparator.reverseOrder()))
-                            .thenComparing(ModelEntity::getDisplayName,
-                                    Comparator.nullsLast(String::compareToIgnoreCase)))
-                    .limit(30)
-                    .collect(Collectors.toList());
-
-            List<Long> ids = pool.stream().map(ModelEntity::getId).collect(Collectors.toList());
-            Map<Long, Integer> bestRank = new java.util.HashMap<>();
-            for (ModelBenchmark b : benchmarkRepository.findByModelIdIn(ids)) {
-                if (b.getRank() != null) {
-                    bestRank.merge(b.getModelId(), b.getRank(), Math::min);
-                }
-            }
-            return pool.stream()
-                    .sorted(Comparator
-                            .comparingInt((ModelEntity m) -> bestRank.getOrDefault(m.getId(), Integer.MAX_VALUE))
-                            .thenComparing(ModelEntity::getReleaseDate,
-                                    Comparator.nullsLast(Comparator.reverseOrder()))
-                            .thenComparing(ModelEntity::getDisplayName,
-                                    Comparator.nullsLast(String::compareToIgnoreCase)))
-                    .findFirst()
-                    .orElse(null);
-        }
-        return null;
+    /** 模型列表排序：newest（默认）/ name / price / context */
+    private Comparator<ModelBenchmarkRowVO> modelComparator(String sort) {
+        Comparator<ModelBenchmarkRowVO> byName = Comparator.comparing(
+                (ModelBenchmarkRowVO r) -> r.getDisplayName() == null ? "" : r.getDisplayName(),
+                String.CASE_INSENSITIVE_ORDER);
+        String key = sort == null ? "newest" : sort.trim().toLowerCase(Locale.ROOT);
+        return switch (key) {
+            case "name" -> byName;
+            case "price" -> Comparator
+                    .comparingDouble((ModelBenchmarkRowVO r) -> r.getInputPrice() == null ? Double.MAX_VALUE : r.getInputPrice())
+                    .thenComparingDouble(r -> r.getOutputPrice() == null ? Double.MAX_VALUE : r.getOutputPrice())
+                    .thenComparing(byName);
+            case "context" -> Comparator
+                    .comparingInt((ModelBenchmarkRowVO r) -> r.getContextWindow() == null ? -1 : r.getContextWindow())
+                    .reversed()
+                    .thenComparing(byName);
+            default -> Comparator
+                    .comparing((ModelBenchmarkRowVO r) -> r.getReleaseDate(),
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(byName);
+        };
     }
 
     private ModelBenchmarkRowVO toRow(ModelEntity model, List<ModelBenchmark> benchmarks,
@@ -409,7 +415,9 @@ public class ModelQueryServiceImpl implements ModelQueryService {
         ModelBenchmarkRowVO row = new ModelBenchmarkRowVO();
         row.setModelKey(model.getCanonicalKey());
         row.setDisplayName(model.getDisplayName());
-        row.setVendor(model.getVendor());
+        String vendorKey = vendorRegistry.key(model.getVendor());
+        String vendorLabel = vendorRegistry.label(vendorKey);
+        row.setVendor(vendorLabel != null ? vendorLabel : model.getVendor());
         row.setModality(model.getModality());
         row.setOpenWeights(model.getOpenWeights());
         row.setReleaseDate(model.getReleaseDate());

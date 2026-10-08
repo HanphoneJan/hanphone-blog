@@ -5,6 +5,7 @@ import com.hanphone.blog.data.api.BlogApi
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.data.repo.EssayRepository
 import com.hanphone.blog.data.repo.FileRepository
+import com.hanphone.blog.data.repo.HotRepository
 import com.hanphone.blog.data.repo.MessageRepository
 import dagger.Module
 import dagger.Provides
@@ -39,4 +40,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideFileRepository(): FileRepository = FileRepository()
+
+    @Provides
+    @Singleton
+    fun provideHotRepository(api: BlogApi): HotRepository = HotRepository(api)
 }

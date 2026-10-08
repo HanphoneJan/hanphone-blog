@@ -4,12 +4,12 @@ import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.service.ModelQueryService;
 import com.example.blog.vo.BenchmarkMetaVO;
-import com.example.blog.vo.FeaturedGroupVO;
 import com.example.blog.vo.LeaderboardTrendVO;
 import com.example.blog.vo.ModelBenchmarkRowVO;
 import com.example.blog.vo.ModelCompareVO;
 import com.example.blog.vo.ModelLeaderboardVO;
 import com.example.blog.vo.ModelTrendVO;
+import com.example.blog.vo.VendorVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -51,17 +51,20 @@ public class ModelShowController {
                 modelQueryService.getBenchmarks());
     }
 
-    @GetMapping("/hot/models")
-    public Result<List<ModelBenchmarkRowVO>> models(@RequestParam String q,
-                                                    @RequestParam(defaultValue = "20") int limit) {
-        return new Result<>(true, StatusCode.OK, "搜索模型成功",
-                modelQueryService.searchModels(q, limit));
+    @GetMapping("/hot/vendors")
+    public Result<List<VendorVO>> vendors() {
+        return new Result<>(true, StatusCode.OK, "获取模型厂商成功",
+                modelQueryService.getVendors());
     }
 
-    @GetMapping("/hot/models/featured")
-    public Result<List<FeaturedGroupVO>> featured() {
-        return new Result<>(true, StatusCode.OK, "获取精选模型成功",
-                modelQueryService.getFeatured());
+    @GetMapping("/hot/models")
+    public Result<List<ModelBenchmarkRowVO>> models(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String vendor,
+            @RequestParam(defaultValue = "newest") String sort,
+            @RequestParam(defaultValue = "30") int limit) {
+        return new Result<>(true, StatusCode.OK, "获取模型列表成功",
+                modelQueryService.listModels(q, vendor, sort, limit));
     }
 
     @GetMapping("/hot/models/compare")

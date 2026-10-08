@@ -60,6 +60,7 @@ import com.hanphone.blog.ui.chat.ChatScreen
 import com.hanphone.blog.ui.docs.DocsScreen
 import com.hanphone.blog.ui.docs.DocMarkdownScreen
 import com.hanphone.blog.ui.friendlinks.FriendLinksScreen
+import com.hanphone.blog.ui.hot.HotScreen
 import com.hanphone.blog.ui.login.LoginScreen
 import com.hanphone.blog.ui.login.RegisterScreen
 import com.hanphone.blog.ui.message.MessageScreen
@@ -200,6 +201,7 @@ private fun MainScaffold() {
                     onOpenProjects = { navController.navigate("projects") },
                     onOpenDocs = { navController.navigate("docs") },
                     onOpenSettings = { navController.navigate("settings") },
+                    onOpenInsight = { navController.navigate("insight") },
                     onOpenPhotoWall = {
                         navController.navigate(
                             "webview?url=${Uri.encode("https://hanphone.cn/atlas/")}&title=${Uri.encode("照片墙")}"
@@ -234,6 +236,16 @@ private fun MainScaffold() {
                     onOpenMarkdown = { url, title ->
                         navController.navigate(
                             "doc-md?url=${Uri.encode(url)}&title=${Uri.encode(title)}"
+                        )
+                    }
+                )
+            }
+            composable("insight") {
+                HotScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenUrl = { url, title ->
+                        navController.navigate(
+                            "webview?url=${Uri.encode(url)}&title=${Uri.encode(title)}"
                         )
                     }
                 )

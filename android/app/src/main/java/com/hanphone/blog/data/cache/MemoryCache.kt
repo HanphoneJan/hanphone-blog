@@ -4,12 +4,18 @@ import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.FriendLink
+import com.hanphone.blog.data.model.HotFeedItem
+import com.hanphone.blog.data.model.HotOverview
+import com.hanphone.blog.data.model.HotSourceStatus
+import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Message
+import com.hanphone.blog.data.model.ModelLeaderboard
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.SearchResultItem
 import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type
+import com.hanphone.blog.data.model.Vendor
 
 /**
  * 会话级内存缓存（进程存活期间有效）：
@@ -44,6 +50,14 @@ object MemoryCache {
     var projects: List<Project>? = null
     var docs: List<Doc>? = null
 
+    // ===== 热点聚合（洞察）=====
+    var hotOverview: HotOverview? = null
+    var hotFeeds: Map<String, List<HotFeedItem>>? = null
+    var hotSources: List<HotSourceStatus>? = null
+    var hotBenchmarks: List<BenchmarkMeta>? = null
+    var hotVendors: List<Vendor>? = null
+    var hotLeaderboards: Map<String, ModelLeaderboard> = emptyMap()
+
     /** 设置页「数据管理 清除全部」：重置全部会话级缓存 */
     fun resetAll() {
         homeBlogs = null
@@ -61,6 +75,12 @@ object MemoryCache {
         friendLinks = null
         projects = null
         docs = null
+        hotOverview = null
+        hotFeeds = null
+        hotSources = null
+        hotBenchmarks = null
+        hotVendors = null
+        hotLeaderboards = emptyMap()
         searchCache.clear()
         searchInFlight = null
     }

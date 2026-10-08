@@ -4,14 +4,22 @@ import com.hanphone.blog.data.chat.ChatMessagesResponse
 import com.hanphone.blog.data.chat.ChatUnreadResponse
 import com.hanphone.blog.data.chat.ChatUsersResponse
 import com.hanphone.blog.data.model.ApiResult
+import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
 import com.hanphone.blog.data.model.FriendLink
+import com.hanphone.blog.data.model.HotFeedItem
+import com.hanphone.blog.data.model.HotOverview
+import com.hanphone.blog.data.model.HotSourceStatus
+import com.hanphone.blog.data.model.LeaderboardTrend
 import com.hanphone.blog.data.model.LoginData
 import com.hanphone.blog.data.model.Message
+import com.hanphone.blog.data.model.ModelBenchmarkRow
+import com.hanphone.blog.data.model.ModelCompare
+import com.hanphone.blog.data.model.ModelLeaderboard
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.SearchResultItem
@@ -19,6 +27,7 @@ import com.hanphone.blog.data.model.User
 import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type
+import com.hanphone.blog.data.model.Vendor
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -184,4 +193,48 @@ interface BlogApi {
         @Header("X-Request-Id") requestId: String?,
         @Body body: Map<String, Any?>
     ): ApiResult<Message>
+
+    // ===== 热点聚合（洞察 /hot/*，公开只读）=====
+    @GET("hot/overview")
+    suspend fun hotOverview(): ApiResult<HotOverview>
+
+    /** category: github / hf / ai-news；为 null 时返回全部 */
+    @GET("hot/feed")
+    suspend fun hotFeed(
+        @Query("category") category: String?,
+        @Query("limit") limit: Int = 30
+    ): ApiResult<List<HotFeedItem>>
+
+    @GET("hot/sources")
+    suspend fun hotSources(): ApiResult<List<HotSourceStatus>>
+
+    @GET("hot/leaderboards")
+    suspend fun hotLeaderboard(@Query("modality") modality: String): ApiResult<ModelLeaderboard>
+
+    @GET("hot/benchmarks")
+    suspend fun hotBenchmarks(): ApiResult<List<BenchmarkMeta>>
+
+    /** 搜索任意模型（厂商/名称包含匹配） */
+    @GET("hot/models")
+    suspend fun hotModels(
+        @Query("q") q: String?,
+        @Query("vendor") vendor: String?,
+        @Query("sort") sort: String,
+        @Query("limit") limit: Int = 30
+    ): ApiResult<List<ModelBenchmarkRow>>
+
+    /** 归一后的厂商列表（对比页「按公司」，重点厂商置顶） */
+    @GET("hot/vendors")
+    suspend fun hotVendors(): ApiResult<List<Vendor>>
+
+    /** keys 重复查询参数（Spring @RequestParam List<String> 解析） */
+    @GET("hot/models/compare")
+    suspend fun hotCompare(@Query("keys") keys: List<String>): ApiResult<ModelCompare>
+
+    @GET("hot/leaderboards/trend")
+    suspend fun hotLeaderboardTrend(
+        @Query("modality") modality: String,
+        @Query("days") days: Int = 30,
+        @Query("top") top: Int = 5
+    ): ApiResult<LeaderboardTrend>
 }

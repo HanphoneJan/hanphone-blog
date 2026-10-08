@@ -11,11 +11,17 @@ import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
 import com.hanphone.blog.data.model.FriendLink
+import com.hanphone.blog.data.model.HotFeedItem
+import com.hanphone.blog.data.model.HotOverview
+import com.hanphone.blog.data.model.HotSourceStatus
+import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Message
+import com.hanphone.blog.data.model.ModelLeaderboard
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type as BlogType
+import com.hanphone.blog.data.model.Vendor
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -150,6 +156,35 @@ object ContentStore {
     private val docListType: Type = Types.newParameterizedType(List::class.java, Doc::class.java)
     suspend fun readDocs(): List<Doc>? = read("docs.json", docListType)
     suspend fun writeDocs(items: List<Doc>) = write("docs.json", docListType, items)
+
+    // ===== 热点聚合（洞察）=====
+    suspend fun readHotOverview(): HotOverview? = read("hot_overview.json", HotOverview::class.java)
+    suspend fun writeHotOverview(v: HotOverview) = write("hot_overview.json", HotOverview::class.java, v)
+
+    private val hotFeedsType: Type = Types.newParameterizedType(
+        Map::class.java, String::class.java,
+        Types.newParameterizedType(List::class.java, HotFeedItem::class.java)
+    )
+    suspend fun readHotFeeds(): Map<String, List<HotFeedItem>>? = read("hot_feeds.json", hotFeedsType)
+    suspend fun writeHotFeeds(v: Map<String, List<HotFeedItem>>) = write("hot_feeds.json", hotFeedsType, v)
+
+    private val hotSourcesType: Type = Types.newParameterizedType(List::class.java, HotSourceStatus::class.java)
+    suspend fun readHotSources(): List<HotSourceStatus>? = read("hot_sources.json", hotSourcesType)
+    suspend fun writeHotSources(v: List<HotSourceStatus>) = write("hot_sources.json", hotSourcesType, v)
+
+    private val hotBenchmarksType: Type = Types.newParameterizedType(List::class.java, BenchmarkMeta::class.java)
+    suspend fun readHotBenchmarks(): List<BenchmarkMeta>? = read("hot_benchmarks.json", hotBenchmarksType)
+    suspend fun writeHotBenchmarks(v: List<BenchmarkMeta>) = write("hot_benchmarks.json", hotBenchmarksType, v)
+
+    private val hotVendorsType: Type = Types.newParameterizedType(List::class.java, Vendor::class.java)
+    suspend fun readHotVendors(): List<Vendor>? = read("hot_vendors.json", hotVendorsType)
+    suspend fun writeHotVendors(v: List<Vendor>) = write("hot_vendors.json", hotVendorsType, v)
+
+    private val hotLeaderboardsType: Type = Types.newParameterizedType(
+        Map::class.java, String::class.java, ModelLeaderboard::class.java
+    )
+    suspend fun readHotLeaderboards(): Map<String, ModelLeaderboard>? = read("hot_leaderboards.json", hotLeaderboardsType)
+    suspend fun writeHotLeaderboards(v: Map<String, ModelLeaderboard>) = write("hot_leaderboards.json", hotLeaderboardsType, v)
 
     // ===== 聊天（消息页本地缓存：首进秒显历史，连接在后台刷新）=====
     private val publicChatType: Type = Types.newParameterizedType(List::class.java, PublicChatMessage::class.java)

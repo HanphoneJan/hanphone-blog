@@ -43,6 +43,7 @@ ui/
   friendlinks/FriendLinksViewModel.kt  search/SearchViewModel.kt
   projects/ProjectsScreen.kt + ProjectsViewModel.kt  项目页（/projects，筛选分组卡片）
   docs/DocsScreen.kt + DocsViewModel.kt         文库页（docNamespace 文件夹树/搜索/类型筛选）
+  hot/HotScreen.kt + HotViewModel.kt             热点聚合（对标 web /insight：热点流/模型榜单/综合对比；对比支持分享链接）
   docs/DocMarkdownScreen.kt                     文库 MD 预览（拉文件服务原文 → Markdown 渲染）
   webview/WebViewScreen.kt      通用 WebView（项目链接 loadUrl / 文库 HTML 文档 fetch+loadDataWithBaseURL；
                                进度条/返回/浏览器外开；主框架加载失败显示「重试/在浏览器打开」错误层）
@@ -131,7 +132,10 @@ ui/
 - **notification toast 过滤**：服务端每次连接都会发 `notification:"认证成功，已连接到聊天服务器"`（server.ts:519），已在 `ChatSocket` 源头过滤（`startsWith("认证成功")` 不进入 notice），避免每次进消息页/重连都弹认证成功 toast；其余错误/操作类 notification 仍会保留提示。
 
 ### 我的 / 设置
-- 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（照片墙/项目/文库/留言板/友链/设置）**；关于信息已移入设置页。
+- 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（热点聚合/项目/文库/照片墙/留言板/友链/设置）**；关于信息已移入设置页。
+- **热点聚合入口**（「我的」→ 更多）：原生页 `ui/hot/`（对标 web `/insight`）。三视图：**热点**（分类 chips 全部/GitHub 热门/HF 趋势/AI 要闻 + 中文优先卡片，点击开链接）、**榜单**（模态 chips，**高密度行**：排名/变化 + 模型 + 厂商·价格·上下文 + 各榜单分数，细分割线分隔 + Canvas 手绘近 30 天折线趋势）、**对比**（紧凑工具栏 + 底部弹层选择器 **按榜单 / 按公司 / 搜索**，可选模型全部来自 `/hot/leaderboards` 与 `/hot/models`，最多 6 个；进入即默认选当前榜单前 2 名，结果表从主体开始；「指标 × 模型」逐行高亮最优值；分享走系统 Intent → `hanphone.cn/insight/?view=compare&models=...`）。公开接口 `/hot/*`（无需登录），三层缓存（`hot_*.json`）并入数据管理「热点聚合（洞察）」分项。
+- ⚠️ **不再使用写死的「精选代表模型」**：web/App 的选择器都改为从榜单实时构建（按榜单/按公司/搜索）。后端 `FeaturedModelRegistry` 与 `/hot/models/featured` 已**彻底删除**（`FeaturedGroupVO`/`FeaturedModelVO` 一并移除）。
+- **厂商归一（后端 `hot/model/VendorRegistry`）**：`/hot/vendors` 返回归一后的公司（大小写/连字符/子品牌别名合并，如 Alibaba/Alibaba-ATH/Qwen → Alibaba、z-ai/Z.ai/Z-AI → Z.ai、Mistral/mistralai、SpaceXAI/x-ai → xAI、`~` 前缀剥离）；**重点厂商置顶**：Anthropic、DeepSeek、OpenAI、Kimi、Alibaba、Z.ai、Google、Xiaomi、ByteDance。`/hot/models?vendor=&sort=newest|name|price|context&limit=` 支持按公司/关键词取模型并排序（默认越新越前）；模型行的 `vendor` 也已归一显示。
 - **照片墙入口**（「我的」→ 更多）：用通用 WebView 打开 `https://hanphone.cn/atlas/`（nginx alias 托管，页面自带瀑布流/便利贴/时间线展示与筛选），路由复用 `webview?url=...`（`App.kt` 的 `onOpenPhotoWall`）。登录态由 `core/AuthBridge.kt` 注入，与 App 共用（详见坑点 15）。
 - **照片墙页面有独立加载态**：`Atlas.vue` 早期只有空态没有加载态，`atlasData` 初始 `[]` 导致接口返回前先闪「没有符合筛选条件的照片」。App 里必现——每次进入都是全新页面实例，而 WebView 的 `sessionStorage.atlasWelcomeShown` 会持久化，第二次起欢迎页被跳过，没有东西遮挡这段空窗（`/show` 冷启动实测约 2.3s）。已加 `isLoading`（初值 `true`，只在 `finally` 置 `false`）。**WebView 侧改这类「异步数据 vs 空态」时注意同样的坑**。
 - **为什么 App 里没有开场动画**：照片墙的欢迎页由 `sessionStorage.atlasWelcomeShown` 控制，`domStorageEnabled = true` 让它在 WebView 里**跨会话持久化**，所以第二次起直接跳过欢迎页（用户希望保持这个行为）。首次安装/清数据后仍会看到 3s 欢迎页。
@@ -217,12 +221,16 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 
 16. **Android WebView 里 CSS 视口单位（`vh`/`dvh`/`svh`/`lvh`）会被算成 0（重大，真机实测）**：WebView 首次布局高度为 0，之后尺寸变化不会重算这些单位，但 `window.innerHeight` / `visualViewport.height` 是正确的（684）。后果：照片墙侧边栏 `height: 100vh` → 高度 0、**完全不可见**；三种视图容器 `min-height: 100vh` → 加载中（还没有照片）时背景层撑不开、下方露白。**不要在 App 内的 WebView 页面依赖 `vh`**。修复：`apps/photo-wall/src/main.ts` 用 `window.innerHeight` 写入 `--app-vh`（并在 resize/orientationchange/rAF 时重设），CSS 里 `100vh` 一律写成 `var(--app-vh, 100vh)`（普通浏览器没有这个 bug，走回退值）。排查「某个层高度不对/不可见」先量 `getComputedStyle` 与 `getBoundingClientRect`。
 
+17. **Moshi 自定义 Date 适配器必须放行 JSON `null`（重大，热点聚合真机暴露）**：`ApiClient.BlogDateAdapter.fromJson` 原来只判 `NUMBER`，否则走 `reader.nextString()`；遇到**显式 `null`**（热点聚合的 `publishedAt` / `releaseDate` / 总览 `topItems` 里的 hf 项）会在 NULL token 上抛 `JsonDataException`。由于所有接口都被 `runCatching` 包裹，异常被**静默吞掉** → 表现为「整包数据凭空消失」（HF 趋势 0 条、总览信息行不渲染、text/agent 等模态榜单为空），**既不崩溃也无日志**，极难排查。已在适配器开头判 `JsonReader.Token.NULL` 返回 null。教训：自定义 Moshi 适配器要么自己 `nullSafe()`，要么显式处理 NULL；**解析失败一定要留日志**，别让 `runCatching` 无声吞掉。
+    - 连带坑：**缓存了「部分成功」的结果时，不能用 `isEmpty()` 判断已加载**。上一版只解析成功部分模态并落盘 `hot_leaderboards.json`，重进页面 `leaderboards` 非空 → 跳过重拉，缺失模态永远空。已改为「缺哪个补哪个」（`size < MODALITIES.size` 就重拉，且新结果**合并**进旧 map，失败模态保留旧数据）。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
 - ✅ 项目页 + 文库页（WebView 内开 HTML、fetch+loadDataWithBaseURL 渲染）、通用 WebView、文档/项目/文库/聊天(Chat 历史+私信+用户列表) 本地缓存、数据管理（分项清除 + Coil 图片缓存）、账号编辑（邮箱+验证码+管理员免验、密码 md5）、体验打磨（去认证成功 toast、@用户名防抖、随笔秒显、下拉圈圈门控）、版本 v1.0.0、App 图标与 PWA maskable 图标一致（ic_launcher_fg 复刻 WebAPK 52% 比例 + ic_blog 占位）。
 - ✅ 随笔图片缩略图（九宫格走 `displayUrl()`，详情页走 `originalUrl()`；21 张图 74.65 MB → 0.75 MB，100×）、修掉 `urlType != "video"` 大小写导致视频被当图片加载的 bug。详见 `docs/photo-wall-image-optimization.md`。
 - ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
+- ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

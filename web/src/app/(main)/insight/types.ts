@@ -77,23 +77,17 @@ export interface ModelLeaderboard {
   rows: ModelBenchmarkRow[]
 }
 
-export interface FeaturedModel {
-  modelKey: string
-  displayName: string
-  vendor?: string | null
-  modality?: string | null
-}
-
-export interface FeaturedGroup {
-  key: string
-  label: string
-  modality?: string | null
-  models: FeaturedModel[]
-}
-
 export interface ModelCompare {
   models: ModelBenchmarkRow[]
   benchmarks: BenchmarkMeta[]
+}
+
+export interface Vendor {
+  key: string
+  label: string
+  modelCount: number
+  focused: boolean
+  priority: number
 }
 
 export interface TrendPoint {

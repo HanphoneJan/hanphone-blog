@@ -19,12 +19,12 @@ import BgOverlay from '@/app/(main)/components/BgOverlay'
 import dynamic from 'next/dynamic'
 import type {
   BenchmarkMeta,
-  FeaturedGroup,
   HotFeedItem,
   HotOverview,
   HotSourceStatus,
   ModelBenchmarkRow,
   ModelLeaderboard,
+  Vendor,
 } from './types'
 
 // 对比面板依赖 echarts，按需加载，避免进入首屏包
@@ -49,7 +49,7 @@ interface InsightClientProps {
   initialSources: HotSourceStatus[]
   initialLeaderboards: Record<string, ModelLeaderboard>
   initialBenchmarks: BenchmarkMeta[]
-  initialFeatured: FeaturedGroup[]
+  initialVendors: Vendor[]
 }
 
 const CATEGORY_ORDER = ['github', 'hf', 'ai-news']
@@ -129,7 +129,7 @@ export default function InsightClient({
   initialSources,
   initialLeaderboards,
   initialBenchmarks,
-  initialFeatured,
+  initialVendors,
 }: InsightClientProps) {
   const [view, setView] = useState<'feed' | 'leaderboard' | 'compare'>('feed')
   const [active, setActive] = useState<string>('all')
@@ -494,7 +494,7 @@ export default function InsightClient({
         ) : view === 'leaderboard' ? (
           renderLeaderboard()
         ) : (
-          <ComparePanel featured={initialFeatured} />
+          <ComparePanel leaderboards={initialLeaderboards} vendors={initialVendors} />
         )}
 
         {/* 信源说明 */}

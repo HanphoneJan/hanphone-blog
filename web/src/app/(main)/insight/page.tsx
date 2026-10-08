@@ -3,11 +3,11 @@ import { API_CODE } from '@/lib/constants'
 import InsightClient from './InsightClient'
 import type {
   BenchmarkMeta,
-  FeaturedGroup,
   HotFeedItem,
   HotOverview,
   HotSourceStatus,
   ModelLeaderboard,
+  Vendor,
 } from './types'
 
 // 数据每日更新且依赖外部信源：按请求实时渲染，避免构建期/缓存导致的空数据
@@ -32,7 +32,7 @@ const HOT = {
   LEADERBOARDS: (modality: string) =>
     `${API}/hot/leaderboards?modality=${encodeURIComponent(modality)}`,
   BENCHMARKS: `${API}/hot/benchmarks`,
-  FEATURED: `${API}/hot/models/featured`,
+  VENDORS: `${API}/hot/vendors`,
 }
 
 export const metadata = createMetadata(
@@ -129,28 +129,28 @@ async function fetchBenchmarks(): Promise<BenchmarkMeta[]> {
   }
 }
 
-async function fetchFeatured(): Promise<FeaturedGroup[]> {
+async function fetchVendors(): Promise<Vendor[]> {
   try {
-    const res = await fetch(HOT.FEATURED, { next: { revalidate: 300 } })
+    const res = await fetch(HOT.VENDORS, { next: { revalidate: 300 } })
     const data = await res.json()
     if (data.code === API_CODE.SUCCESS && Array.isArray(data.data)) {
-      return data.data as FeaturedGroup[]
+      return data.data as Vendor[]
     }
     return []
   } catch (error) {
-    console.error('Failed to fetch featured models:', error)
+    console.error('Failed to fetch vendors:', error)
     return []
   }
 }
 
 export default async function InsightPage() {
-  const [overview, feeds, sources, leaderboards, benchmarks, featured] = await Promise.all([
+  const [overview, feeds, sources, leaderboards, benchmarks, vendors] = await Promise.all([
     fetchOverview(),
     fetchFeeds(),
     fetchSources(),
     fetchLeaderboards(),
     fetchBenchmarks(),
-    fetchFeatured(),
+    fetchVendors(),
   ])
 
   return (
@@ -160,7 +160,7 @@ export default async function InsightPage() {
       initialSources={sources}
       initialLeaderboards={leaderboards}
       initialBenchmarks={benchmarks}
-      initialFeatured={featured}
+      initialVendors={vendors}
     />
   )
 }
