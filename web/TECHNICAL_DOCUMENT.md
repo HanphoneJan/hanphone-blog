@@ -209,10 +209,11 @@ web/src/
 
 - `page.tsx` 为 **`force-dynamic`** 按请求渲染（数据每日更新，避免构建期预渲染/缓存导致空数据）。服务端取数优先使用 `API_INTERNAL_BASE_URL`（**内网直连后端 8090，无 `/api` 前缀**），未配置时回落到 `NEXT_PUBLIC_API_BASE_URL`。
 - 同目录组件：
-  - `InsightClient.tsx` — 热点 / 榜单 / 对比 三视图、分区与模态切换、趋势图容器
-  - `ComparePanel.tsx` — 代表模型预设 + 搜索添加、能力雷达、价格-能力散点、明细表、**导出图片**（`html-to-image`）与**分享链接**（`?view=compare&models=...`）
+  - `InsightClient.tsx` — 热点 / 榜单 / 对比 三视图、分区与模态切换、趋势图容器；页脚「数据来源」为**换行 chips**
+  - `ComparePanel.tsx` — **结果优先**布局 + 紧凑工具栏；选择器为弹层（**按榜单 / 按公司 / 搜索**，数据来自 `/hot/leaderboards`、`/hot/vendors`、`/hot/models?vendor=&sort=newest|name|price|context`），**默认预置六家代表厂商各自最强**（DeepSeek / Z.ai / Kimi / Anthropic / OpenAI / Google，取自文本榜排序）；能力雷达、价格-能力散点、明细表（只列至少一个模型有分的口径）、**导出图片**（`html-to-image`）与**分享链接**（`?view=compare&models=...`）
   - `LeaderboardTrend.tsx` — 榜单近 30 天分数趋势折线（echarts 按需加载）
-- 后台 `/admin/insight`（导航「聚合数据」）：**异步触发采集**（`POST /admin/hot/collect` + 轮询 `GET /admin/hot/status`）、信源健康、采集记录、**AI 摘要配置**（URL / Key / Model / 自定义 Header，如 `x-opencode-session`）。
+- 后端接口：`/hot/models` 支持 `vendor`+`sort`，`/hot/vendors` 返回归一后的厂商（重点厂商置顶）；写死的 `/hot/models/featured` 已移除。
+- 后台 `/admin/insight`（导航「聚合数据」）：**异步触发采集**（`POST /admin/hot/collect` + 轮询 `GET /admin/hot/status`）、信源健康、采集记录、**AI 摘要配置**（URL / Key / Model / 自定义 Header；OpenAI 兼容接口，如 opencode zen 用 `https://opencode.ai/zen/v1`，推理模型需给足 `max_tokens`）。
 - 页面标题统一由 `createMetadata(title, desc, { path, keywords })` 生成，形如 `{title} | 云林有风 | 寒枫的博客`。
 
 ---

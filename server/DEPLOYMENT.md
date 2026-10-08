@@ -82,13 +82,20 @@ sudo systemctl enable blog
 
 ### 5. 升级（重新部署）
 
-```bash
-# 1. 上传新 jar 覆盖旧文件
-scp target/blog-3.0.jar <user>@<server>:/home/hanphone/server_blog/blog-3.0.jar
+> ⚠️ **不要用 `scp` 原地覆盖正在运行的 jar**：`scp` 是「截断 + 写入」，运行中的 JVM 之后再去加载尚未加载的类时会报 `NoClassDefFoundError`（曾导致线上 API 卡死）。**先传临时文件，再原子 `mv` 替换**（`mv` 是 rename，运行中的进程仍持有旧 inode）。
 
-# 2. 重启服务
-sudo systemctl restart blog
+```bash
+# 1) 上传到临时文件
+scp target/blog-3.0.jar <user>@<server>:/home/hanphone/server_blog/blog-3.0.jar.new
+
+# 2) 原子替换（不影响运行中的进程）
+ssh <user>@<server> 'mv -f /home/hanphone/server_blog/blog-3.0.jar.new /home/hanphone/server_blog/blog-3.0.jar'
+
+# 3) 重启服务
+ssh <user>@<server> 'sudo systemctl restart blog'
 ```
+
+回滚：升级前先备份 `cp -a blog-3.0.jar blog-3.0.jar.bak`，出问题用备份覆盖 + 重启即可。
 
 ### 6. 查看日志
 
@@ -124,6 +131,42 @@ sudo crontab -e
 > 参数说明见脚本头部注释（`-p` 可选默认脚本目录，`-s` 可选，`-n` 预演不落库）。所有路径/服务名由调用方传入，脚本本身不包含任何部署信息。
 >
 > 排查：若执行报 `sudo: update-dbip.sh: command not found`，是脚本不在 PATH 且未加执行权限。用绝对路径执行 `sudo /home/hanphone/server_blog/update-dbip.sh -s blog`，并先 `chmod +x`。
+
+### 8. 服务器侧代理（供 LMArena 等被墙信源采集）
+
+生产服务器在国内，`datasets-server.huggingface.co` / `lmarena.ai` 直连不可达。方案：在服务器本机跑一个轻量代理客户端（mihomo / clash-meta），采集器通过 `HOT_PROXY` 走它；**只有 LMArena 走代理，其它信源直连**。
+
+```bash
+# 1) 下载 mihomo（GitHub 直连被墙，用镜像）
+mkdir -p ~/mihomo && cd ~/mihomo
+curl -sL -o mihomo.gz "https://gh-proxy.com/https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-linux-amd64-compatible-v1.19.32.gz"
+gunzip -f mihomo.gz && chmod +x mihomo
+
+# 2) 用机场/订阅节点生成最小 config.yaml：
+#    mixed-port: 7890, allow-lan: false, bind-address: 127.0.0.1, rules: ['MATCH,自动选择']
+#    （仅本机可用；节点信息只放服务器，不要入库）
+
+# 3) 后台运行 + 保活（无 sudo，用 crontab）
+cat > ~/mihomo/start.sh <<'EOF'
+#!/bin/bash
+cd /home/hanphone/mihomo || exit 0
+if ! pgrep -f "mihomo -d" >/dev/null 2>&1; then
+  nohup ./mihomo -d /home/hanphone/mihomo -f /home/hanphone/mihomo/config.yaml >> /home/hanphone/mihomo/mihomo.log 2>&1 &
+fi
+EOF
+chmod +x ~/mihomo/start.sh
+crontab -l 2>/dev/null | { cat; echo "@reboot /home/hanphone/mihomo/start.sh"; echo "*/5 * * * * /home/hanphone/mihomo/start.sh >/dev/null 2>&1"; } | crontab -
+
+# 4) 后端 .env 打开（改完重启 blog）
+# HOT_LMARENA_ENABLED=true
+# HOT_PROXY=http://127.0.0.1:7890
+```
+
+- 验证：`curl -x http://127.0.0.1:7890 "https://datasets-server.huggingface.co/splits?dataset=lmarena-ai%2Fleaderboard-dataset"` 应 200。
+- 代理挂了只会导致 **LMArena 采集失败**，其它信源不受影响。
+- 注意：`HOT_PROXY` 目前只被 LMArena 采集器使用（`HttpJsonSupport.getJsonViaProxy`）。
+
+---
 
 ## 方式二：Docker Compose 部署
 

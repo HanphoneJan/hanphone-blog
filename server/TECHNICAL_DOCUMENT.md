@@ -224,8 +224,9 @@ com.example.blog.hot/
 │   └── AiNewsCollector.java         # AI 要闻（量子位 / TechCrunch / Ars / HN，RSS）
 ├── model/                           # 模型榜单框架
 │   ├── ModelLeaderboardCollector.java / ModelLeaderboardService.java
-│   ├── ModelNormalizer.java         # 模型身份归一（跨源合并）
-│   ├── BenchmarkRegistry.java       # 榜单口径注册
+│   ├── ModelNormalizer.java         # 模型身份归一（跨源合并 + 变体后缀去除）
+│   ├── VendorRegistry.java          # 厂商归一 + 重点厂商排序
+│   ├── BenchmarkRegistry.java       # 榜单口径注册（含各模态主榜）
 │   └── collector/                   # ArtificialAnalysis / LmArena / Mteb / SweBench / TerminalBench / VBench / OpenRouter
 ├── summary/                         # AI 摘要（HotSummaryService + HotSummaryConfigService，配置存库）
 ├── HotCollectService.java / HotCollectScheduler.java   # 每日 cron（默认 03:30）采集
@@ -241,7 +242,7 @@ com.example.blog.hot/
 
 ### 公开接口
 
-`/hot/overview`、`/hot/feed`、`/hot/sources`、`/hot/leaderboards`、`/hot/leaderboards/trend`、`/hot/benchmarks`、`/hot/models`、`/hot/models/featured`、`/hot/models/compare`、`/hot/models/{key}`、`/hot/models/{key}/trend`。
+`/hot/overview`、`/hot/feed`、`/hot/sources`、`/hot/leaderboards`、`/hot/leaderboards/trend`、`/hot/benchmarks`、`/hot/models`（`q`/`vendor`/`sort=newest|name|price|context`/`limit`）、`/hot/vendors`（归一后的厂商，重点厂商置顶）、`/hot/models/compare`、`/hot/models/{key}`、`/hot/models/{key}/trend`。
 
 ### 关键配置项（`server/.env`）
 
@@ -250,9 +251,23 @@ com.example.blog.hot/
 | `GITHUB_TOKEN` | GitHub 采集配额（建议配置） |
 | `AA_API_KEY` | Artificial Analysis 免费 key（LLM/图像/视频/语音竞技场） |
 | `HF_ENDPOINT` | Hugging Face Hub 地址（国内可设 `https://hf-mirror.com`） |
-| `HOT_LMARENA_ENABLED` | LMArena 采集开关（datasets-server 不可达时设 false） |
+| `HOT_LMARENA_ENABLED` | LMArena 采集开关（数据源 `datasets-server.huggingface.co` 国内不可达，需配合 `HOT_PROXY` 才可用） |
+| `HOT_PROXY` | 采集器可选代理（如 `http://127.0.0.1:7890`）；目前仅 LMArena 走它，其他信源直连 |
 | `HOT_COLLECT_ENABLED` / `HOT_COLLECT_CRON` | 采集开关与 cron |
 | `HOT_SUMMARY_*` | AI 摘要默认值（也可在后台「聚合数据」配置 URL/Key/Model/Header） |
+
+### 经验与坑（务必遵守）
+
+- **榜单主榜口径**：`BenchmarkRegistry.primaryKey` 决定每个模态的排序依据。`coding` 用 **AA 代码指数（`aa_coding`）**，不要用 SWE-bench Verified——后者是提交制、覆盖窄且滞后，会把列表顶成 Doubao/MiniMax 等；AA 代码指数覆盖 195+ 且紧跟前沿。
+- **名次用排序位置**：`getLeaderboard` 的名次 = 排序后的位置（信源自带 `rank` 是各源各自口径、不连续，不能直接展示）；名次变化按上一快照同口径排序的位置计算。
+- **模型身份归一**（`ModelNormalizer`）：按 `vendor:slug(名)` 合并，并会去掉 `-high/-low/-max/-medium/-thinking/-reasoning/-non/-default/-fallback` 等**变体后缀**（LMArena 把 `…(High)` 写成 `…-high`，靠这个与 AA 合并）。新增信源时注意其命名风格，避免产生重复实体。
+- **采集器去重 / 过滤泛指**：SWE-bench 同一模型多次提交要取最高分并跳过 `Multiple`；MTEB 跳过 `baseline`/`random-encoder` 等基线条目。
+- **RestTemplate 会二次编码已编码查询串**：`datasets-server` 的 `dataset=lmarena-ai%2F…` 若用 `getJson(String)` 会被编成 `%252F` → 上游 500。路径含已编码字符（`%2F` 等）时一律用 `HttpJsonSupport.getJson(URI)` / `getJsonViaProxy(String)`（内部走 `URI.create`）。
+- **AI 摘要（OpenAI 兼容接口）**：
+  - baseUrl 要用 **OpenAI 兼容路径**；opencode zen 是 `https://opencode.ai/zen/v1`（`/zen/go/v1` 需要有效的 `x-opencode-session`，否则 401/400）。
+  - 推理模型（如 `deepseek-v4.1-flash`）`max_tokens` 要给足（当前 20000），否则思维链会吃光 token 导致 `content` 为空、判定失败。
+  - 配置存 `hot_setting`（key：`summary.baseUrl` / `apiKey` / `model` / `headers`），**每次请求实时读库**，改完即时生效；后台保存空值 = 不修改。
+  - 排障接口：`GET/PUT /admin/hot/settings/summary`、`POST /admin/hot/settings/summary/test`。
 
 ---
 

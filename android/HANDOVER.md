@@ -133,7 +133,8 @@ ui/
 
 ### 我的 / 设置
 - 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（热点聚合/项目/文库/照片墙/留言板/友链/设置）**；关于信息已移入设置页。
-- **热点聚合入口**（「我的」→ 更多）：原生页 `ui/hot/`（对标 web `/insight`）。三视图：**热点**（分类 chips 全部/GitHub 热门/HF 趋势/AI 要闻 + 中文优先卡片，点击开链接）、**榜单**（模态 chips，**高密度行**：排名/变化 + 模型 + 厂商·价格·上下文 + 各榜单分数，细分割线分隔 + Canvas 手绘近 30 天折线趋势）、**对比**（紧凑工具栏 + 底部弹层选择器 **按榜单 / 按公司 / 搜索**，可选模型全部来自 `/hot/leaderboards` 与 `/hot/models`，最多 6 个；进入即默认选当前榜单前 2 名，结果表从主体开始；「指标 × 模型」逐行高亮最优值；分享走系统 Intent → `hanphone.cn/insight/?view=compare&models=...`）。公开接口 `/hot/*`（无需登录），三层缓存（`hot_*.json`）并入数据管理「热点聚合（洞察）」分项。
+- **热点页（入口「我的 → 更多 → 热点」，页面标题也已是「热点」，不再叫「热点聚合」）**：原生页 `ui/hot/`（对标 web `/insight`）。三视图：**热点**（分类 chips 全部/GitHub 热门/HF 趋势/AI 要闻 + 中文优先卡片，点击开链接）、**榜单**（模态 chips，**高密度行**：排名/变化 + 模型 + 厂商·价格·上下文 + 各榜单分数，细分割线分隔 + Canvas 手绘近 30 天折线趋势；**排名=排序位置**，无排名时用序号兜底；**每个模态独立 `LazyListState`**，切换领域从头开始、不带着旧滚动位置跳到同名模型）、**对比**（紧凑工具栏 + 底部弹层选择器 **按榜单 / 按公司 / 搜索**，可选模型全部来自 `/hot/leaderboards` 与 `/hot/models`，最多 6 个；**默认选六家代表厂商各自最强**：DeepSeek/Z.ai(Kimi 之外)/Kimi/Anthropic/OpenAI/Google（取自文本榜 AA 智能指数排序）；「指标 × 模型」逐行高亮最优值、只显示至少一个模型有分的口径；分享走系统 Intent → `hanphone.cn/insight/?view=compare&models=...`）。公开接口 `/hot/*`（无需登录），三层缓存（`hot_*.json`）并入数据管理「热点聚合（洞察）」分项。
+- **设置 → 检查更新**：弹窗的 Release 说明用 `MarkdownContent` 渲染（原先是纯文本，Markdown 不显示）；正文高亮/标题正常。
 - ⚠️ **不再使用写死的「精选代表模型」**：web/App 的选择器都改为从榜单实时构建（按榜单/按公司/搜索）。后端 `FeaturedModelRegistry` 与 `/hot/models/featured` 已**彻底删除**（`FeaturedGroupVO`/`FeaturedModelVO` 一并移除）。
 - **厂商归一（后端 `hot/model/VendorRegistry`）**：`/hot/vendors` 返回归一后的公司（大小写/连字符/子品牌别名合并，如 Alibaba/Alibaba-ATH/Qwen → Alibaba、z-ai/Z.ai/Z-AI → Z.ai、Mistral/mistralai、SpaceXAI/x-ai → xAI、`~` 前缀剥离）；**重点厂商置顶**：Anthropic、DeepSeek、OpenAI、Kimi、Alibaba、Z.ai、Google、Xiaomi、ByteDance。`/hot/models?vendor=&sort=newest|name|price|context&limit=` 支持按公司/关键词取模型并排序（默认越新越前）；模型行的 `vendor` 也已归一显示。
 - **照片墙入口**（「我的」→ 更多）：用通用 WebView 打开 `https://hanphone.cn/atlas/`（nginx alias 托管，页面自带瀑布流/便利贴/时间线展示与筛选），路由复用 `webview?url=...`（`App.kt` 的 `onOpenPhotoWall`）。登录态由 `core/AuthBridge.kt` 注入，与 App 共用（详见坑点 15）。
@@ -230,7 +231,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ 项目页 + 文库页（WebView 内开 HTML、fetch+loadDataWithBaseURL 渲染）、通用 WebView、文档/项目/文库/聊天(Chat 历史+私信+用户列表) 本地缓存、数据管理（分项清除 + Coil 图片缓存）、账号编辑（邮箱+验证码+管理员免验、密码 md5）、体验打磨（去认证成功 toast、@用户名防抖、随笔秒显、下拉圈圈门控）、版本 v1.0.0、App 图标与 PWA maskable 图标一致（ic_launcher_fg 复刻 WebAPK 52% 比例 + ic_blog 占位）。
 - ✅ 随笔图片缩略图（九宫格走 `displayUrl()`，详情页走 `originalUrl()`；21 张图 74.65 MB → 0.75 MB，100×）、修掉 `urlType != "video"` 大小写导致视频被当图片加载的 bug。详见 `docs/photo-wall-image-optimization.md`。
 - ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
-- ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
+- ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。已随 **v1.0.1** 发布（`hanphone-1.0.1-android.apk`）：页面更名「热点」、榜单名次=排序位置、切换领域重置滚动、默认对比六家代表厂商、更新弹窗 Markdown 渲染。后端榜单改用 AA 代码指数排序 + 模型名归一（变体后缀）+ LMArena 经服务器代理采集（见 server 文档）。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

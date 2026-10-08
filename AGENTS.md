@@ -87,7 +87,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - Backend env: copy `server/env.example` → `server/.env`
 - Internal service auth: `INTERNAL_API_KEY` in backend `.env` for service-to-service calls (e.g., hanphone-chat → blog API)
 - Visitor IP geo stats: `GEO_DB_PATH` in backend `.env` points to a **DB-IP City Lite** mmdb file (globally covers IP→country/region; missing file degrades to "unknown region"). Auto-update monthly via `server/scripts/update-dbip.sh` (see `server/DEPLOYMENT.md` §7). Frontend world map displays country names in Chinese via `web/src/lib/countryZh.ts` mapping.
-- 热点聚合：`GITHUB_TOKEN`（GitHub 配额）、`AA_API_KEY`（Artificial Analysis 免费 key）、`HF_ENDPOINT`（国内可设 `https://hf-mirror.com`）、`HOT_LMARENA_ENABLED`、`HOT_COLLECT_ENABLED` / `HOT_COLLECT_CRON`；AI 摘要可用 `HOT_SUMMARY_*` 或在后台「聚合数据」配置 URL/Key/Model/自定义 Header。前端服务端取内网后端用 `API_INTERNAL_BASE_URL`（**直连 8090，无 `/api` 前缀**，nginx 才加 `/api`）。
+- 热点聚合：`GITHUB_TOKEN`（GitHub 配额）、`AA_API_KEY`（Artificial Analysis 免费 key）、`HF_ENDPOINT`（国内可设 `https://hf-mirror.com`）、`HOT_LMARENA_ENABLED`、`HOT_PROXY`（服务器侧代理，如 `http://127.0.0.1:7890`；**仅 LMArena 走它**，因为 `datasets-server.huggingface.co` 国内直连不可达——服务器跑 mihomo 见 server/DEPLOYMENT.md §8）、`HOT_COLLECT_ENABLED` / `HOT_COLLECT_CRON`；AI 摘要可用 `HOT_SUMMARY_*` 或在后台「聚合数据」配置 URL/Key/Model/自定义 Header（**注意**：opencode zen 的 OpenAI 兼容路径是 `/zen/v1` 不是 `/zen/go/v1`；推理模型 `max_tokens` 要给足否则空摘要）。前端服务端取内网后端用 `API_INTERNAL_BASE_URL`（**直连 8090，无 `/api` 前缀**，nginx 才加 `/api`）。榜单口径/归一/采集器的坑见 server/TECHNICAL_DOCUMENT.md「热点聚合」→「经验与坑」。
 - 网易云音乐 Cookie 自动刷新：外部 cron 调用 `GET /next-api/cron/refresh-netease-cookie/`（须带尾斜杠 + `x-internal-key`），见 `web/CRON_SETUP.md`。
 
 ## CI (GitHub Actions)
