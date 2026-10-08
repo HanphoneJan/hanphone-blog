@@ -97,7 +97,8 @@ public class ModelNormalizer {
         }
         nameSlug = stripVariantSuffix(nameSlug);
         // 厂商也用 VendorRegistry 归一，避免同一公司不同写法（moonshot/Kimi、zai/z-ai）分裂成不同实体
-        String vendorSlug = slug(vendorRegistry.canonical(vendor));
+        String canonicalVendor = vendorRegistry.label(vendorRegistry.key(vendor));
+        String vendorSlug = slug(canonicalVendor != null ? canonicalVendor : vendor);
         return vendorSlug.isEmpty() ? nameSlug : vendorSlug + ":" + nameSlug;
     }
 
