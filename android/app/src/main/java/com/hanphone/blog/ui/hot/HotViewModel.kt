@@ -51,6 +51,9 @@ class HotViewModel @Inject constructor(
     companion object {
         val FEED_CATEGORIES = listOf("github", "hf", "ai-news")
         val MODALITIES = listOf("text", "coding", "agent", "embedding", "image", "video", "speech")
+
+        /** 对比页默认预置的六家代表厂商（各取当前最强模型） */
+        val SEED_VENDORS = listOf("DeepSeek", "Z.ai", "Kimi", "Anthropic", "OpenAI", "Google")
         const val MAX_COMPARE = 6
         const val FEED_LIMIT = 30
     }
@@ -384,13 +387,15 @@ class HotViewModel @Inject constructor(
         loadCompare()
     }
 
-    /** 首次进入对比且未选模型时，默认取当前模态榜单前 2 名，保证结果区一进入就是主体内容 */
+    /** 首次进入对比且未选模型时，默认选六家代表厂商各自最强（文本榜 aa_intelligence 排序）的模型 */
     private fun seedCompareIfEmpty() {
         if (selected.isNotEmpty() || compare != null) return
-        val rows = leaderboards[modality]?.rows?.takeIf { it.isNotEmpty() }
-            ?: MODALITIES.firstNotNullOfOrNull { leaderboards[it]?.rows?.takeIf { r -> r.isNotEmpty() } }
-            ?: return
-        selected = rows.take(2).map { SelectedModel(it.modelKey, it.displayName, it.vendor) }
+        val rows = leaderboards["text"]?.rows?.takeIf { it.isNotEmpty() }
+            ?: leaderboards.values.flatMap { it.rows }
+        if (rows.isEmpty()) return
+        val picked = SEED_VENDORS.mapNotNull { vendor -> rows.firstOrNull { it.vendor == vendor } }
+        if (picked.isEmpty()) return
+        selected = picked.map { SelectedModel(it.modelKey, it.displayName, it.vendor) }
         loadCompare()
     }
 

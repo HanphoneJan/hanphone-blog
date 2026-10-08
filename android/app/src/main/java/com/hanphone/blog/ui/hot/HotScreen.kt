@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -417,11 +418,14 @@ private fun LeaderboardTab(vm: HotViewModel, onOpenUrl: (String, String) -> Unit
             modifier = Modifier.fillMaxSize()
         ) {
             val board = vm.leaderboards[vm.modality]
+            // 每个模态独立列表状态：切换领域时从头开始，避免带着旧滚动位置跳到同名模型
+            val listState = remember(vm.modality) { LazyListState() }
             when {
                 vm.leaderboardsLoading && board == null -> LeaderboardSkeleton()
                 board == null || board.rows.isEmpty() -> EmptyBox("暂无榜单数据")
                 else -> {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(top = 2.dp, bottom = 16.dp)
                     ) {

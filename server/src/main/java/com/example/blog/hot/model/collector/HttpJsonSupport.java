@@ -59,16 +59,15 @@ public class HttpJsonSupport {
     /** 走代理（若配置了 hot.proxy）获取 JSON；未配置时等同 {@link #getJson} */
     public JsonNode getJsonViaProxy(String url, Map<String, String> headers) throws Exception {
         RestTemplate rt = proxyTemplate();
-        if (rt == restTemplate) {
-            return getJson(url, headers);
-        }
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
         httpHeaders.set(HttpHeaders.USER_AGENT, "hanphone-insight-bot");
         if (headers != null) {
             headers.forEach(httpHeaders::set);
         }
-        ResponseEntity<String> resp = rt.exchange(url, HttpMethod.GET, new HttpEntity<>(httpHeaders), String.class);
+        // 用 URI 直连，避免 RestTemplate 对已编码查询串（如 %2F）二次编码导致上游 500
+        ResponseEntity<String> resp = rt.exchange(
+                URI.create(url), HttpMethod.GET, new HttpEntity<>(httpHeaders), String.class);
         return objectMapper.readTree(resp.getBody());
     }
 

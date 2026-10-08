@@ -44,6 +44,8 @@ const MODALITY_LABELS: Record<string, string> = {
   video: '生视频',
   speech: '语音',
 }
+// 对比页默认预置的六家代表厂商（各取当前最强模型）
+const SEED_VENDORS = ['DeepSeek', 'Z.ai', 'Kimi', 'Anthropic', 'OpenAI', 'Google']
 const SORTS: Array<[string, string]> = [
   ['newest', '最新'],
   ['name', '名称'],
@@ -133,14 +135,18 @@ export default function ComparePanel({ leaderboards, vendors }: ComparePanelProp
     }
   }, [])
 
-  // 未从链接还原时，默认选当前模态榜单前 2 名，让结果区一进来就是主体内容
+  // 未从链接还原时，默认选六家代表厂商各自最强（文本榜 aa_intelligence 排序）
   useEffect(() => {
     if (seeded.current || catalog.length === 0) return
-    const rows = leaderboards[pickerModality]?.rows ?? catalog
-    if (rows.length < 2) return
+    const rows = leaderboards.text?.rows ?? catalog
+    if (rows.length === 0) return
+    const picked = SEED_VENDORS.map((v) => rows.find((r) => r.vendor === v))
+      .filter((r): r is ModelBenchmarkRow => Boolean(r))
+      .map((r) => ({ modelKey: r.modelKey, displayName: r.displayName, vendor: r.vendor }))
+    if (picked.length === 0) return
     seeded.current = true
-    setSelected(rows.slice(0, 2).map((r) => ({ modelKey: r.modelKey, displayName: r.displayName, vendor: r.vendor })))
-  }, [catalog, leaderboards, pickerModality])
+    setSelected(picked)
+  }, [catalog, leaderboards])
 
   // 对比数据回来后补全展示名
   useEffect(() => {
