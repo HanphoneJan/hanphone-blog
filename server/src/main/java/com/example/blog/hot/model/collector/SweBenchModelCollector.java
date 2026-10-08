@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -65,16 +66,17 @@ public class SweBenchModelCollector implements ModelLeaderboardCollector {
                 break;
             }
         }
-        List<ModelEntryData> out = new ArrayList<>();
         if (verified == null) {
-            return out;
+            return List.of();
         }
 
         List<JsonNode> results = new ArrayList<>();
         verified.path("results").forEach(results::add);
         results.sort(Comparator.comparingDouble((JsonNode r) -> numOrZero(r, "resolved")).reversed());
 
-        int rank = 1;
+        // 同一模型可能有多次提交（不同 scaffold/日期）：按名称去重取最高 resolved；
+        // 跳过 "Multiple" 等泛指条目（否则会生成垃圾「模型」）。
+        Map<String, ModelEntryData> best = new LinkedHashMap<>();
         for (JsonNode r : results) {
             Double resolved = num(r, "resolved");
             if (resolved == null) {
@@ -84,22 +86,45 @@ public class SweBenchModelCollector implements ModelLeaderboardCollector {
             if (name == null || name.isBlank()) {
                 name = extractModelFromTags(r.path("tags"));
             }
-            if (name == null || name.isBlank()) {
+            if (name == null || name.isBlank() || isGeneric(name)) {
                 continue;
             }
-            out.add(new ModelEntryData(
-                    name,
-                    r.path("model_org").asText(""),
-                    "coding",
-                    null,
-                    http.parseDate(r.path("date").asText(null)),
-                    null,
-                    rank++,
-                    Map.of("swe_bench_verified", resolved),
-                    null, null, null
-            ));
+            String key = name.trim().toLowerCase();
+            ModelEntryData prev = best.get(key);
+            double prevScore = prev == null ? Double.NEGATIVE_INFINITY
+                    : prev.benchmarks().getOrDefault("swe_bench_verified", Double.NEGATIVE_INFINITY);
+            if (prev == null || resolved > prevScore) {
+                best.put(key, new ModelEntryData(
+                        name.trim(),
+                        r.path("model_org").asText(""),
+                        "coding",
+                        null,
+                        http.parseDate(r.path("date").asText(null)),
+                        null,
+                        null,
+                        Map.of("swe_bench_verified", resolved),
+                        null, null, null));
+            }
         }
-        return out;
+        List<ModelEntryData> out = new ArrayList<>(best.values());
+        out.sort(Comparator.comparingDouble(
+                (ModelEntryData e) -> e.benchmarks().getOrDefault("swe_bench_verified", Double.NEGATIVE_INFINITY)).reversed());
+        List<ModelEntryData> ranked = new ArrayList<>();
+        int rank = 1;
+        for (ModelEntryData e : out) {
+            ranked.add(new ModelEntryData(e.rawName(), e.vendor(), e.modality(), e.openWeights(),
+                    e.releaseDate(), e.link(), rank++, e.benchmarks(),
+                    e.inputPrice(), e.outputPrice(), e.contextWindow()));
+        }
+        return ranked;
+    }
+
+    /** 泛指条目（非具体模型），不作为模型入库 */
+    private boolean isGeneric(String name) {
+        String n = name.trim().toLowerCase();
+        return n.equals("multiple") || n.equals("n/a") || n.equals("na")
+                || n.equals("best") || n.startsWith("multiple ")
+                || n.equals("ensemble") || n.equals("unknown");
     }
 
     private String extractModelFromTags(JsonNode tags) {

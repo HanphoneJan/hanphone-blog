@@ -47,7 +47,7 @@ public class BenchmarkRegistry {
         register(new BenchmarkMetaData("vbench_quality", "VBench 质量分", "video", "%", true, "vbench"));
 
         setPrimary("text", "aa_intelligence");
-        setPrimary("coding", "swe_bench_verified");
+        setPrimary("coding", "aa_coding");
         setPrimary("agent", "aa_agentic");
         setPrimary("embedding", "mteb_eng_v2");
         setPrimary("image", "aa_image_t2i");
