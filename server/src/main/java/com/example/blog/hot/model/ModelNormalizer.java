@@ -22,10 +22,13 @@ public class ModelNormalizer {
 
     private final ModelEntityRepository entityRepository;
     private final ModelAliasRepository aliasRepository;
+    private final VendorRegistry vendorRegistry;
 
-    public ModelNormalizer(ModelEntityRepository entityRepository, ModelAliasRepository aliasRepository) {
+    public ModelNormalizer(ModelEntityRepository entityRepository, ModelAliasRepository aliasRepository,
+                           VendorRegistry vendorRegistry) {
         this.entityRepository = entityRepository;
         this.aliasRepository = aliasRepository;
+        this.vendorRegistry = vendorRegistry;
     }
 
     @Transactional
@@ -93,7 +96,8 @@ public class ModelNormalizer {
             nameSlug = slug(rawName);
         }
         nameSlug = stripVariantSuffix(nameSlug);
-        String vendorSlug = slug(vendor);
+        // 厂商也用 VendorRegistry 归一，避免同一公司不同写法（moonshot/Kimi、zai/z-ai）分裂成不同实体
+        String vendorSlug = slug(vendorRegistry.canonical(vendor));
         return vendorSlug.isEmpty() ? nameSlug : vendorSlug + ":" + nameSlug;
     }
 
