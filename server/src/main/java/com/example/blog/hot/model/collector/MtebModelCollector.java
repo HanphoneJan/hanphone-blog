@@ -63,7 +63,7 @@ public class MtebModelCollector implements ModelLeaderboardCollector {
         for (JsonNode row : rows) {
             JsonNode model = row.path("model");
             String rawName = model.path("name").asText(null);
-            if (rawName == null || rawName.isBlank()) {
+            if (rawName == null || rawName.isBlank() || isGeneric(rawName)) {
                 continue;
             }
             String vendor = rawName.contains("/") ? rawName.substring(0, rawName.indexOf('/')) : "";
@@ -82,5 +82,12 @@ public class MtebModelCollector implements ModelLeaderboardCollector {
     private Double num(JsonNode node, String field) {
         JsonNode value = node.path(field);
         return value.isNumber() ? value.asDouble() : null;
+    }
+
+    /** 泛指/基线条目（非具体模型），不作为模型入库 */
+    private boolean isGeneric(String rawName) {
+        String n = rawName.trim().toLowerCase();
+        return n.contains("baseline") || n.contains("random-encoder") || n.endsWith("/baseline")
+                || n.contains("test-model") || n.contains("dummy");
     }
 }
