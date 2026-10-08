@@ -228,7 +228,7 @@ fun ProfileScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Column {
-                MoreRow(Icons.Filled.LocalFireDepartment, "热点聚合", "GitHub · HF · AI 要闻 · 模型榜单", onOpenInsight)
+                MoreRow(Icons.Filled.LocalFireDepartment, "热点", "AI 热点 · 模型榜单", onOpenInsight)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Build, "项目", "完整项目 · 工具箱 · 小游戏", onOpenProjects)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))

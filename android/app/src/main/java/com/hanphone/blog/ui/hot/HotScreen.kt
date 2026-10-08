@@ -131,7 +131,7 @@ fun HotScreen(
     val vm: HotViewModel = hiltViewModel()
 
     Column(Modifier.fillMaxSize()) {
-        AppBackBar(title = "热点聚合", onBack = onBack)
+        AppBackBar(title = "热点", onBack = onBack)
 
         // 视图切换
         Row(
@@ -1126,7 +1126,7 @@ private fun shareCompareUrl(context: Context, keys: List<String>) {
     val send = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_SUBJECT, "模型对比 · 云林有风")
-        putExtra(Intent.EXTRA_TEXT, "$url\n\n来自「云林有风」Android 客户端 · 热点聚合")
+        putExtra(Intent.EXTRA_TEXT, "$url\n\n来自「云林有风」Android 客户端 · 热点")
     }
     context.startActivity(Intent.createChooser(send, "分享对比链接"))
 }
