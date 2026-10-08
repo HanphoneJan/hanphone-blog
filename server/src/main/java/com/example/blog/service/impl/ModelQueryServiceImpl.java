@@ -98,23 +98,35 @@ public class ModelQueryServiceImpl implements ModelQueryService {
                 .collect(Collectors.groupingBy(ModelPricing::getModelId));
 
         String primary = benchmarkRegistry.primaryKey(mod);
-        Map<Long, Integer> prevRank = previousRanks(modelIds, primary);
         List<ModelBenchmarkRowVO> rows = new ArrayList<>();
         for (Map.Entry<Long, List<ModelBenchmark>> entry : byModel.entrySet()) {
             ModelEntity model = models.get(entry.getKey());
             if (model == null) {
                 continue;
             }
-            ModelBenchmarkRowVO row = toRow(model, entry.getValue(),
-                    mergePricing(pricingByModel.get(entry.getKey())), primary);
-            if (row.getRank() != null && prevRank.containsKey(entry.getKey())) {
-                row.setRankChange(prevRank.get(entry.getKey()) - row.getRank());
-            }
-            rows.add(row);
+            rows.add(toRow(model, entry.getValue(),
+                    mergePricing(pricingByModel.get(entry.getKey())), primary));
         }
         rows.sort(Comparator.comparingDouble((ModelBenchmarkRowVO r) -> primaryScore(r, primary)).reversed());
         if (rows.size() > MAX_ROWS) {
             rows = new ArrayList<>(rows.subList(0, MAX_ROWS));
+        }
+        // 名次 = 排序后的位置（信源自带的 rank 是各源各自口径、且不连续，不能直接展示）；
+        // 排名变化 = 上一次快照按同一口径排序得到的位置 - 当前名次
+        Map<Long, Integer> prevPos = previousPositions(modelIds, primary);
+        Map<String, Integer> prevByKey = new java.util.HashMap<>();
+        for (Map.Entry<Long, Integer> e : prevPos.entrySet()) {
+            ModelEntity m = models.get(e.getKey());
+            if (m != null) {
+                prevByKey.put(m.getCanonicalKey(), e.getValue());
+            }
+        }
+        for (int i = 0; i < rows.size(); i++) {
+            ModelBenchmarkRowVO r = rows.get(i);
+            int newRank = i + 1;
+            Integer prev = prevByKey.get(r.getModelKey());
+            r.setRank(newRank);
+            r.setRankChange(prev == null ? null : prev - newRank);
         }
         vo.setRows(rows);
         return vo;
@@ -368,23 +380,41 @@ public class ModelQueryServiceImpl implements ModelQueryService {
         return Math.max(7, Math.min(days, 180));
     }
 
-    /** 每个模型在主榜上「今天之前」最近一次快照的排名（用于计算排名变化） */
-    private Map<Long, Integer> previousRanks(List<Long> modelIds, String primary) {
-        Map<Long, Integer> prev = new java.util.HashMap<>();
+    /**
+     * 上一次快照（「今天之前」最近一天）按 primary 分数排序得到的「位置名次」。
+     * 用于计算名次变化，口径与当前榜单一致（不依赖信源自带的 rank）。
+     */
+    private Map<Long, Integer> previousPositions(List<Long> modelIds, String primary) {
+        Map<Long, Integer> positions = new java.util.HashMap<>();
         if (primary == null || modelIds.isEmpty()) {
-            return prev;
+            return positions;
         }
         LocalDate today = LocalDate.now();
-        LocalDate since = today.minusDays(35);
-        for (ModelBenchmarkSnapshot s : snapshotRepository
+        List<ModelBenchmarkSnapshot> snaps = snapshotRepository
                 .findByModelIdInAndBenchmarkKeyAndSnapshotDateGreaterThanEqualOrderBySnapshotDateAsc(
-                        modelIds, primary, since)) {
-            if (s.getRank() == null || !s.getSnapshotDate().isBefore(today)) {
-                continue;
+                        modelIds, primary, today.minusDays(35));
+        LocalDate lastDate = null;
+        for (ModelBenchmarkSnapshot s : snaps) {
+            if (s.getSnapshotDate().isBefore(today)
+                    && (lastDate == null || s.getSnapshotDate().isAfter(lastDate))) {
+                lastDate = s.getSnapshotDate();
             }
-            prev.put(s.getModelId(), s.getRank());
         }
-        return prev;
+        if (lastDate == null) {
+            return positions;
+        }
+        List<ModelBenchmarkSnapshot> day = new ArrayList<>();
+        for (ModelBenchmarkSnapshot s : snaps) {
+            if (lastDate.equals(s.getSnapshotDate())) {
+                day.add(s);
+            }
+        }
+        day.sort(Comparator.comparingDouble(
+                (ModelBenchmarkSnapshot s) -> s.getScore() == null ? Double.NEGATIVE_INFINITY : s.getScore()).reversed());
+        for (int i = 0; i < day.size(); i++) {
+            positions.put(day.get(i).getModelId(), i + 1);
+        }
+        return positions;
     }
 
     /** 模型列表排序：newest（默认）/ name / price / context */

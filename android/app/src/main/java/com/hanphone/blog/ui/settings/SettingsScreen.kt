@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.BuildConfig
 import com.hanphone.blog.R
+import com.hanphone.blog.ui.MarkdownContent
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.SectionTitle
 import kotlinx.coroutines.Dispatchers
@@ -168,16 +170,13 @@ fun SettingsScreen(
             onDismissRequest = { updateInfo = null },
             title = { Text("发现新版本 ${info.version}") },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    Modifier.verticalScroll(rememberScrollState()).heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text("当前版本 v${BuildConfig.VERSION_NAME}，可升级到 ${info.version}。", style = MaterialTheme.typography.bodyMedium)
                     if (info.body.isNotBlank()) {
-                        Text(
-                            info.body,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 8,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        MarkdownContent(info.body)
                     }
                 }
             },
