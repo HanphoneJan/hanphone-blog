@@ -90,6 +90,29 @@ export const ENDPOINTS = {
       `${API_BASE_URL}/hot/models/${encodeURIComponent(key)}/trend?days=${days}`,
     ADMIN_SOURCES: `${API_BASE_URL}/admin/hot/sources`,
     ADMIN_RUNS: `${API_BASE_URL}/admin/hot/runs`,
+    ADMIN_RUNS_PAGE: (opts: {
+      page?: number
+      size?: number
+      triggerType?: string
+      result?: string
+      q?: string
+      from?: string
+      to?: string
+      order?: string
+    } = {}) => {
+      const params = new URLSearchParams()
+      params.set('page', String(opts.page ?? 0))
+      params.set('size', String(opts.size ?? 10))
+      if (opts.triggerType) params.set('triggerType', opts.triggerType)
+      if (opts.result) params.set('result', opts.result)
+      if (opts.q) params.set('q', opts.q)
+      if (opts.from) params.set('from', opts.from)
+      if (opts.to) params.set('to', opts.to)
+      if (opts.order) params.set('order', opts.order)
+      return `${API_BASE_URL}/admin/hot/runs/page?${params.toString()}`
+    },
+    ADMIN_REBUILD_NORMALIZATION: (dryRun: boolean) =>
+      `${API_BASE_URL}/admin/hot/models/rebuild-normalization?dryRun=${dryRun ? 'true' : 'false'}`,
     ADMIN_COLLECT: `${API_BASE_URL}/admin/hot/collect`,
     ADMIN_COLLECT_MODELS: `${API_BASE_URL}/admin/hot/collect-models`,
     ADMIN_STATUS: `${API_BASE_URL}/admin/hot/status`,

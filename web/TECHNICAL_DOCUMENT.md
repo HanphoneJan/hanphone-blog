@@ -213,7 +213,7 @@ web/src/
   - `ComparePanel.tsx` — **结果优先**布局 + 紧凑工具栏；选择器为弹层（**按榜单 / 按公司 / 搜索**，数据来自 `/hot/leaderboards`、`/hot/vendors`、`/hot/models?vendor=&sort=newest|name|price|context`），**默认预置六家代表厂商各自最强**（DeepSeek / Z.ai / Kimi / Anthropic / OpenAI / Google，取自文本榜排序）；能力雷达、价格-能力散点、明细表（只列至少一个模型有分的口径）、**导出图片**（`html-to-image`）与**分享链接**（`?view=compare&models=...`）
   - `LeaderboardTrend.tsx` — 榜单近 30 天分数趋势折线（echarts 按需加载）
 - 后端接口：`/hot/models` 支持 `vendor`+`sort`，`/hot/vendors` 返回归一后的厂商（重点厂商置顶）；写死的 `/hot/models/featured` 已移除。
-- 后台 `/admin/insight`（导航「聚合数据」）：**异步触发采集**（`POST /admin/hot/collect` + 轮询 `GET /admin/hot/status`）、信源健康、采集记录、**AI 摘要配置**（URL / Key / Model / 自定义 Header；OpenAI 兼容接口，如 opencode zen 用 `https://opencode.ai/zen/v1`，推理模型需给足 `max_tokens`）。
+- 后台 `/admin/insight`（导航「聚合数据」）：**异步触发采集**（`POST /admin/hot/collect` + 轮询 `GET /admin/hot/status`）、信源健康、**采集记录（服务端分页 + 筛选 + 排序：触发方式 / 结果 / 明细关键词 / 日期区间 / 时间正倒序 / 每页条数）**、**AI 摘要配置**（URL / Key / Model / 自定义 Header；OpenAI 兼容接口，如 opencode zen 用 `https://opencode.ai/zen/v1`，推理模型需给足 `max_tokens`）、**模型归一重建**（`POST /admin/hot/models/rebuild-normalization`，先「预演」再「执行重建」，合并历史重复实体）。
 - 页面标题统一由 `createMetadata(title, desc, { path, keywords })` 生成，形如 `{title} | 云林有风 | 寒枫的博客`。
 
 ---
