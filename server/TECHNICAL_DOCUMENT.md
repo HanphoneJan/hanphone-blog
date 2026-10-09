@@ -264,6 +264,8 @@ com.example.blog.hot/
 - **名次用排序位置**：`getLeaderboard` 的名次 = 排序后的位置（信源自带 `rank` 是各源各自口径、不连续，不能直接展示）；名次变化按上一快照同口径排序的位置计算。
 - **模型身份归一**（`ModelNormalizer`）：按 `vendor:slug(名)` 合并，并会去掉 `-high/-low/-max/-medium/-thinking/-reasoning/-non/-default/-fallback` 等**变体后缀**（LMArena 把 `…(High)` 写成 `…-high`，靠这个与 AA 合并）。新增信源时注意其命名风格，避免产生重复实体。
 - **采集器去重 / 过滤泛指**：SWE-bench 同一模型多次提交要取最高分并跳过 `Multiple`；MTEB 跳过 `baseline`/`random-encoder` 等基线条目。
+- **归一改动的重采局限（alias 优先，2026-10 实测）**：`ModelNormalizer.resolve` **先按 alias（原始名小写）命中，再算 canonical_key**。因此**启用新归一之前就已建库的实体，其旧 canonical_key 不会在重采时自动重算**——重采只会继续写旧实体。后果：改了归一并清理后重采，`claude-opus-4-5-20251101-high-32k` 这类 **LMArena-only** 检查点会并入 `anthropic:claude-opus-4-5`（实测该实体同时带上 `aa_intelligence` + `lmarena_text`，重复组 6→4）；但**跨源已存在于 AA/OpenRouter 的旧实体**（如 `spacexai:grok-4-7` 与 `xai:grok-4-7` 并存，旧 key 是厂商归一前生成）**不会被 LMArena-only 清理 SQL 覆盖**，仍重复。要彻底合并需按新规则重建这些实体的 canonical_key（高风险，谨慎），或删实体后重采。
+- **LMArena-only 清理 SQL**：删除「只被 `lmarena%` 命中」的实体（见 `server/DEPLOYMENT.md` 或运维记录），删后**必须重采**才会按新归一并回；只删不采会丢 LMArena-only 覆盖（约 340+ 个实体）。
 - **RestTemplate 会二次编码已编码查询串**：`datasets-server` 的 `dataset=lmarena-ai%2F…` 若用 `getJson(String)` 会被编成 `%252F` → 上游 500。路径含已编码字符（`%2F` 等）时一律用 `HttpJsonSupport.getJson(URI)` / `getJsonViaProxy(String)`（内部走 `URI.create`）。
 - **AI 摘要（OpenAI 兼容接口）**：
   - baseUrl 要用 **OpenAI 兼容路径**；opencode zen 是 `https://opencode.ai/zen/v1`（`/zen/go/v1` 需要有效的 `x-opencode-session`，否则 401/400）。
