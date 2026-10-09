@@ -13,9 +13,16 @@ public final class ModelNameUtil {
     private ModelNameUtil() {
     }
 
+    /**
+     * 仅保留「明确不是模型身份、而是发布通道/推理档位」的后缀。
+     *
+     * <p>刻意**不包含** {@code max / medium / standard / thinking / reasoning / reasoner}——
+     * 它们同时是真实模型名的一部分（Qwen3-Max、Mistral Medium、Hailuo Standard、Kimi K2 Thinking、
+     * Qwen3-Thinking…），剥离会把不同模型错误合并。跨源同名的档位（各源都写 {@code -high}）仍会自然合并。</p>
+     */
     private static final Set<String> VARIANT_TOKENS = Set.of(
-            "high", "xhigh", "low", "medium", "minimal", "max",
-            "thinking", "reasoning", "reasoner", "non", "default", "fallback", "standard",
+            "high", "xhigh", "low", "minimal",
+            "non", "default", "fallback",
             "latest", "preview", "exp", "experimental", "batch");
 
     public static boolean isStrippable(String token) {
@@ -24,7 +31,8 @@ public final class ModelNameUtil {
         }
         return token.matches("beta\\d*")          // beta / beta1
                 || token.matches("\\d{6,}")        // 日期/时间戳，如 20251101
-                || token.matches("\\d+(k|m)");     // 上下文窗口，如 32k / 1m（不含 b，避免误删参数量）
+                || token.matches("\\d+k")          // 上下文窗口，如 32k / 128k
+                || token.matches("\\d{1,2}m");     // 上下文窗口，如 1m / 4m（≥100m 多为参数量，如 270m，不剥离）
     }
 
     /** 反复去掉结尾的可剥离 token（至少保留 1 个 token） */

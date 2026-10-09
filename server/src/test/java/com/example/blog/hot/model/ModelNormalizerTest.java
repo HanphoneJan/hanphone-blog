@@ -51,10 +51,21 @@ class ModelNormalizerTest {
     @Test
     @DisplayName("厂商也归一：moonshot/Kimi、zai/z-ai 合并")
     void canonicalKey_normalizesVendor() {
-        assertEquals(normalizer.canonicalKey("Kimi", "Kimi K3 (Low)"),
-                normalizer.canonicalKey("moonshot", "kimi-k3-max"));
-        assertEquals(normalizer.canonicalKey("Z.ai", "GLM-5.3 (Low)"),
-                normalizer.canonicalKey("zai", "glm-5.3-max"));
+        assertEquals(normalizer.canonicalKey("Kimi", "Kimi K3"),
+                normalizer.canonicalKey("moonshot", "kimi-k3"));
+        assertEquals(normalizer.canonicalKey("Z.ai", "GLM-5.3"),
+                normalizer.canonicalKey("zai", "glm-5.3"));
+    }
+
+    @Test
+    @DisplayName("不剥离真实模型名中的 max/medium/standard/thinking/reasoning")
+    void canonicalKey_keepsRealModelNameTokens() {
+        assertEquals("alibaba:qwen3-max", normalizer.canonicalKey("Alibaba", "qwen3-max"));
+        assertEquals("alibaba:qwen3-max-thinking", normalizer.canonicalKey("Alibaba", "qwen3-max-thinking"));
+        assertEquals("kimi:kimi-k2-thinking", normalizer.canonicalKey("Kimi", "kimi-k2-thinking"));
+        assertEquals("kimi:kimi-k2", normalizer.canonicalKey("Kimi", "kimi-k2"));
+        assertEquals("mistral:mistral-medium", normalizer.canonicalKey("Mistral", "mistral-medium"));
+        assertEquals("perplexity:sonar-reasoning", normalizer.canonicalKey("Perplexity", "sonar-reasoning"));
     }
 
     @Test
@@ -63,5 +74,21 @@ class ModelNormalizerTest {
         String base = normalizer.canonicalKey("Anthropic", "Claude Opus 4.5");
         assertEquals(base, normalizer.canonicalKey("anthropic", "claude-opus-4-5-20251101"));
         assertEquals(base, normalizer.canonicalKey("anthropic", "claude-opus-4-5-high-32k"));
+    }
+
+    @Test
+    @DisplayName("上下文后缀 1m / 128k 仍剥离")
+    void canonicalKey_stripsSmallContextSuffix() {
+        String base = normalizer.canonicalKey("Google", "gemini-3-pro");
+        assertEquals(base, normalizer.canonicalKey("google", "gemini-3-pro-1m"));
+        assertEquals(base, normalizer.canonicalKey("google", "gemini-3-pro-128k"));
+    }
+
+    @Test
+    @DisplayName("不误删参数量后缀：270m/350m 视为参数量而非上下文，不并入基名")
+    void canonicalKey_doesNotStripParamSizesInMillions() {
+        assertEquals("google:gemma-3-270m", normalizer.canonicalKey("Google", "gemma-3-270m"));
+        assertEquals("ibm:granite-4-0-350m", normalizer.canonicalKey("IBM", "granite-4-0-350m"));
+        assertEquals("ibm:granite-4-0-h-350m", normalizer.canonicalKey("IBM", "granite-4-0-h-350m"));
     }
 }
