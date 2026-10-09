@@ -2,6 +2,7 @@ package com.example.blog.web.admin;
 
 import com.example.blog.dao.HotCollectRunRepository;
 import com.example.blog.hot.HotTriggerService;
+import com.example.blog.hot.model.ModelNormalizationRebuildService;
 import com.example.blog.hot.summary.HotSummaryConfigService;
 import com.example.blog.hot.summary.HotSummaryService;
 import com.example.blog.po.HotCollectRun;
@@ -10,13 +11,24 @@ import com.example.blog.po.StatusCode;
 import com.example.blog.service.HotRadarService;
 import com.example.blog.vo.HotSourceStatusVO;
 import com.example.blog.vo.SummarySettingsVO;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,17 +45,20 @@ public class HotAdminController {
     private final HotCollectRunRepository runRepository;
     private final HotSummaryConfigService summaryConfig;
     private final HotSummaryService summaryService;
+    private final ModelNormalizationRebuildService normalizationRebuildService;
 
     public HotAdminController(HotTriggerService triggerService,
                               HotRadarService radarService,
                               HotCollectRunRepository runRepository,
                               HotSummaryConfigService summaryConfig,
-                              HotSummaryService summaryService) {
+                              HotSummaryService summaryService,
+                              ModelNormalizationRebuildService normalizationRebuildService) {
         this.triggerService = triggerService;
         this.radarService = radarService;
         this.runRepository = runRepository;
         this.summaryConfig = summaryConfig;
         this.summaryService = summaryService;
+        this.normalizationRebuildService = normalizationRebuildService;
     }
 
     /** 异步触发「热点 + 模型榜单」采集，立即返回；耗时任务在后台执行 */
@@ -76,6 +91,91 @@ public class HotAdminController {
     public Result<List<HotCollectRun>> runs() {
         return new Result<>(true, StatusCode.OK, "获取采集记录成功",
                 runRepository.findTop10ByOrderByStartedAtDesc());
+    }
+
+    /** 采集记录分页 + 筛选 + 排序。 */
+    @GetMapping("/runs/page")
+    public Result<Map<String, Object>> runsPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String triggerType,
+            @RequestParam(required = false) String result,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(defaultValue = "newest") String order) {
+
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        int safePage = Math.max(page, 0);
+        Sort sort = "oldest".equalsIgnoreCase(order)
+                ? Sort.by(Sort.Direction.ASC, "startedAt").and(Sort.by(Sort.Direction.ASC, "id"))
+                : Sort.by(Sort.Direction.DESC, "startedAt").and(Sort.by(Sort.Direction.DESC, "id"));
+
+        Date fromBoundary = parseBoundary(from, false);
+        Date toBoundary = parseBoundary(to, true);
+
+        Specification<HotCollectRun> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (triggerType != null && !triggerType.isBlank() && !"ALL".equalsIgnoreCase(triggerType)) {
+                predicates.add(cb.equal(root.get("triggerType"), triggerType.trim().toUpperCase()));
+            }
+            if ("success".equalsIgnoreCase(result)) {
+                predicates.add(cb.equal(root.get("failedCount"), 0));
+            } else if ("partial".equalsIgnoreCase(result)) {
+                predicates.add(cb.and(
+                        cb.greaterThan(root.get("failedCount"), 0),
+                        cb.greaterThan(root.get("successCount"), 0)));
+            } else if ("failed".equalsIgnoreCase(result)) {
+                predicates.add(cb.and(
+                        cb.greaterThan(root.get("failedCount"), 0),
+                        cb.equal(root.get("successCount"), 0)));
+            }
+            if (q != null && !q.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("detail")), "%" + q.trim().toLowerCase() + "%"));
+            }
+            if (fromBoundary != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("startedAt"), fromBoundary));
+            }
+            if (toBoundary != null) {
+                predicates.add(cb.lessThan(root.get("startedAt"), toBoundary));
+            }
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<HotCollectRun> resultPage = runRepository.findAll(spec, PageRequest.of(safePage, safeSize, sort));
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("content", resultPage.getContent());
+        data.put("page", resultPage.getNumber());
+        data.put("size", resultPage.getSize());
+        data.put("totalElements", resultPage.getTotalElements());
+        data.put("totalPages", resultPage.getTotalPages());
+        return new Result<>(true, StatusCode.OK, "获取采集记录成功", data);
+    }
+
+    /** 按当前归一规则重建 model_entity.canonical_key 并合并历史重复实体；dryRun=true 仅预演。 */
+    @PostMapping("/models/rebuild-normalization")
+    public Result<Map<String, Object>> rebuildNormalization(
+            @RequestParam(defaultValue = "false") boolean dryRun) {
+        Map<String, Object> summary = normalizationRebuildService.rebuild(dryRun);
+        return new Result<>(true, StatusCode.OK, dryRun ? "预演完成" : "模型归一重建完成", summary);
+    }
+
+    /** 解析筛选时间：支持 epoch 毫秒或 yyyy-MM-dd（endExclusive 时取次日 0 点，作右开区间）。 */
+    private Date parseBoundary(String value, boolean endExclusive) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String v = value.trim();
+        try {
+            if (v.matches("\\d+")) {
+                return new Date(Long.parseLong(v));
+            }
+            LocalDate date = LocalDate.parse(v.length() >= 10 ? v.substring(0, 10) : v);
+            LocalDate target = endExclusive ? date.plusDays(1) : date;
+            return Date.from(target.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // ==================== AI 摘要配置 ====================

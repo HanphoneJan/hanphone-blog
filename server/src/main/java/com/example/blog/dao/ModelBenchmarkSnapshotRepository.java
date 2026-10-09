@@ -17,4 +17,6 @@ public interface ModelBenchmarkSnapshotRepository extends JpaRepository<ModelBen
 
     List<ModelBenchmarkSnapshot> findByModelIdInAndBenchmarkKeyAndSnapshotDateGreaterThanEqualOrderBySnapshotDateAsc(
             List<Long> modelIds, String benchmarkKey, LocalDate since);
+
+    List<ModelBenchmarkSnapshot> findByModelId(Long modelId);
 }
