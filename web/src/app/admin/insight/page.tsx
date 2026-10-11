@@ -84,7 +84,12 @@ interface SummarySettings {
   baseUrl?: string | null
   model?: string | null
   headers?: string | null
+  /** 生效状态：开关打开且配置完整 */
   enabled: boolean
+  /** 配置是否完整（与开关无关） */
+  configured: boolean
+  /** 启用开关明文（默认 true） */
+  toggleEnabled: boolean
   hasApiKey: boolean
 }
 
@@ -99,9 +104,15 @@ export default function AdminInsightPage() {
   const [sources, setSources] = useState<HotSourceStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [collecting, setCollecting] = useState(false)
-  const [summaryMeta, setSummaryMeta] = useState<SummarySettings>({ enabled: false, hasApiKey: false })
+  const [summaryMeta, setSummaryMeta] = useState<SummarySettings>({
+    enabled: false,
+    configured: false,
+    toggleEnabled: true,
+    hasApiKey: false,
+  })
   const [summaryForm, setSummaryForm] = useState({ baseUrl: '', apiKey: '', model: '', headers: '' })
   const [savingSummary, setSavingSummary] = useState(false)
+  const [togglingSummary, setTogglingSummary] = useState(false)
   const [testingSummary, setTestingSummary] = useState(false)
   const [testResult, setTestResult] = useState('')
 
@@ -220,6 +231,26 @@ export default function AdminInsightPage() {
     }
   }
 
+  /** 启用 / 暂停 AI 摘要：只改开关，不动已保存的 URL / Key / Model / Header */
+  const toggleSummaryEnabled = async () => {
+    const next = !summaryMeta.toggleEnabled
+    setTogglingSummary(true)
+    try {
+      const res = await apiClient.put(ENDPOINTS.HOT.SUMMARY_SETTINGS, { enabled: String(next) })
+      if (res.data.code === API_CODE.SUCCESS) {
+        setSummaryMeta(res.data.data as SummarySettings)
+        alertSuccess(next ? 'AI 摘要已启用' : 'AI 摘要已暂停')
+      } else {
+        alertError(res.data.message || '操作失败')
+      }
+    } catch (error) {
+      console.error('切换 AI 摘要开关失败:', error)
+      alertError('切换失败，请稍后重试')
+    } finally {
+      setTogglingSummary(false)
+    }
+  }
+
   const testSummary = async () => {
     setTestingSummary(true)
     setTestResult('')
@@ -331,15 +362,47 @@ export default function AdminInsightPage() {
           <h2 className="text-sm font-semibold text-[rgb(var(--text))]">
             AI 摘要配置（OpenAI 兼容接口）
           </h2>
-          <span
-            className={`px-2 py-0.5 rounded text-xs ${
-              summaryMeta.enabled
-                ? 'bg-green-500/15 text-green-600 dark:text-green-400'
-                : 'bg-[rgb(var(--hover))] text-[rgb(var(--text-muted))]'
-            }`}
-          >
-            {summaryMeta.enabled ? '已启用' : '未启用'}
-          </span>
+          <div className="flex items-center gap-3">
+            <span
+              className={`px-2 py-0.5 rounded text-xs ${
+                !summaryMeta.toggleEnabled
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                  : summaryMeta.configured
+                    ? 'bg-green-500/15 text-green-600 dark:text-green-400'
+                    : 'bg-[rgb(var(--hover))] text-[rgb(var(--text-muted))]'
+              }`}
+            >
+              {!summaryMeta.toggleEnabled ? '已暂停' : summaryMeta.configured ? '已启用' : '未配置'}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={summaryMeta.toggleEnabled}
+              onClick={toggleSummaryEnabled}
+              disabled={togglingSummary}
+              title="暂停后保留已保存的配置，采集时不再调用 AI 生成摘要"
+              className="inline-flex items-center gap-2 text-xs text-[rgb(var(--text-muted))] disabled:opacity-60"
+            >
+              {togglingSummary ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <span
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    summaryMeta.toggleEnabled
+                      ? 'bg-[rgb(var(--primary))]'
+                      : 'bg-[rgb(var(--border))]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                      summaryMeta.toggleEnabled ? 'translate-x-[1.25rem]' : 'translate-x-[0.2rem]'
+                    }`}
+                  />
+                </span>
+              )}
+              启用 AI 摘要
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <label className="text-xs text-[rgb(var(--text-muted))]">
@@ -406,6 +469,7 @@ export default function AdminInsightPage() {
         </div>
         <p className="mt-2 text-xs text-[rgb(var(--text-muted))]">
           配置后，采集时会为英文热点条目生成中文摘要（已有摘要的条目不重复生成）。
+          关闭上方「启用 AI 摘要」开关可随时暂停（保留已保存配置，不删除），暂停期间采集不再调用 AI。
         </p>
       </div>
 

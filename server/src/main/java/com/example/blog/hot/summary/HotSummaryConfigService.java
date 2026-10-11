@@ -20,6 +20,8 @@ public class HotSummaryConfigService {
     public static final String KEY_API_KEY = "summary.apiKey";
     public static final String KEY_MODEL = "summary.model";
     public static final String KEY_HEADERS = "summary.headers";
+    /** 启用开关（默认 true）：配置保留、可随时暂停，暂停后采集不再调用 AI 摘要 */
+    public static final String KEY_ENABLED = "summary.enabled";
 
     private final HotSettingRepository repository;
 
@@ -79,9 +81,22 @@ public class HotSummaryConfigService {
     }
 
     /** baseUrl 与 model 必填；密钥可用 API Key 或自定义 Header 之一 */
-    public boolean isEnabled() {
+    public boolean isConfigured() {
         boolean credential = notBlank(apiKey()) || !headers().isEmpty();
         return notBlank(baseUrl()) && notBlank(model()) && credential;
+    }
+
+    /** 后台启用开关（默认 true）。与配置是否完整无关，用于「暂停」而不清空配置。 */
+    public boolean isToggleEnabled() {
+        return repository.findBySettingKey(KEY_ENABLED)
+                .map(HotSetting::getSettingValue)
+                .map(v -> !"false".equalsIgnoreCase(v == null ? "" : v.trim()))
+                .orElse(true);
+    }
+
+    /** 生效条件：开关打开且配置完整。 */
+    public boolean isEnabled() {
+        return isToggleEnabled() && isConfigured();
     }
 
     public boolean hasApiKey() {
@@ -90,12 +105,14 @@ public class HotSummaryConfigService {
 
     /**
      * 保存配置。空值表示不修改该项（避免前端回显覆盖）。
+     * {@code enabled} 为 {@code "true"}/{@code "false"}，空值同样表示不修改。
      */
-    public void save(String baseUrl, String apiKey, String model, String headers) {
+    public void save(String baseUrl, String apiKey, String model, String headers, String enabled) {
         setIfPresent(KEY_BASE_URL, baseUrl);
         setIfPresent(KEY_API_KEY, apiKey);
         setIfPresent(KEY_MODEL, model);
         setIfPresent(KEY_HEADERS, headers);
+        setBooleanIfPresent(KEY_ENABLED, enabled);
     }
 
     private void setIfPresent(String key, String value) {
@@ -103,6 +120,13 @@ public class HotSummaryConfigService {
             return;
         }
         set(key, value.trim());
+    }
+
+    private void setBooleanIfPresent(String key, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        set(key, Boolean.parseBoolean(value.trim()) ? "true" : "false");
     }
 
     private String get(String key, String fallback) {

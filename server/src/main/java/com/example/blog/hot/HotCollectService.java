@@ -90,13 +90,16 @@ public class HotCollectService {
                     upsertItem(collector, d, today);
                     count++;
                 }
+                // 本轮未再出现的条目视为已不热门：清掉，保证 hot_item 只保留当前值
+                int pruned = itemRepository.deleteStaleBySourceKey(collector.key(), startedAt);
                 source.setItemCount(count);
                 source.setLastStatus("SUCCESS");
                 source.setLastSuccessAt(new Date());
                 source.setLastError(null);
                 sourceRepository.save(source);
                 success++;
-                details.add(collector.key() + ": 成功 " + count + " 条");
+                details.add(collector.key() + ": 成功 " + count + " 条"
+                        + (pruned > 0 ? "，清理过期 " + pruned + " 条" : ""));
             } catch (Exception e) {
                 failed++;
                 source.setLastStatus("FAILED");

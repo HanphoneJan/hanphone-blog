@@ -271,6 +271,7 @@ com.example.blog.hot/
 - **名次用排序位置**：`getLeaderboard` 的名次 = 排序后的位置（信源自带 `rank` 是各源各自口径、不连续，不能直接展示）；名次变化按上一快照同口径排序的位置计算。
 - **模型身份归一**（`ModelNormalizer`）：按 `vendor:slug(名)` 合并，并去掉**发布通道 / 推理档位后缀**（`-high/-xhigh/-low/-minimal/-non/-default/-fallback/-preview/-exp/-experimental/-latest/-batch`）、**日期**（`20251101`）与**上下文窗口**（`32k`；`m` 仅 1-2 位算上下文，`270m`/`350m` 等参数量**不**剥离）。**刻意不剥离** `max/medium/standard/thinking/reasoning/reasoner`——它们是真实模型名（Qwen3-Max、Mistral Medium、Hailuo Standard、Kimi K2 Thinking、Qwen3-Thinking…），剥离会把不同模型错误合并（2026-10 实测后收紧）。LMArena 把 `…(High)` 写成 `…-high`，靠 `-high` 与 AA 合并；跨源同名档位（各源都写 `-high`）自然合并。新增信源时注意其命名风格，避免产生重复实体。
 - **采集器去重 / 过滤泛指**：SWE-bench 同一模型多次提交要取最高分并跳过 `Multiple`；MTEB 跳过 `baseline`/`random-encoder` 等基线条目。
+- **`hot_item` 只保留当前值（2026-10 修复）**：`HotCollectService` 在**信源本轮采集成功后**删除该信源 `lastSeenAt < 本轮开始时间` 的条目（历史由 `hot_item_snapshot` 保留）。此前不清理导致条目无限累积（实测 `itemTotal` 236 而单轮仅 105 条），`getFeed` 按 `rank` 全表排序会把数天前的旧条目混进热点流、rank 大量重复，`ai-news`（rank/score 均 null）排序不稳定看起来「不更新」。`getFeed` 次级排序补 `publishedAt desc` 让要闻按发布时间稳定倒序；采集失败的信源不清理，避免误删。
 - **归一改动的重采局限（alias 优先，2026-10 实测）**：`ModelNormalizer.resolve` **先按 alias（原始名小写）命中，再算 canonical_key**。因此**启用新归一之前就已建库的实体，其旧 canonical_key 不会在重采时自动重算**——重采只会继续写旧实体。后果：改了归一并清理后重采，`claude-opus-4-5-20251101-high-32k` 这类 **LMArena-only** 检查点会并入 `anthropic:claude-opus-4-5`（实测该实体同时带上 `aa_intelligence` + `lmarena_text`，重复组 6→4）；但**跨源已存在于 AA/OpenRouter 的旧实体**（如 `spacexai:grok-4-7` 与 `xai:grok-4-7` 并存，旧 key 是厂商归一前生成）**不会被 LMArena-only 清理 SQL 覆盖**，仍重复。
 - **归一重建（`ModelNormalizationRebuildService` + `POST /admin/hot/models/rebuild-normalization`）**：彻底合并上述历史重复。用当前规则对每个实体重算 key，同 key 归组、选一个 keeper，把 loser 的别名/榜单/快照/价格重指到 keeper 后删除 loser，最后写回新 key。**先给待改 key 的实体写唯一临时 key `__rb_<id>` 腾空目标 key，再做合并删除，最后写回**，规避唯一约束的瞬时冲突；`dryRun=true` 只返回影响不落库（前端「模型归一重建」卡片：预演 → 执行）。keeper 选择：展示名更可读（含空格 &gt; 含大写 &gt; 纯 slug）→ 数据更全（榜单行数）→ 本身就是目标 key → id 小。整段单事务，失败自动回滚。
 - **LMArena-only 清理 SQL**：删除「只被 `lmarena%` 命中」的实体（见 `server/DEPLOYMENT.md` 或运维记录），删后**必须重采**才会按新归一并回；只删不采会丢 LMArena-only 覆盖（约 340+ 个实体）。
@@ -279,6 +280,7 @@ com.example.blog.hot/
   - baseUrl 要用 **OpenAI 兼容路径**；opencode zen 是 `https://opencode.ai/zen/v1`（`/zen/go/v1` 需要有效的 `x-opencode-session`，否则 401/400）。
   - 推理模型（如 `deepseek-v4.1-flash`）`max_tokens` 要给足（当前 20000），否则思维链会吃光 token 导致 `content` 为空、判定失败。
   - 配置存 `hot_setting`（key：`summary.baseUrl` / `apiKey` / `model` / `headers`），**每次请求实时读库**，改完即时生效；后台保存空值 = 不修改。
+  - **启用开关（可暂停不丢配置）**：`hot_setting.summary.enabled`（默认 true）与配置项分离。后台「聚合数据 → AI 摘要配置」有开关，关闭即暂停，**保留** URL/Key/Model/Header；`HotSummaryConfigService.isEnabled()` = 开关打开 **且** 配置完整，任一不满足则采集直接跳过摘要、不发外部请求。`PUT /admin/hot/settings/summary` 传 `{"enabled":"true|false"}` 只改开关（其余字段空值 = 不修改）。
   - 排障接口：`GET/PUT /admin/hot/settings/summary`、`POST /admin/hot/settings/summary/test`。
 
 ---

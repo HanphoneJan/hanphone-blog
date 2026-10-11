@@ -187,13 +187,17 @@ public class HotAdminController {
 
     @PutMapping("/settings/summary")
     public Result<SummarySettingsVO> saveSummarySettings(@RequestBody Map<String, String> body) {
-        summaryConfig.save(body.get("baseUrl"), body.get("apiKey"), body.get("model"), body.get("headers"));
+        summaryConfig.save(body.get("baseUrl"), body.get("apiKey"), body.get("model"),
+                body.get("headers"), body.get("enabled"));
         return new Result<>(true, StatusCode.OK, "保存摘要配置成功", buildSummaryVO());
     }
 
     @PostMapping("/settings/summary/test")
     public Result<String> testSummary() {
-        if (!summaryService.isEnabled()) {
+        if (!summaryConfig.isToggleEnabled()) {
+            return new Result<>(false, StatusCode.ERROR, "AI 摘要已暂停，请先在配置中启用", null);
+        }
+        if (!summaryConfig.isConfigured()) {
             return new Result<>(false, StatusCode.ERROR, "摘要未启用：请配置 URL / Model，以及 API Key 或自定义 Header", null);
         }
         String sample = summaryService.summarize("Test",
@@ -210,6 +214,8 @@ public class HotAdminController {
         vo.setModel(summaryConfig.model());
         vo.setHeaders(summaryConfig.headersText());
         vo.setEnabled(summaryConfig.isEnabled());
+        vo.setConfigured(summaryConfig.isConfigured());
+        vo.setToggleEnabled(summaryConfig.isToggleEnabled());
         vo.setHasApiKey(summaryConfig.hasApiKey());
         return vo;
     }

@@ -74,8 +74,12 @@ public class HotRadarServiceImpl implements HotRadarService {
             key = "T(java.util.Objects).toString(#category, 'all') + ':' + #limit")
     public List<HotFeedItemVO> getFeed(String category, int limit) {
         int size = Math.max(1, Math.min(limit, MAX_FEED_LIMIT));
+        // rank 优先；无 rank 的信源（如 AI 要闻）按发布时间倒序，避免排序不稳定导致"看起来没更新"
         Pageable pageable = PageRequest.of(0, size,
-                Sort.by(Sort.Direction.ASC, "rank").and(Sort.by(Sort.Direction.DESC, "score")));
+                Sort.by(Sort.Direction.ASC, "rank")
+                        .and(Sort.by(Sort.Direction.DESC, "score"))
+                        .and(Sort.by(Sort.Direction.DESC, "publishedAt"))
+                        .and(Sort.by(Sort.Direction.DESC, "lastSeenAt")));
 
         List<HotItem> items = (category == null || category.isBlank())
                 ? itemRepository.findAll(pageable).getContent()
