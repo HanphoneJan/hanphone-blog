@@ -426,78 +426,101 @@ export default function InsightClient({
           transition={{ duration: 0.4 }}
           className="mb-5"
         >
-          <div className="flex items-center gap-2">
-            <Flame className="w-6 h-6 text-[rgb(var(--primary))]" />
-            <h1 className="text-2xl font-bold text-[rgb(var(--text))]">洞察 · 技术热点聚合</h1>
-          </div>
-          <p className="mt-1.5 text-sm text-[rgb(var(--text-muted))]">
-            GitHub 热门 · Hugging Face 趋势 · 模型榜单 · 综合对比，每天自动更新
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[rgb(var(--text-muted))]">
-            <span>
-              最后更新：
-              {initialOverview?.updatedAt ? formatTime(initialOverview.updatedAt) : '暂无数据'}
-            </span>
-            <span>收录 {initialOverview?.itemTotal ?? totalItems} 条</span>
-            <span>
-              信源 {healthy}/{sourceTotal} 正常
-            </span>
-            {hasFailure ? (
-              <span className="inline-flex items-center gap-1 text-[rgb(var(--danger))]">
-                <AlertTriangle className="w-3 h-3" />
-                部分信源暂不可用，展示上次成功数据
-              </span>
-            ) : null}
-          </div>
+          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+            {/* 左：标题 / 副标题 / 统计（占满剩余横向空间） */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <Flame className="w-6 h-6 text-[rgb(var(--primary))] shrink-0" />
+                <h1 className="text-xl sm:text-2xl font-bold text-[rgb(var(--text))] truncate">
+                  洞察 · 技术热点聚合
+                </h1>
+              </div>
+              <p className="mt-1 text-sm text-[rgb(var(--text-muted))]">
+                GitHub 热门 · Hugging Face 趋势 · 模型榜单 · 综合对比，每天自动更新
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[rgb(var(--text-muted))]">
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  最后更新 {initialOverview?.updatedAt ? formatTime(initialOverview.updatedAt) : '暂无数据'}
+                </span>
+                <span className="text-[rgb(var(--border))]">·</span>
+                <span>收录 {initialOverview?.itemTotal ?? totalItems} 条</span>
+                <span className="text-[rgb(var(--border))]">·</span>
+                <span>信源 {healthy}/{sourceTotal} 正常</span>
+                {hasFailure ? (
+                  <span className="inline-flex items-center gap-1 text-[rgb(var(--danger))]">
+                    <AlertTriangle className="w-3 h-3" />
+                    部分信源暂不可用，展示上次成功数据
+                  </span>
+                ) : null}
+              </div>
+            </div>
 
-          {/* 视图切换 */}
-          <div className="mt-4 inline-flex rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-0.5">
-            <button
-              onClick={() => setView('feed')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                view === 'feed'
-                  ? 'bg-[rgb(var(--primary))] text-white'
-                  : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
-              }`}
-            >
-              <ListOrdered className="w-4 h-4" />
-              热点
-            </button>
-            <button
-              onClick={() => setView('leaderboard')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                view === 'leaderboard'
-                  ? 'bg-[rgb(var(--primary))] text-white'
-                  : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
-              }`}
-            >
-              <Trophy className="w-4 h-4" />
-              榜单
-            </button>
-            <button
-              onClick={() => setView('compare')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                view === 'compare'
-                  ? 'bg-[rgb(var(--primary))] text-white'
-                  : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
-              }`}
-            >
-              <Scale className="w-4 h-4" />
-              对比
-            </button>
+            {/* 右：视图切换 + 名称归一（同一行，充分利用横向空间） */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-0.5">
+                <button
+                  onClick={() => setView('feed')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    view === 'feed'
+                      ? 'bg-[rgb(var(--primary))] text-white'
+                      : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                  }`}
+                >
+                  <ListOrdered className="w-4 h-4" />
+                  热点
+                </button>
+                <button
+                  onClick={() => setView('leaderboard')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    view === 'leaderboard'
+                      ? 'bg-[rgb(var(--primary))] text-white'
+                      : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                  }`}
+                >
+                  <Trophy className="w-4 h-4" />
+                  榜单
+                </button>
+                <button
+                  onClick={() => setView('compare')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    view === 'compare'
+                      ? 'bg-[rgb(var(--primary))] text-white'
+                      : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                  }`}
+                >
+                  <Scale className="w-4 h-4" />
+                  对比
+                </button>
+              </div>
+
+              <button
+                onClick={() => setNormalized((v) => !v)}
+                role="switch"
+                aria-checked={normalized}
+                title="开启后厂商名与模型名后缀会归一显示；关闭则显示信源原始名称"
+                className={`inline-flex items-center gap-2 h-9 pl-2.5 pr-3 rounded-lg text-xs font-medium border transition-colors ${
+                  normalized
+                    ? 'bg-[rgb(var(--primary)/0.12)] text-[rgb(var(--primary))] border-[rgb(var(--primary)/0.35)]'
+                    : 'bg-[rgb(var(--card))] text-[rgb(var(--text-muted))] border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))]'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                名称归一
+                <span
+                  className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+                    normalized ? 'bg-[rgb(var(--primary))]' : 'bg-[rgb(var(--border))]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${
+                      normalized ? 'translate-x-[0.95rem]' : 'translate-x-[0.1rem]'
+                    }`}
+                  />
+                </span>
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setNormalized((v) => !v)}
-            title="开启后厂商名与模型名后缀会归一显示；关闭则显示信源原始名称"
-            className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
-              normalized
-                ? 'bg-[rgb(var(--primary)/0.12)] text-[rgb(var(--primary))] border-[rgb(var(--primary)/0.4)]'
-                : 'bg-[rgb(var(--card))] text-[rgb(var(--text-muted))] border-[rgb(var(--border))] hover:bg-[rgb(var(--hover))]'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            名称归一：{normalized ? '开' : '关'}
-          </button>
         </motion.header>
 
         {view === 'feed' ? (
