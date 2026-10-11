@@ -26,7 +26,9 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * GitHub 热门仓库采集器。
@@ -79,22 +81,50 @@ public class GithubTrendingCollector implements HotCollector {
 
     @Override
     public List<HotItemData> fetch() throws Exception {
-        // 优先官方每日 trending
+        List<HotItemData> out = new ArrayList<>();
+
+        // 优先官方每日 trending（真·每日热度榜）
         try {
-            List<HotItemData> trending = fetchTrending();
-            if (trending.size() >= 5) {
-                log.info("GitHub Trending 采集完成：" + trending.size() + " 条");
-                return trending;
-            }
-            log.warn("GitHub Trending 解析结果过少（" + trending.size() + " 条），回退 Search API");
+            out.addAll(fetchTrending());
+            log.info("GitHub Trending 采集 " + out.size() + " 条");
         } catch (Exception e) {
-            log.warn("GitHub Trending 抓取/解析失败，回退 Search API：" + e.getMessage());
+            log.warn("GitHub Trending 抓取/解析失败：" + e.getMessage());
         }
 
-        // 兜底：Search API
-        List<HotItemData> fallback = fetchFromSearch();
-        log.info("GitHub Search 采集完成：" + fallback.size() + " 条");
-        return fallback;
+        // 不足 LIMIT 时用 Search API 补足（按 itemKey 去重，trending 优先居前）
+        if (out.size() < LIMIT) {
+            try {
+                Set<String> seen = new HashSet<>();
+                for (HotItemData d : out) {
+                    seen.add(d.itemKey());
+                }
+                int filled = 0;
+                for (HotItemData d : fetchFromSearch()) {
+                    if (out.size() >= LIMIT) {
+                        break;
+                    }
+                    if (seen.add(d.itemKey())) {
+                        out.add(d);
+                        filled++;
+                    }
+                }
+                if (filled > 0) {
+                    log.info("GitHub Search 补足 " + filled + " 条");
+                }
+            } catch (Exception e) {
+                log.warn("GitHub Search 补足失败：" + e.getMessage());
+            }
+        }
+
+        // 合并后统一按位置重排名次
+        List<HotItemData> ranked = new ArrayList<>(out.size());
+        int rank = 1;
+        for (HotItemData d : out) {
+            ranked.add(new HotItemData(d.category(), d.itemKey(), d.title(), d.url(), d.author(),
+                    d.tags(), d.score(), rank++, d.extra(), d.publishedAt()));
+        }
+        log.info("GitHub 采集完成（trending + search 合并）：" + ranked.size() + " 条");
+        return ranked;
     }
 
     /** 解析 github.com/trending 页面的仓库列表。 */
