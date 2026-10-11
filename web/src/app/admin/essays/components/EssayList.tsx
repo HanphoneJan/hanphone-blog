@@ -1,11 +1,13 @@
 'use client'
 
 import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { SkeletonBlock } from '@/components/shared/Skeleton'
 import type { Essay } from '../types'
 import { EssayCard } from './EssayCard'
 
 interface EssayListProps {
   essays: Essay[]
+  loading?: boolean
   searchKeyword: string
   onSearchChange: (keyword: string) => void
   sortOrder: 'asc' | 'desc' | null
@@ -20,6 +22,7 @@ interface EssayListProps {
 
 export function EssayList({
   essays,
+  loading = false,
   searchKeyword,
   onSearchChange,
   sortOrder,
@@ -86,7 +89,19 @@ export function EssayList({
             </tr>
           </thead>
           <tbody>
-            {essays.length > 0 ? (
+            {loading && essays.length === 0 ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-b border-[rgb(var(--border))]">
+                  <td className="py-3 px-4"><SkeletonBlock className="h-4 w-6" /></td>
+                  <td className="py-3 px-4"><SkeletonBlock className="h-4 w-40" /></td>
+                  <td className="py-3 px-4"><SkeletonBlock className="h-4 w-20" /></td>
+                  <td className="py-3 px-4"><SkeletonBlock className="h-4 w-24" /></td>
+                  <td className="py-3 px-4"><SkeletonBlock className="h-5 w-10 rounded-full" /></td>
+                  <td className="py-3 px-4"><SkeletonBlock className="h-5 w-10 rounded-full" /></td>
+                  <td className="py-3 px-4"><SkeletonBlock className="h-6 w-20 rounded-md" /></td>
+                </tr>
+              ))
+            ) : essays.length > 0 ? (
               essays.map((item, index) => (
                 <EssayCard
                   key={item.id}
@@ -113,7 +128,20 @@ export function EssayList({
 
         {/* 移动端列表视图 */}
         <div className="md:hidden">
-          {essays.length > 0 ? (
+          {loading && essays.length === 0 ? (
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-[rgb(var(--card))] rounded-lg border border-[rgb(var(--border))] p-4 space-y-3"
+                >
+                  <SkeletonBlock className="h-4 w-1/2" />
+                  <SkeletonBlock className="h-3 w-3/4" />
+                  <SkeletonBlock className="h-8 w-full rounded-md" />
+                </div>
+              ))}
+            </div>
+          ) : essays.length > 0 ? (
             <div className="space-y-4">
               {essays.map((item, index) => (
                 <EssayCard

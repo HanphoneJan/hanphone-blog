@@ -37,12 +37,12 @@ const fadeInUpVariants: Variants = {
 }
 
 export default function FriendLinkManagement() {
-  const [loading, setLoading] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [applyConfirm, setApplyConfirm] = useState<{ link: FriendLink; parsed: ParsedApplyText } | null>(null)
 
   const {
     friendLinkList,
+    loading,
     deleteConfirm,
     updateRecommendLoading,
     updatePublishedLoading,

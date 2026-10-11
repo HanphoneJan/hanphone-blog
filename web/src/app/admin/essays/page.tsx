@@ -298,6 +298,7 @@ export default function EssayManagementPage() {
               >
                 <EssayList
               essays={filteredEssayList}
+              loading={loading}
               searchKeyword={searchKeyword}
               onSearchChange={setSearchKeyword}
               sortOrder={sortOrder}

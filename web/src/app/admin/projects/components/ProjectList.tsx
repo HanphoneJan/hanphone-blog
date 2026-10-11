@@ -168,7 +168,7 @@ export const ProjectList = ({
         </div>
       </div>
 
-      {loading ? (
+      {loading && projects.length === 0 ? (
         // 加载状态骨架屏
         <div className="space-y-3 h-[400px] flex flex-col justify-center">
           {[1, 2, 3, 4, 5].map(item => (

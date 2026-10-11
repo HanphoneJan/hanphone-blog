@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { Star, Trash2, ExternalLink, Loader2, Check, X, Eye, EyeOff, FileText, Wand2, Rss } from 'lucide-react'
 import { ASSETS } from '@/lib/constants'
+import { SkeletonBlock } from '@/components/shared/Skeleton'
 import { LINK_TYPES } from '../types'
 import type { FriendLink, LocalInputValues } from '../types'
 
@@ -182,10 +183,22 @@ export function LinkTable({
     )
   }
 
-  if (loading) {
+  if (loading && filteredList.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-[rgb(var(--primary))]" />
+      <div className="space-y-2" aria-busy="true" aria-label="加载中">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="p-3 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] flex items-center gap-3"
+          >
+            <SkeletonBlock className="h-10 w-10 rounded-full shrink-0" />
+            <div className="flex-1 space-y-2">
+              <SkeletonBlock className="h-4 w-40 max-w-full" />
+              <SkeletonBlock className="h-3 w-64 max-w-full" />
+            </div>
+            <SkeletonBlock className="h-8 w-20 rounded-md shrink-0" />
+          </div>
+        ))}
       </div>
     )
   }

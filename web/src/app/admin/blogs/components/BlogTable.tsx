@@ -5,11 +5,13 @@ import Link from 'next/link'
 import { Edit, Delete, Image as ImageIcon, Loader2, Star, StarOff, Eye, EyeOff } from 'lucide-react'
 import { TagManager } from './TagManager'
 import { formatDate, formatDateOnly } from '../utils/blogHelpers'
+import { SkeletonBlock } from '@/components/shared/Skeleton'
 import type { Blog, Type } from '../types'
 
 interface BlogTableProps {
   blogList: Blog[]
   typeList: Type[]
+  loading?: boolean
   updateRecommendLoading: number | null
   updatePublishedLoading: number | null
   inputRef: React.RefObject<HTMLInputElement | null>
@@ -27,8 +29,55 @@ interface BlogTableProps {
   onInputChange: (blogId: number, value: string) => void
 }
 
+/** 博客表格骨架屏（桌面端 12 栅格布局） */
+function BlogTableSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="hidden lg:grid grid-cols-12 gap-2 px-4 py-3 sm:px-6 sm:py-4 items-center border-b border-[rgb(var(--border))] last:border-0"
+        >
+          <div className="col-span-1">
+            <SkeletonBlock className="w-14 h-9 sm:w-16 sm:h-10 rounded-md" />
+          </div>
+          <div className="col-span-3 space-y-2">
+            <SkeletonBlock className="h-4 w-3/4" />
+            <SkeletonBlock className="h-3 w-1/2" />
+          </div>
+          <div className="col-span-1 flex items-center justify-center gap-1">
+            <SkeletonBlock className="h-7 w-7 rounded-full" />
+            <SkeletonBlock className="h-7 w-7 rounded-full" />
+          </div>
+          <div className="col-span-1">
+            <SkeletonBlock className="h-6 w-14 rounded-md" />
+          </div>
+          <div className="col-span-1">
+            <SkeletonBlock className="h-6 w-12 rounded-md" />
+          </div>
+          <div className="col-span-1">
+            <SkeletonBlock className="h-5 w-16 rounded-md" />
+          </div>
+          <div className="col-span-1 flex justify-center">
+            <SkeletonBlock className="h-4 w-8" />
+          </div>
+          <div className="col-span-1">
+            <SkeletonBlock className="h-4 w-16" />
+          </div>
+          <div className="col-span-2 flex justify-end gap-2">
+            <SkeletonBlock className="h-8 w-8 rounded-lg" />
+            <SkeletonBlock className="h-8 w-8 rounded-lg" />
+            <SkeletonBlock className="h-8 w-8 rounded-lg" />
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
 export function BlogTable({
   blogList,
+  loading = false,
   updateRecommendLoading,
   updatePublishedLoading,
   inputRef,
@@ -61,7 +110,9 @@ export function BlogTable({
       </div>
 
       {/* 表格内容 */}
-      {blogList.length > 0 ? (
+      {loading && blogList.length === 0 ? (
+        <BlogTableSkeleton />
+      ) : blogList.length > 0 ? (
         blogList.map(blog => (
           <div
             key={blog.id}

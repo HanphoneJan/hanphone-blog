@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { FolderOpen } from 'lucide-react'
+import { SkeletonBlock } from '@/components/shared/Skeleton'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
@@ -382,6 +383,7 @@ export default function BlogManagementPage() {
           <BlogTable
             blogList={blogList}
             typeList={typeList}
+            loading={loading}
             updateRecommendLoading={updateRecommendLoading}
             updatePublishedLoading={updatePublishedLoading}
             inputRef={editInputRef}
@@ -431,6 +433,19 @@ export default function BlogManagementPage() {
                 />
               </motion.div>
             ))
+          ) : loading ? (
+            <div className="space-y-3 lg:hidden">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-[rgb(var(--card))] backdrop-blur-sm rounded-xl shadow-sm border border-[rgb(var(--border))] p-4 space-y-3"
+                >
+                  <SkeletonBlock className="h-40 w-full rounded-lg" />
+                  <SkeletonBlock className="h-4 w-3/4" />
+                  <SkeletonBlock className="h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
           ) : (
             <motion.div 
               className="text-center min-h-[90vh] py-12 text-[rgb(var(--text-muted))] dark:text-[rgb(var(--text-muted))]"
@@ -569,9 +584,9 @@ export default function BlogManagementPage() {
         )}
       </AnimatePresence>
 
-      {/* 全局加载指示器 */}
+      {/* 全局加载指示器（仅在有数据时的操作加载中显示，避免与骨架屏重复） */}
       <AnimatePresence>
-        {loading && (
+        {loading && blogList.length > 0 && (
           <motion.div 
             className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40"
             initial={{ opacity: 0 }}
