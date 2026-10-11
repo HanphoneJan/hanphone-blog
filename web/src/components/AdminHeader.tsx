@@ -1,8 +1,8 @@
 'use client'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import Image from 'next/image'
 import {
   Home,
@@ -24,7 +24,8 @@ import {
   Moon,
   Heart,
   Zap,
-  Radar
+  Radar,
+  Loader2
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useTheme } from '@/contexts/ThemeProvider'
@@ -42,8 +43,46 @@ interface MenuItem {
   icon: React.ReactNode
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
-  const router = useRouter()
+interface NavItemInnerProps {
+  active: boolean
+  icon: React.ReactNode
+  label: string
+  isCollapse: boolean
+  isMobileView: boolean
+  onPending: (pending: boolean) => void
+}
+
+/**
+ * 导航项内部渲染：用 useLinkStatus 感知「本次导航是否进行中」，
+ * 进行中时在图标处显示转圈，并向父级汇报以驱动顶部进度条。
+ * 注意：useLinkStatus 必须在 <Link> 的子组件中调用。
+ */
+function NavItemInner({ active, icon, label, isCollapse, isMobileView, onPending }: NavItemInnerProps) {
+  const { pending } = useLinkStatus()
+
+  useEffect(() => {
+    if (!pending) return
+    onPending(true)
+    return () => onPending(false)
+  }, [pending, onPending])
+
+  return (
+    <>
+      <span
+        className={`inline-flex items-center justify-center ${
+          isCollapse && !isMobileView ? 'mx-auto' : ''
+        } ${active ? 'text-white' : 'text-[rgb(var(--primary))]'}`}
+      >
+        {pending ? <Loader2 size={20} className="animate-spin" /> : icon}
+      </span>
+      {(!isCollapse || isMobileView) && (
+        <span className={`ml-3 ${isMobileView ? 'font-medium' : ''}`}>{label}</span>
+      )}
+    </>
+  )
+}
+
+const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {  const router = useRouter()
   const pathname = usePathname() || ''
   const [isCollapse, setIsCollapse] = useState(false)
   const [screenWidth, setScreenWidth] = useState<number>(HOME_CONFIG.INIT_SCREEN_WIDTH)
@@ -59,6 +98,20 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
   const maskRef = useRef<HTMLDivElement>(null)
   // 创建一个ref用于portal容器
   const portalRef = useRef<HTMLDivElement | null>(null)
+
+  // 导航进行中计数（可能同时有多个链接处于 pending），驱动顶部进度条
+  const navPendingCount = useRef(0)
+  const [navPending, setNavPending] = useState(false)
+  const handleNavPending = useCallback((pending: boolean) => {
+    navPendingCount.current = Math.max(0, navPendingCount.current + (pending ? 1 : -1))
+    setNavPending(navPendingCount.current > 0)
+  }, [])
+
+  // 路由切换完成后复位，避免个别链接清理未触发导致进度条卡住
+  useEffect(() => {
+    navPendingCount.current = 0
+    setNavPending(false)
+  }, [pathname])
 
   const { userInfo, onLogout } = useUser()
   const { theme, toggleTheme } = useTheme()
@@ -263,6 +316,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
 
   return (
     <div className="flex w-full h-screen bg-[rgb(var(--bg))] overflow-hidden">
+      {/* 顶部导航进度条：点击导航、路由切换进行中时立即显示 */}
+      <div id="global-loading-bar" className={navPending ? 'active' : ''} aria-hidden="true" />
       <aside
         className={`z-50 bg-[rgb(var(--bg))] backdrop-blur-sm text-[rgb(var(--text))] transition-all duration-300 shrink-0 border-r border-[rgb(var(--border))] ${
           isMobileView
@@ -293,6 +348,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
                 <li key={item.id} className="mx-2">
                   <Link
                     href={item.path}
+                    prefetch
                     onClick={closeMobileMenu}
                     className={`flex items-center py-3 px-4 rounded-lg transition-all duration-300 ${
                       active
@@ -300,18 +356,14 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ children }) => {
                         : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
                     }`}
                   >
-                    <span
-                      className={`${isCollapse && !isMobileView ? 'mx-auto' : ''} ${
-                        active ? 'text-white' : 'text-[rgb(var(--primary))]'
-                      }`}
-                    >
-                      {item.icon}
-                    </span>
-                    {(!isCollapse || isMobileView) && (
-                      <span className={`ml-3 ${isMobileView ? 'font-medium' : ''}`}>
-                        {item.authName}
-                      </span>
-                    )}
+                    <NavItemInner
+                      active={active}
+                      icon={item.icon}
+                      label={item.authName}
+                      isCollapse={isCollapse}
+                      isMobileView={isMobileView}
+                      onPending={handleNavPending}
+                    />
                   </Link>
                 </li>
               )
