@@ -56,6 +56,20 @@ function extractCookieValue(cookie: string, name: string): string | null {
 }
 
 /**
+ * 构造网易云 /login/token/refresh（eapi）请求所需的 Cookie 头。
+ *
+ * 该接口要求 Cookie 头**同时**包含：
+ * - 设备信息（os / appver / deviceId / requestId 等，即 getHeaders() 生成的部分）
+ * - 登录态 MUSIC_U
+ * 缺少任意一项都会返回 `{"code":301}`（表现为刷新失败）。
+ * 直接把浏览器整串 Cookie 拿去用（内含 MUSIC_U 但缺设备字段）同样会 301，
+ * 因此这里用「设备信息 + MUSIC_U」组合，而不是直接覆盖。
+ */
+export function buildRefreshCookieHeader(deviceCookie: string, musicU?: string): string {
+  return musicU ? `${deviceCookie}; MUSIC_U=${musicU}` : deviceCookie
+}
+
+/**
  * 尝试刷新网易云登录 Cookie。
  *
  * 说明：
@@ -91,12 +105,13 @@ export async function refreshNeteaseCookie(): Promise<RefreshResult> {
   try {
     const meting = new Meting('netease')
     meting.format(false)
-    meting.cookie(currentCookie)
+
+    const musicU = extractCookieValue(currentCookie, 'MUSIC_U') ?? undefined
+    meting.cookie(buildRefreshCookieHeader(meting.header['Cookie'] ?? '', musicU))
 
     const provider = meting.provider as NeteaseProvider
-    // 必须带上 cookieToken（MUSIC_U 值），否则服务端不会下发新的 cookie，
-    // 只会返回 code:200 而 cookie 从未真正续期，导致固定 7 天过期。
-    const api = provider.refreshLogin(extractCookieValue(currentCookie, 'MUSIC_U') ?? undefined)
+    // 必须带上 cookieToken（MUSIC_U 值），保证请求体与服务端认知的登录态一致。
+    const api = provider.refreshLogin(musicU)
 
     // executeRequest 内部会处理 eapi 加密并调用 curl；curl 已在 info 中保存 set-cookie
     const raw = await provider.executeRequest(api, meting)
