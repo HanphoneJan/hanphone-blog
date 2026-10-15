@@ -2,6 +2,7 @@ import Header from '@/components/Header'
 import BackgroundImage from '@/components/BackgroundImage'
 import Live2DWidget from '@/components/Live2DWidget'
 import FloatingChat from '@/components/FloatingChat'
+import { ChatNotifyProvider } from '@/contexts/ChatNotifyProvider'
 import { WebsiteJsonLd, PersonJsonLd } from '@/components/JsonLd'
 import { Metadata } from 'next'
 import { SITE_CONFIG, SITE_URL } from '@/lib/seo-config'
@@ -39,31 +40,33 @@ export default function MainLayout({
   children: React.ReactNode
 }>) {
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* 结构化数据 - SEO优化 */}
-      <WebsiteJsonLd />
-      <PersonJsonLd />
+    <ChatNotifyProvider>
+      <div className="flex flex-col min-h-screen">
+        {/* 结构化数据 - SEO优化 */}
+        <WebsiteJsonLd />
+        <PersonJsonLd />
 
-      {/* 全局加载进度条 */}
-      <LoadingBar />
+        {/* 全局加载进度条 */}
+        <LoadingBar />
 
-      {/* 路由变化时重置滚动（popstate 后退/前进除外） */}
-      <ScrollReset />
+        {/* 路由变化时重置滚动（popstate 后退/前进除外） */}
+        <ScrollReset />
 
-      <Header />
+        <Header />
 
 
 
-      <div className="main-content flex-1 flex flex-col min-h-0 pt-14">
-        {/* 背景图：默认 WebP/JPEG，支持 localStorage 自定义 */}
-        <BackgroundImage />
-        <PageTransition>
-          {children}
-        </PageTransition>
+        <div className="main-content flex-1 flex flex-col min-h-0 pt-14">
+          {/* 背景图：默认 WebP/JPEG，支持 localStorage 自定义 */}
+          <BackgroundImage />
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </div>
+        <Live2DWidget />
+        <FloatingChat />
+        <VisitTracker />
       </div>
-      <Live2DWidget />
-      <FloatingChat />
-      <VisitTracker />
-    </div>
+    </ChatNotifyProvider>
   )
 }

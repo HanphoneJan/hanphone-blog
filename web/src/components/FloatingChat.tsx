@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
-import { MessageCircle, X, ExternalLink } from 'lucide-react'
+import { MessageCircle, X, ExternalLink, Bell, BellOff } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeProvider'
+import { useChatNotify } from '@/contexts/ChatNotifyProvider'
 import './FloatingChat.css'
 
 const CHAT_WIDTH = 380
@@ -89,6 +90,7 @@ function isHiddenPage(pathname: string): boolean {
 
 export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProps) {
   const { theme } = useTheme()
+  const { publicUnread, notificationPermission, requestNotificationPermission, setPublicChatOpen } = useChatNotify()
   const pathname = usePathname()
   const hidden = isHiddenPage(pathname)
   const [isOpen, setIsOpen] = useState(false)
@@ -269,12 +271,27 @@ export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProp
 
   const handleToggle = useCallback(() => {
     if (hasMovedRef.current) return
-    setIsOpen(prev => !prev)
-  }, [])
+    const next = !isOpen
+    setIsOpen(next)
+    // 打开聊天窗 = 已读：清零公共未读；首次打开顺带申请浏览器通知权限（用户手势）
+    setPublicChatOpen(next)
+    if (next && notificationPermission === 'default') requestNotificationPermission()
+  }, [isOpen, setPublicChatOpen, notificationPermission, requestNotificationPermission])
 
   const handleClose = useCallback(() => {
     setIsOpen(false)
-  }, [])
+    setPublicChatOpen(false)
+  }, [setPublicChatOpen])
+
+  // 由浏览器通知点击唤起：打开悬浮聊天窗
+  useEffect(() => {
+    const openChat = () => {
+      setIsOpen(true)
+      setPublicChatOpen(true)
+    }
+    window.addEventListener('blog:open-floating-chat', openChat)
+    return () => window.removeEventListener('blog:open-floating-chat', openChat)
+  }, [setPublicChatOpen])
 
   // 进入隐藏页面时自动关闭聊天窗口
   useEffect(() => {
@@ -323,6 +340,16 @@ export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProp
         aria-label="打开公共聊天室"
       >
         <MessageCircle className="w-6 h-6" />
+        {/* 公共聊天室新消息角标：自上次打开聊天窗以来累计 */}
+        {publicUnread > 0 && (
+          <span
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold leading-none"
+            style={{ backgroundColor: '#ef4444', color: '#fff', boxShadow: '0 0 0 2px rgb(var(--bg))' }}
+            aria-label={`${publicUnread} 条新消息`}
+          >
+            {publicUnread > 99 ? '99+' : publicUnread}
+          </span>
+        )}
       </button>
 
       {/* Chat window (shown when open) */}
@@ -355,6 +382,22 @@ export default function FloatingChat({ src = CHAT_PUBLIC_URL }: FloatingChatProp
             className="flex items-center gap-1.5 transition-opacity duration-150"
             style={{ opacity: isHovered ? 1 : 0, pointerEvents: isHovered ? 'auto' : 'none' }}
           >
+            <button
+              onClick={requestNotificationPermission}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="floating-chat-header-btn w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+              style={{ color: notificationPermission === 'granted' ? 'rgb(var(--primary))' : 'rgb(var(--text-muted))' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'rgb(var(--hover))'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
+              }}
+              aria-label={notificationPermission === 'granted' ? '新消息浏览器通知已开启' : '开启新消息浏览器通知'}
+              title={notificationPermission === 'granted' ? '新消息浏览器通知已开启' : '开启新消息浏览器通知'}
+            >
+              {notificationPermission === 'granted' ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            </button>
             <button
               onClick={() => window.open(CHAT_PUBLIC_URL, '_blank')}
               onMouseDown={(e) => e.stopPropagation()}

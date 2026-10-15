@@ -218,6 +218,18 @@ web/src/
 
 ---
 
+## 聊天未读角标与浏览器通知 (contexts/ChatNotifyProvider.tsx)
+
+主站自身没有聊天 UI（悬浮按钮 `FloatingChat` 打开 `/chat/public` 公共聊天室 iframe），但需要未读角标与系统通知，因此 `(main)/layout.tsx` 用 `ChatNotifyProvider` 包住前台，自行连一条 socket：
+
+- 连接：`io(NEXT_PUBLIC_CHAT_SOCKET_URL || 同源)`，path `/chat-api/socket.io`；已登录则用博客 JWT `authenticate`（与 chat-client 同一鉴权）；25s 心跳。
+- 公共未读：`publicHistory` 首次访问建立基线（不把历史算未读），此后按 `localStorage.chat_public_last_read_id` 计未读；`publicMessageBroadcast` 实时 +1。打开悬浮聊天窗即视为已读（清零并落盘最新 id）→ 悬浮按钮红色数字角标（>99 显示 99+）。
+- 浏览器通知（Notification API）：收到非本人私信（`message`，跳过 AI 自动回复）始终弹；公共新消息仅在页面切到后台（`document.visibilityState !== 'visible'`）时弹，前台只更新角标。权限在首次打开聊天窗（用户手势）或点击角标头部的铃铛按钮时申请。
+- 未登录访客连接 socket 也能统计公共未读；私信通知需登录（取 `useUser()` 的 token/userInfo）。
+- 生产依赖 nginx 将 `/chat-api` 反代到 chat-server（同源，无需额外 CORS）。
+
+---
+
 ## Tauri 桌面应用
 
 配置位于 `src-tauri/`：
