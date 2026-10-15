@@ -1,6 +1,7 @@
 package com.example.blog.hot;
 
 import com.example.blog.hot.model.ModelLeaderboardService;
+import com.example.blog.po.HotCollectRun;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class HotTriggerService {
 
     private final HotCollectService hotCollectService;
     private final ModelLeaderboardService modelLeaderboardService;
+    private final HotPushNotifier pushNotifier;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "hot-collect");
@@ -30,9 +32,11 @@ public class HotTriggerService {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     public HotTriggerService(HotCollectService hotCollectService,
-                             ModelLeaderboardService modelLeaderboardService) {
+                             ModelLeaderboardService modelLeaderboardService,
+                             HotPushNotifier pushNotifier) {
         this.hotCollectService = hotCollectService;
         this.modelLeaderboardService = modelLeaderboardService;
+        this.pushNotifier = pushNotifier;
     }
 
     public boolean isRunning() {
@@ -46,8 +50,11 @@ public class HotTriggerService {
         }
         executor.submit(() -> {
             try {
-                hotCollectService.collectAll("MANUAL");
+                HotCollectRun hotRun = hotCollectService.collectAll("MANUAL");
                 modelLeaderboardService.collectAll("MANUAL");
+                if (hotRun != null && hotRun.getSuccessCount() > 0) {
+                    pushNotifier.notifyUpdated("热点聚合已更新", "最新热点与模型榜单已刷新，点击查看");
+                }
             } catch (Exception e) {
                 log.error("采集任务异常", e);
             } finally {

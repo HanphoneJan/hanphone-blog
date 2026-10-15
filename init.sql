@@ -107,3 +107,15 @@ BEGIN
             FOREIGN KEY (conversation_id) REFERENCES conversations (conversation_id);
     END IF;
 END $$;
+
+-- ---------- device_tokens（FCM 推送设备令牌） ----------
+-- 每台设备的 FCM registration token 一行；user_id 为 NULL 表示匿名设备（仅收热点更新等广播推送），
+-- 登录后重新上报即关联到该用户（收到私信推送）。App 登出会把 user_id 置空但保留 token（继续收热点推送）。
+CREATE TABLE IF NOT EXISTS device_tokens (
+    token character varying(255) NOT NULL PRIMARY KEY,
+    user_id integer,
+    platform character varying(16) NOT NULL DEFAULT 'android',
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_device_tokens_user ON device_tokens (user_id);

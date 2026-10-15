@@ -5,6 +5,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { AuthService } from './authService.js';
 import { PostgresService, ADMIN_ROOM, initializeDatabase } from './postgresService.js';
 import { registerPublicRoomHandler } from './publicRoomHandler.js';
+import { pushToUser, pushBroadcast, isPushEnabled } from './pushService.js';
 import { ServerToClientEvents, ClientToServerEvents } from './types.js';
 import publicRoomRoutes from './publicRoomRoutes.js';
 
@@ -425,6 +426,70 @@ app.get('/chat-api/api/user/admin', authenticateUser, async (req: Request, res: 
   }
 });
 
+// ===== FCM 设备令牌 =====
+// 可选鉴权：带有效 Bearer 时把 token 关联到该用户（可收私信推送）；匿名上报也可（仅收热点等广播推送）
+async function optionalUserId(req: Request): Promise<number | null> {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const payload = AuthService.verifyToken(token);
+  if (!payload) return null;
+  const userId = parseInt(payload.userId, 10);
+  return isNaN(userId) ? null : userId;
+}
+
+app.post('/chat-api/api/devices', async (req: Request, res: Response) => {
+  try {
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    const platform = typeof req.body?.platform === 'string' ? req.body.platform : 'android';
+    if (!token) {
+      return res.status(400).json({ success: false, message: '缺少设备 token' });
+    }
+    const userId = await optionalUserId(req);
+    await PostgresService.upsertDeviceToken(token, userId, platform);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('上报设备 token 失败:', error);
+    res.status(500).json({ success: false, message: '服务器内部错误' });
+  }
+});
+
+app.post('/chat-api/api/devices/remove', async (req: Request, res: Response) => {
+  try {
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    if (!token) {
+      return res.status(400).json({ success: false, message: '缺少设备 token' });
+    }
+    await PostgresService.deleteDeviceToken(token);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('删除设备 token 失败:', error);
+    res.status(500).json({ success: false, message: '服务器内部错误' });
+  }
+});
+
+// 内部接口：广播推送（blog 后端热点采集完成后调用）。
+// 密钥用 chat↔blog 的共享密钥（chat-server 的 BLOG_INTERNAL_KEY == blog 的 INTERNAL_API_KEY）。
+app.post('/chat-api/internal/push', async (req: Request, res: Response) => {
+  const expected = process.env.BLOG_INTERNAL_KEY || process.env.INTERNAL_API_KEY || '';
+  const key = req.headers['x-internal-key'];
+  if (!expected || key !== expected) {
+    return res.status(401).json({ success: false, message: '无效的内部密钥' });
+  }
+  try {
+    if (!isPushEnabled()) {
+      return res.json({ success: true, skipped: true, message: '未配置 FCM 凭证' });
+    }
+    const title = typeof req.body?.title === 'string' ? req.body.title : '热点已更新';
+    const body = typeof req.body?.body === 'string' ? req.body.body : '';
+    pushBroadcast({ title, body, data: { type: 'hot' } })
+      .catch((e) => console.error('[FCM] 广播推送失败:', e));
+    res.json({ success: true });
+  } catch (error) {
+    console.error('内部广播推送失败:', error);
+    res.status(500).json({ success: false, message: '服务器内部错误' });
+  }
+});
+
 // ========== 在线状态追踪 ==========
 // 记录每个已认证 socket 的最后心跳时间
 const heartbeatMap = new Map<string, number>();
@@ -435,6 +500,11 @@ const lastSeenAt = new Map<number, number>();
 // 下线宽限期定时器：最后一个连接断开后延迟 OFFLINE_GRACE_MS 才真正下线（避免移动端弱网闪断）
 const offlineGraceTimers = new Map<number, NodeJS.Timeout>();
 const OFFLINE_GRACE_MS = 60_000; // 60s：与心跳超时一致，期间重连接取消下线
+
+/** 用户当前是否有活跃 socket（在线则私信走 socket 通知，不发 FCM，避免重复） */
+function isUserOnline(userId: number): boolean {
+  return onlineUserIdSet.has(userId);
+}
 
 /** 附带在线状态与最后活跃时间（以 chat-server 内存态为权威，blog 落库仅作投影） */
 function enrichPresence<T extends { id: number }>(users: T[]): (T & { isOnline: boolean; lastSeenAt: number | null })[] {
@@ -654,6 +724,15 @@ io.on('connection', (socket) => {
 
         io.to(ADMIN_ROOM.toString()).emit('message', message);
         socket.emit('message', message);
+
+        // 管理员离线才推 FCM（在线由 socket 通知；App 内已按在线态去重）
+        if (!isUserOnline(ADMIN_ROOM)) {
+          pushToUser(ADMIN_ROOM, {
+            title: user.nickname || user.username || '新私信',
+            body: messageContent,
+            data: { type: 'private', peerUserId: String(user.id) },
+          }).catch((e) => console.error('[FCM] 私信推送失败:', e));
+        }
       }
     } catch (error) {
       console.error('[Socket.IO:userMessage] 保存消息失败:', error);
@@ -711,6 +790,15 @@ io.on('connection', (socket) => {
       io.to(userId.toString()).emit('message', message);
       // 也发送给发送消息的管理员自己
       socket.emit('message', message);
+
+      // 目标用户离线才推 FCM（在线由 socket 通知）
+      if (!isUserOnline(userId)) {
+        pushToUser(userId, {
+          title: admin.nickname || admin.username || '博主',
+          body: messageContent,
+          data: { type: 'private', peerUserId: String(admin.id) },
+        }).catch((e) => console.error('[FCM] 私信推送失败:', e));
+      }
 
       console.log(`[Socket.IO:adminMessage] 管理员消息已发送给用户 ${userId}`);
     } catch (error) {

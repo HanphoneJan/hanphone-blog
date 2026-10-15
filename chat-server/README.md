@@ -103,6 +103,11 @@ JWT_ISSUER=auth0
 # Agent Service 地址
 AGENT_SERVICE_URL=http://localhost:8001
 
+# FCM 推送（可选）：Firebase 服务账号 JSON 绝对路径；不配置则推送关闭（私信/热点更新）
+FCM_SERVICE_ACCOUNT=/path/to/firebase-service-account.json
+# 出网代理（国内服务器访问 Google 必须，如 mihomo）：留空则直连
+FCM_PROXY=http://127.0.0.1:7890
+
 # CORS 配置
 ALLOWED_ORIGINS=http://localhost:4010,http://localhost:4011
 ```

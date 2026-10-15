@@ -158,6 +158,11 @@ AGENT_SERVICE_URL=http://localhost:8001
 # Server → Agent Service 通信密钥（两边保持一致，生产必须配置）
 INTERNAL_API_KEY=请填入强随机密钥
 
+# FCM 推送（可选）：Firebase 服务账号 JSON 的绝对路径；不配置则关闭推送（私信/热点更新）
+FCM_SERVICE_ACCOUNT=/path/to/firebase-service-account.json
+# 出网代理（国内服务器访问 Google 必须）：如 mihomo http://127.0.0.1:7890；留空则直连
+FCM_PROXY=http://127.0.0.1:7890
+
 # CORS 白名单
 ALLOWED_ORIGINS=http://localhost:4010,http://localhost:4011
 ```
@@ -228,6 +233,56 @@ VITE_AUTH_BASE_URL=https://blog.example.com
 ```
 
 > **关于 `VITE_AUTH_BASE_URL`**：登录接口 `POST /api/login` 由 **blog 服务**（Spring Boot，默认端口 8090）提供（见 `hanphone-blog/server` 的 `UserController`）。客户端会将 `${VITE_AUTH_BASE_URL}/api/login` 拼成登录 URL（见 `client/src/config/api.ts`），因此这里填 **blog 服务的根地址**（如 `http://localhost:8090`），不要带 `/api` 后缀。聊天后端没有登录路由，即使前后端同域也**必须**配置此项。
+
+### 4.4 FCM 推送（可选，Android App 杀进程兜底）
+
+不配置时推送整体关闭，其它功能不受影响。完整链路见 `android-protocol.md`「FCM 推送」。
+
+**1) 服务端放服务账号私钥**（Firebase 控制台 → 项目设置 → 服务账号 → 生成新的私钥）：
+
+```bash
+mkdir -p /home/hanphone/secrets
+# 上传 hanphone-blog-firebase-adminsdk-xxxx.json 到该目录
+chmod 600 /home/hanphone/secrets/hanphone-blog-firebase-adminsdk-xxxx.json
+```
+
+chat-server 的 `.env` 加：
+
+```env
+FCM_SERVICE_ACCOUNT=/home/hanphone/secrets/hanphone-blog-firebase-adminsdk-xxxx.json
+# 国内服务器出网到 Google 必须走代理（如本机 mihomo），否则发送报 ETIMEDOUT
+FCM_PROXY=http://127.0.0.1:7890
+```
+
+> 发送实现为 **HTTP/1.1 + 代理**（`FCM_PROXY`）：`firebase-admin` 的 messaging 走 HTTP/2 直连、不支持代理，故本项目改为自行调用 FCM v1 REST（`oauth2.googleapis.com` 取 token → `fcm.googleapis.com/v1/.../messages:send`）。
+
+重启后日志出现 `[FCM] 服务账号已加载：<project_id>（经代理 …）` 即成功：
+
+```bash
+pm2 restart hanphone-chat-server --update-env
+pm2 logs hanphone-chat-server --lines 50
+```
+
+**2) 建表**（`device_tokens`，见仓库根 `init.sql`，幂等）：
+
+```bash
+psql -h 127.0.0.1 -U chat_db -d chat_db -f init.sql
+```
+
+**3) blog 后端**：`server/.env` 用默认 `CHAT_API_BASE_URL=http://127.0.0.1:4010` 即可（chat-server 同机）。热点采集完成后会调用 chat-server `/chat-api/internal/push` 广播；`x-internal-key` 用 **chat↔blog 共享密钥**（blog 的 `INTERNAL_API_KEY`，等于 chat-server 的 `BLOG_INTERNAL_KEY`）。
+
+**4) Android**：在 Firebase 项目添加包名 `com.hanphone.blog` 的 Android 应用，下载 `google-services.json` 放到 `android/app/`，重新打包安装；App 启动后会把 token 上报到 `/chat-api/api/devices`。缺失该文件时构建仍成功、FCM 自动禁用。
+
+**验证**：
+
+```bash
+curl -X POST http://127.0.0.1:4010/chat-api/internal/push \
+  -H "Content-Type: application/json" \
+  -H "x-internal-key: <BLOG_INTERNAL_KEY>" \
+  -d '{"title":"测试推送","body":"FCM 配置成功"}'
+```
+
+日志 `[FCM] 广播推送：成功 x/y`；`y=0` 表示还没有设备上报 token（App 那步未到位）。
 
 ---
 

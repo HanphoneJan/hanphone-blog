@@ -1,6 +1,7 @@
 package com.example.blog.hot;
 
 import com.example.blog.hot.model.ModelLeaderboardService;
+import com.example.blog.po.HotCollectRun;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,11 +18,14 @@ public class HotCollectScheduler {
 
     private final HotCollectService collectService;
     private final ModelLeaderboardService modelLeaderboardService;
+    private final HotPushNotifier pushNotifier;
 
     public HotCollectScheduler(HotCollectService collectService,
-                               ModelLeaderboardService modelLeaderboardService) {
+                               ModelLeaderboardService modelLeaderboardService,
+                               HotPushNotifier pushNotifier) {
         this.collectService = collectService;
         this.modelLeaderboardService = modelLeaderboardService;
+        this.pushNotifier = pushNotifier;
     }
 
     @Scheduled(cron = "${hot.collect.cron:0 30 3 * * *}")
@@ -30,7 +34,10 @@ public class HotCollectScheduler {
             log.info("洞察采集已关闭（hot.collect.enabled=false）");
             return;
         }
-        collectService.collectAll("SCHEDULED");
+        HotCollectRun hotRun = collectService.collectAll("SCHEDULED");
         modelLeaderboardService.collectAll("SCHEDULED");
+        if (hotRun != null && hotRun.getSuccessCount() > 0) {
+            pushNotifier.notifyUpdated("热点聚合已更新", "最新热点与模型榜单已刷新，点击查看");
+        }
     }
 }

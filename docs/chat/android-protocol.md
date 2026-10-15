@@ -42,6 +42,19 @@
 | `GET /chat-api/api/messages/{userId}` | 管理员取与指定用户的历史（`requireAdmin`）；支持 `?limit=` 同上。`isRead` 同上 |
 | `GET /chat-api/api/users/all` | 管理员收件箱用户列表 |
 | `GET /chat-api/api/users/unread` | 管理员收件箱未读数：`{ success, unread: [{ userId, count }] }`，`count` = 该用户发给管理员且未读的消息数 |
+| `POST /chat-api/api/devices` | 上报 FCM 设备令牌（body `{ token, platform? }`）。**带 Bearer** 时关联到该用户（可收私信推送）；**匿名**上报仅收广播推送（热点更新） |
+| `POST /chat-api/api/devices/remove` | 删除 FCM 设备令牌（关闭通知 / 清除数据；body `{ token }`） |
+
+## FCM 推送
+
+App 杀进程后 socket 断开，靠 FCM 兜底推送：
+
+- **令牌上报**：App 启动/登录态变化时取 FCM token → `POST /chat-api/api/devices`（登录态经 Bearer 关联用户）。登出后重新匿名上报（保留 token 收热点推送，但不再收私信推送）。
+- **私信推送**：由 chat-server 发送。**接收方当前有在线 socket 时不发**（在线由 socket 通知，天然去重）；离线/杀进程才发 FCM。`data.type = "private"`。
+- **热点更新推送**：blog 后端采集完成（每日 03:30 / 后台手动）调用内部接口 `POST /chat-api/internal/push` → chat-server 向**全部**设备广播。`data.type = "hot"`（Android 渠道 `hot_updates`）。鉴权头 `x-internal-key` = **chat↔blog 共享密钥**（即 chat-server 的 `BLOG_INTERNAL_KEY`，等于 blog 后端的 `INTERNAL_API_KEY`，**不是** chat-server 自己的 `INTERNAL_API_KEY`）。
+- 服务端凭证：`FCM_SERVICE_ACCOUNT` 指向 Firebase 服务账号 JSON；未配置时推送整体关闭（不影响其它功能）。
+- **服务端出网**：国内服务器访问 Google 必须经代理（`FCM_PROXY`，如 mihomo `http://127.0.0.1:7890`）。发送为**自实现 FCM v1 REST（HTTP/1.1 + 代理）**：`firebase-admin` 的 messaging 走 HTTP/2 直连、不支持代理，会 ETIMEDOUT。
+- Android 端：`google-services.json` 缺失时 FCM 自动禁用（`BuildConfig.FCM_CONFIGURED=false`），构建仍成功。
 
 ## 在线状态
 

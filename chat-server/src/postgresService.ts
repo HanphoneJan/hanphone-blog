@@ -429,6 +429,68 @@ export class PostgresService {
       throw error;
     }
   }
+
+  // ===== FCM 设备令牌 =====
+
+  /** 上报/更新设备 token；userId 为 null 表示匿名设备（仅收广播类推送，如热点更新） */
+  static async upsertDeviceToken(token: string, userId: number | null, platform = 'android'): Promise<void> {
+    try {
+      await queryWithRetry(`
+        INSERT INTO device_tokens (token, user_id, platform, updated_at)
+        VALUES ($1, $2, $3, now())
+        ON CONFLICT (token) DO UPDATE
+          SET user_id = EXCLUDED.user_id,
+              platform = EXCLUDED.platform,
+              updated_at = now()
+      `, [token, userId, platform]);
+    } catch (error) {
+      console.error('保存设备 token 失败:', error);
+      throw error;
+    }
+  }
+
+  /** 删除设备 token（关闭推送/清除数据时） */
+  static async deleteDeviceToken(token: string): Promise<void> {
+    try {
+      await queryWithRetry(`DELETE FROM device_tokens WHERE token = $1`, [token]);
+    } catch (error) {
+      console.error('删除设备 token 失败:', error);
+      throw error;
+    }
+  }
+
+  /** 批量删除失效 token（FCM 返回 token 失效时清理） */
+  static async deleteDeviceTokens(tokens: string[]): Promise<void> {
+    if (tokens.length === 0) return;
+    try {
+      await queryWithRetry(`DELETE FROM device_tokens WHERE token = ANY($1::varchar[])`, [tokens]);
+    } catch (error) {
+      console.error('批量删除设备 token 失败:', error);
+      throw error;
+    }
+  }
+
+  /** 某用户的全部设备 token（私信推送用） */
+  static async getDeviceTokensByUser(userId: number): Promise<string[]> {
+    try {
+      const result = await queryWithRetry(`SELECT token FROM device_tokens WHERE user_id = $1`, [userId]);
+      return result.rows.map((r) => r.token as string);
+    } catch (error) {
+      console.error('查询用户设备 token 失败:', error);
+      return [];
+    }
+  }
+
+  /** 全部设备 token（广播推送用，如热点更新） */
+  static async getAllDeviceTokens(): Promise<string[]> {
+    try {
+      const result = await queryWithRetry(`SELECT token FROM device_tokens`, []);
+      return result.rows.map((r) => r.token as string);
+    } catch (error) {
+      console.error('查询全部设备 token 失败:', error);
+      return [];
+    }
+  }
 }
 
 // 关闭数据库连接
