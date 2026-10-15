@@ -63,3 +63,20 @@ data class ChatUnreadItem(
     val userId: Long = 0,
     val count: Int = 0
 )
+
+/** FCM 设备令牌上报请求体（hanphone-chat /chat-api/api/devices） */
+data class DeviceTokenBody(
+    val token: String,
+    val platform: String = "android"
+)
+
+/** 设备令牌上报响应 */
+data class DeviceAck(
+    val success: Boolean = false
+)
+
+/** GET /chat-api/api/user/admin 返回结构（普通用户私信页展示博主昵称/头像） */
+data class ChatAdminResponse(
+    val success: Boolean = false,
+    val user: ChatUser? = null
+)

@@ -4,6 +4,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services) apply false
+}
+
+// Google 服务插件（FCM）：仅在放置 android/app/google-services.json 时启用。
+// 官方文档是无条件 apply，但 missing 该文件会直接让构建失败；此处做存在性判断，
+// 缺失时构建照常成功，FCM 相关代码在运行时自动禁用（BuildConfig.FCM_CONFIGURED / PushRegistrar）。
+// 放好 google-services.json 后本插件会自动生效；若要强制（缺失即报错），把下面 if 去掉即可。
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -14,8 +23,10 @@ android {
         applicationId = "com.hanphone.blog"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "1.0.2"
+        versionCode = 18
+        versionName = "1.0.4"
+        // 是否放置了 Firebase 配置（android/app/google-services.json）；缺失时 FCM 自动禁用
+        buildConfigField("boolean", "FCM_CONFIGURED", file("google-services.json").exists().toString())
     }
 
     buildFeatures {
@@ -78,4 +89,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.datastore.preferences)
     implementation(libs.socketio.client)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 }

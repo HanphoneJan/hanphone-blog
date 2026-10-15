@@ -46,12 +46,25 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.core.content.ContextCompat
 import com.hanphone.blog.core.auth
 import com.hanphone.blog.core.backgroundBlur
 import com.hanphone.blog.core.backgroundPath
 import com.hanphone.blog.core.themeMode
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.chat.ChatSocket
+import com.hanphone.blog.data.push.PushRegistrar
+import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.ui.essay.EssayDetailScreen
 import com.hanphone.blog.ui.essay.EssayListScreen
 import com.hanphone.blog.ui.home.HomeScreen
@@ -98,6 +111,40 @@ fun BlogAppRoot() {
         val auth = context.auth.first()
         TokenStore.restore(auth.token, auth.userId, auth.nickname, auth.avatar, auth.userType)
     }
+
+    val token by TokenStore.token.collectAsState()
+
+    // 登录态建立后即常连聊天 socket：不必先打开消息页，离开消息页/退到后台也能收到私信并弹系统通知
+    LaunchedEffect(token) {
+        val t = token
+        if (t != null) ChatSocket.connect(t) else ChatSocket.disconnect()
+    }
+
+    // 通知权限（Android 13+）：启动即请求（热点更新推送对未登录用户也生效；拒绝也不影响功能）
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // FCM 设备令牌同步：已登录关联用户（收私信推送），未登录为匿名（仅收热点推送）
+    LaunchedEffect(token) {
+        PushRegistrar.sync(context)
+    }
+
+    // 管理员：启动即预取收件箱未读数，底部「消息」红点在冷启动时也能正确显示
+    LaunchedEffect(token) {
+        val t = token
+        if (t != null && TokenStore.userType.value == "1") {
+            kotlin.runCatching { BlogRepository().chatUnread(t) }.onSuccess { resp ->
+                if (resp.success) ChatSocket.cacheAdminUnread(resp.unread, fromRemote = true)
+            }
+        }
+    }
+
     BlogTheme(darkTheme = darkTheme) {
         // contentColor 显式提供：MainScaffold 的 Scaffold 是 Transparent 容器，
         // 不修 LocalContentColor 会回退成黑色，深色主题下裸 Text 全部隐形
@@ -121,6 +168,9 @@ private fun MainScaffold() {
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = MainTab.entries.any { it.route == currentRoute }
     val selectedTab = MainTab.entries.firstOrNull { it.route == currentRoute }
+    // 未读私信红点（管理员=各会话未读之和；普通用户=来自博主/AI 的未读）——只显示红点，不显示数量
+    val adminUnread by ChatSocket.adminUnread.collectAsState()
+    val hasUnread = adminUnread.values.any { it > 0 }
     // 键盘弹出时隐藏底部导航栏，让主 Tab（聊天/随笔内嵌等）底部输入能贴齐键盘顶
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
@@ -149,12 +199,25 @@ private fun MainScaffold() {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)
                             ) {
-                                Icon(
-                                    tab.icon,
-                                    contentDescription = tab.label,
-                                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                Box {
+                                    Icon(
+                                        tab.icon,
+                                        contentDescription = tab.label,
+                                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    // 「消息」Tab 未读红点（不显示数量）
+                                    if (tab == MainTab.CHAT && hasUnread) {
+                                        Box(
+                                            Modifier
+                                                .align(Alignment.TopEnd)
+                                                .offset(x = 3.dp, y = (-1).dp)
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.error)
+                                        )
+                                    }
+                                }
                                 Text(
                                     tab.label,
                                     style = MaterialTheme.typography.labelSmall,

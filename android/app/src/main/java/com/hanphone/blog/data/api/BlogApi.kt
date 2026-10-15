@@ -3,6 +3,9 @@ package com.hanphone.blog.data.api
 import com.hanphone.blog.data.chat.ChatMessagesResponse
 import com.hanphone.blog.data.chat.ChatUnreadResponse
 import com.hanphone.blog.data.chat.ChatUsersResponse
+import com.hanphone.blog.data.chat.ChatAdminResponse
+import com.hanphone.blog.data.chat.DeviceAck
+import com.hanphone.blog.data.chat.DeviceTokenBody
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Blog
@@ -169,12 +172,29 @@ interface BlogApi {
     @GET("https://hanphone.cn/chat-api/api/users/unread")
     suspend fun chatUnread(@Header("Authorization") auth: String?): ChatUnreadResponse
 
+    // 博主（管理员）资料：普通用户私信页展示昵称/头像
+    @GET("https://hanphone.cn/chat-api/api/user/admin")
+    suspend fun chatAdmin(@Header("Authorization") auth: String?): ChatAdminResponse
+
     @GET("https://hanphone.cn/chat-api/api/messages/{userId}")
     suspend fun chatMessagesWithUser(
         @Path("userId") userId: Long,
         @Header("Authorization") auth: String?,
         @Query("limit") limit: Int = 200
     ): ChatMessagesResponse
+
+    // ===== FCM 设备令牌（hanphone-chat，带 Bearer 时关联用户 = 收私信推送；匿名 = 仅收热点推送）=====
+    @POST("https://hanphone.cn/chat-api/api/devices")
+    suspend fun registerDevice(
+        @Header("Authorization") auth: String?,
+        @Body body: DeviceTokenBody
+    ): DeviceAck
+
+    @POST("https://hanphone.cn/chat-api/api/devices/remove")
+    suspend fun removeDevice(
+        @Header("Authorization") auth: String?,
+        @Body body: DeviceTokenBody
+    ): DeviceAck
 
     // ===== 用户信息（我的页展示/编辑；Token 头由拦截器注入）=====
     @POST("user/current")

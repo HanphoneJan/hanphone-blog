@@ -1,13 +1,7 @@
 package com.hanphone.blog.ui.chat
 
 import android.view.inputmethod.InputMethodManager
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -54,7 +48,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -115,17 +108,6 @@ fun ChatScreen(onLogin: () -> Unit) {
     DisposableEffect(Unit) {
         ChatSocket.chatUiVisible = true
         onDispose { ChatSocket.chatUiVisible = false }
-    }
-
-    // 通知权限（Android 13+ 运行时请求，拒绝也不影响功能）
-    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
-                context, Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -310,6 +292,18 @@ private fun AdminThreadContent(
     // 本地缓存 key：普通用户与管理员=admin；管理员与某用户=u{userId}
     val convKey = remember(targetUserId) { if (targetUserId != null) "u$targetUserId" else "admin" }
 
+    // 普通用户：拉取博主（管理员）头像——私信历史不带对方资料，否则标题与气泡无头像
+    var resolvedPeerAvatar by remember(convKey) { mutableStateOf(peerAvatar) }
+    LaunchedEffect(token, targetUserId, convKey) {
+        val t = token
+        if (t == null || targetUserId != null) return@LaunchedEffect
+        runCatching { repo.chatAdmin(t) }.getOrNull()?.let { resp ->
+            if (resp.success) {
+                resp.user?.avatar?.takeIf { it.isNotBlank() }?.let { resolvedPeerAvatar = it }
+            }
+        }
+    }
+
     var history by remember(convKey) {
         mutableStateOf<List<PrivateChatMessage>>(ChatSocket.restorePrivateHistory(convKey) ?: emptyList())
     }
@@ -388,7 +382,7 @@ private fun AdminThreadContent(
     }
 
     // 会话变化：滚动到底 + 节流落盘（5s 一次；id=0 的本地乐观气泡不写缓存）。items 已含日期/时间分隔，用 items.size 定位底端
-    val items = remember(all, myUserId, peerName, peerAvatar) {
+    val items = remember(all, myUserId, peerName, resolvedPeerAvatar) {
         buildChatItems(all.map { m ->
             val mine = m.senderId == myUserId
             ChatMsgLike(
@@ -397,7 +391,7 @@ private fun AdminThreadContent(
                 senderId = m.senderId,
                 fromAi = m.fromAi,
                 nickname = if (m.fromAi) "AI" else (if (mine) "我" else peerName),
-                avatar = if (m.fromAi || mine) null else peerAvatar,
+                avatar = if (m.fromAi || mine) null else resolvedPeerAvatar,
                 timestamp = m.timestamp,
                 mine = mine,
                 showRead = mine && m.isRead && m.id != 0L
@@ -449,7 +443,7 @@ private fun AdminThreadContent(
                 // 会话标题
                 Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "返回") }
-                    Avatar(url = peerAvatar, name = peerName.firstOrNull()?.toString() ?: "友", size = 34.dp)
+                    Avatar(url = resolvedPeerAvatar, name = peerName.firstOrNull()?.toString() ?: "友", size = 34.dp)
                     Text("  $peerName", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 }
                 Box(Modifier.fillMaxWidth().weight(1f)) {

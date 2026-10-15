@@ -29,11 +29,14 @@ data/
   cache/MemoryCache.kt  内存缓存：返回秒显（进程存活期）
   cache/ContentStore.kt 磁盘缓存：冷启动秒显（filesDir JSON，Gson 读写）
   chat/ChatSocket.kt    socket.io 单例：聊天室/私信/AI 流式/心跳(25s)/chatUiVisible
-  chat/ChatNotifier.kt  私信系统通知（渠道 + POST_NOTIFICATIONS 运行时权限）
+  chat/ChatNotifier.kt  socket 私信系统通知（委托 PushNotifications）
   chat/ChatModels.kt    聊天相关模型
+  push/PushNotifications.kt    通知渠道（chat_messages / hot_updates）+ 通知展示
+  push/PushRegistrar.kt        FCM token 取用/上报/注销（google-services.json 缺失则静默跳过）
+  push/BlogMessagingService.kt FCM 前台消息展示 + onNewToken 上报
   repo/Repos.kt         BlogRepository / EssayRepository / MessageRepository / FileRepository
 ui/
-  App.kt                根：主题+背景层+底部导航+路由（4 Tab，200ms 淡入淡出过渡）
+  App.kt                根：主题+背景层+底部导航+路由（4 Tab，200ms 淡入淡出过渡）；登录态建立即常连 ChatSocket（离开消息页也收私信通知）+ 请求通知权限 + 「消息」Tab 未读红点
   Background.kt         自定义背景层（全局）
   home/HomeScreen.kt + HomeViewModel.kt        首页（列表/筛选/归档全在 VM；分类并入筛选面板）
   essay/EssaysScreen.kt + EssaysViewModel.kt   随笔列表 VM + 详情 VM
@@ -97,6 +100,8 @@ ui/
 - 公共聊天室事件：`requestPublicHistory`→`publicHistory`；`publicMessage`→`publicMessageBroadcast`；`publicOnlineCount`；AI：`publicAiStreamStart/Chunk/End/Error`（@寒枫 触发）；`messageDeleted`。
 - 私信事件：`userMessage`（普通用户发给管理员）、`adminMessage(userId, content)`（管理员回）、`message`（收到私信）、`userListUpdated`（管理员在线用户）。
 - **已读回执**：进入会话即 emit `markConversationRead(peerUserId)`（普通用户=1000，管理员=对方 userId）；收到 `conversationRead { peerUserId, readUpToMessageId }` 时把自己发给对方、`id<=readUpToMessageId` 的消息标已读（`ChatSocket` 单例内存缓存 + 修订号 `privateCacheRevision` 驱动 UI 刷新）。管理员收件箱未读数 = REST `GET /chat-api/api/users/unread`（60s 节流）+ socket 新消息实时增量（未在查看该会话时 +1、查看时即时标记已读）。协议见 `docs/chat/android-protocol.md`。
+- **socket 常连与红点**：连接钩子在 `ui/App.kt` 的 `BlogAppRoot`（登录态变化即 `ChatSocket.connect/disconnect`），**不必先打开消息页**；`ChatSocket.adminUnread`（userId→未读数，两角色通用）非空即底部「消息」Tab 显示红点（只红点、不显数字），管理员冷启动时 `App.kt` 预取 `/users/unread` 校正。私信通知条件 =「消息页不可见 **或** App 不在前台」→ 后台/离开消息页都弹（`ChatSocket.appInForeground` 由 `MainActivity.onResume/onPause` 维护）。
+- **FCM 推送（杀进程兜底）**：`data/push/` 包。`PushRegistrar` 启动/登录态变化时取 FCM token → `POST /chat-api/api/devices`（带 Bearer 关联用户，匿名仅收热点推送）；`BlogMessagingService` 收前台消息并展示、`onNewToken` 重新上报。**私信推送由 chat-server 在「接收方无在线 socket」时才发**（与 socket 通知去重）；**热点更新**由 blog 采集完成后经 `/chat-api/internal/push` 广播。凭证：`android/app/google-services.json`（缺失时 `BuildConfig.FCM_CONFIGURED=false`，FCM 自动禁用、构建仍成功）+ 服务端 `FCM_SERVICE_ACCOUNT`。
 - 私信 REST（**Bearer**）：普通用户 `GET /chat-api/api/messages/admin`；管理员 `GET /chat-api/api/users/all` + `GET /chat-api/api/messages/{userId}` + `GET /chat-api/api/users/unread`。
 - **管理员 vs 普通用户**：`/messages/admin` 对管理员返回 403；`/users/all` 对普通用户返回 403 —— 所有这类调用必须 try/catch，否则 Retrofit HttpException 会崩掉整个 App。
 
@@ -185,7 +190,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 1. **登录失败**：一直发明文密码 → 应为 `md5(明文)`。（最高频）
 2. **“无法登录”**：旧 token 卡登录入口 → 401 自动登出修复。
 3. **私信崩溃**：`retrofit2.HttpException: HTTP 403` —— 管理员账号调普通用户接口；**网络请求必须 try/catch**。
-4. **聊天“连接失败”**：重构时丢掉 `LaunchedEffect(token){ ChatSocket.connect }` —— 每进入 hub 必须有连接钩子。
+4. **聊天“连接失败”/收不到通知**：连接钩子在 `ui/App.kt` 的 `BlogAppRoot`（登录态建立即常连）——重构时易被删掉；**删了就会退回到「必须先打开消息页才连、后台收不到私信通知」**。
 4a. **整 App 卡加载**：VM 化重构时丢掉了页面里的 `LaunchedEffect(Unit){ load() }` **首次加载调用**——VM init 只读缓存不发请求，所有列表页永远停在骨架屏。规矩：每个 VM 的 `init` 必须自己发起首载，改完用 logcat 确认请求真的发出（`adb logcat | grep okhttp`）。
 5. **筛选面板误解**：用户说“从上往下”= 从搜索栏向下弹出（overlay+遮罩），**不是**改内部为纵向列表。
 6. **App 图标 vs PWA 图标（maskable 行为，重大）**：自适应图标前景是**整张画布铺到桌面，圆遮罩只显示中央 ~61%**。

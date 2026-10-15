@@ -147,6 +147,10 @@ object ChatSocket {
     @Volatile
     var chatUiVisible: Boolean = false
 
+    /** App 是否处于前台。由 MainActivity onResume/onPause 维护 */
+    @Volatile
+    var appInForeground: Boolean = true
+
     // 心跳：服务端 60s 无 'heartbeat' 事件会强制断开（与 Web 端一致，25s 一次）
     private val heartbeatScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var heartbeatJob: Job? = null
@@ -318,8 +322,8 @@ object ChatSocket {
                     _adminUnread.value = _adminUnread.value + (peerId to (cur + 1))
                 }
             }
-            // App 原生能力：离开消息页时收到私信 → 系统通知（自己的回显/AI 消息不通知）
-            if (!chatUiVisible && !isMine && !m.fromAi && m.content.isNotBlank()) {
+            // App 原生能力：不在消息页（或 App 退到后台）时收到私信 → 系统通知（自己的回显/AI 消息不通知）
+            if ((!chatUiVisible || !appInForeground) && !isMine && !m.fromAi && m.content.isNotBlank()) {
                 ChatNotifier.notifyPrivate("收到新私信", m.content)
             }
         }

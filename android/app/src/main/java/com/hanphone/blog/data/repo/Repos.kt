@@ -4,9 +4,13 @@ import com.hanphone.blog.data.api.ApiClient
 import com.hanphone.blog.data.api.BlogApi
 import com.hanphone.blog.data.api.FileApi
 import com.hanphone.blog.data.api.UploadAvatarResult
+import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.chat.ChatMessagesResponse
 import com.hanphone.blog.data.chat.ChatUnreadResponse
 import com.hanphone.blog.data.chat.ChatUsersResponse
+import com.hanphone.blog.data.chat.ChatAdminResponse
+import com.hanphone.blog.data.chat.DeviceAck
+import com.hanphone.blog.data.chat.DeviceTokenBody
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Blog
@@ -186,9 +190,31 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
     suspend fun chatUnread(token: String): ChatUnreadResponse =
         withContext(Dispatchers.IO) { api.chatUnread("Bearer $token") }
 
+    /** 普通用户：博主（管理员）资料（私信页昵称/头像） */
+    suspend fun chatAdmin(token: String): ChatAdminResponse =
+        withContext(Dispatchers.IO) { api.chatAdmin("Bearer $token") }
+
     /** 管理员：与指定用户的历史记录 */
     suspend fun chatMessagesWithUser(token: String, userId: Long): ChatMessagesResponse =
         withContext(Dispatchers.IO) { api.chatMessagesWithUser(userId, "Bearer $token") }
+
+    /** 上报 FCM 设备令牌：已登录关联用户（收私信推送），未登录为匿名（仅收热点推送） */
+    suspend fun registerDevice(deviceToken: String, platform: String = "android"): DeviceAck =
+        withContext(Dispatchers.IO) {
+            api.registerDevice(
+                TokenStore.token.value?.let { "Bearer $it" },
+                DeviceTokenBody(deviceToken, platform)
+            )
+        }
+
+    /** 移除 FCM 设备令牌（关闭通知/清除数据） */
+    suspend fun removeDevice(deviceToken: String): DeviceAck =
+        withContext(Dispatchers.IO) {
+            api.removeDevice(
+                TokenStore.token.value?.let { "Bearer $it" },
+                DeviceTokenBody(deviceToken)
+            )
+        }
 
     suspend fun register(
         username: String,
