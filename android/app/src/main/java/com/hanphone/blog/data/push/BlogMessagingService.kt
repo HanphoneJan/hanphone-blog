@@ -22,7 +22,10 @@ class BlogMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         PushRegistrar.remember(applicationContext, token)
-        scope.launch { runCatching { BlogRepository().registerDevice(token) } }
+        scope.launch {
+            runCatching { BlogRepository().registerDevice(token) }        // chat-server：私信推送
+            runCatching { BlogRepository().registerDeviceToBlog(token) }  // 博客 server：热点推送
+        }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {

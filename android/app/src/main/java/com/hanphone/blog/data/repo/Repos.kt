@@ -216,6 +216,14 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
             )
         }
 
+    /** 上报 FCM 设备令牌到博客 server（博客直接发热点推送；Token 头由拦截器注入关联用户） */
+    suspend fun registerDeviceToBlog(deviceToken: String, platform: String = "android"): DeviceAck =
+        withContext(Dispatchers.IO) { api.registerBlogDevice(DeviceTokenBody(deviceToken, platform)) }
+
+    /** 从博客 server 移除 FCM 设备令牌 */
+    suspend fun removeDeviceFromBlog(deviceToken: String): DeviceAck =
+        withContext(Dispatchers.IO) { api.removeBlogDevice(DeviceTokenBody(deviceToken)) }
+
     suspend fun register(
         username: String,
         nickname: String,

@@ -196,6 +196,13 @@ interface BlogApi {
         @Body body: DeviceTokenBody
     ): DeviceAck
 
+    // ===== FCM 设备令牌（博客 server：直接发「热点更新」推送；Token 头由拦截器注入以关联用户）=====
+    @POST("devices")
+    suspend fun registerBlogDevice(@Body body: DeviceTokenBody): DeviceAck
+
+    @POST("devices/remove")
+    suspend fun removeBlogDevice(@Body body: DeviceTokenBody): DeviceAck
+
     // ===== 用户信息（我的页展示/编辑；Token 头由拦截器注入）=====
     @POST("user/current")
     suspend fun currentUser(@Body body: Map<String, Long>): ApiResult<User>

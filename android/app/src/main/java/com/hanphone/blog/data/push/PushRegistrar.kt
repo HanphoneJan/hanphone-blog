@@ -42,7 +42,8 @@ object PushRegistrar {
         if (!isAvailable(context)) return
         markSynced(context)
         val token = currentToken() ?: return
-        runCatching { repo.registerDevice(token) }
+        runCatching { repo.registerDevice(token) }         // chat-server：私信推送
+        runCatching { repo.registerDeviceToBlog(token) }   // 博客 server：热点推送
         remember(context, token)
     }
 
@@ -60,6 +61,7 @@ object PushRegistrar {
     suspend fun unregister(context: Context, repo: BlogRepository = BlogRepository()) {
         val token = lastToken(context) ?: return
         runCatching { repo.removeDevice(token) }
+        runCatching { repo.removeDeviceFromBlog(token) }
         clear(context)
     }
 
