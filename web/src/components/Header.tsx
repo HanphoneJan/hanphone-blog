@@ -115,6 +115,9 @@ const Header: React.FC = () => {
   const [userInfoFormVisible, setUserInfoFormVisible] = useState<boolean>(false)
   const [backgroundSettingsOpen, setBackgroundSettingsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  // 离开首页的过渡期间：首页透明 Header 需要在退场动画开始时就切回常规样式，
+  // 否则 pathname 尚未变为新路由，Header 会一直停留在适配 hero 的透明样式
+  const [isLeavingHome, setIsLeavingHome] = useState(false)
   const lastHeaderTap = useRef(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -131,11 +134,12 @@ const Header: React.FC = () => {
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
 
   const isHomePage = pathname === '/'
-  const isTransparent = isHomePage && !isScrolled
+  const isTransparent = isHomePage && !isScrolled && !isLeavingHome
 
-  // 监听路径变化，更新激活状态
+  // 监听路径变化，更新激活状态；到达新路由后清除「离开首页」标记
   useEffect(() => {
     setActiveIndex(pathname)
+    setIsLeavingHome(false)
   }, [pathname])
 
   // 管理body的home-page class（控制main-content的padding-top）
@@ -318,6 +322,12 @@ const Header: React.FC = () => {
     if (normalizePath(pathname) === normalizePath(url)) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
+    }
+
+    // 离开首页时立即切回常规 Header：退场动画期间 pathname 仍是 '/'，
+    // 不这样做 Header 会一直停留在适配 hero 的透明样式，直到 router.push 生效
+    if (isHomePage && normalizePath(url) !== '/') {
+      setIsLeavingHome(true)
     }
 
     const pageElement = document.querySelector('.page-transition')
