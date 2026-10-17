@@ -16,11 +16,18 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -29,6 +36,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 /**
  * GitHub 热门仓库采集器。
@@ -44,6 +52,10 @@ public class GithubTrendingCollector implements HotCollector {
     private static final int LIMIT = 25;
     private static final int RECENT_DAYS = 7;
     private static final String TRENDING_URL = "https://github.com/trending?since=daily";
+    /** Trending 页单次抓取的最大尝试次数（网络抖动时重试，仍失败才回退 Search）。 */
+    private static final int TRENDING_MAX_ATTEMPTS = 3;
+    /** 重试退避基数，第 n 次失败后等待 n * BACKOFF_MS。 */
+    private static final long RETRY_BACKOFF_MS = 1500L;
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -54,7 +66,10 @@ public class GithubTrendingCollector implements HotCollector {
     public GithubTrendingCollector(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper) {
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(8))
-                .setReadTimeout(Duration.ofSeconds(20))
+                // 国内服务器直连 github.com 抖动较大：开启 gzip 后页面由 ~600KB 降到 ~50KB，
+                // 读超时放宽到 60s 作为兜底，避免偶发慢速下载直接触发回退。
+                .setReadTimeout(Duration.ofSeconds(60))
+                .additionalInterceptors(new GzipAcceptEncodingInterceptor())
                 .build();
         this.objectMapper = objectMapper;
     }
@@ -83,13 +98,8 @@ public class GithubTrendingCollector implements HotCollector {
     public List<HotItemData> fetch() throws Exception {
         List<HotItemData> out = new ArrayList<>();
 
-        // 优先官方每日 trending（真·每日热度榜）
-        try {
-            out.addAll(fetchTrending());
-            log.info("GitHub Trending 采集 " + out.size() + " 条");
-        } catch (Exception e) {
-            log.warn("GitHub Trending 抓取/解析失败：" + e.getMessage());
-        }
+        // 优先官方每日 trending（真·每日热度榜）；网络抖动时重试，多次仍失败才回退 Search
+        out.addAll(fetchTrendingWithRetry());
 
         // 不足 LIMIT 时用 Search API 补足（按 itemKey 去重，trending 优先居前）
         if (out.size() < LIMIT) {
@@ -125,6 +135,38 @@ public class GithubTrendingCollector implements HotCollector {
         }
         log.info("GitHub 采集完成（trending + search 合并）：" + ranked.size() + " 条");
         return ranked;
+    }
+
+    /**
+     * 带重试地抓取官方 Trending。
+     *
+     * <p>国内服务器访问 {@code github.com} 不稳定（页面约 600KB，直连偶发 20s+），
+     * 单次超时不再直接回退 Search，而是重试若干次；只有全部尝试都失败才回退。</p>
+     */
+    private List<HotItemData> fetchTrendingWithRetry() {
+        Exception last = null;
+        for (int attempt = 1; attempt <= TRENDING_MAX_ATTEMPTS; attempt++) {
+            try {
+                List<HotItemData> data = fetchTrending();
+                log.info("GitHub Trending 采集 " + data.size() + " 条（第 " + attempt + " 次尝试）");
+                return data;
+            } catch (Exception e) {
+                last = e;
+                log.warn("GitHub Trending 抓取/解析失败（第 " + attempt + "/" + TRENDING_MAX_ATTEMPTS
+                        + " 次）：" + e.getMessage());
+                if (attempt < TRENDING_MAX_ATTEMPTS) {
+                    try {
+                        Thread.sleep(RETRY_BACKOFF_MS * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }
+        log.warn("GitHub Trending 多次尝试仍失败，回退 Search API："
+                + (last == null ? "unknown" : last.getMessage()));
+        return List.of();
     }
 
     /** 解析 github.com/trending 页面的仓库列表。 */
@@ -290,6 +332,68 @@ public class GithubTrendingCollector implements HotCollector {
             return Date.from(OffsetDateTime.parse(iso).toInstant());
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * 为请求加上 {@code Accept-Encoding: gzip}，并在响应声明 gzip 时解压。
+     *
+     * <p>GitHub Trending 页面约 600KB，未压缩时在国内服务器直连常需 16~25s，极易触发读超时；
+     * 开启 gzip 后传输量降到约 50KB，通常 2s 内即可完成。</p>
+     */
+    static final class GzipAcceptEncodingInterceptor implements ClientHttpRequestInterceptor {
+
+        @Override
+        public ClientHttpResponse intercept(HttpRequest request, byte[] body,
+                                            ClientHttpRequestExecution execution) throws IOException {
+            request.getHeaders().set(HttpHeaders.ACCEPT_ENCODING, "gzip");
+            ClientHttpResponse response = execution.execute(request, body);
+            String encoding = response.getHeaders().getFirst(HttpHeaders.CONTENT_ENCODING);
+            if (encoding != null && encoding.toLowerCase().contains("gzip")) {
+                return new GzipClientHttpResponse(response);
+            }
+            return response;
+        }
+    }
+
+    /** 包装原始响应，将 gzip 响应体透明解压。 */
+    private static final class GzipClientHttpResponse implements ClientHttpResponse {
+
+        private final ClientHttpResponse delegate;
+
+        GzipClientHttpResponse(ClientHttpResponse delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public HttpStatusCode getStatusCode() throws IOException {
+            return delegate.getStatusCode();
+        }
+
+        @Override
+        @Deprecated
+        public int getRawStatusCode() throws IOException {
+            return delegate.getRawStatusCode();
+        }
+
+        @Override
+        public String getStatusText() throws IOException {
+            return delegate.getStatusText();
+        }
+
+        @Override
+        public HttpHeaders getHeaders() {
+            return delegate.getHeaders();
+        }
+
+        @Override
+        public InputStream getBody() throws IOException {
+            return new GZIPInputStream(delegate.getBody());
+        }
+
+        @Override
+        public void close() {
+            delegate.close();
         }
     }
 }
