@@ -278,8 +278,8 @@ com.example.blog.hot/
 - **LMArena-only 清理 SQL**：删除「只被 `lmarena%` 命中」的实体（见 `server/DEPLOYMENT.md` 或运维记录），删后**必须重采**才会按新归一并回；只删不采会丢 LMArena-only 覆盖（约 340+ 个实体）。
 - **RestTemplate 会二次编码已编码查询串**：`datasets-server` 的 `dataset=lmarena-ai%2F…` 若用 `getJson(String)` 会被编成 `%252F` → 上游 500。路径含已编码字符（`%2F` 等）时一律用 `HttpJsonSupport.getJson(URI)` / `getJsonViaProxy(String)`（内部走 `URI.create`）。
 - **AI 摘要（OpenAI 兼容接口）**：
-  - baseUrl 要用 **OpenAI 兼容路径**；opencode zen 是 `https://opencode.ai/zen/v1`（`/zen/go/v1` 需要有效的 `x-opencode-session`，否则 401/400）。
-  - 推理模型（如 `deepseek-v4.1-flash`）`max_tokens` 要给足（当前 20000），否则思维链会吃光 token 导致 `content` 为空、判定失败。
+  - **入口必须与套餐匹配（2026-10 实测踩坑）**：opencode zen 分两个入口——Console 按量付费 `https://opencode.ai/inference/openai/v1`（旧别名 `/zen/v1`），Go / Go Plus 订阅 `https://opencode.ai/inference/go/openai/v1`（旧别名 `/zen/go/v1`，必须带 `x-opencode-session`，任意稳定字符串即可，用于路由/缓存）。**把 Go 的 Key 配到 Console 入口会返回 402 `Insufficient account funds`**——Console 只看到按量余额（通常为 0），并非订阅没额度；把同一把 Key 换到 Go 入口即恢复正常。
+  - baseUrl 只填到版本层，代码会自行拼 `/chat/completions`；推理模型（如 `deepseek-v4.1-flash`）`max_tokens` 要给足（当前 20000），否则思维链会吃光 token 导致 `content` 为空、判定失败。
   - 配置存 `hot_setting`（key：`summary.baseUrl` / `apiKey` / `model` / `headers`），**每次请求实时读库**，改完即时生效；后台保存空值 = 不修改。
   - **启用开关（可暂停不丢配置）**：`hot_setting.summary.enabled`（默认 true）与配置项分离。后台「聚合数据 → AI 摘要配置」有开关，关闭即暂停，**保留** URL/Key/Model/Header；`HotSummaryConfigService.isEnabled()` = 开关打开 **且** 配置完整，任一不满足则采集直接跳过摘要、不发外部请求。`PUT /admin/hot/settings/summary` 传 `{"enabled":"true|false"}` 只改开关（其余字段空值 = 不修改）。
   - 排障接口：`GET/PUT /admin/hot/settings/summary`、`POST /admin/hot/settings/summary/test`。
