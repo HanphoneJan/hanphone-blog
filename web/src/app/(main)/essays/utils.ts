@@ -92,9 +92,16 @@ export const getFileType = (url: string): FileType => {
   }
   if (
     lowerUrl.endsWith('.mp4') ||
+    lowerUrl.endsWith('.m4v') ||
     lowerUrl.endsWith('.webm') ||
     lowerUrl.endsWith('.mov') ||
-    lowerUrl.endsWith('.avi')
+    lowerUrl.endsWith('.avi') ||
+    lowerUrl.endsWith('.mkv') ||
+    lowerUrl.endsWith('.m2ts') ||
+    lowerUrl.endsWith('.mts') ||
+    lowerUrl.endsWith('.ogv') ||
+    lowerUrl.endsWith('.flv') ||
+    lowerUrl.endsWith('.wmv')
   ) {
     return 'video'
   }

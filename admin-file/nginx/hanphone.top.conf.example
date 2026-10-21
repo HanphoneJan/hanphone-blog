@@ -1,0 +1,136 @@
+# hanphone.top 静态文件 / 视频 HLS 的 nginx 示例
+#
+# 生产文件：/etc/nginx/conf.d/hanphone.top.conf
+# 不要整段覆盖现有配置；把 map 放到 http{}（或 conf.d 顶层），
+# 把 location 合并进现有 server{}。改完执行：
+#   nginx -t && nginx -s reload
+#
+# 关键点：
+# 1. /blog/ 直接读盘，命中磁盘就不经过 Node；miss 才回 @backend。
+#    注意：nginx worker 用户（nginx / www-data）必须能穿越 /home/hanphone。
+#    若 /home/hanphone 是 710，执行：sudo chmod o+x /home/hanphone
+# 2. /hls/ 是 uploads/.video/ 下的 HLS 分片，必须直读，并且加 CORS（hls.js 需要）。
+# 3. /media/meta、/media/poster.jpg、/media/thumb、/media/transcode 是动态接口，走 Node。
+# 4. ?download=1 在 nginx 直出时也要能强制下载（管理端下载原视频依赖它）。
+# 5. Cloudflare 还要加一条 Cache Rule 让 /hls/* 可缓存（见 README）。
+
+# HLS 分片/播放列表是公开资源，固定 ACAO: *。
+# 不用按 $http_origin 回显：Cloudflare 可能缓存某个 Origin 的响应，回显会导致
+# www / 非 www 互相拿到不匹配的 ACAO。
+
+# ?download=1 -> attachment；空值 nginx 不会发送该 header
+map $arg_download $download_disposition {
+    default "";
+    "1"     "attachment";
+}
+
+# 带版本号的缩略图永久缓存；其它原图/视频 7 天 + stale-while-revalidate
+map $uri $asset_cache_control {
+    default                                         "public, max-age=604800, stale-while-revalidate=86400";
+    "~*-(320|800|1600)w\.[0-9a-f]{8}\.webp$"        "public, max-age=31536000, immutable";
+}
+
+server {
+    listen 80;
+    server_name hanphone.top www.hanphone.top;
+
+    # 上传最大 1GB
+    client_max_body_size 1024m;
+
+    # 静态文件零拷贝
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+
+    root /home/hanphone/server_file/uploads;
+
+    # --- 动态接口：必须放在 ^~ /media/ 前面（= 精确匹配优先级最高） ---
+    location = /media/meta {
+        proxy_pass http://127.0.0.1:4000;
+        include proxy_params;
+    }
+    location = /media/poster {
+        proxy_pass http://127.0.0.1:4000;
+        include proxy_params;
+    }
+    location = /media/poster.jpg {
+        proxy_pass http://127.0.0.1:4000;
+        include proxy_params;
+    }
+    location = /media/thumb {
+        proxy_pass http://127.0.0.1:4000;
+        include proxy_params;
+    }
+    location = /media/transcode {
+        proxy_pass http://127.0.0.1:4000;
+        include proxy_params;
+    }
+
+    # --- HLS 分片 / playlists：直接读盘 ---
+    # 目录名带源文件版本号，可安全 immutable 一年。
+    location ^~ /hls/ {
+        alias /home/hanphone/server_file/uploads/.video/;
+        autoindex off;
+
+        # hls.js 用 XHR 拉 m3u8/ts，跨域必须有 CORS
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Range, Content-Type" always;
+        add_header Access-Control-Expose-Headers "Content-Range, Accept-Ranges, Content-Length" always;
+
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options nosniff always;
+
+        types {
+            application/vnd.apple.mpegurl m3u8;
+            video/mp2t                     ts;
+            video/iso.segment              m4s;
+            video/mp4                      mp4;
+            image/jpeg                     jpg;
+        }
+        default_type application/octet-stream;
+
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+    }
+
+    # --- 原图 / 缩略图 / 视频原件：直接读盘，miss 才回 Node ---
+    location ^~ /blog/ {
+        root /home/hanphone/server_file/uploads;
+        try_files $uri @backend;
+
+        add_header Cache-Control $asset_cache_control always;
+        add_header Content-Disposition $download_disposition always;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    # --- 其余接口 / 上传 / 删除 / 文件列表走 Node ---
+    location / {
+        proxy_pass http://127.0.0.1:4000;
+        include proxy_params;
+
+        # 大文件上传直接流给 Node，避免 nginx 先落盘一份
+        proxy_request_buffering off;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+
+    # /blog/ 里没命中磁盘的文件（例如旧数据 blog%2Fessay/...）回 Node
+    location @backend {
+        proxy_pass http://127.0.0.1:4000;
+        include proxy_params;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+}
+
+# 如果系统没有 /etc/nginx/proxy_params，把 include proxy_params; 换成：
+#
+#   proxy_http_version 1.1;
+#   proxy_set_header Host $host;
+#   proxy_set_header X-Real-IP $remote_addr;
+#   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#   proxy_set_header X-Forwarded-Proto $scheme;
+#   proxy_set_header Connection "";

@@ -240,6 +240,11 @@ CSS 里所有 `100vh` 改成 `var(--app-vh, 100vh)`（普通浏览器 / 未跑 J
 
 ## 待办：nginx 加 immutable（需要 root）
 
+> 2026-10 更新：`admin-file` 已在响应层对 `-(320|800|1600)w.<hash>.webp` 直接发
+> `Cache-Control: public, max-age=31536000, immutable`，即使 nginx 不改也能生效。
+> 如果让 nginx 直接读盘 `/blog/`，完整示例见 `admin-file/nginx/hanphone.top.conf.example`；
+> 下面的配置仍适用于「nginx 直出 + 想显式声明缓存」的场景。
+
 改造后缩略图内容与 URL 一一对应，可以放心长期缓存。当前 `hanphone.top` 的
 `location /` 只给了 `max-age=604800`（7 天），够用但不极致。
 

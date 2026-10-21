@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element -- 预览图走 /media/thumb（服务端按需生成），项目已关闭 next/image 优化 */
 
 import '../admin-animations.css'
 import { useState, useEffect, useRef } from 'react'
@@ -22,6 +23,8 @@ import {
   ArrowLeft,
   ChevronRight
 } from 'lucide-react'
+import { VideoPlayer } from '@/components/VideoPlayer'
+import { thumbUrlFor } from '@/lib/media'
 import React from 'react'
 
 import { API_CODE } from '@/lib/constants'
@@ -79,6 +82,15 @@ const getFileExtension = (filename: string): string => {
   return filename.split('.').pop()?.toLowerCase() || ''
 }
 
+// 按路径段编码，保留 /；避免把整段目录编码成 blog%2Fessay 导致 nginx 直出静态时匹配不到
+const encodePathSegments = (filePath: string): string => {
+  return filePath
+    .split('/')
+    .filter(Boolean)
+    .map(segment => encodeURIComponent(segment))
+    .join('/')
+}
+
 // 判断文件是否为图片
 const isImageFile = (filename: string): boolean => {
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
@@ -98,7 +110,7 @@ const isAudioFile = (filename: string): boolean => {
 
 // 判断文件是否为视频
 const isVideoFile = (filename: string): boolean => {
-  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv']
+  const videoExtensions = ['mp4', 'm4v', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'm2ts', 'mts', 'flv', 'wmv', 'ogv']
   return videoExtensions.includes(getFileExtension(filename))
 }
 
@@ -313,9 +325,8 @@ export default function FileManagementPage() {
   const handleDownload = async (fileName: string) => {
     try {
       // 创建下载链接，强制下载而不是预览
-      const encodedDir = currentDir ? encodeURIComponent(currentDir) + '/' : ''
-      const encodedFileName = encodeURIComponent(fileName)
-      const downloadUrl = `https://${fileDomain}/${encodedDir}${encodedFileName}?download=1`
+      const fullPath = currentDir ? `${currentDir}/${fileName}` : fileName
+      const downloadUrl = `https://${fileDomain}/${encodePathSegments(fullPath)}?download=1`
 
       // 在新窗口中打开下载链接
       window.open(downloadUrl, '_blank')
@@ -330,9 +341,8 @@ export default function FileManagementPage() {
   // 查看文件
   const handleViewFile = (fileName: string) => {
     try {
-      const encodedDir = currentDir ? encodeURIComponent(currentDir) + '/' : ''
-      const encodedFileName = encodeURIComponent(fileName)
-      const url = `https://${fileDomain}/${encodedDir}${encodedFileName}`
+      const fullPath = currentDir ? `${currentDir}/${fileName}` : fileName
+      const url = `https://${fileDomain}/${encodePathSegments(fullPath)}`
 
       // 如果是可以在浏览器中预览的文件，打开预览模态框
       if (canPreviewInBrowser(fileName)) {
@@ -479,9 +489,20 @@ export default function FileManagementPage() {
     const { name, url } = previewFile
 
     if (isImageFile(name)) {
+      const thumb = thumbUrlFor(url, 1600) || url
       return (
         <div className="flex justify-center items-center h-full">
-          <img src={url} alt={name} className="max-w-full max-h-full object-contain" />
+          <img
+            src={thumb}
+            alt={name}
+            className="max-w-full max-h-full object-contain"
+            onError={e => {
+              if (thumb !== url && e.currentTarget.dataset.fallback !== '1') {
+                e.currentTarget.dataset.fallback = '1'
+                e.currentTarget.src = url
+              }
+            }}
+          />
         </div>
       )
     } else if (isPdfFile(name)) {
@@ -501,9 +522,7 @@ export default function FileManagementPage() {
     } else if (isVideoFile(name)) {
       return (
         <div className="flex justify-center items-center h-full">
-          <video controls className="max-w-full max-h-full" src={url}>
-            您的浏览器不支持视频播放。
-          </video>
+          <VideoPlayer src={url} autoPlay className="w-full max-h-full aspect-video rounded-lg" />
         </div>
       )
     }

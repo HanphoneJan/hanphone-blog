@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { getFileType, getFileName } from '../utils'
-import type { Essay, FileType } from '../types'
+import type { FileType } from '../types'
 
 export function useFileGallery() {
   const [zoomData, setZoomData] = useState<{
@@ -23,6 +23,8 @@ export function useFileGallery() {
       a.click()
       document.body.removeChild(a)
     } else if (type === 'image') {
+      setZoomData({ visible: true, url, type })
+    } else if (type === 'video') {
       setZoomData({ visible: true, url, type })
     } else if (type === 'other') {
       // 无法识别类型的文件在新窗口打开

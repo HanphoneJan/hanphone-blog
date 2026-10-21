@@ -1,14 +1,12 @@
 'use client'
+/* eslint-disable @next/next/no-img-element -- 项目关闭了 next/image 优化，这里用原生 img 才能让 srcset 生效 */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { FileText, FileCode } from 'lucide-react'
-import Image from 'next/image'
-import dynamic from 'next/dynamic'
 import { getFileName } from '../utils'
 import type { Essay, FileType } from '../types'
-
-// 动态导入 ReactPlayer 避免 SSR 问题
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false })
+import { imageSrcSet, thumbUrlFor } from '@/lib/media'
+import { VideoPosterThumb } from '@/components/VideoPosterThumb'
 
 interface FileGalleryProps {
   essay: Essay
@@ -43,14 +41,15 @@ const getGridCols = (count: number, isMobile: boolean): number => {
 //
 // 原图单张可达十几 MB，一篇随笔最多挂 8 张（实测合计 ~38MB），
 // 直接用原图渲染网格会同时打爆浏览器和 2C2G 的服务器。
-// 这里 display 用 thumbPath（800w WebP，几 KB~几十 KB），点开放大才回原图。
-// 老数据与外链附件没有 thumbPath，displayUrl 回退到 url，行为与改造前一致。
+// 这里 display 用缩略图（800w WebP），srcset 再按视口/DPR 在 320/800/1600 中选；
+// 老数据/外链没有 thumbPath 时通过 /media/thumb 按需补，最后才回退原图。
 const ImageItem = ({
   url,
   thumbUrl,
   width,
   height,
   index,
+  cols,
   onClick,
   maxHeight
 }: {
@@ -59,13 +58,22 @@ const ImageItem = ({
   width?: number | null
   height?: number | null
   index: number
+  cols: number
   onClick: () => void
   maxHeight: number
 }) => {
+  const [failed, setFailed] = useState(false)
   // 有宽高就用 aspect-ratio 预留位置：避免图片加载完成后撑开容器导致整行重排，
   // 进而把下方视口外的图片拉进首屏并发请求（照片墙踩过的同一个坑）
   const hasRatio = typeof width === 'number' && typeof height === 'number' && width > 0 && height > 0
-  const displayUrl = thumbUrl || url
+  const displayUrl = thumbUrl || thumbUrlFor(url, 800) || url
+  const srcSet = imageSrcSet(url, [320, 800, 1600], width ?? null)
+  const sizes =
+    cols <= 1
+      ? '(max-width: 1024px) 100vw, 1024px'
+      : cols === 2
+        ? '(max-width: 1024px) 50vw, 512px'
+        : '(max-width: 1024px) 33vw, 341px'
 
   return (
     <div
@@ -77,16 +85,21 @@ const ImageItem = ({
         ...(hasRatio ? { aspectRatio: `${width} / ${height}` } : { minHeight: '120px' })
       }}
     >
-      <Image
-        src={displayUrl}
+      {/* 这里不能用 next/image：项目关掉了图片优化，直接用 <img> 才能让 srcset 生效 */}
+      <img
+        src={failed ? url : displayUrl}
+        srcSet={failed ? undefined : srcSet}
+        sizes={sizes}
         alt={`图片 ${index + 1}`}
-        width={0}
-        height={0}
-        sizes="100vw"
+        width={width ?? undefined}
+        height={height ?? undefined}
         loading={index < 4 ? 'eager' : 'lazy'}
-        className="transition-transform duration-200 group-hover:scale-[1.02]"
+        decoding="async"
+        onError={() => {
+          if (!failed) setFailed(true)
+        }}
+        className="block transition-transform duration-200 group-hover:scale-[1.02]"
         style={{
-          display: 'block',
           maxWidth: '100%',
           maxHeight: `${maxHeight}px`,
           width: 'auto',
@@ -98,7 +111,7 @@ const ImageItem = ({
   )
 }
 
-// 视频项组件 - 使用 ReactPlayer，带 maxHeight 限制
+// 视频项：只渲染封面，不创建 <video>；点击后才由弹窗按需加载 HLS/原片
 const VideoItem = ({
   url,
   onClick,
@@ -114,24 +127,7 @@ const VideoItem = ({
       className="relative w-full cursor-pointer overflow-hidden"
       style={{ aspectRatio: '16/9', maxHeight: `${maxHeight}px`, minHeight: '140px' }}
     >
-      {(ReactPlayer as any)({
-        url,
-        width: '100%',
-        height: '100%',
-        controls: true,
-        style: { backgroundColor: 'transparent' },
-        config: {
-          file: {
-            attributes: {
-              style: {
-                objectFit: 'contain',
-                width: '100%',
-                height: '100%'
-              }
-            }
-          }
-        }
-      })}
+      <VideoPosterThumb url={url} className="h-full w-full" />
     </div>
   )
 }
@@ -175,6 +171,7 @@ export function FileGallery({ essay, isMobile, openFile }: FileGalleryProps) {
                   width={file.width}
                   height={file.height}
                   index={index}
+                  cols={cols}
                   onClick={() => openFile(file.url, 'image')}
                   maxHeight={imageMaxHeight}
                 />

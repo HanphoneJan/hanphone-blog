@@ -1,9 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import { X, Link2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Download, X, Link2, ChevronUp, ChevronDown } from 'lucide-react'
 import type { EssayFile, FileInfo } from '../types'
 import { getFileIconByType, getFileName, isInternalFileUrl } from '../utils'
+import { downloadUrlFor, thumbUrlFor } from '@/lib/media'
+import { VideoPosterThumb } from '@/components/VideoPosterThumb'
 
 interface FilePreviewProps {
   file: FileInfo | EssayFile
@@ -66,6 +68,9 @@ export function FilePreview({ file, isLocal, index, onDelete, onMove, canMoveUp,
             src={localFile.previewUrl}
             className="w-full h-full object-cover"
             controls={false}
+            muted
+            playsInline
+            preload="metadata"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-[rgb(var(--hover))] p-2">
@@ -102,20 +107,17 @@ export function FilePreview({ file, isLocal, index, onDelete, onMove, canMoveUp,
     <div className="relative rounded-lg overflow-hidden h-24 border border-slate-300 dark:border-slate-700 group">
       {uploadedFile.urlType === 'IMAGE' ? (
         // 后台一次渲染整页附件，直出原图（单张可达十几 MB）最容易打爆浏览器；
-        // 缩略图没有时回退原图，老数据不受影响
+        // 缩略图没有时走 /media/thumb 按需补，最后才回退原图
         <Image
-          src={uploadedFile.thumbPath || uploadedFile.url}
+          src={uploadedFile.thumbPath || thumbUrlFor(uploadedFile.url, 800) || uploadedFile.url}
           alt={`文件 ${index + 1}`}
           width={144}
           height={144}
           className="w-full h-full object-cover"
         />
       ) : uploadedFile.urlType === 'VIDEO' ? (
-        <video
-          src={uploadedFile.url}
-          className="w-full h-full object-cover"
-          controls={false}
-        />
+        // 只显示封面，不在这里创建 <video>，避免一页附件同时拉多路视频
+        <VideoPosterThumb url={uploadedFile.url} className="w-full h-full" />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center bg-[rgb(var(--hover))] p-2">
           <div className="text-[rgb(var(--primary))] mb-1">
@@ -141,6 +143,20 @@ export function FilePreview({ file, isLocal, index, onDelete, onMove, canMoveUp,
       >
         <X className="h-5 w-5 text-white" />
       </button>
+
+      {uploadedFile.urlType === 'VIDEO' && isInternalFileUrl(uploadedFile.url) && (
+        <a
+          href={downloadUrlFor(uploadedFile.url)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="absolute bottom-1 right-1 z-20 rounded bg-black/60 p-1 text-white opacity-100 transition-opacity hover:bg-black/80 sm:opacity-0 sm:group-hover:opacity-100"
+          title="下载原视频"
+          aria-label="下载原视频"
+        >
+          <Download className="h-3.5 w-3.5" />
+        </a>
+      )}
     </div>
   )
 }

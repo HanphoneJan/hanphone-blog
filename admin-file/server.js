@@ -10,7 +10,25 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { verifyToken } = require('./token');
 const { logger, httpLogger } = require('./logger');
-const { generateThumbnails, THUMB_WIDTHS, hasThumbnails, thumbnailNamePattern } = require('./lib/thumbnail');
+const {
+  generateThumbnails,
+  THUMB_WIDTHS,
+  hasThumbnails,
+  thumbnailNamePattern,
+  thumbFileName,
+  sourceVersion,
+} = require('./lib/thumbnail');
+const { encodeUrlPath, toPosixRelative } = require('./lib/paths');
+const {
+  initVideo,
+  enqueueVideoJob,
+  getVideoMedia,
+  getVideoPoster,
+  deleteVideoAssets,
+  deleteVideoNamespace,
+  isVideoFile,
+  resolveMediaPath,
+} = require('./lib/video');
 const app = express();
 const PORT = process.env.PORT || 4000;
 const baseUploadDir = path.join(__dirname, "uploads");
@@ -104,8 +122,15 @@ app.use(
       err.statusCode = 403;
       return callback(err);
     },
-    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT"],
-    allowedHeaders: ["Content-Type", "Authorization", "Token"],
+    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "HEAD"],
+    allowedHeaders: ["Content-Type", "Authorization", "Token", "Range", "X-Internal-Key"],
+    exposedHeaders: [
+      "Content-Range",
+      "Accept-Ranges",
+      "Content-Length",
+      "Content-Disposition",
+      "ETag",
+    ],
   })
 );
 
@@ -128,6 +153,9 @@ const fileCategories = {
     "video/x-msvideo",
     "video/x-matroska",
     "video/webm",
+    "video/ogg",
+    "video/x-flv",
+    "video/x-ms-wmv",
   ],
   audios: [
     "audio/mpeg",
@@ -214,11 +242,18 @@ const extensionToCategory = {
   ".apng": "images",
   // Videos
   ".mp4": "videos",
+  ".m4v": "videos",
   ".mpeg": "videos",
+  ".mpg": "videos",
   ".mov": "videos",
   ".avi": "videos",
   ".mkv": "videos",
   ".webm": "videos",
+  ".m2ts": "videos",
+  ".mts": "videos",
+  ".flv": "videos",
+  ".wmv": "videos",
+  ".ogv": "videos",
   // Audios
   ".mp3": "audios",
   ".wav": "audios",
@@ -390,18 +425,14 @@ function assertInsideUploadDir(targetPath) {
     err.statusCode = 400;
     throw err;
   }
-}
 
-/**
- * 按路径段逐段编码（保留 / 分隔符）
- * 整串 encodeURIComponent 会把 / 变成 %2F，虽然当前 nginx 能容错，但会让 URL 难读、
- * 且部分 CDN / 代理对 %2F 处理不一致，因此统一按段编码。
- */
-function encodeUrlPath(relPath) {
-  return relPath
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
+  // .video 是视频派生资源目录，只能通过 /hls 静态访问，不能出现在文件管理/上传路径里
+  const rel = path.relative(resolvedBase, resolvedTarget);
+  if (rel === ".video" || rel.startsWith(`.video${path.sep}`)) {
+    const err = new Error("非法的路径");
+    err.statusCode = 400;
+    throw err;
+  }
 }
 
 /**
@@ -662,6 +693,256 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ---------------------------------------------------------------------------
+// 媒体派生资源：HLS 播放 / 视频海报 / 按需缩略图
+//
+// 原片永远保留在 uploads 原路径；这里只读 uploads/.video 下的派生文件。
+// /media/meta、/media/poster.jpg、/media/thumb 是动态接口；
+// HLS 分片/playlists 走 /hls/ 静态前缀。
+// ---------------------------------------------------------------------------
+const videoDerivedDir = path.join(baseUploadDir, ".video");
+
+// 同一张图并发请求时只生成一次缩略图，避免 sharp 重复解码
+const thumbInflight = new Map();
+function ensureThumbnails(absPath, relPath) {
+  if (!thumbInflight.has(absPath)) {
+    const task = generateThumbnails(absPath, relPath).finally(() => {
+      thumbInflight.delete(absPath);
+    });
+    thumbInflight.set(absPath, task);
+  }
+  return thumbInflight.get(absPath);
+}
+
+/**
+ * @swagger
+ * /media/meta:
+ *   get:
+ *     summary: 获取视频派生资源信息（公共）
+ *     description: 返回原片地址、下载地址、HLS 地址、海报与转码状态；没有 HLS 时前端回退原片。
+ *     tags: [Media]
+ *     parameters:
+ *       - in: query
+ *         name: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 相对 uploads 的路径，如 blog/essay/foo.mp4
+ *     responses:
+ *       200:
+ *         description: 成功
+ *       404:
+ *         description: 文件不存在
+ */
+app.get("/media/meta", async (req, res) => {
+  try {
+    const { rel, abs } = resolveMediaPath(req.query.path);
+    const media = await getVideoMedia(rel, abs);
+    if (!media) {
+      return res.status(400).json({ error: "不是视频文件" });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ code: 200, ...media });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    if (status >= 500) {
+      logger.error("获取视频信息失败:", { error: err.message, path: req.query.path });
+      return res.status(500).json({ error: "获取视频信息失败" });
+    }
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /media/poster.jpg:
+ *   get:
+ *     summary: 获取视频封面（公共）
+ *     tags: [Media]
+ *     parameters:
+ *       - in: query
+ *         name: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 返回 JPEG 封面
+ *       404:
+ *         description: 尚未生成封面
+ */
+app.get(["/media/poster", "/media/poster.jpg"], async (req, res) => {
+  try {
+    const { rel, abs } = resolveMediaPath(req.query.path);
+    const poster = await getVideoPoster(rel, abs);
+    if (!poster) {
+      return res.status(404).json({ error: "封面不存在或尚未生成" });
+    }
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    // 派生目录名是 .video，send 默认忽略 dotfiles，这里必须显式允许
+    res.sendFile(poster, { dotfiles: "allow" }, (err) => {
+      if (err && !res.headersSent) {
+        res.status(err.status || 404).json({ error: "封面读取失败" });
+      }
+    });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    if (status >= 500) {
+      logger.error("获取视频封面失败:", { error: err.message, path: req.query.path });
+      return res.status(500).json({ error: "获取视频封面失败" });
+    }
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /media/thumb:
+ *   get:
+ *     summary: 按需获取图片缩略图（公共）
+ *     description: 重定向到带内容版本号的 WebP；缺失时按需生成，生成失败/原图较小则回退原图。
+ *     tags: [Media]
+ *     parameters:
+ *       - in: query
+ *         name: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: w
+ *         schema:
+ *           type: integer
+ *           enum: [320, 800, 1600]
+ *     responses:
+ *       302:
+ *         description: 重定向到缩略图或原图
+ */
+app.get("/media/thumb", async (req, res) => {
+  try {
+    const { rel, abs } = resolveMediaPath(req.query.path);
+    const requested = Number(req.query.w);
+    const width = [320, 800, 1600].includes(requested) ? requested : 800;
+
+    const stat = await fs.stat(abs).catch(() => null);
+    if (!stat || !stat.isFile()) {
+      return res.status(404).json({ error: "文件不存在" });
+    }
+
+    // GIF / SVG 等不适合作 WebP 缩略图的格式直接回原图
+    if (!hasThumbnails(rel)) {
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.redirect(302, `/${encodeUrlPath(rel)}`);
+    }
+
+    const version = await sourceVersion(abs);
+    const originalName = path.basename(rel);
+    const fileName = thumbFileName(originalName, width, version);
+    const dirRel = path.posix.dirname(rel);
+    const thumbRel = dirRel === "." ? fileName : `${dirRel}/${fileName}`;
+    const thumbAbs = path.join(path.dirname(abs), fileName);
+
+    if (!fsExists(thumbAbs)) {
+      await ensureThumbnails(abs, rel);
+    }
+
+    // 目标档位比原图还大时不会生成，回退原图
+    const target = fsExists(thumbAbs) ? thumbRel : rel;
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.redirect(302, `/${encodeUrlPath(target)}`);
+  } catch (err) {
+    const status = err.statusCode || 500;
+    if (status >= 500) {
+      logger.error("获取缩略图失败:", { error: err.message, path: req.query.path });
+      return res.status(500).json({ error: "获取缩略图失败" });
+    }
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /media/transcode:
+ *   post:
+ *     summary: 手动触发视频转码（需要认证）
+ *     description: 把视频加入后台 HLS 转码队列；原片不受影响。
+ *     tags: [Media]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               path:
+ *                 type: string
+ *               force:
+ *                 type: boolean
+ *     responses:
+ *       202:
+ *         description: 已加入队列
+ */
+app.post("/media/transcode", authenticateToken, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const rawPath = body.path || req.query.path;
+    const { rel, abs } = resolveMediaPath(rawPath);
+
+    const stat = await fs.stat(abs).catch(() => null);
+    if (!stat || !stat.isFile()) {
+      return res.status(404).json({ error: "文件不存在" });
+    }
+
+    const force = Boolean(body.force || req.query.force);
+    const job = enqueueVideoJob(abs, rel, { force });
+    if (!job) {
+      return res.status(400).json({ error: "不是视频文件" });
+    }
+
+    res.status(202).json({ code: 202, message: "已加入转码队列", ...job });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    if (status >= 500) {
+      logger.error("触发视频转码失败:", { error: err.message, path: req.body?.path });
+      return res.status(500).json({ error: "触发视频转码失败" });
+    }
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// HLS 分片 / playlists。目录名带源文件版本号，可安全长期缓存。
+// 单独放在 /hls/ 前缀：这样 Cloudflare 只需给 /hls/* 加 Cache Rule，不会误伤 /media/meta。
+app.use(
+  "/hls",
+  express.static(videoDerivedDir, {
+    maxAge: "1y",
+    immutable: true,
+    etag: true,
+    lastModified: true,
+    index: false,
+    setHeaders: (res, filePath) => {
+      const ext = path.extname(filePath).toLowerCase();
+      const derivedMime = {
+        ".m3u8": "application/vnd.apple.mpegurl",
+        ".ts": "video/mp2t",
+        ".m4s": "video/iso.segment",
+        ".mp4": "video/mp4",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+      };
+      if (derivedMime[ext]) {
+        res.setHeader("Content-Type", derivedMime[ext]);
+      }
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      // HLS 是公开资源，固定 ACAO: *，避免 Cloudflare 缓存了某个 Origin 的 ACAO
+      // 后把 www / 非 www 的 hls.js 请求挡掉（全局 CORS 是按 Origin 回显的）。
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+    },
+  })
+);
+
 /**
  * @swagger
  * /upload/avatar:
@@ -825,6 +1106,7 @@ app.post("/upload", authenticateToken, upload.single("file"), async (req, res) =
 
     // 2. 构建最终的文件路径
     const finalPath = path.join(finalDir, req.file.filename);
+    assertInsideUploadDir(finalPath);
 
     // 3. 如果最终路径和初始路径不同，则移动文件
     if (req.file.path !== finalPath) {
@@ -860,7 +1142,10 @@ app.post("/upload", authenticateToken, upload.single("file"), async (req, res) =
     const relPath = `${urlDir}/${req.file.filename}`;
     const imageMeta = await buildImageMeta(finalPath, relPath);
 
-    // 6. 返回成功响应
+    // 6. 视频：原片保留，异步生成 HLS 派生资源（不阻塞上传响应）
+    const videoJob = isVideoFile(relPath) ? enqueueVideoJob(finalPath, relPath) : null;
+
+    // 7. 返回成功响应
     res.json({
       code: 200,
       message: "文件上传成功",
@@ -875,6 +1160,7 @@ app.post("/upload", authenticateToken, upload.single("file"), async (req, res) =
       height: imageMeta.height,
       thumbPath: imageMeta.thumbPath,
       thumbs: imageMeta.thumbs,
+      media: videoJob,
     });
   } catch (err) {
     logger.error("处理上传文件时出错:", { error: err.message, stack: err.stack, filename: req.file?.filename });
@@ -961,6 +1247,7 @@ app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (r
 
       // 2. 构建最终的文件路径
       const finalPath = path.join(finalDir, file.filename);
+      assertInsideUploadDir(finalPath);
 
       // 3. 如果最终路径和初始路径不同，则移动文件
       if (file.path !== finalPath) {
@@ -994,6 +1281,9 @@ app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (r
       const relPath = `${urlDir}/${file.filename}`;
       const imageMeta = await buildImageMeta(finalPath, relPath);
 
+      // 视频原片保留，异步生成 HLS
+      const videoJob = isVideoFile(relPath) ? enqueueVideoJob(finalPath, relPath) : null;
+
       results.push({
         success: true,
         filename: file.filename,
@@ -1007,6 +1297,7 @@ app.post("/upload/batch", authenticateToken, upload.array("files", 20), async (r
         height: imageMeta.height,
         thumbPath: imageMeta.thumbPath,
         thumbs: imageMeta.thumbs,
+        media: videoJob,
       });
       successCount++;
     } catch (err) {
@@ -1159,6 +1450,8 @@ app.delete("/delete", authenticateToken, async (req, res) => {
       await fs.unlink(targetPath);
       // 缩略图与原图同目录、名字带原图 stem，删原图时一并回收，避免留下孤儿 webp
       const thumbnailCount = await deleteSiblingThumbnails(targetPath);
+      // 视频原片删除后，所有版本的 HLS 派生目录也一并回收
+      const videoAssets = await deleteVideoAssets(targetPath);
       res.json({
         code: 200,
         message: "文件删除成功",
@@ -1167,11 +1460,14 @@ app.delete("/delete", authenticateToken, async (req, res) => {
         namespace: namespace || parentNamespace || null,
         category: category || null,
         thumbnailCount,
+        videoAssets,
       });
     } else if (stats.isDirectory()) {
       const items = await fs.readdir(targetPath);
+      const relDir = toPosixRelative(baseUploadDir, targetPath);
       if (recursive) {
         await fs.rm(targetPath, { recursive: true, force: false });
+        const videoNamespaceRemoved = await deleteVideoNamespace(relDir);
         return res.json({
           code: 200,
           message: "目录删除成功（含全部内容）",
@@ -1180,6 +1476,7 @@ app.delete("/delete", authenticateToken, async (req, res) => {
           namespace: namespace || parentNamespace || null,
           category: category || null,
           itemCount: items.length,
+          videoNamespaceRemoved: Boolean(videoNamespaceRemoved),
         });
       }
       if (items.length > 0) {
@@ -1195,6 +1492,7 @@ app.delete("/delete", authenticateToken, async (req, res) => {
           });
       }
       await fs.rmdir(targetPath);
+      const videoNamespaceRemoved = await deleteVideoNamespace(relDir);
       res.json({
         code: 200,
         message: "目录删除成功",
@@ -1202,6 +1500,7 @@ app.delete("/delete", authenticateToken, async (req, res) => {
         name,
         namespace: namespace || parentNamespace || null,
         category: category || null,
+        videoNamespaceRemoved: Boolean(videoNamespaceRemoved),
       });
     }
   } catch (err) {
@@ -1252,7 +1551,7 @@ app.get("/files", authenticateToken, async (req, res) => {
     if (!namespace && !category) {
       const items = await fs.readdir(baseUploadDir, { withFileTypes: true });
       const result = await Promise.all(items
-        .filter((item) => item.name !== "temp")
+        .filter((item) => item.name !== "temp" && item.name !== ".video")
         .map(async (item) => {
           const itemPath = path.join(baseUploadDir, item.name);
           const stats = await fs.stat(itemPath);
@@ -1473,11 +1772,17 @@ const previewableExtensions = new Set([
   ".aac",
   // 视频
   ".mp4",
+  ".m4v",
   ".webm",
   ".ogg",
   ".mov",
   ".avi",
   ".mkv",
+  ".m2ts",
+  ".mts",
+  ".flv",
+  ".wmv",
+  ".ogv",
 ]);
 
 // 提供文件静态访问
@@ -1490,6 +1795,7 @@ app.use(
     index: false, // 禁用目录索引
     setHeaders: (res, filePath) => {
       const ext = path.extname(filePath).toLowerCase();
+      const fileName = path.basename(filePath);
 
       // 【修改】扩展了 mimeTypes 映射，特别是增加了音频类型，以确保浏览器能正确识别
       const mimeTypes = {
@@ -1501,6 +1807,8 @@ app.use(
         ".html": "text/html",
         ".css": "text/css",
         ".js": "application/javascript",
+        // .ts 在文件管理里是 TypeScript 代码；HLS 的 .ts 分片走 /hls 的独立 MIME 映射
+        ".ts": "text/plain",
         ".png": "image/png",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
@@ -1510,10 +1818,16 @@ app.use(
         ".bmp": "image/bmp", // 补充 bmp
         ".avif": "image/avif", // 补充 avif
         ".mp4": "video/mp4",
+        ".m4v": "video/mp4",
         ".avi": "video/x-msvideo",
         ".webm": "video/webm",
         ".mov": "video/quicktime",
         ".mkv": "video/x-matroska",
+        ".m2ts": "video/mp2t",
+        ".mts": "video/mp2t",
+        ".wmv": "video/x-ms-wmv",
+        ".flv": "video/x-flv",
+        ".ogv": "video/ogg",
         // 【新增】音频 MIME 类型，对预览至关重要
         ".mp3": "audio/mpeg",
         ".wav": "audio/wav",
@@ -1527,10 +1841,19 @@ app.use(
       }
 
       // 优化缓存头设置
-      res.setHeader("Cache-Control", "public, max-age=604800");
+      // 缩略图文件名带源文件版本号，内容不变 URL 就不变，可以永久缓存；
+      // 原图/视频原件仍按 7 天 + stale-while-revalidate，避免同名覆盖后长期拿到旧文件。
+      const isHashedThumb = /-(?:320|800|1600)w\.[0-9a-f]{8}\.webp$/i.test(fileName);
+      if (isHashedThumb) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      } else {
+        res.setHeader(
+          "Cache-Control",
+          "public, max-age=604800, stale-while-revalidate=86400"
+        );
+      }
       res.setHeader("X-Content-Type-Options", "nosniff");
 
-      const fileName = path.basename(filePath);
       const encodedFileName = encodeURIComponent(fileName);
 
       // 【核心修改】根据URL参数和文件扩展名决定是预览还是下载
@@ -1581,7 +1904,15 @@ app.use((err, req, res, next) => {
   if (err.statusCode) {
     return res.status(err.statusCode).json({ error: err.message });
   }
+  if (err.status) {
+    return res.status(err.status).json({ error: err.message });
+  }
   res.status(500).json({ error: "服务器内部错误" });
+});
+
+// 预热视频模块（检查 ffmpeg/ffprobe、创建派生目录）；失败不影响文件服务启动
+initVideo().catch((err) => {
+  logger.warn("视频模块初始化失败（原片仍可访问）:", { error: err.message });
 });
 
 const server = app.listen(PORT, () => {

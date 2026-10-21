@@ -4,8 +4,9 @@
   "description": "文件管理服务器",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "test": "node --test test/*.test.js",
+    "start": "node server.js",
+    "transcode:videos": "node scripts/transcode-videos.js"
   },
   "repository": {
     "type": "git",

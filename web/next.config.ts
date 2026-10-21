@@ -8,10 +8,19 @@ const revision =
 
 const isDev = process.env.NODE_ENV !== 'production'
 
+const swVersion = String(revision).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12) || 'dev'
+const swFile = `sw-${swVersion}.js`
+
 const withSerwist = withSerwistInit({
   swSrc: 'src/app/sw.ts',
-  swDest: 'public/sw.js',
+  // 文件名带构建版本：避免 Cloudflare 把 /sw.js 缓存 4h，导致旧 Service Worker 长期钉住
+  swDest: `public/${swFile}`,
+  swUrl: `/${swFile}`,
   disable: isDev,
+  // 不预缓存全部静态/字体（旧 SW 490 条 precache 会长时间停在 installing）；
+  // 页面/字体仍由 sw.ts 的 runtimeCaching 按需缓存。
+  globPublicPatterns: [],
+  exclude: [/\.(?:woff2?|ttf|otf|eot|png|jpe?g|svg|gif|webp|avif|ico|apng)$/],
   additionalPrecacheEntries: [{ url: '/offline', revision }]
 })
 

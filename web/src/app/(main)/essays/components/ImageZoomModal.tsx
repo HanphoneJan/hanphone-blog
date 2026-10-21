@@ -1,8 +1,10 @@
 'use client'
 
 import Image from 'next/image'
-import { X } from 'lucide-react'
+import { Download, X } from 'lucide-react'
 import type { FileType } from '../types'
+import { downloadUrlFor } from '@/lib/media'
+import { VideoPlayer } from '@/components/VideoPlayer'
 
 interface ImageZoomModalProps {
   visible: boolean
@@ -40,6 +42,30 @@ export function ImageZoomModal({ visible, url, type, onClose }: ImageZoomModalPr
             loading="lazy"
             className="max-w-full max-h-[90vh] object-contain"
           />
+        </div>
+      )}
+
+      {type === 'video' && (
+        <div
+          className="w-full max-w-4xl flex flex-col gap-2"
+          onClick={e => e.stopPropagation()}
+        >
+          <VideoPlayer
+            src={url}
+            autoPlay
+            className="w-full max-h-[80vh] aspect-video overflow-hidden rounded-lg"
+          />
+          <div className="flex justify-end">
+            <a
+              href={downloadUrlFor(url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20"
+            >
+              <Download className="h-3.5 w-3.5" />
+              下载原视频
+            </a>
+          </div>
         </div>
       )}
     </div>

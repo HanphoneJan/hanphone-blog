@@ -100,6 +100,7 @@ Three jobs on push/PR to main: server tests (Maven), web unit tests (Vitest), bu
 - [前端开发指南](web/README.md) / [前端技术文档](web/TECHNICAL_DOCUMENT.md)
 - [后端开发指南](server/README.md) / [后端技术文档](server/TECHNICAL_DOCUMENT.md)
 - [测试指南](TESTING.md)
+- [媒体加载：原片保留 + HLS](docs/media-delivery.md)（admin-file 视频转码 / 图片 srcset / nginx / Cloudflare Cache Rule）
 - [部署指南](server/DEPLOYMENT.md)（Systemd / Docker）
 - [Swagger 使用说明](server/SWAGGER_USAGE.md)
 - [Android 客户端 AI 交接文档](android/HANDOVER.md)（架构/接口坑/设计规范/踩坑记录/开发规矩 —— 接手 Android 开发必读）

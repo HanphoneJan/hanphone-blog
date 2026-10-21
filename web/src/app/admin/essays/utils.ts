@@ -122,7 +122,7 @@ export const getFileTypeByUrl = (url: string): FileType => {
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'apng', 'ico'].includes(ext)) {
       return 'IMAGE'
     }
-    if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'mpeg', 'mpg', 'flv', 'wmv', 'm4v'].includes(ext)) {
+    if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'mpeg', 'mpg', 'flv', 'wmv', 'm4v', 'm2ts', 'mts', 'ogv'].includes(ext)) {
       return 'VIDEO'
     }
     if (['pdf', 'doc', 'docx', 'ppt', 'pptx', 'md', 'txt', 'xls', 'xlsx', 'rtf'].includes(ext)) {
