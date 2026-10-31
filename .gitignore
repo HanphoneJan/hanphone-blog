@@ -68,3 +68,6 @@ superpowers/
 # Craft workflow (runtime state; assets live in gitignored .claude/ .opencode/ .agents/)
 .craft/
 .agents/
+
+# OpenChamber 的会话产物，不进 git
+.openchamber/
