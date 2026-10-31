@@ -26,6 +26,20 @@ const blogFieldSchema = {
   shareStatement: z.boolean().optional().describe('是否开启转载声明'),
 };
 
+/**
+ * 更新用的字段：全部可选。
+ *
+ * 早先 update_blog 复用了创建用的 schema，title / content 被迫必填 —— 只想改
+ * 一个字段（比如给正文加一行链接）也得把整份正文重新传一遍，忘了传标题就报
+ * 「title: Missing key」。服务端本来就是按「传了就改、没传保持不变」合并的，
+ * 这里对齐一下即可。
+ */
+const blogUpdateSchema = {
+  ...blogFieldSchema,
+  title: z.string().min(1).max(100).optional().describe('文章标题；不传保持不变'),
+  content: z.string().min(1).optional().describe('文章正文（Markdown）；不传保持不变'),
+};
+
 export function registerBlogTools(server: McpServer, client: BlogApiClient): void {
   server.registerTool(
     'list_blogs',
@@ -222,7 +236,7 @@ export function registerBlogTools(server: McpServer, client: BlogApiClient): voi
         '更新已有文章（需要内部密钥）。只需传要修改的字段，未传的字段保持不变。注意：tagIds 若传入则是全量替换而非增量追加；修改 content 时建议同步传 description，否则摘要保持旧值。',
       inputSchema: {
         id: z.number().int().describe('要更新的文章 ID'),
-        ...blogFieldSchema,
+        ...blogUpdateSchema,
       },
     },
     async ({ id, ...fields }) => {
