@@ -58,6 +58,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 
 - Next.js frontend calls Spring Boot REST API at `NEXT_PUBLIC_API_BASE_URL` (default `https://hanphone.cn/api`)
 - **改数据库 ≠ 页面更新**：博客详情页 `app/(main)/blog/[id]/page.tsx` 用 `generateStaticParams` + 服务端 `fetch` **在构建期把正文写进静态页面**，没有 ISR、没有 `revalidate`。所以通过 MCP 改了正文之后，线上页面会一直是旧的（连阅读量都不会涨 —— 那个页面根本不回 API），必须重新构建并部署 `~/client_blog` 才生效。写内容时看不到变化，先想到这里，不是 MCP 坏了。
+- **重建前必须删 `web/.next/cache`**：Next 的 `fetch` 默认 `force-cache`，响应存在 `.next/cache/fetch-cache` 里跨构建复用。只跑 `next build` 会把上一次构建拿到的旧正文再塞进产物（这次实测：正文更新后重建，56 个文件里一个 `持续更新版` 都没有，删掉缓存重建才出现）。部署只上传 `.next` 是对的，但**构建前**要清。
 - 同理：`output: 'export'` 与 `pm2` 里的 `next start` 是两套口径，改配置前先确认线上到底是哪种产物。
 - File uploads go to `admin-file` Express service on separate domain (`hanphone.top`)
 - Photo wall has its own Express backend (`photo-wall-server`) on port 4001

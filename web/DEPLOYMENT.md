@@ -42,8 +42,14 @@ NEXT_PUBLIC_PICTURE_BASE_URL=https://<文件服务域名>
 ### 2.1 构建
 
 ```bash
+# 先删构建缓存：Next 的 fetch 默认 force-cache，响应存在 .next/cache/fetch-cache，
+# 不清的话这次构建会复用上次拿到的 API 数据 —— 正文/接口内容更新了，产物里还是旧的。
+rm -rf web/.next/cache
+
 pnpm --filter web build
 ```
+
+> 这条不是理论：博客详情页是构建期抓正文的，改完正文重建但没清缓存时，产物里一条新内容都没有；删掉 `.next/cache` 重建才出现。
 
 ### 2.2 构建后强制校验（关键步骤，防止"坏包上线"）
 
