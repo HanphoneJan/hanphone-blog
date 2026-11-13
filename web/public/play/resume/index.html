@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <title>寒枫 - 个人简历</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="../../shared/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="./particles-2.0.0/particles.min.js"></script>
     <!-- 引入html2canvas和jsPDF库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script>
         tailwind.config = {
@@ -1121,6 +1122,13 @@
         const body = document.body;
         let isDarkMode = false;
 
+        // 同步浏览器原生 UI 的明暗（meta + CSS 双保险）
+        function setColorScheme(mode) {
+            document.documentElement.style.colorScheme = mode;
+            var meta = document.querySelector('meta[name="color-scheme"]');
+            if (meta) meta.content = mode;
+        }
+
         // 初始化主题
         function initTheme() {
             // 检查本地存储或系统偏好
@@ -1135,6 +1143,7 @@
         // 启用暗色模式
         function enableDarkMode() {
             isDarkMode = true;
+            setColorScheme('dark');
             body.classList.remove('theme-light');
             body.classList.add('theme-dark');
 
@@ -1213,6 +1222,7 @@
         // 启用亮色模式
         function enableLightMode() {
             isDarkMode = false;
+            setColorScheme('light');
             body.classList.remove('theme-dark');
             body.classList.add('theme-light');
 
