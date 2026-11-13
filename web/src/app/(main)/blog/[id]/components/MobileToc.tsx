@@ -48,13 +48,13 @@ function MobileToc({
         className={`
         fixed z-40 right-0 text-[rgb(var(--text))] w-64
         shadow-sm bg-[rgb(var(--bg))] backdrop-blur-sm border-l border-[rgb(var(--border))]
-        transition-transform duration-300 ease-in-out lg:hidden
+        transition-transform duration-300 ease-in-out lg:hidden h-viewport-minus-header
         ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
       `}
         style={{
           top: `${headerHeight}px`,
-          height: `calc(100vh - ${headerHeight}px)`
-        }}
+          '--header-h': `${headerHeight}px`
+        } as React.CSSProperties}
       >
         <div className="p-4 flex justify-between items-center blog-toc-header">
           <h3 className="blog-text-lg font-bold text-[rgb(var(--text))]">目录</h3>

@@ -105,8 +105,14 @@
   }
 }
 
+/* 原生控件（输入框、滚动条等）跟随明暗主题 */
+:root {
+  color-scheme: light;
+}
+
 /* ===== 深色主题覆盖 ===== */
 [data-theme="dark"] {
+  color-scheme: dark;
   --color-bg: var(--color-dark-bg);
   --color-surface: var(--color-dark-surface);
   --color-sidebar: var(--color-dark-sidebar);

@@ -231,8 +231,7 @@ export default function BlogDetailClient({
 
   return (
     <motion.div 
-      className="flex flex-col" 
-      style={{ height: 'calc(100vh - 64px)' }}
+      className="flex flex-col blog-detail-shell"
       variants={pageVariants}
       initial="hidden"
       animate="visible"

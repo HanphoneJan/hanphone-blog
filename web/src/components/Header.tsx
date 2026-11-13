@@ -438,7 +438,7 @@ const Header: React.FC = () => {
       return (
         <ul
           className={`${mobileSearchVisible
-            ? 'mt-4 flex-1 min-h-[200px] max-h-[calc(100vh-180px)] overflow-y-auto'
+            ? 'mt-4 flex-1 min-h-[200px] max-h-search-results overflow-y-auto'
             : 'absolute top-full left-0 right-0 mt-2 max-h-96 overflow-y-auto'}
           bg-[rgb(var(--card))] border border-[rgb(var(--border))]
           rounded-lg shadow-lg z-50 transition-none`}
@@ -453,7 +453,7 @@ const Header: React.FC = () => {
     return (
       <ul
         className={`${mobileSearchVisible
-          ? 'mt-4 flex-1 min-h-[200px] max-h-[calc(100vh-180px)] overflow-y-auto'
+          ? 'mt-4 flex-1 min-h-[200px] max-h-search-results overflow-y-auto'
           : 'absolute top-full left-0 right-0 mt-2 max-h-96 overflow-y-auto'}
         bg-[rgb(var(--card))] border border-[rgb(var(--border))]
         rounded-lg shadow-lg z-50 transition-none`}

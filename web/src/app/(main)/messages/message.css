@@ -49,6 +49,8 @@
 .msg-container {
   background: transparent;
   min-height: 100vh;
+  /* 移动端地址栏收缩时不留多出来的滚动空白 */
+  min-height: 100dvh;
 }
 
 /* 暗色主题：黑板背景 */

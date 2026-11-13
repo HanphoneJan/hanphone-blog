@@ -16,6 +16,21 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* 把明暗同步给浏览器自身：原生控件、日期选择器、自动填充底色、滚动条等 */
+:root {
+  color-scheme: light dark;
+}
+
+.light,
+.theme-macaron {
+  color-scheme: light;
+}
+
+.dark,
+.theme-cyber {
+  color-scheme: dark;
+}
+
 :root {
   /* 字体栈 */
   /* 衬线字体 */
@@ -1939,6 +1954,28 @@ html.fonts-loading body * {
     width: 150px !important;
     height: 210px !important;
   }
+}
+
+/* ============================================
+   视口高度：dvh 跟随移动端地址栏收缩，vh 作为旧浏览器回退
+   ============================================ */
+
+/* 顶部搜索下拉列表 */
+.max-h-search-results {
+  max-height: calc(100vh - 180px);
+  max-height: calc(100dvh - 180px);
+}
+
+/* 移动端目录：高度 = 视口 - Header */
+.h-viewport-minus-header {
+  height: calc(100vh - var(--header-h, 0px));
+  height: calc(100dvh - var(--header-h, 0px));
+}
+
+/* 博客详情页：高度 = 视口 - Header */
+.blog-detail-shell {
+  height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
 }
 
 
