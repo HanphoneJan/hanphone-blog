@@ -5,6 +5,7 @@ import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { ADMIN_BLOG_LABELS } from '@/lib/labels'
+import { isImeComposing } from '@/lib/keyboard'
 import type { Blog, Tag } from '../types'
 
 import {  API_CODE , TIME } from '@/lib/constants'
@@ -103,7 +104,7 @@ export function useTags({ tagList, setTagList, setBlogList, fetchData }: UseTags
   }, [setBlogList, fetchData])
 
   const handleEnterKeyPress = useCallback((e: React.KeyboardEvent, row: Blog) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isImeComposing(e)) {
       handleInputConfirm(row)
     }
   }, [handleInputConfirm])

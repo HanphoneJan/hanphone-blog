@@ -11,6 +11,7 @@ import MessageBubble from '../components/MessageBubble';
 import { authService } from '../utils/authService';
 import { Message } from '../types';
 import { buildChatDisplay, ChatSeparator } from '../lib/chatMsgDisplay';
+import { isImeComposing } from '../lib/keyboard';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -118,6 +119,7 @@ const ChatPage: React.FC = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isImeComposing(e)) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();

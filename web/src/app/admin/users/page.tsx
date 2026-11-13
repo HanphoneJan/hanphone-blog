@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { useUser } from '@/contexts/UserContext'
 import { ENDPOINTS } from '@/lib/api'
+import { isImeComposing } from '@/lib/keyboard'
 import apiClient from '@/lib/utils'
 import {
   Search,
@@ -224,7 +225,7 @@ export default function UserManagementPage() {
 
   // 处理搜索框回车
   const handleSearchKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isImeComposing(e)) {
       getUserList()
     }
   }

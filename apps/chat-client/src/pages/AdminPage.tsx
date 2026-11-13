@@ -18,6 +18,7 @@ import { io, Socket } from 'socket.io-client';
 import { SOCKET_CONFIG } from '../config/api';
 import { PublicMessage } from '../types';
 import { buildChatDisplay, ChatSeparator, formatLastSeen } from '../lib/chatMsgDisplay';
+import { isImeComposing } from '../lib/keyboard';
 
 const AdminPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
@@ -67,7 +68,7 @@ const AdminPage: React.FC = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.nativeEvent as any).isComposing) return;
+    if (isImeComposing(e)) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -490,7 +491,7 @@ const AdminPage: React.FC = () => {
                   value={publicInputValue}
                   onChange={(e) => setPublicInputValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if ((e.nativeEvent as any).isComposing) return;
+                    if (isImeComposing(e)) return;
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleSendPublicMessage();

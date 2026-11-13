@@ -6,6 +6,7 @@ import { Key, Plus, Trash2, RefreshCw, Copy, Check, Eye, EyeOff, Loader2, X, Boo
 import { McpKeySummary, McpKeyDetail, useMcpKeys } from '../../hooks/useMcpKeys'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { showAlert } from '@/lib/Alert'
+import { isImeComposing } from '@/lib/keyboard'
 
 interface McpKeysTabProps {
   keys: McpKeySummary[]
@@ -356,7 +357,7 @@ export function McpKeysTab(props: McpKeysTabProps) {
                 onChange={e => setNewKeyName(e.target.value)}
                 placeholder="密钥名称，例如：OpenCode"
                 className="w-full px-3 py-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--bg))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
-                onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                onKeyDown={e => e.key === 'Enter' && !isImeComposing(e) && handleCreate()}
                 autoFocus
               />
               <p className="text-xs text-[rgb(var(--text-muted))] mt-2">

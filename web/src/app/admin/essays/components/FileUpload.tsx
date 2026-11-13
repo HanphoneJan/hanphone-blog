@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link2, Plus } from 'lucide-react'
 import type { EssayFile, FileInfo } from '../types'
 import { FilePreview } from './FilePreview'
+import { isImeComposing } from '@/lib/keyboard'
 
 interface FileUploadProps {
   localFiles: FileInfo[]
@@ -52,7 +53,7 @@ export function FileUpload({
             value={urlInput}
             onChange={e => setUrlInput(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !isImeComposing(e)) {
                 e.preventDefault()
                 handleAddUrl()
               }

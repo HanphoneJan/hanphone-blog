@@ -7,6 +7,7 @@ import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import ModalOverlay from '@/components/shared/ModalOverlay'
 import { COMMON_LABELS } from '@/lib/labels'
+import { isImeComposing } from '@/lib/keyboard'
 import {
   FileText,
   Trash2,
@@ -1312,7 +1313,7 @@ export default function DocManagementPage() {
                 className="w-full px-3 py-2 border border-[rgb(var(--border))] bg-[rgb(var(--bg))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))] text-sm"
                 placeholder="请输入目录名称"
                 autoFocus
-                onKeyDown={e => { if (e.key === 'Enter') handleCreateDirectory() }}
+                onKeyDown={e => { if (e.key === 'Enter' && !isImeComposing(e)) handleCreateDirectory() }}
               />
               {error && (
                 <p className="text-red-600 text-xs mt-1 flex items-center">

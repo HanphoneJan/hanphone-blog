@@ -4,6 +4,7 @@ import { useRef, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { Project } from '../types'
+import { isImeComposing } from '@/lib/keyboard'
 
 interface LinkManagerProps {
   project: Project
@@ -61,7 +62,7 @@ export const LinkManager = ({
             onChange={e => onInputChange(projectId, 'techInput', e.target.value)}
             onBlur={() => onConfirmInput(project)}
             onKeyDown={e => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !isImeComposing(e)) {
                 onConfirmInput(project)
               }
             }}

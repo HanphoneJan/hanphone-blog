@@ -3,6 +3,7 @@ import { Send, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { isImeComposing } from '../lib/keyboard';
 
 interface PublicChatInputProps {
   onSend: (content: string) => void;
@@ -21,7 +22,7 @@ const PublicChatInput: React.FC<PublicChatInputProps> = ({ onSend, isLoggedIn })
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.nativeEvent as any).isComposing) return;
+    if (isImeComposing(e)) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();

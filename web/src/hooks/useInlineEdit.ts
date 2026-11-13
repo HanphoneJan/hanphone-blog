@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { showAlert } from "@/lib/Alert";
+import { isImeComposing } from "@/lib/keyboard";
 
 interface InlineEditState<T> {
   editingId: string | number | null;
@@ -100,6 +101,7 @@ export function useInlineEdit<T extends { id: string | number }>(
   // 处理键盘事件
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isImeComposing(e)) return;
       if (editingState.editingId) {
         if (e.key === "Enter") {
           saveEdit();
