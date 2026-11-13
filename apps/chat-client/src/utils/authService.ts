@@ -12,7 +12,7 @@ export const authService = {
   // 用户登录
   async login(username: string, passwordmd5: string, extraInfo?: any): Promise<LoginResponse> {
     try {
-      const response = await axios.post(API_ENDPOINTS.LOGIN, {
+      const response = await axios.post<LoginResponse>(API_ENDPOINTS.LOGIN, {
         username,
         password: passwordmd5,
         ...extraInfo
@@ -27,7 +27,7 @@ export const authService = {
   // 获取在线用户列表（仅管理员可用）
   async getOnlineUsers(token: string) {
     try {
-      const response = await axios.get(API_ENDPOINTS.USERS, {
+      const response = await axios.get<any>(API_ENDPOINTS.USERS, {
         headers: getAuthHeaders(token),
       });
       return response.data;
@@ -40,7 +40,7 @@ export const authService = {
   // 获取所有用户列表（管理员专用）
   async getAllUsers(token: string) {
     try {
-      const response = await axios.get(API_ENDPOINTS.ALL_USERS, {
+      const response = await axios.get<any>(API_ENDPOINTS.ALL_USERS, {
         headers: getAuthHeaders(token),
       });
       return response.data;
@@ -53,7 +53,7 @@ export const authService = {
   // 获取按最新消息时间排序的用户列表（管理员专用）
   async getUsersSortedByLatestMessage(token: string) {
     try {
-      const response = await axios.get(API_ENDPOINTS.USERS_SORTED, {
+      const response = await axios.get<any>(API_ENDPOINTS.USERS_SORTED, {
         headers: getAuthHeaders(token),
       });
       return response.data;
@@ -66,7 +66,7 @@ export const authService = {
   // 管理员收件箱未读数（管理员专用）
   async getUnreadCounts(token: string) {
     try {
-      const response = await axios.get(API_ENDPOINTS.USERS_UNREAD, {
+      const response = await axios.get<any>(API_ENDPOINTS.USERS_UNREAD, {
         headers: getAuthHeaders(token),
       });
       return response.data;
@@ -79,7 +79,7 @@ export const authService = {
   // 获取与管理员的聊天记录（普通用户使用）
   async getMessagesWithAdmin(token: string) {
     try {
-      const response = await axios.get(API_ENDPOINTS.MESSAGES_ADMIN, {
+      const response = await axios.get<any>(API_ENDPOINTS.MESSAGES_ADMIN, {
         headers: getAuthHeaders(token),
       });
       return response.data;
@@ -92,7 +92,7 @@ export const authService = {
   // 获取与特定用户的聊天记录（管理员使用）
   async getMessagesWithUser(userId: number, token: string) {
     try {
-      const response = await axios.get(getIdEndpoint(API_ENDPOINTS.MESSAGES_USER_BASE, userId), {
+      const response = await axios.get<any>(getIdEndpoint(API_ENDPOINTS.MESSAGES_USER_BASE, userId), {
         headers: getAuthHeaders(token),
       });
       return response.data;
@@ -105,7 +105,7 @@ export const authService = {
   // 获取管理员用户信息（userId=1000）
   async getAdminUserInfo(token: string) {
     try {
-      const response = await axios.get(API_ENDPOINTS.ADMIN_USER_INFO, {
+      const response = await axios.get<any>(API_ENDPOINTS.ADMIN_USER_INFO, {
         headers: getAuthHeaders(token),
       });
       return response.data;
@@ -124,7 +124,7 @@ export const authService = {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await axios.get(
+      const response = await axios.get<any>(
         `${API_ENDPOINTS.PUBLIC_HISTORY}?limit=${limit}`,
         { headers }
       );

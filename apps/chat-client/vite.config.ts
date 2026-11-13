@@ -21,6 +21,12 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.VITE_SOCKET_URL || 'http://localhost:4010',
           changeOrigin: true
+        },
+        // 开发时 VITE_API_BASE_URL=/chat-api，与生产同源路径保持一致
+        '/chat-api': {
+          target: env.VITE_SOCKET_URL || 'http://localhost:4010',
+          changeOrigin: true,
+          ws: true
         }
       }
     },
