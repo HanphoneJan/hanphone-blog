@@ -87,6 +87,8 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 ### Environment Variables
 
 - Frontend env: copy `web/env.example` → `web/.env.local`
+- 聊天前端构建变量：`apps/chat-client/.env` 需有 `VITE_API_BASE_URL=/chat-api`、`VITE_AUTH_BASE_URL=https://hanphone.cn`（生产）；漏配时产物里会留 `{}.VITE_*`，登录地址变成 `undefined/api/login`，Nginx SPA 兜底返回 200 HTML，所以只报「登录请求失败」、没有 404。
+- 访客地图：腾讯位置 `LOCATION_KEY` 是域名白名单 key，服务端 `fetch` 必须带 `Referer`（`web/src/lib/location.ts` 已处理），否则返回 `status 110` 并回退到默认坐标。
 - Backend env: copy `server/env.example` → `server/.env`
 - Internal service auth: `INTERNAL_API_KEY` in backend `.env` for service-to-service calls (e.g., hanphone-chat → blog API)
 - FCM 推送（Android 杀进程兜底）：**热点更新由博客 server 直接发送**——`FcmPushService` 自实现 FCM v1 REST（HTTP/1.1 + `FCM_PROXY`，如 mihomo `http://127.0.0.1:7890`；`firebase-admin` messaging 走 HTTP/2 直连、不支持代理，国内服务器必走代理否则 ETIMEDOUT）。热点采集完成后 blog 向 `device_token` 表全部设备广播（`data.type=hot`，通知渠道 `hot_updates`）；设备经 `POST /api/devices` 上报（`token` 头关联用户 / 匿名仅收热点），凭证 `FCM_SERVICE_ACCOUNT`。**过渡兜底**：博客尚无设备 token（App 未升级到上报博客的版本）时经 `CHAT_API_BASE_URL`（默认 `http://127.0.0.1:4010`）调 chat-server `/chat-api/internal/push` 广播（`x-internal-key` = chat↔blog 共享密钥，即 chat-server 的 `BLOG_INTERNAL_KEY` == blog 的 `INTERNAL_API_KEY`；用 `HOT_PUSH_CHAT_FALLBACK=false` 可关）。私信推送仍由 chat-server 发送（同样 `FCM_SERVICE_ACCOUNT`/`FCM_PROXY`），**仅当接收方无在线 socket 时**才推（在线走 socket 通知，天然去重，`data.type=private`），设备上报端点 `POST /chat-api/api/devices`；需放置 `android/app/google-services.json`，**缺失时 FCM 自动禁用、构建仍成功**。

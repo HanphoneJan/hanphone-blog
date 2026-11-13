@@ -45,14 +45,9 @@
 - Node.js >= 20.5
 - pnpm >= 9
 
-### 克隆项目
-
-```bash
-git clone https://github.com/yourusername/hanphone-chat.git
-cd hanphone-chat/client
-```
-
 ### 安装依赖
+
+在本仓库根目录执行（monorepo workspace）：
 
 ```bash
 pnpm install
@@ -62,61 +57,65 @@ pnpm install
 
 ### 环境变量
 
-在项目根目录创建 `.env` 文件（如果需要自定义配置）：
+在 `apps/chat-client/.env`（已被 git 忽略）填写，可参考 `.env.example`：
 
 ```env
-VITE_API_URL=http://localhost:4010
-VITE_SOCKET_URL=http://localhost:4010
+VITE_API_BASE_URL=/chat-api
+VITE_AUTH_BASE_URL=https://hanphone.cn   # 浏览器可达的博客根地址，不要带 /api
+VITE_SOCKET_URL=                          # 留空 = 同源
 ```
 
-### 开发代理配置
+这些值在**构建期内联**进产物，改完必须重新 build。漏配时产物里会留下
+`{}.VITE_AUTH_BASE_URL`，登录地址变成 `undefined/api/login`，表现为「登录请求失败」
+（Nginx 的 SPA 兜底会返回 200 HTML，所以不会出现 404）。
 
-在 `vite.config.ts` 中配置代理，将 API 请求转发到后端服务器：
+本机开发（后端跑在 4010 / 8090）可临时覆盖：
 
-```typescript
-server: {
-  proxy: {
-    '/api': {
-      target: 'http://localhost:4010',
-      changeOrigin: true
-    },
-    '/chat-api': {
-      target: 'http://localhost:4010',
-      changeOrigin: true,
-      ws: true
-    }
-  }
-}
+```bash
+VITE_API_BASE_URL=http://localhost:4010/chat-api \
+VITE_AUTH_BASE_URL=http://localhost:8090 \
+pnpm --filter chat-client dev
 ```
+
+### 开发代理
+
+`vite.config.ts` 把 `/api` 与 `/chat-api` 代理到 `VITE_SOCKET_URL`（默认
+`http://localhost:4010`，WebSocket 也走它），因此本地直接用同源相对路径即可。
+生产由 Nginx 承担同样的转发（`/chat/` 静态、`/chat-api` → 4010、`/api` → 8090）。
 
 ## 🚀 使用
 
 ### 开发模式
 
 ```bash
-pnpm dev
+pnpm --filter chat-client dev
 ```
 
-访问 `http://localhost:4010` 查看应用
+访问 `http://localhost:4011`（端口由 `VITE_PORT` 控制）。
 
 ### 生产构建
 
 ```bash
-pnpm build
+pnpm --filter chat-client build
 ```
 
-构建产物将输出到 `dist` 目录
+`tsc` 通过后产物输出到 `apps/chat-client/dist`，部署到 Nginx 的 `/chat/` 目录。
+上线前确认产物中没有 `{}.VITE_*` 占位：
+
+```bash
+grep -o '{}\.VITE_[A-Z_]*' apps/chat-client/dist/assets/*.js   # 应无输出
+```
 
 ### 预览构建
 
 ```bash
-pnpm preview
+pnpm --filter chat-client preview
 ```
 
 ## 📁 项目结构
 
 ```
-client/
+apps/chat-client/
 ├── public/              # 静态资源
 ├── src/
 │   ├── components/      # React 组件

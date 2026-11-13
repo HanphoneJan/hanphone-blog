@@ -185,4 +185,5 @@ ssh <部署主机> "tail -20 ~/.pm2/logs/<前端进程名>-error.log"
 | 后端 | Spring Boot，监听本机端口，API 为根路径（无 `/api` 前缀） |
 | 反向代理 | 对外暴露 `/api/...`，转发到后端时剥离 `/api` 前缀 |
 | 构建注入变量 | `NEXT_PUBLIC_API_BASE_URL`、`NEXT_PUBLIC_NEXT_API_BASE_URL`、`NEXT_PUBLIC_PICTURE_BASE_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_FILE_DOMAIN` 等 |
+| 访客地图 | `LOCATION_KEY` 为腾讯位置域名白名单 key；服务端请求须带 `Referer`（`web/src/lib/location.ts` 已处理），否则 status 110 并回退默认坐标 |
 | 代码默认值 | `web/src/lib/api.ts`：`http://localhost:8090/api`（仅本地开发） |

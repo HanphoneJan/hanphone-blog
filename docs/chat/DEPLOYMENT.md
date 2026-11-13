@@ -206,10 +206,10 @@ DEBUG=false
 ALLOWED_ORIGINS=http://localhost:4010,http://localhost:4011
 ```
 
-### 4.3 Client — `client/.env`（必配，构建期内联）
+### 4.3 Client — `apps/chat-client/.env`（必配，构建期内联）
 
 > `VITE_*` 变量在**构建时**内联进产物，修改后必须重新构建 Client。
-> 客户端是直接字符串拼接（`client/src/config/api.ts`），未配置的变量会被拼成 `undefined/api/...` 而静默失效，因此**不要留空**。
+> 客户端是直接字符串拼接（`apps/chat-client/src/config/api.ts`），未配置的变量在产物里会留下 `{}.VITE_XXX`，运行时拼成 `undefined/api/...` 而静默失效，因此**不要留空**。
 
 **同源部署（Nginx 反代，推荐）** —— 使用相对路径 `/chat-api`，正好匹配 Nginx `location /chat-api` 与服务端 `/chat-api/api/*` 路由：
 
@@ -217,11 +217,21 @@ ALLOWED_ORIGINS=http://localhost:4010,http://localhost:4011
 # 聊天后端（同源相对路径，必须）
 VITE_API_BASE_URL=/chat-api
 
-# 博客登录后端（必填！登录走 blog 服务，端口 8090，见下）
-VITE_AUTH_BASE_URL=http://localhost:8090
+# 博客登录后端（必填！浏览器可达的博客根地址，不要带 /api）
+VITE_AUTH_BASE_URL=https://<站点>
 
 # Socket.IO（留空 = 同源，自动连 /chat-api/socket.io）
 VITE_SOCKET_URL=
+```
+
+> **关于 `VITE_AUTH_BASE_URL`**：登录接口 `POST /api/login` 由 **blog 服务**（Spring Boot）提供。客户端会把 `${VITE_AUTH_BASE_URL}/api/login` 拼成登录 URL（见 `apps/chat-client/src/config/api.ts`），因此这里填 **blog 服务的根地址**，不要带 `/api` 后缀。生产必须填浏览器可达的公网地址（如 `https://hanphone.cn`）；`http://localhost:8090` 只适用于浏览器也在本机的调试场景，配到生产会让访客请求自己的 localhost。聊天后端没有登录路由，即使前后端同域也**必须**配置此项。
+
+**本机开发**（后端跑在 4010 / 8090）可临时覆盖，无需改动 `.env`：
+
+```bash
+VITE_API_BASE_URL=http://localhost:4010/chat-api \
+VITE_AUTH_BASE_URL=http://localhost:8090 \
+pnpm --filter chat-client dev
 ```
 
 **跨域部署**（前后端不同域）则填写完整地址：
@@ -232,7 +242,19 @@ VITE_SOCKET_URL=https://api.example.com
 VITE_AUTH_BASE_URL=https://blog.example.com
 ```
 
-> **关于 `VITE_AUTH_BASE_URL`**：登录接口 `POST /api/login` 由 **blog 服务**（Spring Boot，默认端口 8090）提供（见 `hanphone-blog/server` 的 `UserController`）。客户端会将 `${VITE_AUTH_BASE_URL}/api/login` 拼成登录 URL（见 `client/src/config/api.ts`），因此这里填 **blog 服务的根地址**（如 `http://localhost:8090`），不要带 `/api` 后缀。聊天后端没有登录路由，即使前后端同域也**必须**配置此项。
+#### 构建产物校验（上线前必做）
+
+```bash
+cd apps/chat-client
+
+# 1) 不得残留未注入的环境变量占位
+grep -o '{}\.VITE_[A-Z_]*' dist/assets/*.js           # 应无输出
+
+# 2) 注入值应能在产物中找到
+grep -o 'https://<站点>\|/chat-api' dist/assets/*.js | sort -u
+```
+
+出现 `{}.VITE_AUTH_BASE_URL` 说明构建机上没有 `apps/chat-client/.env`，也没通过环境变量注入。此时登录地址是 `undefined/api/login`，浏览器按相对路径请求 `/chat/undefined/api/login`；Nginx 的 SPA 兜底会返回 **200 的 index.html**，所以不会出现 404，只会报「登录请求失败」，很难从网络面板一眼看出。部署后可在浏览器 Network 面板确认登录请求是 `POST https://<站点>/api/login`。
 
 ### 4.4 FCM 推送（可选，Android App 杀进程兜底）
 
@@ -305,13 +327,13 @@ cp agent-service/.env.example agent-service/.env
 | 变量                    | 默认值     | 说明                                                     |
 | ----------------------- | ---------- | -------------------------------------------------------- |
 | `VITE_API_BASE_URL`   | `/chat-api` | 同源相对路径，Nginx 反代 `/chat-api` → server:4010       |
-| `VITE_AUTH_BASE_URL` | （空）      | **必填**，blog 登录后端根地址（如 `http://localhost:8090`）|
+| `VITE_AUTH_BASE_URL` | （空）      | **必填**，浏览器可达的 blog 根地址（生产如 `https://hanphone.cn`；本机调试才用 `http://localhost:8090`）|
 | `VITE_SOCKET_URL`     | （空）      | 留空 = 同源                                              |
 
-启动前把 `VITE_AUTH_BASE_URL` 写入仓库根 `.env`（或在 shell 中 export）：
+启动前把 `VITE_AUTH_BASE_URL` 写入仓库根 `.env`（或在 shell 中 export，构建镜像时生效）：
 
 ```bash
-echo "VITE_AUTH_BASE_URL=http://localhost:8090" >> .env
+echo "VITE_AUTH_BASE_URL=https://<站点>" >> .env
 ```
 
 ### 5.2 启动全栈
@@ -405,12 +427,13 @@ pm2 status                                # 状态应为 online
 ### 6.4 构建 Client
 
 ```bash
-cd client
+cd apps/chat-client
 pnpm install --frozen-lockfile
-pnpm build                                # 产出 dist/
+pnpm build                                # tsc + vite build，产出 dist/
+grep -o '{}\.VITE_[A-Z_]*' dist/assets/*.js   # 应无输出，否则检查 .env
 ```
 
-将 `client/dist/` 部署到 Nginx 静态目录（`/usr/share/nginx/html` 或自定义路径）。
+将 `apps/chat-client/dist/` 部署到 Nginx 静态目录（生产为 `~/html/chat`，或 `/usr/share/nginx/html`）。
 
 ### 6.5 Nginx 反向代理配置
 
@@ -520,6 +543,8 @@ pm2 status
 
 # 6. 浏览器验证
 #    打开 http://localhost/chat/ → 登录 → 发消息 → 确认 AI 回复与实时推送
+#    登录前在 Network 面板确认请求是 POST https://<站点>/api/login（不是 /chat/undefined/api/login）
+#    静态资源 hash 应已变化，避免命中 Cloudflare/浏览器旧缓存
 ```
 
 ---
@@ -558,10 +583,11 @@ pnpm build
 pm2 restart hanphone-chat-server
 
 # 4. 若前端有改动，重新构建并部署 dist
-cd client
+cd apps/chat-client
 pnpm install --frozen-lockfile
-pnpm build
-# 将 dist 同步到 Nginx 目录
+pnpm build                     # tsc + vite build
+grep -o '{}\.VITE_[A-Z_]*' dist/assets/*.js   # 应无输出，否则检查 .env
+# 将 dist 同步到 Nginx 目录（生产为 ~/html/chat），建议先备份上一版
 ```
 
 ### 回滚

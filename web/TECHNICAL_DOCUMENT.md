@@ -171,7 +171,12 @@ web/src/
 
 ### ThemeProvider (contexts/ThemeProvider.tsx)
 
-主题切换管理（亮色/暗色模式）。
+主题切换管理（亮色 / 暗色 / 马卡龙 / 赛博朋克）。主题以 `html` 上的 class 表示
+（`light` / `dark` / `theme-macaron` / `theme-cyber`），首屏由 `layout.tsx` 的内联脚本
+在绘制前写入，避免闪白。
+
+`globals.css` 同时按主题声明 `color-scheme`（暗色主题为 `dark`），让日期选择器、
+复选框、自动填充底色、滚动条等浏览器原生 UI 跟随主题；新增主题时需要一并补上。
 
 ### UserContext (contexts/UserContext.tsx)
 

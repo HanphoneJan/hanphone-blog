@@ -31,7 +31,7 @@ pnpm dev
 
 | 变量 | 说明 | 示例 |
 |------|------|------|
-| `NEXT_PUBLIC_API_BASE_URL` | 后端 API 地址 | `http://localhost:8090` |
+| `NEXT_PUBLIC_API_BASE_URL` | 后端 API 地址（构建期内联） | `https://hanphone.cn/api`（本地 `http://localhost:8090/api`） |
 | `NEXT_PUBLIC_FILE_DOMAIN` | 文件服务域名 | `hanphone.top` |
 | `NEXT_PUBLIC_SITE_URL` | 站点主域名 | `https://hanphone.cn` |
 
