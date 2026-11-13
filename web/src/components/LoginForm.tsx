@@ -406,6 +406,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
                   type="email"
                   id="email"
                   name="email"
+                  autoComplete="email"
                   value={resetData.email}
                   onChange={handleResetInputChange}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
@@ -468,6 +469,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
                   type="password"
                   id="newPassword"
                   name="newPassword"
+                  autoComplete="new-password"
                   value={resetData.newPassword}
                   onChange={handleResetInputChange}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
@@ -497,6 +499,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
                   type="text"
                   id="username"
                   name="username"
+                  autoComplete="username"
                   value={loginData.username}
                   onChange={handleLoginInputChange}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
@@ -524,6 +527,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
                   type="password"
                   id="password"
                   name="password"
+                  autoComplete="current-password"
                   value={loginData.password}
                   onChange={handleLoginInputChange}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${

@@ -99,6 +99,8 @@ const LoginPage: React.FC = () => {
                   <Input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    name="username"
                     placeholder="请输入用户名"
                     className="pl-10 h-11 bg-bg/50 border-border focus:ring-1 focus:ring-sent/40"
                     disabled={loading}
@@ -114,6 +116,8 @@ const LoginPage: React.FC = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    name="password"
                     placeholder="请输入密码"
                     className="pl-10 h-11 bg-bg/50 border-border focus:ring-1 focus:ring-sent/40"
                     disabled={loading}

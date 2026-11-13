@@ -334,6 +334,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
               id="nickname"
               name="nickname"
               type="text"
+              autoComplete="nickname"
               value={formData.nickname}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
@@ -358,6 +359,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
               id="username"
               name="username"
               type="text"
+              autoComplete="username"
               value={formData.username}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
@@ -382,6 +384,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
               id="password"
               name="password"
               type="password"
+              autoComplete="new-password"
               value={formData.password}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
@@ -406,6 +409,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
               id="email"
               name="email"
               type="email"
+              autoComplete="email"
               value={formData.email}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${

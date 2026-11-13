@@ -107,6 +107,7 @@ export function PasswordReset({ userId, loading, setLoading, onClose }: Password
               id="newPassword"
               name="newPassword"
               type="password"
+              autoComplete="new-password"
               value={newPassword}
               onChange={handlePasswordChange}
               className="w-full px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all"
@@ -122,6 +123,7 @@ export function PasswordReset({ userId, loading, setLoading, onClose }: Password
               id="confirmPassword"
               name="confirmPassword"
               type="password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={handlePasswordChange}
               className="w-full px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all"
