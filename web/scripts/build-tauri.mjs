@@ -9,6 +9,13 @@ const webDir = path.resolve(__dirname, '..')
 const backups = new Map()
 
 /**
+ * 只在 Web 部署时存在的服务端路由：静态导出（Tauri / GitHub Pages）不支持 Route Handler，
+ * 直接挪走再构建，构建结束后原样还原（桌面端用 NEXT_PUBLIC_AUTH_DIRECT=1 直连后端）。
+ */
+const removeDuringBuild = ['src/app/next-api/auth']
+const movedDirs = []
+
+/**
  * 解析 .env 文件（仅支持简单的 KEY=VALUE，足以覆盖 NEXT_PUBLIC_* 公开变量）
  */
 function parseEnvFile(filePath) {
@@ -181,6 +188,19 @@ const replacementFiles = [
 ]
 
 function applyPatches() {
+  // 0. 静态导出不支持 Route Handler：先把它挪出 app 目录
+  for (const dir of removeDuringBuild) {
+    const abs = path.join(webDir, dir)
+    if (!fs.existsSync(abs)) continue
+    // 注意：不能放在 src/app 里（哪怕目录名特殊），Next 会把它当成路由去编译
+    const stash = path.join(webDir, '.tauri-stash', path.basename(abs))
+    fs.rmSync(stash, { recursive: true, force: true })
+    fs.mkdirSync(path.dirname(stash), { recursive: true })
+    fs.renameSync(abs, stash)
+    movedDirs.push({ abs, stash })
+    console.log(`[remove] ${dir}（静态导出没有服务端路由）`)
+  }
+
   // 1. 给指定文件添加 force-static
   for (const file of forceStaticFiles) {
     const filePath = path.join(webDir, file)
@@ -292,6 +312,16 @@ function applyPatches() {
 }
 
 function restoreFiles() {
+  for (const { abs, stash } of movedDirs) {
+    if (fs.existsSync(stash)) {
+      fs.rmSync(abs, { recursive: true, force: true })
+      fs.renameSync(stash, abs)
+      console.log(`[restore] ${path.relative(webDir, abs)}`)
+    }
+  }
+  movedDirs.length = 0
+  fs.rmSync(path.join(webDir, '.tauri-stash'), { recursive: true, force: true })
+
   for (const [filePath, content] of backups) {
     fs.writeFileSync(filePath, content)
     console.log(`[restore] ${path.relative(webDir, filePath)}`)
