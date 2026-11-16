@@ -1,5 +1,6 @@
 package com.example.blog.interceptor;
 
+import com.example.blog.service.PasswordVersionService;
 import com.example.blog.util.TokenUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,6 +16,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @Component
 public class TokenInterceptor implements HandlerInterceptor {
     private static final Log log = LogFactory.getLog(TokenInterceptor.class);
+
+    private final PasswordVersionService passwordVersionService;
+
+    public TokenInterceptor(PasswordVersionService passwordVersionService) {
+        this.passwordVersionService = passwordVersionService;
+    }
 
     // 错误码常量
     private static final String CODE_TOKEN_EMPTY = "50001";
@@ -54,6 +61,16 @@ public class TokenInterceptor implements HandlerInterceptor {
         if (!TokenUtil.adminVerify(token)) {
             handleAuthFailure(response, STATUS_UNAUTHORIZED, CODE_TOKEN_VERIFY_FAIL, MSG_TOKEN_VERIFY_FAIL,
                     "认证失败，未通过拦截器");
+            return false;
+        }
+
+        // 密码版本校验：改过密码后，旧 access token 立即失效（老 token 无该 claim，兼容期内放行）
+        Long userId = TokenUtil.getUserId(token);
+        Integer tokenPwdv = TokenUtil.getPasswordVersion(token);
+        if (userId != null && tokenPwdv != null
+                && passwordVersionService.current(userId) != tokenPwdv) {
+            handleAuthFailure(response, STATUS_UNAUTHORIZED, "50003", "SESSION_REVOKED",
+                    "登录状态已失效（密码已修改），请重新登录");
             return false;
         }
 

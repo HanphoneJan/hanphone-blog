@@ -4,6 +4,7 @@ import com.example.blog.dao.UserRepository;
 import com.example.blog.dao.UserMergeRepository;
 import com.example.blog.enums.UserType;
 import com.example.blog.po.User;
+import com.example.blog.service.AuthSessionService;
 import com.example.blog.service.UserService;
 import com.example.blog.util.BcryptUtils;
 import com.example.blog.util.MyBeanUtils;
@@ -22,10 +23,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMergeRepository userMergeRepository;
+    private final AuthSessionService authSessionService;
 
-    public UserServiceImpl(UserRepository userRepository, UserMergeRepository userMergeRepository) {
+    public UserServiceImpl(UserRepository userRepository,
+                           UserMergeRepository userMergeRepository,
+                           AuthSessionService authSessionService) {
         this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
         this.userMergeRepository = Objects.requireNonNull(userMergeRepository, "userMergeRepository must not be null");
+        this.authSessionService = Objects.requireNonNull(authSessionService, "authSessionService must not be null");
     }
 
     @Override
@@ -188,6 +193,10 @@ public class UserServiceImpl implements UserService {
 
             String hashedPassword = BcryptUtils.encrypt(newPassword);
             int affectedRows = userRepository.resetPassword(user.getId(), hashedPassword);
+            if (affectedRows > 0) {
+                // 改密码 = 全端下线（旧 access 因 pwdv 变化立即失效）
+                authSessionService.onPasswordChanged(user.getId(), null);
+            }
             return affectedRows > 0;
         } catch (Exception e) {
             throw new RuntimeException("Failed to reset password for email: " + email, e);
@@ -203,6 +212,9 @@ public class UserServiceImpl implements UserService {
         try {
             String hashedPassword = BcryptUtils.encrypt(newPassword);
             int affectedRows = userRepository.resetPassword(userId, hashedPassword);
+            if (affectedRows > 0) {
+                authSessionService.onPasswordChanged(userId, null);
+            }
             return affectedRows > 0;
         } catch (Exception e) {
             throw new RuntimeException("Failed to reset password for user id: " + userId, e);
@@ -223,7 +235,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User updateCurrentUser(Long userId, User user, boolean emailChanged) {
+    public User updateCurrentUser(Long userId, User user, boolean emailChanged, String keepSid) {
         Objects.requireNonNull(userId, "userId must not be null");
         Objects.requireNonNull(user, "user must not be null");
 
@@ -246,16 +258,23 @@ public class UserServiceImpl implements UserService {
             if (user.getEmail() != null) {
                 existingUser.setEmail(user.getEmail().trim());
             }
+            boolean passwordChanged = false;
             if (user.getPassword() != null && !user.getPassword().isEmpty()) {
                 String hashedPassword = BcryptUtils.encrypt(user.getPassword());
                 existingUser.setPassword(hashedPassword);
+                passwordChanged = true;
             }
             if (user.getAvatar() != null) {
                 existingUser.setAvatar(user.getAvatar());
             }
 
             existingUser.setUpdateTime(new Date());
-            return userRepository.save(existingUser);
+            User saved = userRepository.save(existingUser);
+            if (passwordChanged) {
+                // 注意：这里会吊销「当前正在用的这个会话」，客户端需要用新密码重新登录
+                authSessionService.onPasswordChanged(userId, keepSid);
+            }
+            return saved;
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

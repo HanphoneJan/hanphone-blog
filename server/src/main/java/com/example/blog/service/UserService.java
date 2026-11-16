@@ -26,7 +26,7 @@ public interface UserService {
 
     User getCurrentUser(Long userId);
 
-    User updateCurrentUser(Long userId, User user, boolean emailChanged);
+    User updateCurrentUser(Long userId, User user, boolean emailChanged, String keepSid);
 
     /**
      * 清除用户隐私字段，用于公共接口返回

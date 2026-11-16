@@ -64,6 +64,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - Photo wall has its own Express backend (`photo-wall-server`) on port 4001
 - Backend uses PostgreSQL (primary DB) + Redis (rate limiting, sessions, captcha); hot public reads (tags/types/site-stats) cached in-process via Caffeine (TTL 300s, evicted on writes)
 - JWT-based auth: TokenInterceptor validates tokens on admin endpoints (`/admin/**`); public endpoints use IndexController/UserController etc.
+- **长期登录（access + refresh）**：access JWT 30 分钟（`JWT_EXPIRE_TIME=1800000`），refresh 90 天、只存哈希于 `t_user_session`，每次刷新轮换，旧值被重放即吊销整个会话；改密码令 `password_version+1` 并吊销会话（保留当前 sid）。接口 `/auth/{refresh,logout,sessions,adopt}`，Web 用同源 BFF（`/next-api/auth/*`，refresh 在 HttpOnly Cookie），Android/Tauri 直连并本地存 refresh。详见 [docs/auth/README.md](docs/auth/README.md)。chat-server 与 admin-file 只验 access，无需改动。
 
 ### Frontend Architecture (web/src/)
 

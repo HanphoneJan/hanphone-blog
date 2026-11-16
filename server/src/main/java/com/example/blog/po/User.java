@@ -50,6 +50,11 @@ public class User {
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLoginTime;
 
+    /** 密码版本：改密码时 +1，用来让旧 access token 立即失效（见 PasswordVersionService） */
+    @JsonIgnore
+    @Column(name = "password_version")
+    private Integer passwordVersion = 0;
+
     private String githubId;
     private String googleId;
     private String oauthProvider;

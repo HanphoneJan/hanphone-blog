@@ -57,20 +57,52 @@ public class TokenUtil {
     }
 
     public static TokenInfo sign(User user) {
+        int pwdv = user.getPasswordVersion() == null ? 0 : user.getPasswordVersion();
+        return sign(user, null, pwdv);
+    }
+
+    /**
+     * 签发 access token。
+     *
+     * @param sid   会话 id（长期登录用；老调用方传 null 时不写该 claim）
+     * @param pwdv  密码版本，改密码后旧 token 立即失效（见 TokenInterceptor）
+     */
+    public static TokenInfo sign(User user, String sid, int pwdv) {
         try {
-            // 使用静态变量
             Date expiresAt = new Date(System.currentTimeMillis() + JWT_EXPIRE_TIME);
-            String token = JWT.create()
+            var builder = JWT.create()
                     .withIssuer(JWT_ISSUER)
                     .withClaim("userId", user.getId().toString())
                     .withClaim("userType", user.getType())
-                    .withExpiresAt(expiresAt)
-                    // 使用HMAC256加密算法
-                    .sign(Algorithm.HMAC256(TOKEN_SECRET));
-
+                    .withClaim("pwdv", pwdv)
+                    .withExpiresAt(expiresAt);
+            if (sid != null) {
+                builder.withClaim("sid", sid);
+            }
+            String token = builder.sign(Algorithm.HMAC256(TOKEN_SECRET));
             return new TokenInfo(token, expiresAt);
         } catch (Exception e) {
             log.error("生成Token失败", e);
+            return null;
+        }
+    }
+
+    /** 会话 id；老 token（升级前签发）没有这个 claim，返回 null */
+    public static String getSid(String token) {
+        try {
+            DecodedJWT jwt = JWT.require(Algorithm.HMAC256(TOKEN_SECRET)).withIssuer(JWT_ISSUER).build().verify(token);
+            return jwt.getClaim("sid").asString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** 密码版本；老 token 没有该 claim，返回 null（兼容期内放行） */
+    public static Integer getPasswordVersion(String token) {
+        try {
+            DecodedJWT jwt = JWT.require(Algorithm.HMAC256(TOKEN_SECRET)).withIssuer(JWT_ISSUER).build().verify(token);
+            return jwt.getClaim("pwdv").asInt();
+        } catch (Exception e) {
             return null;
         }
     }

@@ -20,6 +20,11 @@ public interface UserRepository extends JpaRepository<User,Long> {
     @Modifying
     @Query("UPDATE User e SET e.password = :hashedPassword WHERE e.id = :userId")
     int resetPassword(@Param("userId") Long id, @Param("hashedPassword") String hashedPassword);
+    /** 密码版本 +1（改密码时调用，令旧 access token 失效） */
+    @Modifying
+    @Query("UPDATE User u SET u.passwordVersion = coalesce(u.passwordVersion, 0) + 1 WHERE u.id = :userId")
+    int incrementPasswordVersion(@Param("userId") Long userId);
+
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.id != :userId")
     User findByEmailAndExcludeId(@Param("email") String email, @Param("userId") Long userId);
 

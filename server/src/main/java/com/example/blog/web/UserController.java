@@ -4,9 +4,12 @@ import com.example.blog.enums.UserType;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.po.User;
+import com.example.blog.service.AuthSessionService;
 import com.example.blog.service.EmailCaptchaService;
 import com.example.blog.service.UserService;
 import com.example.blog.util.BcryptUtils;
+import com.example.blog.util.ClientIpUtil;
+import com.example.blog.util.DeviceNameUtil;
 import com.example.blog.util.TokenUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +32,7 @@ public class UserController {
 
     private final UserService userService;
     private final EmailCaptchaService emailCaptchaService;
+    private final AuthSessionService authSessionService;
 
     @Value("${password.min-length:8}")
     private int minPasswordLength;
@@ -36,19 +40,28 @@ public class UserController {
     // 密码至少包含字母和数字，最小长度由配置决定
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*\\d).+$");
 
-    public UserController(UserService userService, EmailCaptchaService emailCaptchaService) {
+    public UserController(UserService userService,
+                          EmailCaptchaService emailCaptchaService,
+                          AuthSessionService authSessionService) {
         this.userService = userService;
+        this.authSessionService = authSessionService;
         this.emailCaptchaService = emailCaptchaService;
     }
 
     @PostMapping(value = "/login")
-    public Result<Map<String, Object>> login(@RequestBody User u) {
+    public Result<Map<String, Object>> login(@RequestBody User u, HttpServletRequest request) {
         if (u == null || u.getUsername() == null || u.getPassword() == null) {
             return new Result<>(false, StatusCode.ERROR, "用户名和密码不能为空", null);
         }
         User user = userService.checkUser(u.getUsername(), u.getPassword());
         if (user != null) {
-            TokenUtil.TokenInfo token = TokenUtil.sign(user);
+            // 长期登录：access（短）+ refresh（长，可吊销）
+            AuthSessionService.TokenBundle bundle = authSessionService.create(
+                    user,
+                    DeviceNameUtil.resolve(request),
+                    request.getHeader("User-Agent"),
+                    ClientIpUtil.getClientIp(request)
+            );
             Map<String, Object> info = new HashMap<>();
             user.setLoginProvince(u.getLoginProvince());
             user.setLoginCity(u.getLoginCity());
@@ -58,8 +71,11 @@ public class UserController {
             User newUser = userService.save(user);
             userService.clearSensitiveFields(newUser);
             info.put("user", newUser);
-            info.put("token", Objects.requireNonNull(token).getToken());
-            info.put("expire", token.getExpireTime());
+            info.put("token", bundle.getAccessToken());
+            info.put("expire", bundle.getAccessExpire());
+            info.put("refreshToken", bundle.getRefreshToken());
+            info.put("refreshExpire", bundle.getRefreshExpire());
+            info.put("sid", bundle.getSid());
 
             return new Result<>(true, StatusCode.OK, "登录成功", info);
         } else {
@@ -68,7 +84,7 @@ public class UserController {
     }
 
     @PostMapping(value = "/register")
-    public Result<Map<String, Object>> post(@RequestBody Map<String, Object> para) {
+    public Result<Map<String, Object>> post(@RequestBody Map<String, Object> para, HttpServletRequest request) {
         try {
             if (para == null) {
                 return new Result<>(false, StatusCode.ERROR, "用户名、密码和邮箱不能为空", null);
@@ -118,11 +134,19 @@ public class UserController {
             u.setType(UserType.NORMAL.getCode());
             User user = userService.save(u);
             userService.clearSensitiveFields(user);
-            TokenUtil.TokenInfo tokenInfo = TokenUtil.sign(user);
+            AuthSessionService.TokenBundle bundle = authSessionService.create(
+                    user,
+                    DeviceNameUtil.resolve(request),
+                    request.getHeader("User-Agent"),
+                    ClientIpUtil.getClientIp(request)
+            );
             Map<String, Object> info = new HashMap<>();
             info.put("user", user);
-            info.put("token", Objects.requireNonNull(tokenInfo).getToken());
-            info.put("expire", tokenInfo.getExpireTime());
+            info.put("token", bundle.getAccessToken());
+            info.put("expire", bundle.getAccessExpire());
+            info.put("refreshToken", bundle.getRefreshToken());
+            info.put("refreshExpire", bundle.getRefreshExpire());
+            info.put("sid", bundle.getSid());
             return new Result<>(true, StatusCode.OK, "注册并登录成功", info);
         } catch (Exception e) {
             log.error("注册失败", e);
@@ -256,7 +280,7 @@ public class UserController {
                 }
             }
 
-            User updatedUser = userService.updateCurrentUser(userId, user, emailChanged);
+            User updatedUser = userService.updateCurrentUser(userId, user, emailChanged, TokenUtil.getSid(token));
             userService.clearSensitiveFields(updatedUser);
             return new Result<>(true, StatusCode.OK, "更新用户信息成功", updatedUser);
         } catch (RuntimeException e) {

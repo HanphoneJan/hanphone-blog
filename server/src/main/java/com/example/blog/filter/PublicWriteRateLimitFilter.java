@@ -33,7 +33,8 @@ public class PublicWriteRateLimitFilter extends OncePerRequestFilter {
             return true;
         }
         String uri = request.getRequestURI();
-        return !(uri.matches("^/blog/\\d+/like$") ||
+        return !(uri.matches("^/auth/refresh$") ||
+                uri.matches("^/blog/\\d+/like$") ||
                 uri.matches("^/comments$") ||
                 uri.matches("^/comments/\\d+$") ||
                 uri.matches("^/messages$") ||

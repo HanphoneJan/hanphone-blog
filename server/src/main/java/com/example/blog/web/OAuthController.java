@@ -3,8 +3,10 @@ package com.example.blog.web;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.po.User;
+import com.example.blog.service.AuthSessionService;
 import com.example.blog.service.OAuthProvider;
 import com.example.blog.service.UserService;
+import com.example.blog.util.DeviceNameUtil;
 import com.example.blog.util.TokenUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ public class OAuthController {
     private final Map<String, OAuthProvider> providers;
     private final UserService userService;
     private final ObjectMapper objectMapper;
+    private final AuthSessionService authSessionService;
 
     private static final Logger logger = LoggerFactory.getLogger(OAuthController.class);
 
@@ -32,10 +35,12 @@ public class OAuthController {
 
     public OAuthController(Map<String, OAuthProvider> providers,
                            UserService userService,
-                           ObjectMapper objectMapper) {
+                           ObjectMapper objectMapper,
+                           AuthSessionService authSessionService) {
         this.providers = providers;
         this.userService = userService;
         this.objectMapper = objectMapper;
+        this.authSessionService = authSessionService;
     }
 
     /**
@@ -106,7 +111,8 @@ public class OAuthController {
      */
     @PostMapping("/{provider}/verify")
     public Result<Map<String, Object>> verify(@PathVariable String provider,
-                                               @RequestBody Map<String, String> body) {
+                                               @RequestBody Map<String, String> body,
+                                               jakarta.servlet.http.HttpServletRequest httpRequest) {
         OAuthProvider p = providers.get(provider);
         if (p == null) {
             return new Result<>(false, StatusCode.ERROR, "Unknown OAuth provider: " + provider, null);
@@ -119,13 +125,21 @@ public class OAuthController {
 
         try {
             User user = p.handleIdToken(credential);
-            TokenUtil.TokenInfo tokenInfo = TokenUtil.sign(user);
+            AuthSessionService.TokenBundle bundle = authSessionService.create(
+                    user,
+                    DeviceNameUtil.resolve(httpRequest),
+                    httpRequest.getHeader("User-Agent"),
+                    com.example.blog.util.ClientIpUtil.getClientIp(httpRequest)
+            );
             userService.clearSensitiveFields(user);
 
             Map<String, Object> info = new HashMap<>();
             info.put("user", user);
-            info.put("token", tokenInfo.getToken());
-            info.put("expire", tokenInfo.getExpireTime());
+            info.put("token", bundle.getAccessToken());
+            info.put("expire", bundle.getAccessExpire());
+            info.put("refreshToken", bundle.getRefreshToken());
+            info.put("refreshExpire", bundle.getRefreshExpire());
+            info.put("sid", bundle.getSid());
 
             return new Result<>(true, StatusCode.OK, "登录成功", info);
         } catch (UnsupportedOperationException e) {
