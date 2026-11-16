@@ -22,6 +22,14 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
+    /** 设备名（登录设备列表展示）：realme RMX6699 / Xiaomi 23127PN0CC … */
+    private val deviceName: String by lazy {
+        val manufacturer = android.os.Build.MANUFACTURER.orEmpty()
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        val model = android.os.Build.MODEL.orEmpty()
+        listOf(manufacturer, model).filter { it.isNotBlank() }.joinToString(" ")
+    }
+
     /** 幂等写接口（评论/留言）的 X-Request-Id，后端 @Idempotent 用 */
     fun newRequestId(): String = UUID.randomUUID().toString()
 
@@ -86,11 +94,11 @@ object ApiClient {
             .addInterceptor { chain ->
                 val req = chain.request()
                 val token = TokenStore.token.value
-                if (token != null) {
-                    chain.proceed(req.newBuilder().header("Token", token).build())
-                } else {
-                    chain.proceed(req)
-                }
+                val builder = req.newBuilder()
+                if (token != null) builder.header("Token", token)
+                // 登录设备列表展示用：不带这个头时后端只能按 UA 归类，显示成 "okhttp/4.12.0"
+                builder.header("X-Device-Name", deviceName)
+                chain.proceed(builder.build())
             }
             .addInterceptor { chain ->
                 // 博客 API token 失效（401）→ 先用 refresh 静默续期并重放一次；
