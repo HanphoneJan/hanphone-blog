@@ -136,7 +136,7 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
         )
     }
 
-    suspend fun likeBlog(blogId: Long, userId: Long, isLike: Boolean): ApiResult<Void?> =
+    suspend fun likeBlog(blogId: Long, userId: Long, isLike: Boolean): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.likeBlog(
                 id = blogId,
@@ -153,7 +153,7 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
             api.login(mapOf("username" to username, "password" to password))
         }
 
-    suspend fun sendRegisterCaptcha(email: String): ApiResult<Void?> =
+    suspend fun sendRegisterCaptcha(email: String): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.sendCaptcha(mapOf("email" to email, "scene" to "register"))
         }
@@ -175,7 +175,7 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
         }
 
     /** 通用邮箱验证码（scene 默认 general：改邮箱/重置密码等） */
-    suspend fun sendGeneralCaptcha(email: String): ApiResult<Void?> =
+    suspend fun sendGeneralCaptcha(email: String): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.sendCaptcha(mapOf("email" to email)) }
 
     /** 私信：拉取与管理员的历史记录（需 Bearer token） */
@@ -257,7 +257,7 @@ class EssayRepository(private val api: BlogApi = ApiClient.api) {
     suspend fun comments(essayId: Long): ApiResult<List<EssayComment>> =
         withContext(Dispatchers.IO) { api.essayComments(essayId) }
 
-    suspend fun likeEssay(essayId: Long, userId: Long, isLike: Boolean): ApiResult<Void?> =
+    suspend fun likeEssay(essayId: Long, userId: Long, isLike: Boolean): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.likeEssay(
                 id = essayId,

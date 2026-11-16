@@ -82,12 +82,6 @@ fun AdminDashboardScreen(
                     )
                 } else {
                     MonthlyChart(monthly)
-                    AdminGap(4)
-                    Text(
-                        "最近 12 个月",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
                 AdminGap(24)
             }

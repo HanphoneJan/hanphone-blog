@@ -139,6 +139,9 @@ ui/
 上传前统一走 `MediaPicker`：图片按 EXIF 转正 + 长边 1600 + JPEG 0.85 压缩（原图 10MB+ 会打爆 2C2G 服务器）；
 视频不压缩，服务端异步转 HLS。返回的 `width/height/thumbPath` 要写回随笔附件，否则九宫格回退原图。
 
+接口书写约定：所有 `@Body Map<String, Any?>` 必须写成 `Map<String, @JvmSuppressWildcards Any?>`
+（见踩坑 24），无返回体用 `ApiResult<Any?>`（见踩坑 25）。
+
 编辑页的数据交接：管理端没有「按 id 取单条」的接口（`/essays/{id}` 只返回已发布），
 列表把完整对象塞进 `AdminEditBus`，编辑页直接读；进程被回收后退化为翻页查找（最多 10 页）。
 
@@ -283,7 +286,27 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 22. **管理接口 401/400 的错误文案**：token 过期时 `/admin/**` 返回 400（不是 401），
     直接 `e.message` 会弹 "HTTP 400"。统一用 `util/Errors.kt` 的 `adminMessage()`。
 
-23. **Moshi 自定义 Date 适配器必须放行 JSON `null`（重大，热点聚合真机暴露）**：`ApiClient.BlogDateAdapter.fromJson` 原来只判 `NUMBER`，否则走 `reader.nextString()`；遇到**显式 `null`**（热点聚合的 `publishedAt` / `releaseDate` / 总览 `topItems` 里的 hf 项）会在 NULL token 上抛 `JsonDataException`。由于所有接口都被 `runCatching` 包裹，异常被**静默吞掉** → 表现为「整包数据凭空消失」（HF 趋势 0 条、总览信息行不渲染、text/agent 等模态榜单为空），**既不崩溃也无日志**，极难排查。已在适配器开头判 `JsonReader.Token.NULL` 返回 null。教训：自定义 Moshi 适配器要么自己 `nullSafe()`，要么显式处理 NULL；**解析失败一定要留日志**，别让 `runCatching` 无声吞掉。
+23. **Retrofit + Kotlin `Map<String, Any?>` 参数必须加 `@JvmSuppressWildcards`（2026-11 真机实测，最坑的一条）**：
+    不加时 Kotlin 会生成 `Map<String, ?>`，Retrofit 在**首次调用**该方法时抛
+    `IllegalArgumentException: Parameter type must not include a type variable or wildcard`。
+    编译期完全看不出来，且异常发生在 `viewModelScope.launch` 里 → **App 直接 FATAL 闪退**。
+    当时 `BlogApi` 的点赞/评论/留言/注册/改资料/随笔点赞 6 个接口全是这个形状，
+    等于「点赞即闪退」。新加任何 `@Body Map<String, Any?>` 一律写
+    `@Body body: Map<String, @JvmSuppressWildcards Any?>`（AdminApi 已全部照此处理）。
+
+24. **Moshi 不支持 `java.lang.Void`**：`ApiResult<Void?>` 会抛
+    `Unable to create converter for ...<java.lang.Void>`。无返回体的接口统一用 `ApiResult<Any?>`。
+
+25. **富文本编辑 Markdown 必须有「载入基准」**：richeditor 的 `setMarkdown → toMarkdown`
+    往返有损（表格被压平成文本、代码围栏丢失）。博客编辑页记录了载入时的 `toMarkdown()` 快照，
+    保存时只有当前值 ≠ 快照才回写正文——否则用户只改个标题，正文就被静默改坏。
+    真机验证：源码模式保存后正文 5394 字原样不变；富文本模式不改动直接保存也原样不变。
+
+26. **启动时检查 JWT 的 `exp`**（`util/Jwt.kt`）：后端只对 admin 路径与聊天接口校验 token，
+    公开接口完全不看，所以过期后 App 仍显示「已登录」，直到点进管理中心才 400/401，
+    表现成「列表空白」。启动时解 payload 判断一次，过期直接退回未登录。
+
+27. **Moshi 自定义 Date 适配器必须放行 JSON `null`（重大，热点聚合真机暴露）**：`ApiClient.BlogDateAdapter.fromJson` 原来只判 `NUMBER`，否则走 `reader.nextString()`；遇到**显式 `null`**（热点聚合的 `publishedAt` / `releaseDate` / 总览 `topItems` 里的 hf 项）会在 NULL token 上抛 `JsonDataException`。由于所有接口都被 `runCatching` 包裹，异常被**静默吞掉** → 表现为「整包数据凭空消失」（HF 趋势 0 条、总览信息行不渲染、text/agent 等模态榜单为空），**既不崩溃也无日志**，极难排查。已在适配器开头判 `JsonReader.Token.NULL` 返回 null。教训：自定义 Moshi 适配器要么自己 `nullSafe()`，要么显式处理 NULL；**解析失败一定要留日志**，别让 `runCatching` 无声吞掉。
     - 连带坑：**缓存了「部分成功」的结果时，不能用 `isEmpty()` 判断已加载**。上一版只解析成功部分模态并落盘 `hot_leaderboards.json`，重进页面 `leaderboards` 非空 → 跳过重拉，缺失模态永远空。已改为「缺哪个补哪个」（`size < MODALITIES.size` 就重拉，且新结果**合并**进旧 map，失败模态保留旧数据）。
 
 ## 8. 路线图

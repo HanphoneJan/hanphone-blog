@@ -69,7 +69,7 @@ class AdminRepository(
     suspend fun comments(): ApiResult<List<Comment>> =
         withContext(Dispatchers.IO) { api.commentList() }
 
-    suspend fun deleteComment(id: Long): ApiResult<Void?> =
+    suspend fun deleteComment(id: Long): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.deleteComment(id) }
 
     // ===== 随笔 =====
@@ -108,13 +108,13 @@ class AdminRepository(
         api.saveEssay(mapOf("essay" to essay))
     }
 
-    suspend fun publishEssay(id: Long, published: Boolean): ApiResult<Void?> =
+    suspend fun publishEssay(id: Long, published: Boolean): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.publishEssay(mapOf("essayId" to id, "published" to published)) }
 
-    suspend fun recommendEssay(id: Long, recommend: Boolean): ApiResult<Void?> =
+    suspend fun recommendEssay(id: Long, recommend: Boolean): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.recommendEssay(mapOf("essayId" to id, "recommend" to recommend)) }
 
-    suspend fun deleteEssay(id: Long, syncDeleteImage: Boolean = true): ApiResult<Void?> =
+    suspend fun deleteEssay(id: Long, syncDeleteImage: Boolean = true): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.deleteEssay(id, syncDeleteImage) }
 
     // ===== 博客 =====
@@ -152,25 +152,25 @@ class AdminRepository(
         "user" to blog.user?.let { mapOf("id" to it.id) }
     )
 
-    suspend fun saveBlog(blog: Blog): ApiResult<Void?> =
+    suspend fun saveBlog(blog: Blog): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.saveBlog(mapOf("blog" to blogPayload(blog))) }
 
     /** 新建博客：没有 id 字段，后端才会走 saveBlog 分支（带 id=0 会被当成「博客不存在」） */
-    suspend fun createBlog(blog: Blog): ApiResult<Void?> =
+    suspend fun createBlog(blog: Blog): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.saveBlog(mapOf("blog" to (blogPayload(blog) - "id"))) }
 
-    suspend fun saveBlog(body: Map<String, Any?>): ApiResult<Void?> =
+    suspend fun saveBlog(body: Map<String, Any?>): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.saveBlog(mapOf("blog" to body)) }
 
-    suspend fun toggleBlogPublished(blog: Blog): ApiResult<Void?> =
+    suspend fun toggleBlogPublished(blog: Blog): ApiResult<Any?> =
         saveBlog(blog.copy(published = !blog.published))
 
-    suspend fun toggleBlogRecommend(blog: Blog): ApiResult<Void?> =
+    suspend fun toggleBlogRecommend(blog: Blog): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.recommendBlog(mapOf("blogId" to blog.id, "recommend" to !blog.recommend))
         }
 
-    suspend fun deleteBlog(id: Long, syncDeleteImage: Boolean = true): ApiResult<Void?> =
+    suspend fun deleteBlog(id: Long, syncDeleteImage: Boolean = true): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.deleteBlog(id, syncDeleteImage) }
 
     // ===== 标签 / 分类 =====
@@ -185,7 +185,7 @@ class AdminRepository(
         api.saveTag(mapOf("tag" to tag))
     }
 
-    suspend fun deleteTag(id: Long): ApiResult<Void?> = withContext(Dispatchers.IO) { api.deleteTag(id) }
+    suspend fun deleteTag(id: Long): ApiResult<Any?> = withContext(Dispatchers.IO) { api.deleteTag(id) }
 
     suspend fun fullTypes(): ApiResult<List<Type>> = withContext(Dispatchers.IO) { api.fullTypes() }
 
@@ -196,14 +196,14 @@ class AdminRepository(
             api.saveType(mapOf("type" to type))
         }
 
-    suspend fun deleteType(id: Long, syncDeleteImage: Boolean = true): ApiResult<Void?> =
+    suspend fun deleteType(id: Long, syncDeleteImage: Boolean = true): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.deleteType(id, syncDeleteImage) }
 
     // ===== 友链 =====
     suspend fun friendLinks(): ApiResult<List<FriendLink>> =
         withContext(Dispatchers.IO) { api.friendLinks() }
 
-    suspend fun saveFriendLink(link: FriendLink): ApiResult<Void?> = withContext(Dispatchers.IO) {
+    suspend fun saveFriendLink(link: FriendLink): ApiResult<Any?> = withContext(Dispatchers.IO) {
         // 后端同时有 url / linkUrl 两个字段：网页申请入口写 linkUrl，后台表单写 url。
         // 两个都回传，避免某一侧读不到。
         api.saveFriendLink(
@@ -227,15 +227,15 @@ class AdminRepository(
         )
     }
 
-    suspend fun deleteFriendLink(id: Long): ApiResult<Void?> =
+    suspend fun deleteFriendLink(id: Long): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.deleteFriendLink(id) }
 
-    suspend fun toggleFriendLinkRecommend(link: FriendLink): ApiResult<Void?> =
+    suspend fun toggleFriendLinkRecommend(link: FriendLink): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.recommendFriendLink(mapOf("friendLinkId" to link.id, "recommend" to !link.recommend))
         }
 
-    suspend fun toggleFriendLinkPublished(link: FriendLink): ApiResult<Void?> =
+    suspend fun toggleFriendLinkPublished(link: FriendLink): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.publishFriendLink(mapOf("friendLinkId" to link.id, "published" to (link.published != true)))
         }
@@ -243,7 +243,7 @@ class AdminRepository(
     // ===== 项目 =====
     suspend fun projects(): ApiResult<List<Project>> = withContext(Dispatchers.IO) { api.projects() }
 
-    suspend fun saveProject(project: Project): ApiResult<Void?> = withContext(Dispatchers.IO) {
+    suspend fun saveProject(project: Project): ApiResult<Any?> = withContext(Dispatchers.IO) {
         api.saveProject(
             mapOf(
                 "project" to mapOf(
@@ -261,15 +261,15 @@ class AdminRepository(
         )
     }
 
-    suspend fun deleteProject(id: Long, syncDeleteImage: Boolean = true): ApiResult<Void?> =
+    suspend fun deleteProject(id: Long, syncDeleteImage: Boolean = true): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.deleteProject(id, syncDeleteImage) }
 
-    suspend fun toggleProjectRecommend(project: Project): ApiResult<Void?> =
+    suspend fun toggleProjectRecommend(project: Project): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.recommendProject(mapOf("projectId" to project.id, "recommend" to !project.recommend))
         }
 
-    suspend fun toggleProjectPublished(project: Project): ApiResult<Void?> =
+    suspend fun toggleProjectPublished(project: Project): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.publishProject(mapOf("projectId" to project.id, "published" to (project.published != true)))
         }
@@ -277,16 +277,16 @@ class AdminRepository(
     // ===== 文库 =====
     suspend fun docs(): ApiResult<List<Doc>> = withContext(Dispatchers.IO) { api.docs() }
 
-    suspend fun saveDoc(doc: Map<String, Any?>): ApiResult<Void?> =
+    suspend fun saveDoc(doc: Map<String, Any?>): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.saveDoc(mapOf("doc" to doc)) }
 
-    suspend fun deleteDoc(id: Long): ApiResult<Void?> = withContext(Dispatchers.IO) { api.deleteDoc(id) }
+    suspend fun deleteDoc(id: Long): ApiResult<Any?> = withContext(Dispatchers.IO) { api.deleteDoc(id) }
 
-    suspend fun toggleDocRecommend(doc: Doc): ApiResult<Void?> = withContext(Dispatchers.IO) {
+    suspend fun toggleDocRecommend(doc: Doc): ApiResult<Any?> = withContext(Dispatchers.IO) {
         api.recommendDoc(mapOf("docId" to doc.id, "recommend" to !doc.recommend))
     }
 
-    suspend fun toggleDocPublished(doc: Doc): ApiResult<Void?> = withContext(Dispatchers.IO) {
+    suspend fun toggleDocPublished(doc: Doc): ApiResult<Any?> = withContext(Dispatchers.IO) {
         api.publishDoc(mapOf("docId" to doc.id, "published" to (doc.published != true)))
     }
 

@@ -31,6 +31,7 @@ import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type
 import com.hanphone.blog.data.model.Vendor
+import kotlin.jvm.JvmSuppressWildcards
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -101,7 +102,7 @@ interface BlogApi {
 
     /** 打开文件时上报浏览量（后端自增，无需 body） */
     @POST("docs/{docId}/view")
-    suspend fun incrementDocView(@Path("docId") docId: String): ApiResult<Void?>
+    suspend fun incrementDocView(@Path("docId") docId: String): ApiResult<Any?>
 
     // ===== 评论 / 点赞（@Idempotent 接口需携带 X-Request-Id）=====
     @GET("comments/{blogId}")
@@ -110,14 +111,14 @@ interface BlogApi {
     @POST("comments")
     suspend fun postComment(
         @Header("X-Request-Id") requestId: String?,
-        @Body body: Map<String, Any?>
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): ApiResult<Comment>
 
     @POST("blog/{id}/like")
     suspend fun likeBlog(
         @Path("id") id: Long,
-        @Body body: Map<String, Any?>
-    ): ApiResult<Void?>
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): ApiResult<Any?>
 
     // ===== 随笔 =====
     @GET("essays")
@@ -135,15 +136,15 @@ interface BlogApi {
     @POST("essays/{id}/like")
     suspend fun likeEssay(
         @Path("id") id: Long,
-        @Body body: Map<String, Any?>
-    ): ApiResult<Void?>
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): ApiResult<Any?>
 
     /** 随笔评论需要登录（body 含 userId），@Idempotent 需 X-Request-Id */
     @POST("essays/{id}/comments")
     suspend fun postEssayComment(
         @Path("id") id: Long,
         @Header("X-Request-Id") requestId: String?,
-        @Body body: Map<String, Any?>
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): ApiResult<EssayComment>
 
     // ===== 登录 =====
@@ -152,10 +153,10 @@ interface BlogApi {
 
     // ===== 注册（邮箱验证码）=====
     @POST("user/sendCaptcha")
-    suspend fun sendCaptcha(@Body body: Map<String, String>): ApiResult<Void?>
+    suspend fun sendCaptcha(@Body body: Map<String, String>): ApiResult<Any?>
 
     @POST("register")
-    suspend fun register(@Body body: Map<String, Any?>): ApiResult<LoginData>
+    suspend fun register(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<LoginData>
 
     // ===== 聊天（hanphone-chat，绝对路径 + Bearer 鉴权）=====
     // limit：最近 N 条历史（服务端 1~500，默认 200），见 hanphone-chat docs/android-protocol.md
@@ -209,7 +210,7 @@ interface BlogApi {
 
     /** body: { userId, user: { nickname?, avatar? } }；后端只更新非空字段 */
     @POST("user/current/update")
-    suspend fun updateCurrentUser(@Body body: Map<String, Any?>): ApiResult<User>
+    suspend fun updateCurrentUser(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<User>
 
     // ===== 留言板 =====
     @GET("messages")
@@ -218,7 +219,7 @@ interface BlogApi {
     @POST("messages")
     suspend fun postMessage(
         @Header("X-Request-Id") requestId: String?,
-        @Body body: Map<String, Any?>
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): ApiResult<Message>
 
     // ===== 热点聚合（洞察 /hot/*，公开只读）=====

@@ -68,6 +68,9 @@ fun AdminBlogEditScreen(
     val context = LocalContext.current
     var mode by remember { mutableStateOf(if (vm.isNew) BodyMode.RICH else BodyMode.SOURCE) }
     val richState = rememberRichTextState()
+    // 富文本的 Markdown 往返有损（表格/代码块会被压平），所以记录「载入时的基准」：
+    // 保存时只有内容真的被改过才写回，避免只改标题/标签就把正文格式静默改坏。
+    var richBaseline by remember { mutableStateOf<String?>(null) }
 
     val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let(vm::uploadCover)
@@ -77,6 +80,7 @@ fun AdminBlogEditScreen(
     LaunchedEffect(mode, vm.loading) {
         if (mode == BodyMode.RICH && !vm.loading) {
             richState.setMarkdown(vm.content)
+            richBaseline = richState.toMarkdown()
         }
     }
 
@@ -94,7 +98,10 @@ fun AdminBlogEditScreen(
         actions = {
             TextButton(
                 onClick = {
-                    if (mode == BodyMode.RICH) vm.updateContent(richState.toMarkdown())
+                    if (mode == BodyMode.RICH) {
+                        val current = richState.toMarkdown()
+                        if (current != richBaseline) vm.updateContent(current)
+                    }
                     vm.save()
                 },
                 enabled = !vm.saving
@@ -190,7 +197,11 @@ fun AdminBlogEditScreen(
                     if (mode != BodyMode.RICH) mode = BodyMode.RICH
                 }
                 AdminChip("源码", mode == BodyMode.SOURCE) {
-                    if (mode == BodyMode.RICH) vm.updateContent(richState.toMarkdown())
+                    if (mode == BodyMode.RICH) {
+                        val current = richState.toMarkdown()
+                        // 没编辑过就别回写，保持原 Markdown 一字不差
+                        if (current != richBaseline) vm.updateContent(current)
+                    }
                     mode = BodyMode.SOURCE
                 }
             }
