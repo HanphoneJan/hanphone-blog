@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  仅 debug 构建：允许明文 HTTP，方便「真机 + 本机后端」联调
+  （adb reverse tcp:8091 tcp:8091 后把 API_BASE_URL 指向 http://127.0.0.1:8091/）。
+  release 构建不受影响，仍然只允许 HTTPS。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>

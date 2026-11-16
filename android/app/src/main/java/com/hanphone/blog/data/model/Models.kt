@@ -212,7 +212,20 @@ data class SiteStats(
 data class LoginData(
     val user: User? = null,
     val token: String? = null,
-    val expire: String? = null
+    val expire: String? = null,
+    /** 长期登录：需要保存到 DataStore，access 过期时用它换新的 */
+    val refreshToken: String? = null,
+    val refreshExpire: String? = null,
+    val sid: String? = null
+)
+
+/** POST /auth/refresh 的返回 */
+data class TokenRefresh(
+    val token: String? = null,
+    val expire: String? = null,
+    val refreshToken: String? = null,
+    val refreshExpire: String? = null,
+    val sid: String? = null
 )
 
 // ===== 热点聚合（洞察 /hot/*，公开只读；字段与后端 VO camelCase 一致）=====

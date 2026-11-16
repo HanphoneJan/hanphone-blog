@@ -189,6 +189,8 @@ fun ProfileScreen(
                     }
                     OutlinedButton(onClick = {
                         scope.launch {
+                            // 先吊销服务端会话（refresh 立刻失效），再清本地
+                            runCatching { vm.logout() }
                             context.clearAuth()
                             TokenStore.clear()
                             // 第一方 WebView（照片墙）把登录态存在自己的 localStorage 里，

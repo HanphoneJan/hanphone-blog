@@ -1,6 +1,7 @@
 package com.hanphone.blog.data.api
 
 import com.hanphone.blog.BuildConfig
+import com.hanphone.blog.data.auth.TokenRefresher
 import com.hanphone.blog.data.auth.TokenStore
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonReader
@@ -15,6 +16,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -91,16 +93,29 @@ object ApiClient {
                 }
             }
             .addInterceptor { chain ->
-                // 博客 API token 失效（401）→ 自动清除登录态，UI 自动切回未登录。
-                // chat-api（独立服务，内部还会校验用户存在性）的 401/403 不代表博客登录态失效，跳过。
+                // 博客 API token 失效（401）→ 先用 refresh 静默续期并重放一次；
+                // 续期失败才清登录态。chat-api 的 401 不代表博客登录态失效，跳过。
                 val req = chain.request()
                 val resp = chain.proceed(req)
-                if (resp.code == 401 && !req.url.encodedPath.endsWith("/login")
-                    && !req.url.encodedPath.contains("/chat-api/")
-                ) {
-                    TokenStore.clear()
+                val path = req.url.encodedPath
+                val canRetry = resp.code == 401 &&
+                    !path.contains("/login") &&
+                    !path.contains("/auth/") &&
+                    !path.contains("/chat-api/")
+
+                if (!canRetry) {
+                    resp
+                } else {
+                    val stale = TokenStore.token.value
+                    val newToken = runBlocking { TokenRefresher.refresh(stale) }
+                    if (newToken == null) {
+                        TokenStore.clear()
+                        resp
+                    } else {
+                        resp.close()
+                        chain.proceed(req.newBuilder().header("Token", newToken).build())
+                    }
                 }
-                resp
             }
             .addInterceptor(logging)
             .connectTimeout(15, TimeUnit.SECONDS)

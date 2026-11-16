@@ -115,8 +115,15 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
                 val d = res.data
                 if (res.flag && d != null && d.token != null && d.user != null) {
                     val uid = d.user.id
-                    TokenStore.restore(d.token, uid, d.user.nickname, d.user.avatar, d.user.type)
-                    context.saveAuth(AuthData(d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.user.username))
+                    TokenStore.restore(
+                        d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.refreshToken
+                    )
+                    context.saveAuth(
+                        AuthData(
+                            d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.user.username,
+                            refreshToken = d.refreshToken
+                        )
+                    )
                     // 成功无需 toast：自动登录并返回「我的」即是反馈
                     onSuccess()
                 } else {

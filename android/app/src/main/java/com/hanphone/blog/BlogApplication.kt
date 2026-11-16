@@ -1,7 +1,13 @@
 package com.hanphone.blog
 
 import android.app.Application
+import com.hanphone.blog.core.saveTokens
+import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ContentStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.push.PushNotifications
 import dagger.hilt.android.HiltAndroidApp
@@ -15,8 +21,14 @@ import dagger.hilt.android.HiltAndroidApp
  */
 @HiltAndroidApp
 class BlogApplication : Application() {
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate() {
         super.onCreate()
+        // 刷新 token 后由网络层回调，这里异步落盘（网络层不持有 Context）
+        TokenStore.persistTokens = { token, refreshToken ->
+            appScope.launch { saveTokens(token, refreshToken) }
+        }
         ContentStore.init(this)
         ImageCaches.init(this)
         PushNotifications.init(this)

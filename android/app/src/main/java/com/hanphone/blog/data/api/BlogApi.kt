@@ -29,6 +29,7 @@ import com.hanphone.blog.data.model.SearchResultItem
 import com.hanphone.blog.data.model.User
 import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.Tag
+import com.hanphone.blog.data.model.TokenRefresh
 import com.hanphone.blog.data.model.Type
 import com.hanphone.blog.data.model.Vendor
 import kotlin.jvm.JvmSuppressWildcards
@@ -150,6 +151,14 @@ interface BlogApi {
     // ===== 登录 =====
     @POST("login")
     suspend fun login(@Body body: Map<String, String>): ApiResult<LoginData>
+
+    // ===== 长期登录：refresh / logout =====
+    /** 用 refresh 换新 access（轮换），失败返回 flag=false */
+    @POST("auth/refresh")
+    suspend fun refreshTokens(@Body body: Map<String, String>): ApiResult<TokenRefresh>
+
+    @POST("auth/logout")
+    suspend fun logout(@Body body: Map<String, String>): ApiResult<Any?>
 
     // ===== 注册（邮箱验证码）=====
     @POST("user/sendCaptcha")

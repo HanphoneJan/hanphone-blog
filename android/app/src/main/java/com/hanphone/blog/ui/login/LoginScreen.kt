@@ -86,8 +86,15 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
                 Log.i("BlogLogin", "flag=${res.flag} code=${res.code} msg=${res.message} data=${d != null}")
                 if (res.flag && d != null && d.token != null && d.user != null) {
                     val uid = d.user.id
-                    TokenStore.restore(d.token, uid, d.user.nickname, d.user.avatar, d.user.type)
-                    context.saveAuth(AuthData(d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.user.username))
+                    TokenStore.restore(
+                        d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.refreshToken
+                    )
+                    context.saveAuth(
+                        AuthData(
+                            d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.user.username,
+                            refreshToken = d.refreshToken
+                        )
+                    )
                     // 成功无需 toast：页面随即返回「我的」，已切换为登录态即是最好的反馈
                     onSuccess()
                 } else {

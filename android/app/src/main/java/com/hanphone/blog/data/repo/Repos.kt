@@ -148,6 +148,12 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
             )
         }
 
+    /** 退出登录：吊销服务端会话（refresh 失效），失败也不影响本地清理 */
+    suspend fun logout(refreshToken: String?): ApiResult<Any?> =
+        withContext(Dispatchers.IO) {
+            api.logout(mapOf("refreshToken" to (refreshToken ?: "")))
+        }
+
     suspend fun login(username: String, password: String): ApiResult<LoginData> =
         withContext(Dispatchers.IO) {
             api.login(mapOf("username" to username, "password" to password))

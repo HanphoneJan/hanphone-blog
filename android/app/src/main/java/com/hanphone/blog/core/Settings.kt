@@ -39,6 +39,7 @@ private val KEY_AUTH_NICKNAME = stringPreferencesKey("auth_nickname")
 private val KEY_AUTH_AVATAR = stringPreferencesKey("auth_avatar")
 private val KEY_USER_TYPE = stringPreferencesKey("auth_user_type")
 private val KEY_AUTH_USERNAME = stringPreferencesKey("auth_username")
+private val KEY_REFRESH_TOKEN = stringPreferencesKey("auth_refresh_token")
 
 data class AuthData(
     val token: String? = null,
@@ -53,7 +54,9 @@ data class AuthData(
      * `userInfo.username`（管理页按登录名定位当前用户、上传时作为作者名兜底）。
      * 之前没存，导致注入时只能拿昵称顶替。
      */
-    val username: String? = null
+    val username: String? = null,
+    /** 长期登录用的 refresh token（access 过期时换取新 token） */
+    val refreshToken: String? = null
 )
 
 val Context.auth: Flow<AuthData> get() = dataStore.data.map {
@@ -63,7 +66,8 @@ val Context.auth: Flow<AuthData> get() = dataStore.data.map {
         nickname = it[KEY_AUTH_NICKNAME].nullIfBlank(),
         avatar = it[KEY_AUTH_AVATAR].nullIfBlank(),
         userType = it[KEY_USER_TYPE].nullIfBlank(),
-        username = it[KEY_AUTH_USERNAME].nullIfBlank()
+        username = it[KEY_AUTH_USERNAME].nullIfBlank(),
+        refreshToken = it[KEY_REFRESH_TOKEN].nullIfBlank()
     )
 }
 
@@ -74,6 +78,13 @@ suspend fun Context.saveAuth(auth: AuthData) = dataStore.edit {
     it[KEY_AUTH_AVATAR] = auth.avatar ?: ""
     it[KEY_USER_TYPE] = auth.userType ?: ""
     it[KEY_AUTH_USERNAME] = auth.username ?: ""
+    it[KEY_REFRESH_TOKEN] = auth.refreshToken ?: ""
+}
+
+/** 只更新 token 对（刷新后落盘用） */
+suspend fun Context.saveTokens(token: String, refreshToken: String?) = dataStore.edit {
+    it[KEY_TOKEN] = token
+    it[KEY_REFRESH_TOKEN] = refreshToken ?: ""
 }
 
 suspend fun Context.clearAuth() = dataStore.edit {
@@ -83,6 +94,7 @@ suspend fun Context.clearAuth() = dataStore.edit {
     it.remove(KEY_AUTH_AVATAR)
     it.remove(KEY_USER_TYPE)
     it.remove(KEY_AUTH_USERNAME)
+    it.remove(KEY_REFRESH_TOKEN)
 }
 
 // ===== 个性化：自定义背景图 + 模糊 =====

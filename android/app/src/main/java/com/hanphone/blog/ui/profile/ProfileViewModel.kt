@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.SiteStats
@@ -53,6 +54,11 @@ class ProfileViewModel @Inject constructor(
         }
         // 首次加载统计数据
         refresh()
+    }
+
+    /** 退出登录：吊销服务端会话（失败无所谓，本地照样清） */
+    suspend fun logout() {
+        runCatching { repo.logout(TokenStore.refreshToken.value) }
     }
 
     fun refresh(fromPull: Boolean = false) {

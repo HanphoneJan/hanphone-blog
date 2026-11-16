@@ -78,10 +78,13 @@ ui/
 
 ### 3.2 认证 — 最大的坑
 - **登录/注册的密码必须先 `md5(明文)` 再发送**（与 `web/src/components/LoginForm.tsx`/`RegisterForm.tsx` 完全一致；后端 `checkUser` 校验的是 `bcrypt(md5(明文))`）。App 端工具：`util/Crypto.kt md5Hex()`。
-- 登录响应 `data = { user, token, expire }`；`expire` 为 Date（毫秒数字或字符串），模型里用 **String?** 兼容两种。
+- 登录响应 `data = { user, token, expire, refreshToken, refreshExpire, sid }`；`expire` 为 Date（毫秒数字或字符串），模型里用 **String?** 兼容两种。
+- **长期登录（2026-11）**：access 只有 **30 分钟**，`refreshToken` 存 DataStore（`auth_refresh_token`），access 过期时由 `TokenRefresher` 单飞刷新（`/auth/refresh`，轮换）。启动时 `Jwt.isExpired(token, 120s)` 先刷新、失败才登出。退出登录调 `/auth/logout` 吊销会话。协议见 `docs/auth/README.md`。
 - `User.type`：`"1"`=管理员、`"0"`=普通用户 —— **登录后必须存入 TokenStore.userType 并 DataStore 持久化**，消息页私信按它分流。
 - **Token 头**：博客 REST 用请求头 `Token`（ApiClient 自动注入）；**聊天 REST 用 `Authorization: Bearer <token>`**（BlogApi 对应的 @GET 里手动带）。
-- 401 自动登出：ApiClient 拦截器对带 Token 的 401 自动 `TokenStore.clear()`（避免“旧 token 卡死登录入口”）。
+- 401 处理（2026-11 改）：博客 API 的 401 先 `runBlocking { TokenRefresher.refresh(stale) }` 静默续期并**重放一次**；只有刷新失败才 `TokenStore.clear()`。
+  `/login`、`/auth/*`、`/chat-api/` 的 401 不触发刷新（前者无会话、后两者鉴权失败原因不同）。
+  刷新必须单飞（`Mutex`），否则并发 401 会同时轮换、互相作废并触发服务端的「令牌重放」告警。
 - 分页的 0/1 起始差异：
   - `/blogs`：`pagenum` 1 起始
   - `/types/{id}`、`/tags/{id}`：Spring `page` **0 起始**

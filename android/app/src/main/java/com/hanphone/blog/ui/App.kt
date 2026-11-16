@@ -84,6 +84,7 @@ import com.hanphone.blog.ui.admin.AdminTagsScreen
 import com.hanphone.blog.ui.admin.AdminTypesScreen
 import com.hanphone.blog.ui.admin.AdminUsersScreen
 import com.hanphone.blog.core.clearAuth
+import com.hanphone.blog.data.auth.TokenRefresher
 import com.hanphone.blog.util.Jwt
 import com.hanphone.blog.ui.chat.ChatScreen
 import com.hanphone.blog.ui.docs.DocsScreen
@@ -125,13 +126,21 @@ fun BlogAppRoot() {
     // 恢复持久化登录态到内存 TokenStore（OkHttp 拦截器依赖）
     LaunchedEffect(Unit) {
         val auth = context.auth.first()
-        if (Jwt.isExpired(auth.token)) {
-            // 过期 token 在公开接口里看不出来（后端不校验），只会在首次访问 /admin 或聊天时 401。
-            // 启动即清掉，避免界面一直显示「已登录」却什么都打不开。
-            context.clearAuth()
-            TokenStore.clear()
-        } else {
-            TokenStore.restore(auth.token, auth.userId, auth.nickname, auth.avatar, auth.userType)
+        // 先恢复（含 refresh），再决定要不要续期
+        TokenStore.restore(
+            auth.token, auth.userId, auth.nickname, auth.avatar, auth.userType, auth.refreshToken
+        )
+        if (Jwt.isExpired(auth.token, skewSeconds = 120)) {
+            // access 过期：用 refresh 静默续期；没有 refresh 或续期失败才退回未登录
+            val newToken = if (auth.refreshToken.isNullOrBlank()) {
+                null
+            } else {
+                TokenRefresher.refresh(auth.token)
+            }
+            if (newToken == null) {
+                context.clearAuth()
+                TokenStore.clear()
+            }
         }
     }
 
