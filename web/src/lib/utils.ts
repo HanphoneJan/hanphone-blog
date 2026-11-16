@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { TIME, STORAGE_KEYS } from './constants';
+import { clearLocalAuth, refreshAccessToken } from './authApi';
 
 // 创建 Axios 实例
 const apiClient = axios.create({
@@ -33,14 +34,25 @@ apiClient.interceptors.request.use(
   }
 );
 
-// 响应拦截器（处理 token 过期等情况）
+// 响应拦截器：401 先用 refresh 静默续期并重放一次；续期失败才清凭证
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // 401 未授权：清除无效凭证；仅后台路径跳转登录
-    if (error.response?.status === 401) {
-      localStorage.removeItem(STORAGE_KEYS.TOKEN)
-      localStorage.removeItem(STORAGE_KEYS.USER_INFO)
+  async (error) => {
+    const status = error.response?.status
+    const config = error.config as (typeof error.config & { _authRetry?: boolean }) | undefined
+    const url = String(config?.url || '')
+
+    if (status === 401 && config && !config._authRetry && !url.includes('/login') && !url.includes('/auth/')) {
+      config._authRetry = true
+      const token = await refreshAccessToken()
+      if (token) {
+        // 单飞刷新成功后重放原请求（请求拦截器会带上新 token）
+        return apiClient(config)
+      }
+    }
+
+    if (status === 401) {
+      clearLocalAuth()
       if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
         window.location.href = '/login'
       }

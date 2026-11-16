@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
+import { authLogin } from '@/lib/authApi'
 import { useUser } from '@/contexts/UserContext'
 import { useTheme } from '@/contexts/ThemeProvider'
 import { alertSuccess, alertError } from '@/lib/Alert'
@@ -262,7 +263,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
         ...loginLocation
       }
 
-      const response = await fetchData(ENDPOINTS.LOGIN, 'POST', requestPayload)
+      const response = await authLogin(requestPayload)
 
       if (response.code === API_CODE.SUCCESS) {
         setUserInfo({

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
 import { STORAGE_KEYS, API_CODE } from '@/lib/constants'
 import { ENDPOINTS } from '@/lib/api'
+import { adoptSession } from '@/lib/authApi'
 
 export default function OAuthCallbackPage() {
   const router = useRouter()
@@ -14,13 +15,18 @@ export default function OAuthCallbackPage() {
   const [message, setMessage] = useState('正在完成 GitHub 登录...')
   const hasProcessed = useRef(false)
 
-  // 登录模式：存储 token 和用户信息
-  const doLogin = (token: string, userInfoParam: string) => {
+  // 登录模式：存储 token 和用户信息（并向 BFF 换一枚长期会话 Cookie）
+  const doLogin = async (token: string, userInfoParam: string) => {
     try {
       const userInfo = JSON.parse(decodeURIComponent(userInfoParam))
 
-      setToken(token)
-      setExpire(String(Date.now() + 7 * 24 * 60 * 60 * 1000))
+      // OAuth 回调只带 access，refresh 由 BFF 写进 HttpOnly Cookie
+      const session = await adoptSession(token)
+      const accessToken = session?.token || token
+      const expireAt = session?.expire || String(Date.now() + 25 * 60 * 1000)
+
+      setToken(accessToken)
+      setExpire(expireAt)
       setUserInfo({
         avatar: userInfo.avatar || '',
         nickname: userInfo.nickname,
@@ -35,9 +41,9 @@ export default function OAuthCallbackPage() {
         oauthProvider: userInfo.oauthProvider,
       })
 
-      window.localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(token))
+      window.localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(accessToken))
       window.localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo))
-      window.localStorage.setItem(STORAGE_KEYS.EXPIRE, JSON.stringify(Date.now() + 7 * 24 * 60 * 60 * 1000))
+      window.localStorage.setItem(STORAGE_KEYS.EXPIRE, JSON.stringify(expireAt))
 
       setStatus('success')
       setMessage('登录成功，正在跳转...')

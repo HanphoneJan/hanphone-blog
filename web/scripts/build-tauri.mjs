@@ -308,7 +308,8 @@ try {
   execSync('pnpm next build --turbopack', {
     stdio: 'inherit',
     cwd: webDir,
-    env: { ...process.env, STATIC_EXPORT: 'true' },
+    // 静态导出没有 Node 路由：登录改用直连模式（refresh 存 localStorage）
+    env: { ...process.env, STATIC_EXPORT: 'true', NEXT_PUBLIC_AUTH_DIRECT: '1' },
     shell: true,
   })
 } catch (error) {

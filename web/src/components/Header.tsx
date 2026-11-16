@@ -22,6 +22,7 @@ import {
   Zap,
   Link,
   UserPen,
+  MonitorSmartphone,
   ImageIcon,
   BookOpen,
   Archive,
@@ -619,6 +620,16 @@ const Header: React.FC = () => {
                   >
                     <UserPen className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
                     修改个人信息
+                  </div>
+                  <div
+                    onClick={() => {
+                      router.push('/sessions/')
+                      setUserOptionVisible(false)
+                    }}
+                    className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                  >
+                    <MonitorSmartphone className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
+                    登录设备
                   </div>
                   {administrator && (
                     <div

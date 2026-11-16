@@ -5,13 +5,14 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { X, Plus, Trash2, Loader2 } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
+import { authRegister } from '@/lib/authApi'
 import { useUser } from '@/contexts/UserContext'
 import { useTheme } from '@/contexts/ThemeProvider'
 import { alertSuccess, alertError } from '@/lib/Alert'
 import ModalOverlay from '@/components/shared/ModalOverlay'
 import md5 from 'md5'
 import Compressor from 'compressorjs' // 引入compressorjs
-import { TIME, VALIDATION, IMAGE, Z_INDEX, USER_TYPE, API_CODE } from '@/lib/constants'
+import { TIME, VALIDATION, IMAGE, Z_INDEX, USER_TYPE, API_CODE, STORAGE_KEYS } from '@/lib/constants'
 import { AUTH_LABELS } from '@/lib/labels'
 
 // 用户数据类型定义
@@ -270,7 +271,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
         type: USER_TYPE.NORMAL
       }
 
-      const response = await fetchData(ENDPOINTS.REGISTER, 'POST', user)
+      const response = await authRegister(user)
 
       if (response.code === API_CODE.SUCCESS) {
         alertSuccess(AUTH_LABELS.REGISTER_SUCCESS)
@@ -278,6 +279,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
         // 使用context的setter方法更新用户状态
         setToken(response.data.token)
         setUserInfo(response.data.user)
+        // 与登录保持一致地持久化（否则刷新页面就掉登录，虽然 Cookie 里的会话还在）
+        window.localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(response.data.token))
+        window.localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(response.data.user))
+        window.localStorage.setItem(STORAGE_KEYS.EXPIRE, JSON.stringify(response.data.expire))
 
         // 注册成功后关闭表单
         setTimeout(() => {

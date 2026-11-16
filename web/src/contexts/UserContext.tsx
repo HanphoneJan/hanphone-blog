@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { TIME, STORAGE_KEYS, USER_TYPE } from '@/lib/constants'
+import { authLogout, refreshAccessToken as refreshAccessTokenShared } from '@/lib/authApi'
 
 // 扩展用户信息类型，增加更多可能的字段
 interface UserInfo {
@@ -212,6 +213,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // 退出登录处理（增加路由跳转）
   const onLogout = () => {
+    // 通知后端吊销会话 + 清掉 HttpOnly Cookie（失败也不影响本地清理）
+    void authLogout(token)
     localStorage.removeItem(STORAGE_KEYS.USER_INFO)
     localStorage.removeItem(STORAGE_KEYS.TOKEN)
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
@@ -250,48 +253,17 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }
 
-  // 刷新访问令牌（增强错误处理）
+  // 刷新访问令牌：走 lib/authApi 的单飞实现（BFF 模式 refresh 在 HttpOnly Cookie 里）
   const refreshAccessToken = async (): Promise<boolean> => {
-    if (!refreshToken) {
-      console.log('No refresh token available')
+    const newToken = await refreshAccessTokenShared()
+    if (!newToken) {
       onLogout()
       return false
     }
-
-    try {
-      const response = await fetch('/api/refresh-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ refreshToken })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || 'Failed to refresh token')
-      }
-
-      const data = await response.json()
-
-      if (data.token) {
-        setToken(data.token)
-        if (data.refreshToken) {
-          setRefreshToken(data.refreshToken)
-        }
-        if (data.expire) {
-          // 处理expire数据
-          setExpire(data.expire)
-        }
-        return true
-      }
-
-      return false
-    } catch (error) {
-      console.log('Error refreshing access token:', error instanceof Error ? error.message : error)
-      onLogout()
-      return false
-    }
+    setToken(newToken)
+    const expire = localStorage.getItem(STORAGE_KEYS.EXPIRE)
+    if (expire) setExpire(expire)
+    return true
   }
 
   return (
