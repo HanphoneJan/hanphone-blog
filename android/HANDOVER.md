@@ -25,6 +25,8 @@ data/
   auth/TokenStore.kt    进程内登录态：token/userId/nickname/avatar/userType
   api/ApiClient.kt      Retrofit×2：api(hanphone.cn/api, 注入 Token 头) + fileApi(hanphone.top)
   api/BlogApi.kt        全部 REST（含聊天 REST 绝对路径 + Bearer + limit 参数）
+  api/AdminApi.kt       后台管理接口（/admin/**，Token 拦截器自动注入，后端校验 userType=1）
+  api/AdminFileApi.kt   admin-file 带 Token 的上传/删除（**不要**给公共 FileApi 加 Token）
   api/FileApi.kt        上传 /upload/avatar
   cache/MemoryCache.kt  内存缓存：返回秒显（进程存活期）
   cache/ContentStore.kt 磁盘缓存：冷启动秒显（filesDir JSON，Gson 读写）
@@ -35,6 +37,8 @@ data/
   push/PushRegistrar.kt        FCM token 取用/上报/注销（google-services.json 缺失则静默跳过）
   push/BlogMessagingService.kt FCM 前台消息展示 + onNewToken 上报
   repo/Repos.kt         BlogRepository / EssayRepository / MessageRepository / FileRepository
+  repo/AdminRepo.kt     AdminRepository：概览/随笔/博客/标签/分类/友链/项目/文库/用户/上传
+  model/AdminModels.kt  AdminStats / AdminMonthly / TagBlogCount
 ui/
   App.kt                根：主题+背景层+底部导航+路由（4 Tab，200ms 淡入淡出过渡）；登录态建立即常连 ChatSocket（离开消息页也收私信通知）+ 请求通知权限 + 「消息」Tab 未读红点
   Background.kt         自定义背景层（全局）
@@ -110,6 +114,34 @@ ui/
 - App 留言板**底部输入条**（同文章评论输入条，未登录时条内小字提示"将以「匿名用户」身份留言"）；作者 = 登录昵称 ?: `"匿名用户"`，头像 = 登录头像（`repo.postMessage(nickname, content, avatar, parentId)` 已支持）。
 - **留言回复**（对齐网页版）：**点击留言内容即回复**（无独立回复按钮），底部输入条顶部出现「回复 @xxx」+ ✕ 取消；后端 Message 会**内嵌返回 `parentMessage`**（非 @JsonIgnore），列表直接展示「回复 @父昵称」标签。**留言内容可长按选中复制**。
 
+
+## 3.7 后台管理（App 内，v1.1）
+
+入口：**我的 → 管理**（`TokenStore.isAdmin`，即后端 token 里的 `userType=1`）。后端**零改动**，
+`/admin/**` 由 `TokenInterceptor` 校验 token 中的 userType，App 的 OkHttp 拦截器已注入 `Token` 头。
+
+页面与接口：
+
+| 页面 | 接口 | 说明 |
+|---|---|---|
+| 管理中心 | — | 纯入口列表 + 发布须知 |
+| 站点概览 | `/admin/get*Count`、`/admin/get*ByMonth` | Vico 3 折线图；月度接口返回 `"2024-01,12"` 字符串，仓库层切分 |
+| 随笔 | `/admin/essays`、`/admin/essay`、`/admin/essays/published`、`/admin/essays/recommend`、`/admin/essay/{id}` | 含未发布；新建后需再调一次 published |
+| 博客 | `/admin/getBlogList`、`/admin/blogs`、`/admin/blogs/recommend`、`/admin/blogs/{id}` | 发布状态切换 = 整篇回传 `published` 反转 |
+| 评论 | `/admin/getCommentList`、`DELETE /comments/{id}` | ⚠️ 删除接口后端**无鉴权**，只靠前端藏入口 |
+| 标签/分类 | `/admin/getFullTagListAndBlogNumber`、`/admin/tags`、`/admin/getFullTypeList`、`/admin/types` | 分类色由后端固定 blue |
+| 友链/项目/文库 | `/admin/friendLink(s)`、`/admin/project(s)`、`/admin/doc(s)` | 文库新增 = 先传文件再登记 Doc（docId 前端生成） |
+| 用户 | `/admin/users` | **只读**：不做删除/重置密码（手机误触代价太高） |
+| 聚合数据 | `/admin/hot/status`、`/admin/hot/collect` | 异步采集，返回 `{started, running}` |
+
+附件上传（随笔/封面/文库）：`AdminFileApi`（base `https://hanphone.top/`，**手动带 Token**）→
+`POST /upload` 或 `/upload/batch`，`namespace=blog/essay/{标题}` / `blog/blogs` / `blog/docs`。
+上传前统一走 `MediaPicker`：图片按 EXIF 转正 + 长边 1600 + JPEG 0.85 压缩（原图 10MB+ 会打爆 2C2G 服务器）；
+视频不压缩，服务端异步转 HLS。返回的 `width/height/thumbPath` 要写回随笔附件，否则九宫格回退原图。
+
+编辑页的数据交接：管理端没有「按 id 取单条」的接口（`/essays/{id}` 只返回已发布），
+列表把完整对象塞进 `AdminEditBus`，编辑页直接读；进程被回收后退化为翻页查找（最多 10 页）。
+
 ## 4. 信息架构与每屏要点（含用户明确要求）
 
 ### 首页
@@ -172,8 +204,7 @@ ui/
 ## 6. 开发环境（本机 Linux）
 
 ```bash
-# 构建（必须带代理 GRADLE_OPTS：Gradle 发行版走 github 需代理，依赖仓库直连）
-export GRADLE_OPTS="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=10808 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=10808"
+# 构建（依赖仓库与 Gradle 发行版当前可直连；若发行版下载 307 到 github 失败，再开本地代理 127.0.0.1:10808）
 ./gradlew :app:assembleDebug --no-daemon
 
 # 装机 + 验证
@@ -183,6 +214,10 @@ adb shell uiautomator dump /sdcard/ui.xml && adb shell cat /sdcard/ui.xml   # �
 adb logcat -d | grep -i "FATAL EXCEPTION"                                   # 崩溃检查（必须 0）
 ```
 - SDK：`~/Android/Sdk`（`local.properties` 指向），JDK 21。
+- 工具链（2026-11 升级）：Kotlin 2.4.21 / AGP 9.5.1 / Gradle 9.6.0 / KSP 2.3.14 / Hilt 2.60.1 /
+  compileSdk 37（`platforms;android-37.0`）/ Compose BOM 2026.09.00。
+  AGP 9 必须保留 `gradle.properties` 里的 `android.builtInKotlin=false` 与 `android.newDsl=false`，
+  否则 `org.jetbrains.kotlin.android` 插件会被拒绝加载。
 - 真机：realme（`adb devices` 可见即 `device` 状态）。用 `uiautomator` 的 `bounds` 算中心点做点击。
 
 ## 7. 踩坑记录（前车之鉴）
@@ -227,7 +262,28 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 
 16. **Android WebView 里 CSS 视口单位（`vh`/`dvh`/`svh`/`lvh`）会被算成 0（重大，真机实测）**：WebView 首次布局高度为 0，之后尺寸变化不会重算这些单位，但 `window.innerHeight` / `visualViewport.height` 是正确的（684）。后果：照片墙侧边栏 `height: 100vh` → 高度 0、**完全不可见**；三种视图容器 `min-height: 100vh` → 加载中（还没有照片）时背景层撑不开、下方露白。**不要在 App 内的 WebView 页面依赖 `vh`**。修复：`apps/photo-wall/src/main.ts` 用 `window.innerHeight` 写入 `--app-vh`（并在 resize/orientationchange/rAF 时重设），CSS 里 `100vh` 一律写成 `var(--app-vh, 100vh)`（普通浏览器没有这个 bug，走回退值）。排查「某个层高度不对/不可见」先量 `getComputedStyle` 与 `getBoundingClientRect`。
 
-17. **Moshi 自定义 Date 适配器必须放行 JSON `null`（重大，热点聚合真机暴露）**：`ApiClient.BlogDateAdapter.fromJson` 原来只判 `NUMBER`，否则走 `reader.nextString()`；遇到**显式 `null`**（热点聚合的 `publishedAt` / `releaseDate` / 总览 `topItems` 里的 hf 项）会在 NULL token 上抛 `JsonDataException`。由于所有接口都被 `runCatching` 包裹，异常被**静默吞掉** → 表现为「整包数据凭空消失」（HF 趋势 0 条、总览信息行不渲染、text/agent 等模态榜单为空），**既不崩溃也无日志**，极难排查。已在适配器开头判 `JsonReader.Token.NULL` 返回 null。教训：自定义 Moshi 适配器要么自己 `nullSafe()`，要么显式处理 NULL；**解析失败一定要留日志**，别让 `runCatching` 无声吞掉。
+17. **Kotlin 块注释会嵌套：KDoc 里写 `/admin/**` 直接把注释开成两层**（2026-11 实测）。
+    注释里出现 `/*`（例如路径通配 `admin/**`）会开启一个嵌套注释，原本的 `*/` 只关掉内层，
+    于是整份文件报 `Syntax error: Unclosed comment`，真正的报错位置在文件末尾、很难定位。
+    写通配路径改成 `/admin/` 或用代码块包起来。
+
+18. **`var xxx` + `fun setXxx()` 的 JVM 签名冲突**（`setXxx(Boolean)V` 与属性 setter 撞车）：
+    布尔开关命名用 `updatePublished` / `updateCommentabled`，不要 `setPublished`。
+
+19. **后台博客更新必须回传完整状态**：`updateBlog` 用「忽略 null 复制」，但
+    `published/recommend/commentabled/shareStatement` 是原始 `boolean`，不传会被写成 false；
+    `tags` 不传会被清空。App 的 `AdminRepo.blogPayload()` 统一带上这些字段。
+
+20. **随笔新建是两步**：`POST /admin/essay` 不读 `published`（默认 false），创建成功后要再调
+    `/admin/essays/published`；修改随笔不会改变发布状态（正是要的行为）。
+
+21. **博客正文改了，网页详情页不会变**：`app/(main)/blog/[id]` 是构建期静态化（generateStaticParams），
+    App 保存成功后要在编辑器里明确提示「需重新构建部署 web 前端」；随笔列表是 ISR 300s，5 分钟内自动刷新。
+
+22. **管理接口 401/400 的错误文案**：token 过期时 `/admin/**` 返回 400（不是 401），
+    直接 `e.message` 会弹 "HTTP 400"。统一用 `util/Errors.kt` 的 `adminMessage()`。
+
+23. **Moshi 自定义 Date 适配器必须放行 JSON `null`（重大，热点聚合真机暴露）**：`ApiClient.BlogDateAdapter.fromJson` 原来只判 `NUMBER`，否则走 `reader.nextString()`；遇到**显式 `null`**（热点聚合的 `publishedAt` / `releaseDate` / 总览 `topItems` 里的 hf 项）会在 NULL token 上抛 `JsonDataException`。由于所有接口都被 `runCatching` 包裹，异常被**静默吞掉** → 表现为「整包数据凭空消失」（HF 趋势 0 条、总览信息行不渲染、text/agent 等模态榜单为空），**既不崩溃也无日志**，极难排查。已在适配器开头判 `JsonReader.Token.NULL` 返回 null。教训：自定义 Moshi 适配器要么自己 `nullSafe()`，要么显式处理 NULL；**解析失败一定要留日志**，别让 `runCatching` 无声吞掉。
     - 连带坑：**缓存了「部分成功」的结果时，不能用 `isEmpty()` 判断已加载**。上一版只解析成功部分模态并落盘 `hot_leaderboards.json`，重进页面 `leaderboards` 非空 → 跳过重拉，缺失模态永远空。已改为「缺哪个补哪个」（`size < MODALITIES.size` 就重拉，且新结果**合并**进旧 map，失败模态保留旧数据）。
 
 ## 8. 路线图
@@ -237,6 +293,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ 随笔图片缩略图（九宫格走 `displayUrl()`，详情页走 `originalUrl()`；21 张图 74.65 MB → 0.75 MB，100×）、修掉 `urlType != "video"` 大小写导致视频被当图片加载的 bug。详见 `docs/photo-wall-image-optimization.md`。
 - ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
 - ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**v1.0.1** 发布：页面更名「热点」、榜单名次=排序位置、切换领域重置滚动、默认对比六家代表厂商、更新弹窗 Markdown 渲染。**v1.0.2**（`hanphone-1.0.2-android.apk`，versionCode 16）补充顶部**「名称归一」开关（默认开）**——关闭时厂商名与模型行变体/日期后缀按信源原始展示（`anthropic`、`Alibaba-ATH`、`z-ai`），实体合并不受影响；后端支持 `normalized` 参数（仅展示层）。后端榜单改用 AA 代码指数排序 + 模型名归一（变体后缀）+ LMArena 经服务器代理采集（见 server 文档）。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
+- ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据手动采集、用户只读列表。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

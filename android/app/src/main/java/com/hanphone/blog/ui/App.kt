@@ -69,6 +69,20 @@ import com.hanphone.blog.ui.essay.EssayDetailScreen
 import com.hanphone.blog.ui.essay.EssayListScreen
 import com.hanphone.blog.ui.home.HomeScreen
 import com.hanphone.blog.ui.detail.ArticleDetailScreen
+import com.hanphone.blog.ui.admin.AdminBlogEditScreen
+import com.hanphone.blog.ui.admin.AdminBlogsScreen
+import com.hanphone.blog.ui.admin.AdminCommentsScreen
+import com.hanphone.blog.ui.admin.AdminDashboardScreen
+import com.hanphone.blog.ui.admin.AdminDocsScreen
+import com.hanphone.blog.ui.admin.AdminEssayEditScreen
+import com.hanphone.blog.ui.admin.AdminEssaysScreen
+import com.hanphone.blog.ui.admin.AdminFriendLinksScreen
+import com.hanphone.blog.ui.admin.AdminHomeScreen
+import com.hanphone.blog.ui.admin.AdminInsightScreen
+import com.hanphone.blog.ui.admin.AdminProjectsScreen
+import com.hanphone.blog.ui.admin.AdminTagsScreen
+import com.hanphone.blog.ui.admin.AdminTypesScreen
+import com.hanphone.blog.ui.admin.AdminUsersScreen
 import com.hanphone.blog.ui.chat.ChatScreen
 import com.hanphone.blog.ui.docs.DocsScreen
 import com.hanphone.blog.ui.docs.DocMarkdownScreen
@@ -269,7 +283,8 @@ private fun MainScaffold() {
                         navController.navigate(
                             "webview?url=${Uri.encode("https://hanphone.cn/atlas/")}&title=${Uri.encode("照片墙")}"
                         )
-                    }
+                    },
+                    onOpenAdmin = { navController.navigate("admin") }
                 )
             }
             composable("messages") {
@@ -355,6 +370,83 @@ private fun MainScaffold() {
                 DataManagementScreen(onBack = { navController.popBackStack() })
             }
 
+
+            // ===== 后台管理（入口仅管理员可见）=====
+            composable("admin") {
+                AdminHomeScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenDashboard = { navController.navigate("admin/dashboard") },
+                    onOpenEssays = { navController.navigate("admin/essays") },
+                    onOpenBlogs = { navController.navigate("admin/blogs") },
+                    onOpenComments = { navController.navigate("admin/comments") },
+                    onOpenTags = { navController.navigate("admin/tags") },
+                    onOpenTypes = { navController.navigate("admin/types") },
+                    onOpenFriendLinks = { navController.navigate("admin/friendlinks") },
+                    onOpenProjects = { navController.navigate("admin/projects") },
+                    onOpenDocs = { navController.navigate("admin/docs") },
+                    onOpenUsers = { navController.navigate("admin/users") },
+                    onOpenInsight = { navController.navigate("admin/insight") }
+                )
+            }
+            composable("admin/dashboard") {
+                AdminDashboardScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/essays") {
+                AdminEssaysScreen(
+                    onBack = { navController.popBackStack() },
+                    onCreate = { navController.navigate("admin/essay/edit/0") },
+                    onEdit = { essay -> navController.navigate("admin/essay/edit/${essay.id}") }
+                )
+            }
+            composable(
+                route = "admin/essay/edit/{essayId}",
+                arguments = listOf(navArgument("essayId") { type = NavType.LongType })
+            ) {
+                AdminEssayEditScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
+                )
+            }
+            composable("admin/blogs") {
+                AdminBlogsScreen(
+                    onBack = { navController.popBackStack() },
+                    onCreate = { navController.navigate("admin/blog/edit/0") },
+                    onEdit = { blog -> navController.navigate("admin/blog/edit/${blog.id}") }
+                )
+            }
+            composable(
+                route = "admin/blog/edit/{blogId}",
+                arguments = listOf(navArgument("blogId") { type = NavType.LongType })
+            ) {
+                AdminBlogEditScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
+                )
+            }
+            composable("admin/comments") {
+                AdminCommentsScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/tags") {
+                AdminTagsScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/types") {
+                AdminTypesScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/friendlinks") {
+                AdminFriendLinksScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/projects") {
+                AdminProjectsScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/docs") {
+                AdminDocsScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/users") {
+                AdminUsersScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/insight") {
+                AdminInsightScreen(onBack = { navController.popBackStack() })
+            }
             composable("search") {
                 SearchScreen(
                     onOpenBlog = { id -> navController.navigate("article/$id") },

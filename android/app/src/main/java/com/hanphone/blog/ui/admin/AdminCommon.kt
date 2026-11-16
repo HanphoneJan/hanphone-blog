@@ -1,0 +1,328 @@
+package com.hanphone.blog.ui.admin
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.hanphone.blog.ui.components.AppBackBar
+
+/**
+ * 后台管理页面的通用骨架与控件。
+ *
+ * 视觉沿用 App 现有规范：44dp 紧凑返回栏（[AppBackBar]）、非卡片化的列表行、
+ * 48dp 输入框；不引入网页后台那套桌面端布局。
+ */
+@Composable
+fun AdminScaffold(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    floating: @Composable (() -> Unit)? = null,
+    actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                AppBackBar(title = title, onBack = onBack, actions = actions)
+            }
+        },
+        floatingActionButton = { floating?.invoke() }
+    ) { padding ->
+        Column(modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp), content = content)
+    }
+}
+
+/** 入口行：图标 + 标题 + 副标题 + 右箭头（居中管理中心用） */
+@Composable
+fun AdminEntry(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    tint: Color = MaterialTheme.colorScheme.primary
+) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 4.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(34.dp).background(tint.copy(alpha = 0.12f), RoundedCornerShape(9.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(19.dp))
+        }
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            if (subtitle.isNotBlank()) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.outline)
+    }
+}
+
+/** 小徽标：用于「已发布/草稿/推荐」等状态 */
+@Composable
+fun AdminBadge(text: String, color: Color = MaterialTheme.colorScheme.primary) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+        modifier = Modifier
+            .background(color.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+            .padding(horizontal = 5.dp, vertical = 1.dp)
+    )
+}
+
+/** 筛选/选择胶囊 */
+@Composable
+fun AdminChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+        )
+    }
+}
+
+/** 后台表单输入框：统一 48dp 紧凑高度 */
+@Composable
+fun AdminField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    placeholder: String? = null,
+    keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        placeholder = placeholder?.let { { Text(it) } },
+        singleLine = singleLine,
+        minLines = minLines,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboardType),
+        modifier = modifier.fillMaxWidth()
+    )
+}
+
+/** 开关行 */
+@Composable
+fun AdminSwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit, subtitle: String = "") {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium)
+            if (subtitle.isNotBlank()) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+/** 下拉选择（分类、flag、项目类型等） */
+@Composable
+fun <T> AdminDropdown(
+    label: String,
+    options: List<T>,
+    selected: T?,
+    optionLabel: (T) -> String,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 10.dp)
+            )
+            Text(
+                selected?.let(optionLabel) ?: "未选择",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Icon(Icons.Filled.KeyboardArrowDown, null, modifier = Modifier.size(18.dp))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(optionLabel(option)) },
+                    onClick = {
+                        expanded = false
+                        onSelect(option)
+                    }
+                )
+            }
+        }
+    }
+}
+
+/** 二次确认（删除等破坏性操作统一走这里） */
+@Composable
+fun AdminConfirmDialog(
+    title: String,
+    text: String,
+    confirmText: String = "确定",
+    destructive: Boolean = false,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(text) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    confirmText,
+                    color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
+}
+
+/** 后台列表的空态 */
+@Composable
+fun AdminEmpty(text: String) {
+    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+    }
+}
+
+/** 后台列表的加载态 */
+@Composable
+fun AdminLoading() {
+    Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.5.dp)
+    }
+}
+
+/** 行内细分割线（列表统一用，不画卡片） */
+@Composable
+fun AdminDivider() {
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
+        modifier = Modifier.padding(vertical = 2.dp)
+    )
+}
+
+/** 右侧操作按钮文字（发布/推荐），选中态用主色 */
+@Composable
+fun AdminTextAction(text: String, active: Boolean, onClick: () -> Unit) {
+    TextButton(onClick = onClick) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/** 页面小标题 */
+@Composable
+fun AdminSectionTitle(text: String, trailing: String? = null) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        if (trailing != null) {
+            Text(
+                trailing,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/** 垂直留白 */
+@Composable
+fun AdminGap(height: Int = 8) {
+    Spacer(Modifier.height(height.dp))
+}
+
+/** 一次性提示：消息变化时回调一次（配 Toast 用） */
+@Composable
+fun LaunchedMessage(message: String?, onMessage: (String) -> Unit) {
+    LaunchedEffect(message) {
+        message?.let(onMessage)
+    }
+}

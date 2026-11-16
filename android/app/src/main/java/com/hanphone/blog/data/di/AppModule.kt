@@ -2,6 +2,7 @@ package com.hanphone.blog.data.di
 
 import com.hanphone.blog.data.api.ApiClient
 import com.hanphone.blog.data.api.BlogApi
+import com.hanphone.blog.data.repo.AdminRepository
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.data.repo.EssayRepository
 import com.hanphone.blog.data.repo.FileRepository
@@ -44,4 +45,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideHotRepository(api: BlogApi): HotRepository = HotRepository(api)
+
+    @Provides
+    @Singleton
+    fun provideAdminRepository(): AdminRepository = AdminRepository()
 }

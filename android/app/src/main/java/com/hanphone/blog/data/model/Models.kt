@@ -30,6 +30,9 @@ data class Blog(
     val liked: Boolean = false,
     val commentabled: Boolean = true,
     val recommend: Boolean = false,
+    val published: Boolean = false,
+    val shareStatement: Boolean = false,
+    val appreciation: Int = 0,
     val description: String? = null,
     val createTime: Date? = null,
     val updateTime: Date? = null,
@@ -67,7 +70,15 @@ data class Comment(
     val avatar: String? = null,
     val content: String = "",
     val createTime: Date? = null,
-    val adminComment: Boolean = false
+    val adminComment: Boolean = false,
+    /** 后台评论列表会内嵌所属文章（仅取标题展示，正文不参与） */
+    val blog: CommentBlogRef? = null
+)
+
+/** 评论所属文章的精简引用 */
+data class CommentBlogRef(
+    val id: Long = 0,
+    val title: String = ""
 )
 
 data class Essay(
@@ -78,6 +89,7 @@ data class Essay(
     val likes: Int = 0,
     val liked: Boolean = false,
     val recommend: Boolean = false,
+    val published: Boolean? = null,
     val createTime: Date? = null,
     val user: User? = null,
     val essayFileUrls: List<EssayFileUrl> = emptyList()
@@ -132,7 +144,12 @@ data class FriendLink(
     val avatar: String? = null,
     val color: String? = null,
     val recommend: Boolean = false,
-    val type: String = "friend"
+    val published: Boolean? = null,
+    val type: String = "friend",
+    @Json(name = "linkUrl") val linkUrl: String? = null,
+    @Json(name = "siteshot") val siteshot: String? = null,
+    val rss: String? = null,
+    val nickname: String? = null
 )
 
 /**
@@ -147,7 +164,8 @@ data class Project(
     val url: String? = null,
     val techs: String = "",
     val type: Int = 0,
-    val recommend: Boolean = false
+    val recommend: Boolean = false,
+    val published: Boolean? = null
 )
 
 /**
@@ -164,7 +182,9 @@ data class Doc(
     @Json(name = "docNamespace") val docNamespace: String = "",
     val viewCount: Long = 0,
     val recommend: Boolean = false,
-    val createTime: String = ""
+    val published: Boolean? = null,
+    val createTime: String = "",
+    val updateTime: String? = null
 )
 
 /** 全局搜索结果项（contentType: BLOG/ESSAY/DOC/PROJECT） */

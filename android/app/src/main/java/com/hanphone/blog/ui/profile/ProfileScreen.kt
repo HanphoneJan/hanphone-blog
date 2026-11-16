@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -85,7 +86,8 @@ fun ProfileScreen(
     onOpenDocs: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenInsight: () -> Unit,
-    onOpenPhotoWall: () -> Unit
+    onOpenPhotoWall: () -> Unit,
+    onOpenAdmin: () -> Unit
 ) {
     val vm: ProfileViewModel = hiltViewModel()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -217,6 +219,18 @@ fun ProfileScreen(
                     Text("累计访问量", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text((visits ?: 0).toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
+            }
+        }
+
+        // ===== 管理入口（仅管理员）=====
+        if (userType == "1") {
+            SectionTitle("管理")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                MoreRow(Icons.Filled.AdminPanelSettings, "管理中心", "随笔 · 博客 · 评论 · 站点概览", onOpenAdmin)
             }
         }
 

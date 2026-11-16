@@ -79,7 +79,7 @@ object ApiClient {
     }
 
     /** 博客 API（hanphone.cn/api，自动注入 Token 头） */
-    val api: BlogApi by lazy {
+    private val apiRetrofit: Retrofit by lazy {
         val client = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val req = chain.request()
@@ -112,8 +112,12 @@ object ApiClient {
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
-            .create(BlogApi::class.java)
     }
+
+    val api: BlogApi by lazy { apiRetrofit.create(BlogApi::class.java) }
+
+    /** 后台管理 API：与公开接口同一 baseUrl / Token 拦截器，后端按 token 内 userType=1 放行 */
+    val adminApi: AdminApi by lazy { apiRetrofit.create(AdminApi::class.java) }
 
     /** 文件服务 API（hanphone.top，上传等；无需博客 Token） */
     val fileApi: FileApi by lazy {
@@ -129,5 +133,33 @@ object ApiClient {
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(FileApi::class.java)
+    }
+
+    /**
+     * 后台文件 API（admin-file，带 Token）。
+     * 单独一个 OkHttpClient：与公共 fileApi 分开，避免把用户凭证发给 /upload/avatar。
+     */
+    val adminFileApi: AdminFileApi by lazy {
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val token = TokenStore.token.value
+                if (token != null) {
+                    chain.proceed(chain.request().newBuilder().header("Token", token).build())
+                } else {
+                    chain.proceed(chain.request())
+                }
+            }
+            .addInterceptor(logging)
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(180, TimeUnit.SECONDS)
+            .writeTimeout(180, TimeUnit.SECONDS)
+            .build()
+
+        Retrofit.Builder()
+            .baseUrl("https://hanphone.top/")
+            .client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+            .create(AdminFileApi::class.java)
     }
 }
