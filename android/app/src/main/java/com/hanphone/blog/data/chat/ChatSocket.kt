@@ -214,7 +214,8 @@ object ChatSocket {
 
         s.on(Socket.EVENT_CONNECT) {
             _state.value = ChatConnectionState.CONNECTED
-            s.emit("authenticate", token)
+            // 每次（重）连都取当前 token：access 只有 30 分钟，重连时旧 token 可能已过期
+            s.emit("authenticate", TokenStore.token.value ?: token)
             s.emit("requestPublicHistory", JSONObject().put("limit", 100))
             startHeartbeat(s)
         }
