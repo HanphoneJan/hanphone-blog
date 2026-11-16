@@ -1,31 +1,43 @@
 [versions]
-agp = "8.7.3"
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.28"
-hilt = "2.52"
-hiltNavigationCompose = "1.2.0"
+# 2026-11 工具链升级：为引入 richeditor-compose（需 Kotlin 2.4）与 Vico 3（需 Kotlin 2.4）
+# 一次性抬到 Kotlin 2.4.21 / Compose BOM 2026.09 / AGP 8.13（8.x 最后一版，避免跳 AGP 9 的 Gradle 9 迁移）
+agp = "9.5.1"
+kotlin = "2.4.21"
+ksp = "2.3.14"
+hilt = "2.60.1"
+hiltNavigationCompose = "1.4.0"
 moshi = "1.15.1"
-paging = "3.3.5"
-markdownRenderer = "0.31.0"
-coreKtx = "1.15.0"
-lifecycle = "2.8.7"
-activityCompose = "1.9.3"
-composeBom = "2024.12.01"
-navigationCompose = "2.8.5"
+paging = "3.5.3"
+markdownRenderer = "0.46.0"
+coreKtx = "1.19.1"
+lifecycle = "2.11.0"
+activityCompose = "1.13.0"
+composeBom = "2026.09.00"
+navigationCompose = "2.10.2"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 coil = "2.7.0"
-datastore = "1.1.1"
+datastore = "1.3.0"
 socketIo = "2.1.0"
 # FCM 推送（Firebase Cloud Messaging）
 firebaseBom = "35.0.0"
 googleServices = "4.5.0"
+# 富文本编辑器（Markdown 导入/导出）：需 Kotlin 2.4 + Compose 1.12
+richeditor = "1.2.1"
+# 图表（概览页月度折线/柱状）
+vico = "3.3.1"
+# 图片 EXIF 方向纠正（压缩前）
+exifinterface = "1.4.2"
 # WebViewCompat.addDocumentStartJavaScript：把 App 登录态在页面脚本之前注入第一方页面
-webkit = "1.12.1"
+webkit = "1.18.0"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+richeditor-compose = { group = "com.mohamedrejeb.richeditor", name = "richeditor-compose", version.ref = "richeditor" }
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
+coil-video = { group = "io.coil-kt", name = "coil-video", version.ref = "coil" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }

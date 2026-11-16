@@ -17,12 +17,12 @@ if (file("google-services.json").exists()) {
 
 android {
     namespace = "com.hanphone.blog"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.hanphone.blog"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 18
         versionName = "1.0.4"
         // 是否放置了 Firebase 配置（android/app/google-services.json）；缺失时 FCM 自动禁用
@@ -52,8 +52,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+}
+
+// KGP 2.2+ 起 kotlinOptions 已废弃，改用 compilerOptions（AGP 的 kotlinOptions 块会告警）
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
@@ -87,6 +91,11 @@ dependencies {
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp.logging)
     implementation(libs.coil.compose)
+    implementation(libs.coil.video)
+    // 后台管理：富文本编辑（Markdown 导入/导出）+ 图表 + 图片 EXIF
+    implementation(libs.richeditor.compose)
+    implementation(libs.vico.compose.m3)
+    implementation(libs.exifinterface)
     implementation(libs.datastore.preferences)
     implementation(libs.socketio.client)
 

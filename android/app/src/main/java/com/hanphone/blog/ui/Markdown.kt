@@ -138,14 +138,14 @@ private fun MarkdownCore(content: String, modifier: Modifier) {
                 MarkdownHighlightedCodeFence(
                     content = it.content,
                     node = it.node,
-                    highlights = highlightsBuilder,
+                    highlightsBuilder = highlightsBuilder,
                 )
             },
             codeBlock = {
                 MarkdownHighlightedCodeBlock(
                     content = it.content,
                     node = it.node,
-                    highlights = highlightsBuilder,
+                    highlightsBuilder = highlightsBuilder,
                 )
             },
         ),
