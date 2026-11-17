@@ -1,5 +1,6 @@
 package com.hanphone.blog.ui
 
+import android.app.Activity
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -29,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -37,7 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -123,6 +127,20 @@ fun BlogAppRoot() {
         "light" -> false
         "dark" -> true
         else -> isSystemInDarkTheme()
+    }
+
+    // 状态栏 / 导航栏图标明暗必须跟随 App 主题，而不是系统深色模式：
+    // App 支持「手动黑夜」而系统是浅色，enableEdgeToEdge() 的默认 auto 会让状态栏
+    // 保持深色图标 → 黑底黑字，连手机时间都看不见（2026-11 用户反馈）。
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
+        }
     }
     // 恢复持久化登录态到内存 TokenStore（OkHttp 拦截器依赖）
     LaunchedEffect(Unit) {

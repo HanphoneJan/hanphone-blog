@@ -338,6 +338,14 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
       把「评论数」标签下的数据覆盖回「阅读量」。`AdminDashboardViewModel.requestMonthly()` 用
       `monthlyJob?.cancel()` + 响应时校验 `requested == metric`，只认最后一次。
 
+31. **状态栏 / 导航栏图标明暗要跟随 App 主题，不是系统深色模式（2026-11 用户反馈「看不见手机时间」）**：
+    `enableEdgeToEdge()` 的默认 `SystemBarStyle.auto` 用 **系统 uiMode** 决定
+    `isAppearanceLightStatusBars`。App 允许「手动黑夜」而系统处于浅色时，状态栏会保持深色图标，
+    黑底黑字连时间都看不见。已在 `BlogAppRoot` 用 `SideEffect` +
+    `WindowCompat.getInsetsController(window, view)`，按 `darkTheme` 设置
+    `isAppearanceLightStatusBars` / `isAppearanceLightNavigationBars`；手动切主题即时生效。
+    真机验证：系统浅色 + App 黑夜 → 白色时间；系统任意 + App 浅色 → 深色图标。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
