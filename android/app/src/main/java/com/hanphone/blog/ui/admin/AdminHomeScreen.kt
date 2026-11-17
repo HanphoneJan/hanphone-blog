@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 fun AdminHomeScreen(
     onBack: () -> Unit,
     onOpenDashboard: () -> Unit,
+    onOpenVisitors: () -> Unit,
     onOpenEssays: () -> Unit,
     onOpenBlogs: () -> Unit,
     onOpenComments: () -> Unit,
@@ -70,6 +72,8 @@ fun AdminHomeScreen(
 
             AdminSectionTitle("站点")
             AdminEntry(Icons.Filled.Insights, "站点概览", "访问 / 评论 / 点赞趋势", onOpenDashboard)
+            AdminDivider()
+            AdminEntry(Icons.Filled.TravelExplore, "访客明细", "UV / PV · IP 归属地 · 清理", onOpenVisitors)
             AdminDivider()
             AdminEntry(Icons.Filled.LocalFireDepartment, "聚合数据", "立即采集热点与模型榜单", onOpenInsight)
             AdminDivider()

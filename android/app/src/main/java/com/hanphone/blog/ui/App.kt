@@ -83,6 +83,7 @@ import com.hanphone.blog.ui.admin.AdminProjectsScreen
 import com.hanphone.blog.ui.admin.AdminTagsScreen
 import com.hanphone.blog.ui.admin.AdminTypesScreen
 import com.hanphone.blog.ui.admin.AdminUsersScreen
+import com.hanphone.blog.ui.admin.AdminVisitorsScreen
 import com.hanphone.blog.core.clearAuth
 import com.hanphone.blog.data.auth.TokenRefresher
 import com.hanphone.blog.util.Jwt
@@ -394,6 +395,7 @@ private fun MainScaffold() {
                 AdminHomeScreen(
                     onBack = { navController.popBackStack() },
                     onOpenDashboard = { navController.navigate("admin/dashboard") },
+                    onOpenVisitors = { navController.navigate("admin/visitors") },
                     onOpenEssays = { navController.navigate("admin/essays") },
                     onOpenBlogs = { navController.navigate("admin/blogs") },
                     onOpenComments = { navController.navigate("admin/comments") },
@@ -407,7 +409,13 @@ private fun MainScaffold() {
                 )
             }
             composable("admin/dashboard") {
-                AdminDashboardScreen(onBack = { navController.popBackStack() })
+                AdminDashboardScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenVisitors = { navController.navigate("admin/visitors") }
+                )
+            }
+            composable("admin/visitors") {
+                AdminVisitorsScreen(onBack = { navController.popBackStack() })
             }
             composable("admin/essays") {
                 AdminEssaysScreen(

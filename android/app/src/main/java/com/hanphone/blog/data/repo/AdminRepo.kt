@@ -6,7 +6,14 @@ import com.hanphone.blog.data.api.ApiClient
 import com.hanphone.blog.data.api.UploadBatchItem
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.AdminMonthly
+import com.hanphone.blog.data.model.AdminCollectRunsPage
+import com.hanphone.blog.data.model.AdminRebuildSummary
 import com.hanphone.blog.data.model.AdminStats
+import com.hanphone.blog.data.model.AdminSummarySettings
+import com.hanphone.blog.data.model.AdminTypeStat
+import com.hanphone.blog.data.model.AdminVisitorArea
+import com.hanphone.blog.data.model.AdminVisitorOverview
+import com.hanphone.blog.data.model.AdminVisitorPage
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
@@ -14,6 +21,7 @@ import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayFileUrl
 import com.hanphone.blog.data.model.FriendLink
+import com.hanphone.blog.data.model.HotSourceStatus
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.Tag
@@ -56,6 +64,7 @@ class AdminRepository(
             "blogs" -> api.blogsByMonth()
             "comments" -> api.commentsByMonth()
             "likes" -> api.likesByMonth()
+            "visits" -> api.visitsByMonth()
             else -> api.viewsByMonth()
         }.data.orEmpty()
         raw.mapNotNull { item ->
@@ -64,6 +73,32 @@ class AdminRepository(
             AdminMonthly(parts[0].trim(), parts[1].trim().toDoubleOrNull()?.toLong() ?: 0L)
         }
     }
+
+    /** 分类分布：只数每个分类下的博客条数（正文等字段不解析） */
+    suspend fun typeStats(): List<AdminTypeStat> = withContext(Dispatchers.IO) {
+        api.typeStats().data.orEmpty().sortedByDescending { it.blogs.size }
+    }
+
+    // ===== 访客统计 =====
+    suspend fun visitorOverview(): AdminVisitorOverview = withContext(Dispatchers.IO) {
+        api.visitorOverview().data ?: AdminVisitorOverview()
+    }
+
+    suspend fun visitorAreas(): List<AdminVisitorArea> = withContext(Dispatchers.IO) {
+        api.visitorAreas().data.orEmpty()
+    }
+
+    suspend fun visitorIps(
+        keyword: String,
+        sortBy: String,
+        order: String,
+        page: Int,
+        pageSize: Int = 20
+    ): AdminVisitorPage = withContext(Dispatchers.IO) {
+        api.visitorIps(keyword.ifBlank { null }, sortBy, order, page, pageSize).data ?: AdminVisitorPage()
+    }
+
+    suspend fun clearVisitors(): ApiResult<Any?> = withContext(Dispatchers.IO) { api.clearVisitors() }
 
     // ===== 评论 =====
     suspend fun comments(): ApiResult<List<Comment>> =
@@ -299,6 +334,46 @@ class AdminRepository(
 
     suspend fun hotStatus(): ApiResult<Map<String, Any?>> =
         withContext(Dispatchers.IO) { api.hotStatus() }
+
+    suspend fun hotSources(): List<HotSourceStatus> =
+        withContext(Dispatchers.IO) { api.hotSources().data.orEmpty() }
+
+    suspend fun hotRuns(
+        page: Int,
+        size: Int,
+        triggerType: String,
+        result: String,
+        keyword: String,
+        order: String,
+        from: String? = null
+    ): AdminCollectRunsPage = withContext(Dispatchers.IO) {
+        api.hotRuns(
+            page = page,
+            size = size,
+            triggerType = triggerType.ifBlank { null },
+            result = result.ifBlank { null },
+            q = keyword.ifBlank { null },
+            from = from,
+            to = null,
+            order = order
+        ).data ?: AdminCollectRunsPage()
+    }
+
+    suspend fun rebuildNormalization(dryRun: Boolean): AdminRebuildSummary =
+        withContext(Dispatchers.IO) {
+            api.rebuildNormalization(dryRun).data ?: AdminRebuildSummary(dryRun = dryRun)
+        }
+
+    suspend fun summarySettings(): AdminSummarySettings = withContext(Dispatchers.IO) {
+        api.summarySettings().data ?: AdminSummarySettings()
+    }
+
+    suspend fun saveSummarySettings(body: Map<String, String>): AdminSummarySettings =
+        withContext(Dispatchers.IO) {
+            api.saveSummarySettings(body).data ?: AdminSummarySettings()
+        }
+
+    suspend fun testSummary(): ApiResult<String> = withContext(Dispatchers.IO) { api.testSummary() }
 
     // ===== 文件上传（admin-file）=====
     /**

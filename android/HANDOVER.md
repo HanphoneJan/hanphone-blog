@@ -128,14 +128,15 @@ ui/
 | 页面 | 接口 | 说明 |
 |---|---|---|
 | 管理中心 | — | 纯入口列表 + 发布须知 |
-| 站点概览 | `/admin/get*Count`、`/admin/get*ByMonth` | Vico 3 折线图；月度接口返回 `"2024-01,12"` 字符串，仓库层切分 |
+| 站点概览 | `/admin/get*Count`、`/admin/get*ByMonth`、`/admin/getFullTagListAndBlogNumber`、`/admin/getFullTypeList`、`/admin/visitor/area-list` | 指标卡可点选趋势线；Vico 3 折线图；标签/分类/访客区域用横向条形（手机宽度下比词云/饼图可读）；月度接口返回 `"2024-01,12"` 字符串，仓库层切分。**月度趋势补齐连续月份（缺口=0），默认显示近 7 个月，可左右滑动或点「更早/更近」翻月** |
+| 访客明细 | `/admin/visitor/{overview,area-list,ip-list,clear}` | UV/PV/未知区域 + IP 明细（搜索 / 最近访问或次数排序 / 分页 20）+ 清理全部（二次确认） |
 | 随笔 | `/admin/essays`、`/admin/essay`、`/admin/essays/published`、`/admin/essays/recommend`、`/admin/essay/{id}` | 含未发布；新建后需再调一次 published |
 | 博客 | `/admin/getBlogList`、`/admin/blogs`、`/admin/blogs/recommend`、`/admin/blogs/{id}` | 发布状态切换 = 整篇回传 `published` 反转 |
 | 评论 | `/admin/getCommentList`、`DELETE /comments/{id}` | ⚠️ 删除接口后端**无鉴权**，只靠前端藏入口 |
 | 标签/分类 | `/admin/getFullTagListAndBlogNumber`、`/admin/tags`、`/admin/getFullTypeList`、`/admin/types` | 分类色由后端固定 blue |
 | 友链/项目/文库 | `/admin/friendLink(s)`、`/admin/project(s)`、`/admin/doc(s)` | 文库新增 = 先传文件再登记 Doc（docId 前端生成） |
 | 用户 | `/admin/users` | **只读**：不做删除/重置密码（手机误触代价太高） |
-| 聚合数据 | `/admin/hot/status`、`/admin/hot/collect` | 异步采集，返回 `{started, running}` |
+| 聚合数据 | `/admin/hot/{status,collect,sources,runs/page,models/rebuild-normalization,settings/summary}` | 对标网页 `/admin/insight`：采集状态 + 信源健康度、采集记录（方式/结果/近 7·30 天/关键词 + 分页）、AI 摘要（启用/保存/测试）、模型归一重建（预演/执行）；采集为异步任务，触发后每 3 秒轮询直到结束 |
 
 附件上传（随笔/封面/文库）：`AdminFileApi`（base `https://hanphone.top/`，**手动带 Token**）→
 `POST /upload` 或 `/upload/batch`，`namespace=blog/essay/{标题}` / `blog/blogs` / `blog/docs`。
@@ -312,6 +313,31 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 27. **Moshi 自定义 Date 适配器必须放行 JSON `null`（重大，热点聚合真机暴露）**：`ApiClient.BlogDateAdapter.fromJson` 原来只判 `NUMBER`，否则走 `reader.nextString()`；遇到**显式 `null`**（热点聚合的 `publishedAt` / `releaseDate` / 总览 `topItems` 里的 hf 项）会在 NULL token 上抛 `JsonDataException`。由于所有接口都被 `runCatching` 包裹，异常被**静默吞掉** → 表现为「整包数据凭空消失」（HF 趋势 0 条、总览信息行不渲染、text/agent 等模态榜单为空），**既不崩溃也无日志**，极难排查。已在适配器开头判 `JsonReader.Token.NULL` 返回 null。教训：自定义 Moshi 适配器要么自己 `nullSafe()`，要么显式处理 NULL；**解析失败一定要留日志**，别让 `runCatching` 无声吞掉。
     - 连带坑：**缓存了「部分成功」的结果时，不能用 `isEmpty()` 判断已加载**。上一版只解析成功部分模态并落盘 `hot_leaderboards.json`，重进页面 `leaderboards` 非空 → 跳过重拉，缺失模态永远空。已改为「缺哪个补哪个」（`size < MODALITIES.size` 就重拉，且新结果**合并**进旧 map，失败模态保留旧数据）。
 
+28. **Vico 3 坐标轴 `CartesianValueFormatter` 不能返回空串（真机闪退，2026-11）**：
+    切「月度趋势 → 评论数」时 FATAL：`IllegalStateException: CartesianValueFormatter.format returned a blank string`。
+    当时格式化器是 `labels.getOrNull(value.toInt())?.… ?: ""`——评论只有两三个月，Vico 的
+    `ItemPlacer` 会以负偏移/超出末位的 x 做宽度测量，索引越界就返回空串，Vico 直接抛异常。
+    **格式化器必须永远返回非空文本**（用 `YearMonth` 基准按 x 递推「N月」，最差兜底 `"—"`）；
+    另可用 `HorizontalAxis.ItemPlacer.aligned()` 控制刻度，但不要靠返回空串来隐藏标签。
+
+29. **Vico 默认主题是黑字（黑夜模式坐标轴看不清）**：不包 `ProvideVicoTheme` 时 `VicoTheme()` 的
+    `textColor` / `lineColor` 是黑色，暗色主题下横纵轴标签几乎不可见。图表必须包一层
+    `ProvideVicoTheme(rememberM3VicoTheme())`（来自 `compose-m3`），颜色自动取 `MaterialTheme.colorScheme`
+    （文字 `onBackground`、线条 `outline`），并随主题切换即时重算。
+
+30. **月度趋势必须补齐连续月份，且 Vico 自带的横向滚动在嵌套竖向滚动里不生效（2026-11 真机）**：
+    - 后端按「有数据的月份」返回（评论可能只有 1/2/6/7 月）。直接按数组下标画图会把它们画成等距，
+      看起来像连续增长——用户明确反馈「误导性很强」。现改为 **最早数据月 → 本月** 的连续序列、缺失月补 0
+      （最多 24 个月），默认显示近 7 个月，可左右滑动/「‹ 更早 / 更近 ›」翻月，横轴始终连续。
+    - `CartesianChartHost` 的 `scrollState`（`rememberVicoScrollState`）放在 `Column.verticalScroll` 里
+      拖拽**没有反应**（试过 `Zoom.x` + `Scroll.Absolute.End`，真机滑不动）。做法：图表只渲染一个
+      7 个月的切片，外层用 `Box` 覆盖层 `pointerInput { detectHorizontalDragGestures }` 自己翻月，
+      并在覆盖层上 `change.consume()`；**一次手势只翻一个月**（800px 滑动会连发多个 drag 事件，
+      不设 `shifted` 标记会连翻 6 个月）。覆盖层不消费竖向事件，页面竖向滚动不受影响。
+    - **指标切换与首屏加载的竞态**：首屏 `refresh()` 里的月度请求可能比用户切换指标的请求更晚返回，
+      把「评论数」标签下的数据覆盖回「阅读量」。`AdminDashboardViewModel.requestMonthly()` 用
+      `monthlyJob?.cancel()` + 响应时校验 `requested == metric`，只认最后一次。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
@@ -319,7 +345,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ 随笔图片缩略图（九宫格走 `displayUrl()`，详情页走 `originalUrl()`；21 张图 74.65 MB → 0.75 MB，100×）、修掉 `urlType != "video"` 大小写导致视频被当图片加载的 bug。详见 `docs/photo-wall-image-optimization.md`。
 - ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
 - ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**v1.0.1** 发布：页面更名「热点」、榜单名次=排序位置、切换领域重置滚动、默认对比六家代表厂商、更新弹窗 Markdown 渲染。**v1.0.2**（`hanphone-1.0.2-android.apk`，versionCode 16）补充顶部**「名称归一」开关（默认开）**——关闭时厂商名与模型行变体/日期后缀按信源原始展示（`anthropic`、`Alibaba-ATH`、`z-ai`），实体合并不受影响；后端支持 `normalized` 参数（仅展示层）。后端榜单改用 AA 代码指数排序 + 模型名归一（变体后缀）+ LMArena 经服务器代理采集（见 server 文档）。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
-- ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据手动采集、用户只读列表。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
+- ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线 + 标签/分类/访客区域分布）、访客明细（UV/PV + IP 归属地搜索排序分页 + 清理）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据（采集轮询 + 信源健康度 + 采集记录筛选分页 + AI 摘要配置 + 模型归一重建）、用户只读列表。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

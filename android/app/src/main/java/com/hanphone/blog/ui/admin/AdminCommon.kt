@@ -147,7 +147,8 @@ fun AdminField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     placeholder: String? = null,
-    keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text
+    keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+    password: Boolean = false
 ) {
     OutlinedTextField(
         value = value,
@@ -156,6 +157,11 @@ fun AdminField(
         placeholder = placeholder?.let { { Text(it) } },
         singleLine = singleLine,
         minLines = minLines,
+        visualTransformation = if (password) {
+            androidx.compose.ui.text.input.PasswordVisualTransformation()
+        } else {
+            androidx.compose.ui.text.input.VisualTransformation.None
+        },
         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboardType),
         modifier = modifier.fillMaxWidth()
     )

@@ -1,11 +1,19 @@
 package com.hanphone.blog.data.api
 
+import com.hanphone.blog.data.model.AdminCollectRunsPage
+import com.hanphone.blog.data.model.AdminRebuildSummary
+import com.hanphone.blog.data.model.AdminSummarySettings
+import com.hanphone.blog.data.model.AdminTypeStat
+import com.hanphone.blog.data.model.AdminVisitorArea
+import com.hanphone.blog.data.model.AdminVisitorOverview
+import com.hanphone.blog.data.model.AdminVisitorPage
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.FriendLink
+import com.hanphone.blog.data.model.HotSourceStatus
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.Tag
@@ -17,6 +25,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -48,6 +57,10 @@ interface AdminApi {
     @GET("admin/getViewCountByMonth")
     suspend fun viewsByMonth(): ApiResult<List<String>>
 
+    /** 站点访问量（按 visit 记录统计，与「阅读量」不同口径） */
+    @GET("admin/getVisitCountByMonth")
+    suspend fun visitsByMonth(): ApiResult<List<String>>
+
     @GET("admin/getBlogCountByMonth")
     suspend fun blogsByMonth(): ApiResult<List<String>>
 
@@ -56,6 +69,29 @@ interface AdminApi {
 
     @GET("admin/getLikesByMonth")
     suspend fun likesByMonth(): ApiResult<List<String>>
+
+    /** 与 [fullTypes] 同接口，但额外带上 blogs（仅取 id 用于统计分类分布） */
+    @GET("admin/getFullTypeList")
+    suspend fun typeStats(): ApiResult<List<AdminTypeStat>>
+
+    // ===== 访客统计 =====
+    @GET("admin/visitor/overview")
+    suspend fun visitorOverview(): ApiResult<AdminVisitorOverview>
+
+    @GET("admin/visitor/area-list")
+    suspend fun visitorAreas(): ApiResult<List<AdminVisitorArea>>
+
+    @GET("admin/visitor/ip-list")
+    suspend fun visitorIps(
+        @Query("keyword") keyword: String?,
+        @Query("sortBy") sortBy: String,
+        @Query("order") order: String,
+        @Query("page") page: Int,
+        @Query("pageSize") pageSize: Int
+    ): ApiResult<AdminVisitorPage>
+
+    @POST("admin/visitor/clear")
+    suspend fun clearVisitors(): ApiResult<Any?>
 
     // ===== 评论 =====
     /** 不传分页参数时后端返回全部（最多 200 条） */
@@ -190,4 +226,31 @@ interface AdminApi {
 
     @GET("admin/hot/status")
     suspend fun hotStatus(): ApiResult<Map<String, Any?>>
+
+    @GET("admin/hot/sources")
+    suspend fun hotSources(): ApiResult<List<HotSourceStatus>>
+
+    @GET("admin/hot/runs/page")
+    suspend fun hotRuns(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+        @Query("triggerType") triggerType: String?,
+        @Query("result") result: String?,
+        @Query("q") q: String?,
+        @Query("from") from: String?,
+        @Query("to") to: String?,
+        @Query("order") order: String
+    ): ApiResult<AdminCollectRunsPage>
+
+    @POST("admin/hot/models/rebuild-normalization")
+    suspend fun rebuildNormalization(@Query("dryRun") dryRun: Boolean): ApiResult<AdminRebuildSummary>
+
+    @GET("admin/hot/settings/summary")
+    suspend fun summarySettings(): ApiResult<AdminSummarySettings>
+
+    @PUT("admin/hot/settings/summary")
+    suspend fun saveSummarySettings(@Body body: Map<String, String>): ApiResult<AdminSummarySettings>
+
+    @POST("admin/hot/settings/summary/test")
+    suspend fun testSummary(): ApiResult<String>
 }
