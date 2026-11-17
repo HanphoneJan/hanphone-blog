@@ -190,7 +190,7 @@ ui/
 - 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub 链接）。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
 - **资料编辑**（「我的」点头像，对齐网页 UserInfoForm）：昵称 + 头像 + **邮箱**（改邮箱需向新邮箱发通用验证码 `scene=general`，非管理员必填；管理员免验证码）+ **新密码**（可选，≥6 位含字母数字，`md5` 传输）。保存走 `POST /user/current/update`（body 根级带 `captcha`），后端 `UserServiceImpl.updateCurrentUser` 会对 `user.password` 做 bcrypt。
 - 「设置 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + 单行简介 + 链接行（**访问博客网站 hanphone.cn / 作者 GitHub**），点击走系统浏览器。版本号只在「检查更新」区显示一次（不重复）。
-- **检查更新**（设置→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较 `isNewerVersion(tag, BuildConfig.VERSION_NAME)`，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 去更新(浏览器下载 APK)/稍后」，无新版 toast「已是最新版本」。API 与下载链在**直连网络可用**。⚠️ 因为是语义化比较，**同版本号重新发布 APK 不会让已装用户收到更新提示**——要让用户升级必须同时抬 `versionCode`。
+- **检查更新**（设置→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较 `isNewerVersion(tag, BuildConfig.VERSION_NAME)`，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 立即更新/稍后」，无新版 toast「已是最新版本」。**「立即更新」在 App 内下载**（`data/update/AppUpdateManager`：应用级协程 + OkHttp 流式下载，弹窗显示百分比与大小、可取消；离开设置页不中断），完成后用 `FileProvider` + `ACTION_VIEW` 调起**系统安装器**（仍会有系统安装确认，这是 Android 安全要求，不再跳浏览器）。首次需要「安装未知应用」授权：`REQUEST_INSTALL_PACKAGES` + 授权页返回后自动继续；部分厂商（realme/OPPO）还会多加风险提示与锁屏密码确认。API 与下载链在**直连网络可用**。⚠️ 因为是语义化比较，**同版本号重新发布 APK 不会让已装用户收到更新提示**——要让用户升级必须同时抬 `versionCode`。
 - **发布渠道**：GitHub Release `v{versionName}`（debug 密钥签名的 release APK，`assembleRelease` 已配 `signingConfig = debug`，可覆盖升级；正式签名留 S5）。
 - **占位图规范**：未登录头像/登录页/注册页/关于徽标一律用 `R.drawable.ic_blog`（CircleShape 裁剪），**不再用文字「云」**。
 
@@ -354,6 +354,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
 - ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**v1.0.1** 发布：页面更名「热点」、榜单名次=排序位置、切换领域重置滚动、默认对比六家代表厂商、更新弹窗 Markdown 渲染。**v1.0.2**（`hanphone-1.0.2-android.apk`，versionCode 16）补充顶部**「名称归一」开关（默认开）**——关闭时厂商名与模型行变体/日期后缀按信源原始展示（`anthropic`、`Alibaba-ATH`、`z-ai`），实体合并不受影响；后端支持 `normalized` 参数（仅展示层）。后端榜单改用 AA 代码指数排序 + 模型名归一（变体后缀）+ LMArena 经服务器代理采集（见 server 文档）。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
 - ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线 + 标签/分类/访客区域分布）、访客明细（UV/PV + IP 归属地搜索排序分页 + 清理）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据（采集轮询 + 信源健康度 + 采集记录筛选分页 + AI 摘要配置 + 模型归一重建）、用户只读列表。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
+- ✅ **v1.2.0 应用内更新**：设置 → 检查更新 →「立即更新」在 App 内下载 APK（进度/取消，应用级协程），完成后经 `FileProvider` 调起系统安装器；首次引导授权「安装未知应用」，授权返回自动继续。不再跳浏览器。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

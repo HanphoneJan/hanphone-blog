@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- 聊天私信本地通知（Android 13+ 运行时请求） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 应用内更新：下载 APK 后安装（用户仍需在系统里确认安装） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".BlogApplication"
@@ -23,6 +25,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 应用内更新：把缓存里的 APK 通过 content:// 交给系统安装器 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- FCM 推送：前台/数据消息由 onMessageReceived 处理；后台通知消息由系统按默认渠道展示 -->
         <service
