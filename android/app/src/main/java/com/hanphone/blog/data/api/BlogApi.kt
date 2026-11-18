@@ -152,6 +152,10 @@ interface BlogApi {
     @POST("login")
     suspend fun login(@Body body: Map<String, String>): ApiResult<LoginData>
 
+    /** 第三方登录：用回跳拿到的一次性 code 换会话（公开接口，返回结构与 /login 一致） */
+    @POST("oauth/app/exchange")
+    suspend fun exchangeOAuthCode(@Body body: Map<String, String>): ApiResult<LoginData>
+
     // ===== 长期登录：refresh / logout =====
     /** 用 refresh 换新 access（轮换），失败返回 flag=false */
     @POST("auth/refresh")

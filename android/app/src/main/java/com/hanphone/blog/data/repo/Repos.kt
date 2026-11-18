@@ -159,6 +159,12 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
             api.login(mapOf("username" to username, "password" to password))
         }
 
+    /** 第三方登录：一次性 code 换会话并落盘（保存逻辑在 core/LoginSession.applyLogin） */
+    suspend fun exchangeOAuthCode(code: String): ApiResult<LoginData> =
+        withContext(Dispatchers.IO) {
+            api.exchangeOAuthCode(mapOf("code" to code))
+        }
+
     suspend fun sendRegisterCaptcha(email: String): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.sendCaptcha(mapOf("email" to email, "scene" to "register"))

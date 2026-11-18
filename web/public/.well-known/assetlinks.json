@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.hanphone.blog",
+      "sha256_cert_fingerprints": [
+        "0F:A2:EE:10:D9:4A:85:9D:0A:F2:D0:FB:F1:50:E0:C4:A2:58:92:B9:B3:56:C5:CD:17:4B:97:91:98:F2:A4:5A"
+      ]
+    }
+  }
+]

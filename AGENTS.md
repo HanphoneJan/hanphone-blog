@@ -65,6 +65,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - Backend uses PostgreSQL (primary DB) + Redis (rate limiting, sessions, captcha); hot public reads (tags/types/site-stats) cached in-process via Caffeine (TTL 300s, evicted on writes)
 - JWT-based auth: TokenInterceptor validates tokens on admin endpoints (`/admin/**`); public endpoints use IndexController/UserController etc.
 - **长期登录（access + refresh）**：access JWT 30 分钟（`JWT_EXPIRE_TIME=1800000`），refresh 90 天、只存哈希于 `t_user_session`，每次刷新轮换，旧值被重放即吊销整个会话；改密码令 `password_version+1` 并吊销会话（保留当前 sid）。接口 `/auth/{refresh,logout,sessions,adopt}`，Web 用同源 BFF（`/next-api/auth/*`，refresh 在 HttpOnly Cookie），Android/Tauri 直连并本地存 refresh。详见 [docs/auth/README.md](docs/auth/README.md)。chat-server 与 admin-file 只验 access，无需改动。
+- **第三方登录**：网页 GitHub（授权跳转）/ Google（GSI ID Token，服务端用 tokeninfo 验签并核对 aud）；Android 走**系统浏览器 + https 中转页 `/api/oauth/app/return` + `hanphone://oauth/callback` + 一次性 code**（`POST /oauth/app/exchange`，码 2 分钟、单次消费），token 不进 URL；中转页是因为国内浏览器会静默忽略 302→自定义 scheme，App Links 校验通过（`web/public/.well-known/assetlinks.json`，指纹=签名证书）时系统直接开 App。服务端 `web/OAuthController.java` + `service/OAuthExchangeCodeStore.java`，客户端 `android/.../data/auth/OAuthLogin.kt`。Google 服务端出站需代理（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。详见 [docs/auth/README.md](docs/auth/README.md) §3。
 
 ### Frontend Architecture (web/src/)
 

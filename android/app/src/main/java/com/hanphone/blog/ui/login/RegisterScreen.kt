@@ -52,9 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.hanphone.blog.R
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
-import com.hanphone.blog.core.AuthData
-import com.hanphone.blog.core.saveAuth
-import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.core.applyLogin
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.util.md5Hex
 import kotlinx.coroutines.delay
@@ -114,16 +112,7 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
                 val res = repo.register(username.trim(), nickname.trim().ifEmpty { username.trim() }, email.trim(), md5Hex(password), "", captcha.trim())
                 val d = res.data
                 if (res.flag && d != null && d.token != null && d.user != null) {
-                    val uid = d.user.id
-                    TokenStore.restore(
-                        d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.refreshToken
-                    )
-                    context.saveAuth(
-                        AuthData(
-                            d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.user.username,
-                            refreshToken = d.refreshToken
-                        )
-                    )
+                    context.applyLogin(d)
                     // 成功无需 toast：自动登录并返回「我的」即是反馈
                     onSuccess()
                 } else {

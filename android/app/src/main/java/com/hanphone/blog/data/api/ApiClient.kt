@@ -109,6 +109,7 @@ object ApiClient {
                 val canRetry = resp.code == 401 &&
                     !path.contains("/login") &&
                     !path.contains("/auth/") &&
+                    !path.contains("/oauth/") &&
                     !path.contains("/chat-api/")
 
                 if (!canRetry) {

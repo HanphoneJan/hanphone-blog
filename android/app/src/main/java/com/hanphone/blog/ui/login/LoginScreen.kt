@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -43,15 +44,16 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.OutlinedButton
 import com.hanphone.blog.R
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
-import com.hanphone.blog.core.AuthData
-import com.hanphone.blog.core.auth
-import com.hanphone.blog.core.saveAuth
-import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.core.applyLogin
+import com.hanphone.blog.data.auth.OAuthLogin
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.util.md5Hex
 import kotlinx.coroutines.launch
@@ -85,16 +87,7 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
                 val d = res.data
                 Log.i("BlogLogin", "flag=${res.flag} code=${res.code} msg=${res.message} data=${d != null}")
                 if (res.flag && d != null && d.token != null && d.user != null) {
-                    val uid = d.user.id
-                    TokenStore.restore(
-                        d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.refreshToken
-                    )
-                    context.saveAuth(
-                        AuthData(
-                            d.token, uid, d.user.nickname, d.user.avatar, d.user.type, d.user.username,
-                            refreshToken = d.refreshToken
-                        )
-                    )
+                    context.applyLogin(d)
                     // 成功无需 toast：页面随即返回「我的」，已切换为登录态即是最好的反馈
                     onSuccess()
                 } else {
@@ -109,10 +102,19 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
         }
     }
 
+    /** 第三方登录：跳系统浏览器，回跳后由 MainActivity 收尾（这里不等待结果） */
+    fun startOAuth(provider: String) {
+        try {
+            OAuthLogin.start(context, provider)
+        } catch (e: Exception) {
+            toast("未找到可用浏览器，无法完成授权")
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
         AppBackBar(title = "", onBack = onBack)
         Column(
-            Modifier.fillMaxSize().imeLiftAboveKeyboard().padding(32.dp),
+            Modifier.fillMaxSize().imeLiftAboveKeyboard().verticalScroll(rememberScrollState()).padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -150,6 +152,34 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
             ) {
                 Text(if (loading) "登录中…" else "登录")
             }
+
+            // 第三方登录：系统浏览器完成授权，回跳后由 MainActivity 换会话（见 data/auth/OAuthLogin.kt）
+            Row(
+                Modifier.fillMaxWidth().padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { startOAuth(OAuthLogin.GITHUB) },
+                    enabled = !loading,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("GitHub 登录")
+                }
+                OutlinedButton(
+                    onClick = { startOAuth(OAuthLogin.GOOGLE) },
+                    enabled = !loading,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Google 登录")
+                }
+            }
+            Text(
+                "将在浏览器中完成授权，登录后自动返回",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
             Text(
                 "登录后可点赞、发表随笔评论",
                 style = MaterialTheme.typography.bodySmall,

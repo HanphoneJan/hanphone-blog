@@ -4,8 +4,13 @@ import com.example.blog.po.User;
 
 public interface OAuthProvider {
 
-    /** 构建授权 URL */
-    String buildAuthorizationUrl();
+    /**
+     * 构建授权 URL。
+     *
+     * @param state 原样带回回调的标记（`app` = 客户端登录，回调改跳自定义 scheme），
+     *              网页流程传 null。第三方会把它当成不透明字符串，不需要注册。
+     */
+    String buildAuthorizationUrl(String state);
 
     /** 处理授权码回调：交换 token、获取用户信息、匹配或创建用户 */
     User handleCallback(String code);

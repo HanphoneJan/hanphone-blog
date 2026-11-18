@@ -225,6 +225,8 @@ docker stats                         # 查看资源占用
 | `CORS_ALLOWED_ORIGINS`| CORS 白名单（逗号分隔）|    |
 | `INTERNAL_API_KEY`    | 内部服务通信密钥      |    |
 | `GITHUB_*` / `GOOGLE_*` | OAuth 登录配置      |    |
+| `APP_OAUTH_REDIRECT`  | 客户端第三方登录的深链（默认 `hanphone://oauth/callback`，与 App Manifest 对应） |    |
+| `APP_OAUTH_RETURN_URL`| 客户端登录的 https 中转页（留空取 `FRONTEND_URL/api/oauth/app/return`；国内浏览器会拦 302→scheme） |    |
 
 > 后端启动时也会从 `WorkingDirectory/.env` 兜底加载（见 `BlogApplication.loadDotEnv()`）；方式一通过 systemd `EnvironmentFile` 注入，两种途径最终效果一致。
 

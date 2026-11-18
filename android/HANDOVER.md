@@ -23,6 +23,7 @@ core/Settings.kt        DataStore：主题模式/自定义背景/访客身份/�
 data/
   AppGraph.kt           ServiceLocator：进程级 Repository 单例（VM 层使用）
   auth/TokenStore.kt    进程内登录态：token/userId/nickname/avatar/userType
+  auth/OAuthLogin.kt    第三方登录：授权 URL / hanphone:// 回跳解析 / 一次性 code 换会话
   api/ApiClient.kt      Retrofit×2：api(hanphone.cn/api, 注入 Token 头) + fileApi(hanphone.top)
   api/BlogApi.kt        全部 REST（含聊天 REST 绝对路径 + Bearer + limit 参数）
   api/AdminApi.kt       后台管理接口（/admin/**，Token 拦截器自动注入，后端校验 userType=1）
@@ -83,8 +84,10 @@ ui/
 - `User.type`：`"1"`=管理员、`"0"`=普通用户 —— **登录后必须存入 TokenStore.userType 并 DataStore 持久化**，消息页私信按它分流。
 - **Token 头**：博客 REST 用请求头 `Token`（ApiClient 自动注入）；**聊天 REST 用 `Authorization: Bearer <token>`**（BlogApi 对应的 @GET 里手动带）。
 - 401 处理（2026-11 改）：博客 API 的 401 先 `runBlocking { TokenRefresher.refresh(stale) }` 静默续期并**重放一次**；只有刷新失败才 `TokenStore.clear()`。
-  `/login`、`/auth/*`、`/chat-api/` 的 401 不触发刷新（前者无会话、后两者鉴权失败原因不同）。
+  `/login`、`/auth/*`、`/oauth/*`、`/chat-api/` 的 401 不触发刷新（前者无会话、后两者鉴权失败原因不同）。
   刷新必须单飞（`Mutex`），否则并发 401 会同时轮换、互相作废并触发服务端的「令牌重放」告警。
+- **三个登录入口统一走 `core/LoginSession.applyLogin()`**（用户名密码 / 注册 / GitHub）。它同时写 `TokenStore`（内存，拦截器用）与 DataStore（持久化，含 refreshToken）；以前登录页和注册页各抄一份，漏字段就 30 分钟掉线。
+- **GitHub 登录回跳**：`hanphone://oauth/callback?code=…&provider=github`（Manifest 里 MainActivity 的 intent-filter + `launchMode="singleTop"`）。`MainActivity.handleOAuthIntent` 只认 `OAuthLogin.isCallback`，同一枚 code 用 static 变量去重（兑换是一次性的，重复兑换必失败）；结果经 `OAuthLogin.lastResult`（StateFlow）交给 `App.kt` 弹提示并 `popBackStack` 收掉登录页。
 - 分页的 0/1 起始差异：
   - `/blogs`：`pagenum` 1 起始
   - `/types/{id}`、`/tags/{id}`：Spring `page` **0 起始**
@@ -197,6 +200,23 @@ ui/
 ### 登录 / 注册
 - 登录：用户名+密码（**md5**），成功即保存 `AuthData(token,userId,nickname,avatar,userType)`。
 - 注册：用户名/昵称/邮箱/密码/邮箱验证码（`sendCaptcha scene=register`，60s 倒计时，密码≥6 且含字母数字），成功自动登录。
+- **第三方登录（GitHub / Google）**：登录页「GitHub 登录 / Google 登录」→ 系统浏览器打开
+  `https://hanphone.cn/api/oauth/<provider>/authorize?state=app` → 服务端回调只把**一次性 code**
+  放进 **https 中转页** `/api/oauth/app/return` → **App Links 校验通过时系统直接把该 URL 交给 App**，
+  否则页面转 `hanphone://oauth/callback?code=…` → `MainActivity` 接住 →
+  `OAuthLogin.exchange()` 调 `POST /api/oauth/app/exchange` → 与密码登录同样落盘。
+  见 `data/auth/OAuthLogin.kt`。
+  - 为什么不用 WebView：GitHub 授权页禁止内嵌，且 WebView 的登录态在它自己的 localStorage，回不到 App。
+  - token **不进 URL**（自定义 scheme 谁都能注册）；兑换码 32 字节、单次、2 分钟过期。
+  - 新增 provider：服务端实现 `OAuthProvider` 即可，`?state=app` 的回跳与兑换接口是通用的。
+  - 网页上用 GitHub 注册的账号**没有密码**（`gh_<id>`），在 App 里只能走 GitHub 登录。
+  - Google 走同一条链路，但服务端要能出站到 Google（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`），
+    否则回跳会是 `?error=server_error`；手机上访问 accounts.google.com 也需要网络可达。
+  - **App Links（首选路径）**：Manifest 注册 `https://hanphone.cn/api/oauth/app/*` + `autoVerify`，
+    校验文件 `web/public/.well-known/assetlinks.json`（指纹=当前签名证书；release 也用 debug 密钥签名，
+    换正式签名必须同步改，否则静默退回浏览器中转页）。校验状态：
+    `adb shell pm get-app-links com.hanphone.blog`，改完执行 `adb shell pm verify-app-links --re-verify com.hanphone.blog`，
+    `hanphone.cn: verified` 后点链接直接进 App。
 
 ## 5. 主题与视觉规范（用户明确偏好，勿擅自改）
 
@@ -346,6 +366,24 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     `isAppearanceLightStatusBars` / `isAppearanceLightNavigationBars`；手动切主题即时生效。
     真机验证：系统浅色 + App 黑夜 → 白色时间；系统任意 + App 浅色 → 深色图标。
 
+32. **第三方登录走系统浏览器 + 一次性 code，别想着内嵌或「URL 带 token」（2026-11）**：
+    GitHub 授权页禁止被内嵌（反钓鱼），而且 WebView 里登完的 token 落在它自己的 localStorage，
+    与 App 的 DataStore 互不相通 —— 用 WebView 做等于永远登不进 App。
+    正确链路：登录页 → 系统浏览器 `…/oauth/{github,google}/authorize?state=app` → 服务端回跳
+    **https 中转页** `/api/oauth/app/return?code=…` → 页面转 `hanphone://oauth/callback?code=…` →
+    `POST /oauth/app/exchange` 换会话。
+    **别把 302 直接打到 `hanphone://`**：夸克（本机默认浏览器，真机实测）会**静默忽略**非用户手势的
+    外部 scheme 跳转，用户停在白页以为登录失败；https 中转页里用户点一下按钮才会放行
+    （夸克还会弹一次「是否打开外部应用」，HyperOS 可能再拦一次「已禁止夸克启动云林有风」）。
+    所以能走 **App Links** 就走 App Links：同一台机器实测，未校验时链接进浏览器，校验通过后系统直接开 App，
+    完全绕开这些拦路。校验文件与指纹维护见 §3.2 / 「登录 / 注册」。
+    `hanphone://` 不是系统独占（谁都能注册），所以 URL 里**只能**放一次性 code，不能放 token。
+    三个配套细节：`MainActivity` 要 `launchMode="singleTop"` 才会有 `onNewIntent`
+    （否则从浏览器回来会叠第二个 Activity、登录页收不掉）；同一枚 code 只兑换一次
+    （服务端单次消费，重复兑换必失败，`handledOAuthCode` 去重）；登录成功后的收页由
+    `OAuthLogin.lastResult` 驱动，**不要**改成监听 token 变化 —— 密码登录的 `onSuccess`
+    会跟着双重 `popBackStack`。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
@@ -355,6 +393,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**v1.0.1** 发布：页面更名「热点」、榜单名次=排序位置、切换领域重置滚动、默认对比六家代表厂商、更新弹窗 Markdown 渲染。**v1.0.2**（`hanphone-1.0.2-android.apk`，versionCode 16）补充顶部**「名称归一」开关（默认开）**——关闭时厂商名与模型行变体/日期后缀按信源原始展示（`anthropic`、`Alibaba-ATH`、`z-ai`），实体合并不受影响；后端支持 `normalized` 参数（仅展示层）。后端榜单改用 AA 代码指数排序 + 模型名归一（变体后缀）+ LMArena 经服务器代理采集（见 server 文档）。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
 - ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线 + 标签/分类/访客区域分布）、访客明细（UV/PV + IP 归属地搜索排序分页 + 清理）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据（采集轮询 + 信源健康度 + 采集记录筛选分页 + AI 摘要配置 + 模型归一重建）、用户只读列表。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
 - ✅ **v1.2.0 应用内更新**：设置 → 检查更新 →「立即更新」在 App 内下载 APK（进度/取消，应用级协程），完成后经 `FileProvider` 调起系统安装器；首次引导授权「安装未知应用」，授权返回自动继续。不再跳浏览器。
+- ✅ **第三方登录（GitHub / Google）**：登录页「GitHub 登录 / Google 登录」→ 系统浏览器授权 → `hanphone://oauth/callback`（只带一次性 code）→ `POST /oauth/app/exchange` → 与密码登录共用 `core/LoginSession.applyLogin`。服务端 `state=app` 分支 + `OAuthExchangeCodeStore`（32 字节、单次、2 分钟）。网页上 GitHub 注册的账号（`gh_<id>`，无密码）终于能在 App 里登录。Google 需服务端能出站（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

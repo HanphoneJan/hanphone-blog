@@ -41,34 +41,56 @@ public class GoogleOAuthProvider implements OAuthProvider {
     @Value("${GOOGLE_REDIRECT_URI}")
     private String redirectUri;
 
-    @Value("${GOOGLE_OAUTH_PROXY_HOST:}")
-    private String proxyHost;
-
-    @Value("${GOOGLE_OAUTH_PROXY_PORT:0}")
-    private int proxyPort;
-
     public GoogleOAuthProvider(UserRepository userRepository,
                                UserService userService,
                                RestTemplateBuilder restTemplateBuilder,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               @Value("${GOOGLE_OAUTH_PROXY_HOST:}") String proxyHost,
+                               @Value("${GOOGLE_OAUTH_PROXY_PORT:0}") int proxyPort,
+                               @Value("${HOT_PROXY:}") String fallbackProxy) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.objectMapper = objectMapper;
 
+        // 注意：代理参数必须由构造器注入。写成 @Value 字段在构造器里读，
+        // 字段此时还没注入（恒为 null/0），代理永远不生效——这里踩过。
+        java.net.InetSocketAddress address = resolveProxy(proxyHost, proxyPort, fallbackProxy);
         RestTemplateBuilder builder = restTemplateBuilder;
-        if (proxyHost != null && !proxyHost.isEmpty() && proxyPort > 0) {
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+        if (address != null) {
+            Proxy proxy = new Proxy(Proxy.Type.HTTP, address);
             SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
             factory.setProxy(proxy);
             factory.setConnectTimeout(Duration.ofSeconds(5));
             factory.setReadTimeout(Duration.ofSeconds(10));
             builder = builder.requestFactory(() -> factory);
-            logger.info("Google OAuth using proxy {}:{}", proxyHost, proxyPort);
+            logger.info("Google OAuth using proxy {}:{}", address.getHostString(), address.getPort());
         }
         this.restTemplate = builder
                 .setConnectTimeout(Duration.ofSeconds(5))
                 .setReadTimeout(Duration.ofSeconds(10))
                 .build();
+    }
+
+    /**
+     * 解析出站代理：优先 `GOOGLE_OAUTH_PROXY_*`，否则复用 `HOT_PROXY`（同一台服务器上的
+     * mihomo，国内直连 Google 会 000）。两者都没有则直连。
+     */
+    private static java.net.InetSocketAddress resolveProxy(String host, int port, String hotProxy) {
+        if (host != null && !host.isEmpty() && port > 0) {
+            return new java.net.InetSocketAddress(host, port);
+        }
+        if (hotProxy == null || hotProxy.isBlank()) {
+            return null;
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(hotProxy.contains("://") ? hotProxy : "http://" + hotProxy);
+            String h = uri.getHost();
+            int p = uri.getPort() > 0 ? uri.getPort() : ("https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80);
+            return h == null ? null : new java.net.InetSocketAddress(h, p);
+        } catch (Exception e) {
+            logger.warn("HOT_PROXY 无法解析为代理地址: {}", hotProxy);
+            return null;
+        }
     }
 
     @Override
@@ -87,12 +109,15 @@ public class GoogleOAuthProvider implements OAuthProvider {
     }
 
     @Override
-    public String buildAuthorizationUrl() {
+    public String buildAuthorizationUrl(String state) {
         return "https://accounts.google.com/o/oauth2/v2/auth"
                 + "?client_id=" + clientId
                 + "&redirect_uri=" + redirectUri
                 + "&response_type=code"
-                + "&scope=openid%20email%20profile";
+                + "&scope=openid%20email%20profile"
+                + (state == null || state.isBlank()
+                    ? ""
+                    : "&state=" + java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8));
     }
 
     @Override
@@ -119,24 +144,47 @@ public class GoogleOAuthProvider implements OAuthProvider {
     @Override
     @Transactional
     public User handleIdToken(String idToken) {
-        // 浏览器端 Google Sign-In 返回的 ID Token（JWT）
-        // 解码 Payload 获取用户信息，无需调 Google API
+        // 浏览器端 Google Sign-In 返回的 ID Token（JWT）。
+        //
+        // 必须是「Google 校验过签名」的结论才能用来建会话。曾经这里只做 JWT.decode
+        // （不验签、不校验 aud），任何人拼一个 payload 就能以任意 sub / email 登录，
+        // 而且会被邮箱合并逻辑绑定到管理员账号——等于公开的账号接管入口。
+        // 现在交给 Google 的 tokeninfo 端点验签 + 校验 iss/exp，再自己核对 aud。
+        JsonNode claims = verifyIdTokenWithGoogle(idToken);
+        if (!clientId.equals(claims.path("aud").asText())) {
+            throw new RuntimeException("Google ID token 不属于本应用（aud 不匹配）");
+        }
+        String googleId = claims.path("sub").asText("");
+        if (googleId.isBlank()) {
+            throw new RuntimeException("Google ID token 缺少 sub");
+        }
+        String name = claims.hasNonNull("name") ? claims.get("name").asText() : null;
+        String picture = claims.hasNonNull("picture") ? claims.get("picture").asText() : null;
+        String email = claims.hasNonNull("email") ? claims.get("email").asText() : null;
+        boolean emailVerified = claims.path("email_verified").asBoolean(false);
+        if (email != null && !emailVerified) {
+            email = null;
+        }
+
+        logger.info("Google ID token verified for sub={}, email={}", googleId, email);
+        return matchOrCreateUser(googleId, name, picture, email);
+    }
+
+    /** 调 Google tokeninfo 验签：签名 / iss / exp 由 Google 判定，失败会抛异常 */
+    private JsonNode verifyIdTokenWithGoogle(String idToken) {
         try {
-            com.auth0.jwt.interfaces.DecodedJWT jwt = com.auth0.jwt.JWT.decode(idToken);
-            String googleId = jwt.getSubject(); // sub
-            String name = jwt.getClaim("name").asString();
-            String picture = jwt.getClaim("picture").asString();
-            String email = jwt.getClaim("email").asString();
-            Boolean emailVerified = jwt.getClaim("email_verified").asBoolean();
-
-            if (!Boolean.TRUE.equals(emailVerified)) {
-                email = null;
+            String url = "https://oauth2.googleapis.com/tokeninfo?id_token="
+                    + java.net.URLEncoder.encode(idToken, java.nio.charset.StandardCharsets.UTF_8);
+            String body = restTemplate.getForObject(url, String.class);
+            JsonNode claims = objectMapper.readTree(body);
+            if (claims == null || !claims.hasNonNull("sub")) {
+                throw new RuntimeException("Google ID token 校验失败：响应缺少 sub");
             }
-
-            logger.info("Google ID token verified for sub={}, email={}", googleId, email);
-            return matchOrCreateUser(googleId, name, picture, email);
+            return claims;
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to decode Google ID token", e);
+            throw new RuntimeException("Google ID token 校验失败", e);
         }
     }
 

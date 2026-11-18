@@ -19,10 +19,31 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- 第三方登录回跳：
+                 1) App Links（首选，装 App 且 assetlinks.json 校验通过时由系统直接打开 App，不经过浏览器）
+                    https://hanphone.cn/oauth/app/return?code=…
+                 2) 自定义 scheme（兜底：App Links 未生效时，中转页里的按钮跳这里）
+                 singleTop 保证从浏览器回来时复用当前实例，不叠第二层 MainActivity。 -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="hanphone.cn"
+                    android:pathPrefix="/api/oauth/app/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hanphone" android:host="oauth" />
             </intent-filter>
         </activity>
 

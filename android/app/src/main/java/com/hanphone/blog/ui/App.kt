@@ -54,6 +54,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -66,6 +67,7 @@ import com.hanphone.blog.core.backgroundBlur
 import com.hanphone.blog.core.backgroundPath
 import com.hanphone.blog.core.themeMode
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.auth.OAuthLogin
 import com.hanphone.blog.data.chat.ChatSocket
 import com.hanphone.blog.data.push.PushRegistrar
 import com.hanphone.blog.data.repo.BlogRepository
@@ -144,6 +146,9 @@ fun BlogAppRoot() {
     }
     // 恢复持久化登录态到内存 TokenStore（OkHttp 拦截器依赖）
     LaunchedEffect(Unit) {
+        // 第三方登录回跳可能在启动瞬间就建好了会话（见 data/auth/OAuthLogin.kt）：
+        // 此时内存里已有新会话，别再用磁盘上的旧值（可能为空）覆盖它。
+        if (TokenStore.token.value != null) return@LaunchedEffect
         val auth = context.auth.first()
         // 先恢复（含 refresh），再决定要不要续期
         TokenStore.restore(
@@ -215,10 +220,30 @@ fun BlogAppRoot() {
 @Composable
 private fun MainScaffold() {
     val navController = rememberNavController()
+    val context = LocalContext.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = MainTab.entries.any { it.route == currentRoute }
     val selectedTab = MainTab.entries.firstOrNull { it.route == currentRoute }
+
+    // 第三方登录从浏览器回来：成功就提示并收掉还开着的登录/注册页，失败说明原因
+    // （登录态本身已由 OAuthLogin 写入，这里只管导航与反馈；不要监听 token 变化，
+    //  否则密码登录的 onSuccess 会和这里双重 popBackStack）
+    val oauthResult by OAuthLogin.lastResult.collectAsState()
+    LaunchedEffect(oauthResult) {
+        when (val r = oauthResult) {
+            is OAuthLogin.Outcome.Success -> {
+                Toast.makeText(context, "${OAuthLogin.label(r.provider)} 登录成功", Toast.LENGTH_SHORT).show()
+                if (currentRoute == "login" || currentRoute == "register") navController.popBackStack()
+                OAuthLogin.clearResult()
+            }
+            is OAuthLogin.Outcome.Failure -> {
+                Toast.makeText(context, r.message, Toast.LENGTH_SHORT).show()
+                OAuthLogin.clearResult()
+            }
+            null -> Unit
+        }
+    }
     // 未读私信红点（管理员=各会话未读之和；普通用户=来自博主/AI 的未读）——只显示红点，不显示数量
     val adminUnread by ChatSocket.adminUnread.collectAsState()
     val hasUnread = adminUnread.values.any { it > 0 }

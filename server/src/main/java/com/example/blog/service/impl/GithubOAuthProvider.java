@@ -67,11 +67,19 @@ public class GithubOAuthProvider implements OAuthProvider {
     }
 
     @Override
-    public String buildAuthorizationUrl() {
+    public String buildAuthorizationUrl(String state) {
         return "https://github.com/login/oauth/authorize"
                 + "?client_id=" + clientId
                 + "&redirect_uri=" + redirectUri
-                + "&scope=user:email";
+                + "&scope=user:email"
+                + stateParam(state);
+    }
+
+    /** GitHub 原样回传 state，App 登录靠它区分回跳目标（web 流程不传） */
+    private String stateParam(String state) {
+        return state == null || state.isBlank()
+                ? ""
+                : "&state=" + java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     @Override
