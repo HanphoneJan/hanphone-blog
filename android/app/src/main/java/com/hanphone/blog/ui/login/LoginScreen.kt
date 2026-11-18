@@ -114,80 +114,88 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
 
     Column(Modifier.fillMaxSize()) {
         AppBackBar(title = "", onBack = onBack)
+        // 四组（品牌 / 账号密码 / 第三方 / 注册）等距铺满整屏：
+        // 居中会让顶部空一大块，顶对齐又让底部空一大块；等距分配两者都没有大空洞。
+        // 组内保持紧凑（输入框和登录按钮不被拉开），组间均匀呼吸。
         Column(
-            // 顶对齐：居中会在上下各留一大块空白（用户反馈「上方空白过多」）
             Modifier.fillMaxSize().imeLiftAboveKeyboard().verticalScroll(rememberScrollState())
-                .padding(horizontal = 32.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 32.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            Image(
-                painter = painterResource(R.drawable.ic_blog),
-                contentDescription = "云林有风",
-                modifier = Modifier.size(60.dp).clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-            Text("登录云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp, bottom = 24.dp))
-
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("用户名") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.bodyMedium
-            )
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("密码") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { doLogin() }),
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                textStyle = MaterialTheme.typography.bodyMedium
-            )
-            Button(
-                onClick = { doLogin() },
-                enabled = !loading,
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
-            ) {
-                Text(if (loading) "登录中…" else "登录")
-            }
-
-            // 分隔线替代说明文字：第三方登录走系统浏览器，用户点下去自然就懂
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                Text(
-                    "或",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 10.dp)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Image(
+                    painter = painterResource(R.drawable.ic_blog),
+                    contentDescription = "云林有风",
+                    modifier = Modifier.size(60.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
-                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                Text("登录云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp))
             }
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = { startOAuth(OAuthLogin.GITHUB) },
+            Column(Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("用户名") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("密码") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { doLogin() }),
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium
+                )
+                Button(
+                    onClick = { doLogin() },
                     enabled = !loading,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
                 ) {
-                    Text("GitHub 登录")
-                }
-                OutlinedButton(
-                    onClick = { startOAuth(OAuthLogin.GOOGLE) },
-                    enabled = !loading,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Google 登录")
+                    Text(if (loading) "登录中…" else "登录")
                 }
             }
 
-            TextButton(onClick = onRegister, modifier = Modifier.padding(top = 6.dp)) {
+            Column(Modifier.fillMaxWidth()) {
+                // 分隔线替代说明文字：第三方登录走系统浏览器，用户点下去自然就懂
+                Row(
+                    Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    Text(
+                        "或",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 10.dp)
+                    )
+                    HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { startOAuth(OAuthLogin.GITHUB) },
+                        enabled = !loading,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("GitHub 登录")
+                    }
+                    OutlinedButton(
+                        onClick = { startOAuth(OAuthLogin.GOOGLE) },
+                        enabled = !loading,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Google 登录")
+                    }
+                }
+            }
+
+            TextButton(onClick = onRegister) {
                 Text("没有账号？立即注册")
             }
         }
