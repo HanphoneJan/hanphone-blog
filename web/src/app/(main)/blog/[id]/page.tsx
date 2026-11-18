@@ -10,6 +10,19 @@ interface BlogDetailPageProps {
   params: Promise<{ id: string }>
 }
 
+/**
+ * ISR：与列表页（`(main)/blog/page.tsx` 的 300s）保持一致。
+ *
+ * 这里原先漏了 revalidate，而页面又有 generateStaticParams —— Next 于是把详情页当成
+ * 「构建期快照」：响应头实测 `cache-control: s-maxage=31536000`、`x-nextjs-prerender: 1`，
+ * 正文改完一年后才会变（改数据库/改接口都看不到变化，只能重新构建部署）。
+ * 列表页是 `s-maxage=300, stale-while-revalidate=...`，所以只有详情页会「卡住」。
+ *
+ */
+// 必须是字面量：Next 对 route segment config 做静态分析，三元表达式会直接让构建失败
+// （实测报 `Invalid segment configuration export detected`）。
+export const revalidate = 300
+
 // 静态导出：构建时预生成所有博客详情页面
 export async function generateStaticParams() {
   try {

@@ -50,7 +50,7 @@
     "mammoth": "^1.12.0",
     "marked": "^18.0.4",
     "md5": "^2.3.0",
-    "next": "^15.5.7",
+    "next": "^15.5.23",
     "pg": "^8.16.3",
     "pixi-live2d-display-advanced": "^1.1.0",
     "pixi.js": "^7.4.2",

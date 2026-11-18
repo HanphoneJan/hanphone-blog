@@ -145,6 +145,20 @@ const replacementFiles = [
   // blog/[id]/page.tsx 中的 cache: 'no-store' 是多行形式，单独用正则处理
   // (见步骤 2.5)
   {
+    // 详情页 2026-11 起是 ISR（revalidate = 300），而静态导出不支持 ISR，
+    // 必须退回 false，否则 next build 会直接报错退出。
+    file: 'src/app/(main)/blog/[id]/page.tsx',
+    pairs: [
+      ['export const revalidate = 300', 'export const revalidate = false'],
+    ],
+  },
+  {
+    file: 'src/app/(main)/docs/[id]/page.tsx',
+    pairs: [
+      ['export const revalidate = 300', 'export const revalidate = false'],
+    ],
+  },
+  {
     file: 'src/app/(main)/about/page.tsx',
     pairs: [
       ["{ cache: 'no-store' }", '{}'],

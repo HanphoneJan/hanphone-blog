@@ -56,6 +56,16 @@ interface DocPageProps {
   params: Promise<{ id: string }>
 }
 
+/**
+ * ISR：与列表页一致（5 分钟）。原因同 `(main)/blog/[id]/page.tsx`：
+ * 只有 generateStaticParams、没有 revalidate 时，页面会被当成构建期快照
+ * （`s-maxage=31536000`），后端改了正文/文档也永远不更新。
+ * 该页 fetch 上的 `next: { revalidate: 300 }` 在「非 ISR 页面」里是不起作用的，必须配这里。
+ */
+// 必须是字面量：Next 对 route segment config 做静态分析，三元表达式会直接让构建失败
+// （实测报 `Invalid segment configuration export detected`）。
+export const revalidate = 300
+
 // 静态导出：构建时预生成所有文档页面
 export async function generateStaticParams() {
   const docs = await getDocsFromBackend()
