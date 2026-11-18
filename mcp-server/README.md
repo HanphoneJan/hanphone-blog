@@ -59,7 +59,7 @@ curl http://127.0.0.1:4002/health
 | `MCP_AUTHOR_NICKNAME` | 否 | `博主` | 管理员回复留言时显示的昵称 |
 | `MCP_VERIFY_CACHE_TTL_MS` | 否 | `60000` | 密钥校验结果的内存缓存 TTL（ms），60s 内重复请求同一 bearer 不会再打后端 |
 
-> 密钥建议只使用字母数字：后端安全过滤器会对请求头做 HTML 转义，特殊字符可能导致 `X-Internal-Key` 比对失败。
+> 密钥可用任意字符：后端已不再转义请求头（2026-11 移除 `XssHttpServletRequestWrapper`）。历史上曾因 header 被 HTML 转义，`X-Internal-Key` 含特殊字符会比对失败。
 
 ## 部署（生产）
 
@@ -198,7 +198,7 @@ claude mcp add --transport http hanphone-blog https://hanphone.cn/mcp \
 ## 注意事项
 
 1. **业务码判定**：后端业务失败也返回 HTTP 200，MCP server 已统一检查 `code === 200` 并将失败转为工具错误返回。
-2. **内容转义**：与博客后台发文一致，JSON body 中的字符串会被后端 XSS 过滤器做 HTML 实体转义（既有行为，非 MCP 引入）。
+2. **内容转义**：后端已不做输入转义（2026-11 移除全局 Jackson 转义），JSON body 原样落库；转义交给渲染层。
 3. **更新语义**：`update_*` 工具内部会先读取原值合并再提交，未传字段不会被意外清空（规避后端 primitive boolean 缺省覆盖问题）。
 4. **用户管理**：仅开放 `list_users`，创建/删除用户、重置密码不对 Agent 开放。
 

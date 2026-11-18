@@ -10,8 +10,7 @@
 server/src/main/java/com/example/blog/
 ├── config/                           # 配置类
 │   ├── ScheduleConfig.java           # 定时任务配置
-│   ├── SwaggerConfig.java            # Swagger 文档配置
-│   └── XssStringDeserializer.java    # Jackson 全局 String HTML 转义(@JsonComponent)
+│   └── SwaggerConfig.java            # Swagger 文档配置（输入端不再注册全局 String 转义）
 │
 ├── constants/                        # 常量定义
 │   ├── CommonConstants.java          # 通用常量
@@ -43,8 +42,7 @@ server/src/main/java/com/example/blog/
 │
 ├── filter/                           # 过滤器
 │   ├── RequestValidationFilter.java   # URL 长度校验 & 递归路径防御
-│   ├── XssFilter.java                # XSS 攻击过滤 + 安全响应头
-│   └── XssHttpServletRequestWrapper.java  # XSS 请求包装
+│   └── XssFilter.java                # 安全响应头（不改写 parameter/header/body）
 │
 ├── handler/                          # 异常处理器
 │   └── ControllerExceptionHandler.java   # 全局异常处理
@@ -304,7 +302,12 @@ com.example.blog.hot/
 
 ### 防护机制
 
-- **XSS 多层防御**: XssFilter 过滤请求参数 + XssStringDeserializer Jackson 全局转义 JSON Body
+- **XSS 防护（2026-11 整改）**: 不再对输入做 HTML 转义。历史做法是 `XssHttpServletRequestWrapper`（转义 parameter/header）+ `XssStringDeserializer`（Jackson 全局转义 JSON body），属于 escape-on-input 反模式 —— `&` 变 `&amp;` 后 URL 直接 400（qlogo 头像）、签名串失效、header 被改导致内部密钥只能用字母数字、转义还不幂等。现已删除这两个类：
+  - 存储与 JSON 出参一律**原值**；
+  - 转义只发生在输出到 HTML 的那一刻：前端 React/JSX 默认转义、RSS 路由自己 escape、安卓用 Text 渲染、文库 HTML 预览在客户端过 DOMPurify；
+  - 富文本内联 HTML 只对博主可写的正文放行（`admin/**` / `internal/**` 本就是可信写入）；
+  - 浏览器侧靠 `XssFilter` 的安全响应头（nosniff / X-Frame-Options / HSTS / Referrer-Policy / Permissions-Policy）兜底。
+  - 回归口径：`POST` 带 `&`、`"`、`<` 的内容 → `GET` 回来必须 byte-equal。
 - **URL 攻击防御**: RequestValidationFilter 校验 URI 长度上限，防止超长 URL 导致 OOM；递归路径返回 404
 - **密码加密**: BCrypt 加密存储 + 密码复杂度校验（长度 >=8，必须包含字母和数字）
 - **验证码限流**: Redis 60 秒内同邮箱不可重复发送 + 邮箱格式/长度校验
@@ -340,13 +343,13 @@ com.example.blog.hot/
 | T2 URL 超长 & 输入防御 | URI 超长 → 414, 递归路径 → 404, 超大分页裁剪 |
 | T3 并发与连接池 | 10/20 并发请求 |
 | T4 认证鉴权 | 无 token/伪造 token/无 key/弱 key |
-| T5 XSS 防护 | JSON body 转义, 持久化验证 |
+| T5 XSS 防护 | 输入原样落库（不再实体转义）, 渲染层转义 |
 | T6 密码策略 | 长度 <8, 纯字母, 合法密码, 默认 userType |
 | T7 验证码限流 | 首次发送, 60s 限流, 超长邮箱, 非法格式, 空邮箱 |
 | T8 SQL 注入 | 单引号, OR 1=1, 路径注入 |
 | T9 CORS | 白名单 Origin, 恶意 Origin |
 | T10 HTTP 方法 | PUT → 405, TRACE → 405, DELETE |
-| T11 评论功能 | 未登录评论, 字段校验, XSS 转义 |
+| T11 评论功能 | 未登录评论, 字段校验, 内容原样存储 |
 | T12 Actuator | 端点最小暴露 |
 
 ```bash

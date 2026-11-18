@@ -259,15 +259,19 @@ def run_tests(t: Tester, skip_t11: bool = False):
                            "未授权访问", "/users",
                            headers={"X-Internal-Key": "admin"})
 
-    # ---- T5. XSS 防护 ----
-    t.group("T5 XSS 防护 (JSON Body)")
+    # ---- T5. 输入原样落库（2026-11 整改：输入端不再做 HTML 转义）----
+    # 历史上 XssFilter/XssStringDeserializer 会把 & " < 转成实体后入库，导致 URL 里 & 变
+    # &amp;（qlogo 头像 400）、签名失效。现在口径反过来了：库里与 JSON 出参必须是原值，
+    # 转义由渲染层负责（React 默认转义 / RSS escape / 安卓 Text 渲染）。
+    t.group("T5 输入原样落库（不再 HTML 转义）")
     xss_username = f"xsstest_{ts}"
     xss_email = f"xss_{ts}@test.com"
+    raw_nick = "A&B<b>x</b>"
     reg_resp = register_with_captcha(t, {
         "username": xss_username,
         "password": "abcd1234",
         "email": xss_email,
-        "nickname": "<script>alert(1)</script>"
+        "nickname": raw_nick
     })
     try:
         reg_data = reg_resp.json()
@@ -276,11 +280,11 @@ def run_tests(t: Tester, skip_t11: bool = False):
         nickname = user.get("nickname", "")
         user_id = user.get("id", "")
 
-        if "&lt;script&gt;" in nickname:
-            t._add(True, "T5.1 JSON body XSS 转义 (nickname → &lt;script&gt;)")
+        if nickname == raw_nick:
+            t._add(True, "T5.1 JSON body 原样返回（& 与 < > 未被转义）")
         else:
-            t._add(False, "T5.1 JSON body XSS 转义",
-                   f"nickname={nickname!r}（应为 HTML 实体）")
+            t._add(False, "T5.1 JSON body 原样返回",
+                   f"nickname={nickname!r}（应等于 {raw_nick!r}；若是 &amp;/&lt; 说明输入端又被转义了）")
 
         if token and user_id:
             curr_resp = t.session.post(
@@ -289,15 +293,15 @@ def run_tests(t: Tester, skip_t11: bool = False):
                 headers={"token": token},
                 timeout=TIMEOUT)
             stored_nick = curr_resp.json().get("data", {}).get("nickname", "")
-            if "&lt;script&gt;" in stored_nick:
-                t._add(True, "T5.2 XSS 持久化验证 (数据库存储已转义)")
+            if stored_nick == raw_nick:
+                t._add(True, "T5.2 持久化验证（数据库存原值）")
             else:
-                t._add(False, "T5.2 XSS 持久化验证",
-                       f"存储值={stored_nick!r}")
+                t._add(False, "T5.2 持久化验证",
+                       f"存储值={stored_nick!r}（应等于 {raw_nick!r}）")
         else:
-            t._add(False, "T5.2 XSS 持久化验证", "注册失败，无法获取token")
+            t._add(False, "T5.2 持久化验证", "注册失败，无法获取token")
     except Exception as e:
-        t._add(False, "T5 XSS 测试", str(e))
+        t._add(False, "T5 输入原样落库", str(e))
 
     # ---- T6. 密码策略 ----
     t.group("T6 密码策略")
@@ -558,21 +562,25 @@ def run_tests(t: Tester, skip_t11: bool = False):
                     "blogId": str(blog_id)
                 }, timeout=TIMEOUT)
 
-            # 验证转义
+            # 验证内容原样存储（转义交给渲染层，服务端不再改字节）
             comments_resp = t.session.get(
                 f"{t.base_url}/comments/{blog_id}", timeout=TIMEOUT)
-            found_escaped = False
+            found = False
+            stored_ok = False
             for c in comments_resp.json().get("data", []):
                 if xss_email in str(c.get("email", "")):
+                    found = True
                     stored_nick = c.get("nickname", "")
                     stored_content = c.get("content", "")
-                    if "&lt;" in stored_nick or "&lt;" in stored_content:
-                        found_escaped = True
+                    stored_ok = (stored_nick == xss_nick and stored_content == xss_content)
                     break
-            if found_escaped:
-                t._add(True, "T11.3 评论 XSS 转义 (已HTML编码)")
+            if not found:
+                t._add(False, "T11.3 评论内容原样存储", "未找到刚写入的评论")
+            elif stored_ok:
+                t._add(True, "T11.3 评论内容原样存储（渲染层负责转义）")
             else:
-                t._add(False, "T11.3 评论 XSS 转义", "存储值未转义或未找到")
+                t._add(False, "T11.3 评论内容原样存储",
+                       f"nickname={stored_nick!r} content={stored_content!r}（服务端不应改写）")
 
     # ---- T12. Actuator ----
     t.group("T12 Actuator 端点最小暴露")
