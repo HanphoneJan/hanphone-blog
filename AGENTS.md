@@ -57,7 +57,11 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 ### Data Flow
 
 - Next.js frontend calls Spring Boot REST API at `NEXT_PUBLIC_API_BASE_URL` (default `https://hanphone.cn/api`)
-- **改数据库 ≠ 页面更新**：博客详情页 `app/(main)/blog/[id]/page.tsx` 用 `generateStaticParams` + 服务端 `fetch` **在构建期把正文写进静态页面**，没有 ISR、没有 `revalidate`。所以通过 MCP 改了正文之后，线上页面会一直是旧的（连阅读量都不会涨 —— 那个页面根本不回 API），必须重新构建并部署 `~/client_blog` 才生效。写内容时看不到变化，先想到这里，不是 MCP 坏了。
+- **改数据库 → 页面多久生效**：列表页/首页等 11 个页面本来就有 `export const revalidate = 300`（ISR）；**博客详情页 `app/(main)/blog/[id]/page.tsx` 与文库详情 `docs/[id]/page.tsx` 曾漏掉这条**，于是被 Next 当成构建期快照（响应头实测 `cache-control: s-maxage=31536000`、`x-nextjs-prerender: 1`），改完数据库一年都不会变，只能重新构建部署。2026-11 已给两页补 `revalidate = 300`：改完内容最多 5 分钟自动更新。
+  - 排查口诀：`curl -sI https://hanphone.cn/blog/1/ | grep -i cache-control` —— `s-maxage=300, stale-while-revalidate=…` 是 ISR 正常；`s-maxage=31536000` 说明 ISR 没生效（检查该路由有没有 `revalidate`）。
+  - `revalidate` 必须是**字面量**：写成三元/环境变量表达式会被 Next 判定为「invalid segment configuration export」直接让构建失败。
+  - 静态导出（Tauri 桌面版 `pnpm build:tauri`）不支持 ISR，`scripts/build-tauri.mjs` 会在构建期把它临时改成 `false` 再还原。
+  - 详情页正文在**构建期**也会被 `fetch` 写进预渲染产物，所以仍然受下面那条 fetch 缓存影响。
 - **重建前必须删 `web/.next/cache`**：Next 的 `fetch` 默认 `force-cache`，响应存在 `.next/cache/fetch-cache` 里跨构建复用。只跑 `next build` 会把上一次构建拿到的旧正文再塞进产物（这次实测：正文更新后重建，56 个文件里一个 `持续更新版` 都没有，删掉缓存重建才出现）。部署只上传 `.next` 是对的，但**构建前**要清。
 - 同理：`output: 'export'` 与 `pm2` 里的 `next start` 是两套口径，改配置前先确认线上到底是哪种产物。
 - File uploads go to `admin-file` Express service on separate domain (`hanphone.top`)
@@ -80,7 +84,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 ### Backend Architecture (server/src/main/java/com/example/blog/)
 
 - **Layered**: `web/` (controllers) → `service/impl/` → `dao/` (JPA repositories)
-- **Security filters**: `XssFilter` (param escaping), `RequestValidationFilter` (URL length limits, recursive path blocking)
+- **Security filters**: `XssFilter` (**只设安全响应头，不改写请求**；输入侧不再做 HTML 转义——库里/JSON 出参一律原值，转义由渲染层负责), `RequestValidationFilter` (URL length limits, recursive path blocking)
 - **JWT interceptor**: `TokenInterceptor` protects `/admin/**` routes
 - **Swagger**: SpringDoc OpenAPI 3 at `/swagger-ui/index.html`; public and admin controllers separated
 - **Two query layers**: JPA repositories in `dao/` for most queries, MyBatis-Plus for some complex ones
