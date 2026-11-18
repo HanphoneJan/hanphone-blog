@@ -82,3 +82,11 @@ val DarkError = Color(0xFFEF4444)                // --danger
 val DarkOnError = Color(0xFFFFFFFF)
 val DarkErrorContainer = Color(0xFF7F1D1D)       // red-900
 val DarkOnErrorContainer = Color(0xFFFECACA)     // red-200
+
+/**
+ * 推荐标记统一色（琥珀黄）。
+ *
+ * 全 App 的推荐星只用这一个颜色。此前三套并存：后台用 `theme.tertiary`（slate-600，
+ * 浅色主题下就是「黑星」）、博客/随笔用 #E8A33D、公开页用 #FBBF24，同一个含义三种画法。
+ */
+val RecommendGold = Color(0xFFFBBF24)

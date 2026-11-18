@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.hanphone.blog.ui.components.RecommendStar
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Project
@@ -274,7 +275,7 @@ private fun RecommendBadge(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Icon(Icons.Filled.Star, null, Modifier.size(11.dp), tint = Color(0xFFFBBF24))
+            RecommendStar(size = 11.dp)
             Text("推荐", style = MaterialTheme.typography.labelSmall)
         }
     }

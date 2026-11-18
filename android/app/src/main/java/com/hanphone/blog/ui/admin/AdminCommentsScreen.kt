@@ -100,13 +100,18 @@ private fun CommentRow(comment: Comment, onDelete: () -> Unit) {
                 Text(
                     comment.nickname.ifBlank { "匿名" },
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    // 昵称可能很长，不给 weight 会把后面的「博主/用户」徽标和时间挤成一条线
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 AdminBadge(if (comment.adminComment) "博主" else "用户")
                 Text(
                     formatDateTime(comment.createTime),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1
                 )
             }
             comment.blog?.title?.takeIf { it.isNotBlank() }?.let { title ->

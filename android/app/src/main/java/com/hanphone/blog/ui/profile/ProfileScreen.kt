@@ -52,6 +52,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -382,7 +383,11 @@ private fun ProfileEditDialog(
         title = { Text("编辑资料") },
         text = {
             Column(
-                Modifier.verticalScroll(rememberScrollState()).heightIn(max = 480.dp),
+                // 顺序不能反：heightIn 在外限制视口，verticalScroll 在内负责滚动。
+                // 之前写反了，滚动内容被钉死在 480dp，编辑资料弹窗内容看不全。
+                Modifier
+                    .heightIn(max = minOf(480.dp, LocalConfiguration.current.screenHeightDp.dp * 0.62f))
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {

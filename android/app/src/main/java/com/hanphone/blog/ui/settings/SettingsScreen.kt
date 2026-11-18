@@ -203,13 +203,20 @@ fun SettingsScreen(
             onDismissRequest = { updateInfo = null },
             title = { Text("发现新版本 ${info.version}") },
             text = {
+                // 注意修饰符顺序：heightIn 在外、verticalScroll 在内。
+                // 反过来（先 scroll 再 heightIn）会把滚动内容的测量高度钉死在 420dp，
+                // 滚动容器以为内容就这么高 → 滚不动，超出的更新说明直接被截断。
                 Column(
-                    Modifier.verticalScroll(rememberScrollState()).heightIn(max = 420.dp),
+                    Modifier
+                        .heightIn(max = dialogTextMaxHeight())
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text("当前版本 v${BuildConfig.VERSION_NAME}，可升级到 ${info.version}。", style = MaterialTheme.typography.bodyMedium)
                     if (info.body.isNotBlank()) {
                         MarkdownContent(info.body)
+                    } else {
+                        Text("（该版本没有填写更新说明）", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                     }
                 }
             },
@@ -306,6 +313,16 @@ fun SettingsScreen(
 
         else -> Unit
     }
+}
+
+/**
+ * 弹窗正文的最大高度：按屏幕高度取一个上限（矮屏也不会顶到按钮），最多 480dp。
+ * 配合 `heightIn(...).verticalScroll(...)` 的正确顺序，长内容可以滚动看全。
+ */
+@Composable
+private fun dialogTextMaxHeight(): androidx.compose.ui.unit.Dp {
+    val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+    return minOf(480.dp, screenHeight * 0.62f)
 }
 
 /** 下载进度里的文件大小 */

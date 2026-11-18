@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -97,7 +99,8 @@ fun AdminTagsScreen(
             onDismissRequest = { creating = false; editing = null },
             title = { Text(if (creating) "新增标签" else "重命名标签") },
             text = {
-                Column {
+                // 键盘弹出时对话框高度会被压缩，正文必须可滚动，否则输入框会被裁掉
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     AdminGap(4)
                     AdminField(name, { name = it }, "标签名", placeholder = "例如：Kotlin")
                 }
@@ -185,7 +188,7 @@ fun AdminTypesScreen(
             onDismissRequest = { creating = false; editing = null },
             title = { Text(if (creating) "新增分类" else "编辑分类") },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     AdminGap(4)
                     AdminField(name, { name = it }, "分类名")
                     AdminGap(8)

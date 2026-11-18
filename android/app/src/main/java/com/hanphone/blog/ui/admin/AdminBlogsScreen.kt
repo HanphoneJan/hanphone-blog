@@ -142,13 +142,19 @@ private fun BlogAdminRow(
                 .weight(1f)
                 .padding(end = 6.dp)
         ) {
-            Text(
-                blog.title.ifBlank { "（无标题）" },
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.Top) {
+                Text(
+                    blog.title.ifBlank { "（无标题）" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (blog.recommend) {
+                    AdminStarMark(Modifier.padding(start = 6.dp, top = 2.dp))
+                }
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -158,7 +164,6 @@ private fun BlogAdminRow(
                     if (blog.published) "已发布" else "草稿",
                     if (blog.published) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                 )
-                if (blog.recommend) AdminBadge("推荐", Color(0xFFE8A33D))
                 blog.type?.name?.let { AdminBadge(it, MaterialTheme.colorScheme.secondary) }
                 Text(
                     "${formatDate(blog.createTime)} · ${blog.views} 阅读",

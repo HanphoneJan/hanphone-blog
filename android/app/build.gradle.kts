@@ -23,8 +23,8 @@ android {
         applicationId = "com.hanphone.blog"
         minSdk = 26
         targetSdk = 37
-        versionCode = 22
-        versionName = "1.2.1"
+        versionCode = 23
+        versionName = "1.2.2"
         // 是否放置了 Firebase 配置（android/app/google-services.json）；缺失时 FCM 自动禁用
         buildConfigField("boolean", "FCM_CONFIGURED", file("google-services.json").exists().toString())
     }

@@ -8,17 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -76,8 +70,19 @@ fun AdminDocsScreen(
                         Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(doc.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Column(Modifier.weight(1f).padding(end = 6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    doc.title,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                if (doc.recommend) {
+                                    AdminStarMark(Modifier.padding(start = 6.dp))
+                                }
+                            }
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -88,23 +93,29 @@ fun AdminDocsScreen(
                                     if (doc.published == true) "已发布" else "草稿",
                                     if (doc.published == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                                 )
-                                if (doc.recommend) AdminBadge("推荐", MaterialTheme.colorScheme.tertiary)
                                 Text(
                                     "${doc.docNamespace} · ${doc.viewCount} 次",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
-                        TextButton(onClick = { vm.togglePublished(doc) }) {
-                            Text(if (doc.published == true) "下线" else "发布")
-                        }
-                        IconButton(onClick = { editing = doc }) {
-                            Icon(Icons.Filled.Edit, "编辑", modifier = Modifier.size(18.dp))
-                        }
-                        IconButton(onClick = { pendingDelete = doc }) {
-                            Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-                        }
+                        AdminRowMenu(
+                            listOf(
+                                AdminMenuAction(
+                                    label = if (doc.published == true) "下线" else "发布",
+                                    onClick = { vm.togglePublished(doc) }
+                                ),
+                                AdminMenuAction(label = "编辑", onClick = { editing = doc }),
+                                AdminMenuAction(
+                                    label = "删除",
+                                    onClick = { pendingDelete = doc },
+                                    destructive = true
+                                )
+                            )
+                        )
                     }
                     AdminDivider()
                 }

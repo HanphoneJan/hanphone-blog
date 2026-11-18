@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.util.adminMessage
+import com.hanphone.blog.util.decoded
+import com.hanphone.blog.util.normalized
 import com.hanphone.blog.data.model.AdminCollectRun
 import com.hanphone.blog.data.model.AdminRebuildSummary
 import com.hanphone.blog.data.model.AdminSummarySettings
@@ -42,7 +44,8 @@ class AdminFriendLinksViewModel @Inject constructor(
         viewModelScope.launch {
             loading = true
             try {
-                items = repo.friendLinks().data.orEmpty()
+                // 后台接口同样会把 URL 里的 & 存成 &amp;（qlogo 头像就是），这里必须和公开友链页走同一套归一化
+                items = repo.friendLinks().data.orEmpty().normalized()
             } catch (e: Exception) {
                 message = e.adminMessage("加载失败")
             } finally {
@@ -58,7 +61,7 @@ class AdminFriendLinksViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val res = repo.saveFriendLink(link)
+                val res = repo.saveFriendLink(link.decoded())
                 if (res.flag) {
                     done()
                     refresh()

@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.ui.components.RecommendStar
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.ui.components.EmptyBox
@@ -253,10 +254,11 @@ private fun FileRow(doc: Doc, onClick: () -> Unit) {
                     doc.filename.substringBeforeLast('.').ifBlank { doc.filename },
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 if (doc.recommend) {
-                    Icon(Icons.Filled.Star, "推荐", tint = Color(0xFFFBBF24), modifier = Modifier.size(14.dp))
+                    RecommendStar(size = 14.dp)
                 }
             }
             if (doc.createTime.isNotBlank()) {

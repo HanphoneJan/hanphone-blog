@@ -9,6 +9,7 @@ import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.repo.BlogRepository
+import com.hanphone.blog.util.normalized
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,34 +25,8 @@ import javax.inject.Inject
 /** 网页端 `next-api/metadata` 返回的补全信息 */
 private data class MetaResult(val title: String, val description: String, val avatar: String)
 
-/** 博客站域名（默认头像/相对路径都挂在博客站，而非文件服务） */
-private const val BLOG_SITE = "https://hanphone.cn"
-
-/** 解码 HTML 实体（对齐 web 的 decodeHtmlEntities；q1.qlogo.cn 等头像 URL 常含 &amp;） */
-private fun decodeEntities(s: String): String =
-    s.replace("&amp;", "&")
-        .replace("&#39;", "'")
-        .replace("&quot;", "\"")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-
-/** 头像归一化：解码实体 + 相对路径挂到博客站域名；默认头像视为缺失，交给首字占位符兜底 */
-private fun normalizeAvatar(av: String?): String? {
-    if (av.isNullOrBlank()) return av
-    val d = decodeEntities(av)
-    val abs = if (d.startsWith("http://") || d.startsWith("https://")) d else BLOG_SITE + d
-    return if (abs == "$BLOG_SITE/default-avatar.png") null else abs
-}
-
-/** 归一化友链（解码 avatar/url/name/description 实体，头像转绝对地址） */
-private fun normalizeLinks(links: List<FriendLink>): List<FriendLink> = links.map {
-    it.copy(
-        avatar = normalizeAvatar(it.avatar),
-        url = decodeEntities(it.url),
-        name = decodeEntities(it.name),
-        description = decodeEntities(it.description)
-    )
-}
+/** 归一化友链：统一走 util 里的实体解码 + 头像归一（后台友链管理同一套，别再各写一份） */
+private fun normalizeLinks(links: List<FriendLink>): List<FriendLink> = links.normalized()
 
 /**
  * 友链列表：三层缓存（MemoryCache → ContentStore → 网络静默刷新）。

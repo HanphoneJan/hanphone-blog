@@ -148,13 +148,19 @@ private fun EssayAdminRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(
-                essay.title.ifBlank { "（无标题）" },
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.Top) {
+                Text(
+                    essay.title.ifBlank { "（无标题）" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (essay.recommend) {
+                    AdminStarMark(Modifier.padding(start = 6.dp, top = 2.dp))
+                }
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -164,7 +170,6 @@ private fun EssayAdminRow(
                     if (essay.published == true) "已发布" else "草稿",
                     if (essay.published == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                 )
-                if (essay.recommend) AdminBadge("推荐", Color(0xFFE8A33D))
                 Text(
                     "${formatDate(essay.createTime)} · ${essay.essayFileUrls.size} 个附件",
                     style = MaterialTheme.typography.bodySmall,

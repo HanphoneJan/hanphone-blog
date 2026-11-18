@@ -7,13 +7,15 @@ const val PICTURE_BASE_URL = "https://hanphone.top"
 
 /**
  * 图片 URL 兼容处理：
+ * 先解码 HTML 实体（接口里存在 `&amp;` 形式的 URL，不解码会 400），
  * 绝对地址(https/http)原样返回；相对路径(/xxx)拼上文件服务域名。
- * 帖子封面/正文图片/头像统一走这里。
+ * 帖子封面/正文图片/头像统一走这里 —— 一处解码，全 App 的图都不会再被 `&amp;` 坑。
  */
 fun resolveImageUrl(url: String?): String? {
-    if (url.isNullOrBlank()) return null
-    return if (url.startsWith("http://") || url.startsWith("https://")) url
-    else PICTURE_BASE_URL + url
+    val decoded = decodeHtmlEntities(url)?.trim()
+    if (decoded.isNullOrBlank()) return null
+    return if (decoded.startsWith("http://") || decoded.startsWith("https://")) decoded
+    else PICTURE_BASE_URL + decoded
 }
 
 /**

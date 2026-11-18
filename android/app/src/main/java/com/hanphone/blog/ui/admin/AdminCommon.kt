@@ -2,6 +2,8 @@ package com.hanphone.blog.ui.admin
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +18,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -43,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.ui.components.AppBackBar
+import com.hanphone.blog.ui.theme.RecommendGold
 
 /**
  * 后台管理页面的通用骨架与控件。
@@ -118,6 +125,87 @@ fun AdminBadge(text: String, color: Color = MaterialTheme.colorScheme.primary) {
             .background(color.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
             .padding(horizontal = 5.dp, vertical = 1.dp)
     )
+}
+
+/**
+ * 推荐标记。
+ *
+ * 以前用 `AdminBadge("推荐")` 这种纯文字徽标：行尾一排 TextButton / IconButton 把内容区挤到
+ * 几十 dp 时，文字会被量成 0~几 dp，视觉上就是一条彩色竖杠（还顺带把布局顶乱）。
+ * 这里改成**固定尺寸**的星形小图标：不参与文字测量，挤不掉，也比竖杠好看。
+ *
+ * 颜色固定用 [RecommendGold]（琥珀黄）：早前默认取 `colorScheme.tertiary`，浅色主题下是
+ * slate-600，看起来就是一颗「黑星」，和公开页的黄色星星对不上。
+ */
+@Composable
+fun AdminStarMark(
+    modifier: Modifier = Modifier,
+    color: Color = RecommendGold,
+    contentDescription: String = "推荐"
+) {
+    Box(
+        modifier
+            .size(18.dp)
+            .background(color.copy(alpha = 0.16f), RoundedCornerShape(5.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Filled.Star,
+            contentDescription = contentDescription,
+            tint = color,
+            modifier = Modifier.size(12.dp)
+        )
+    }
+}
+
+/** 行尾菜单项 */
+data class AdminMenuAction(
+    val label: String,
+    val onClick: () -> Unit,
+    val enabled: Boolean = true,
+    val destructive: Boolean = false
+)
+
+/**
+ * 列表行尾的「⋮」菜单。
+ *
+ * 后台列表一行最多只能有一个固定宽度的操作位：把「上线/下线、推荐、编辑、删除」全铺成一排
+ * TextButton 时，右侧会吃掉 200dp 以上，左边的头像/名称/徽标只能被压扁（头像消失、
+ * 推荐徽标变竖杠）。收进菜单后内容区宽度稳定。
+ */
+@Composable
+fun AdminRowMenu(actions: List<AdminMenuAction>) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Filled.MoreVert,
+                contentDescription = "更多操作",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            actions.forEach { action ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            action.label,
+                            color = if (action.destructive) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                LocalContentColor.current
+                            }
+                        )
+                    },
+                    enabled = action.enabled,
+                    onClick = {
+                        expanded = false
+                        action.onClick()
+                    }
+                )
+            }
+        }
+    }
 }
 
 /** 筛选/选择胶囊 */
@@ -250,7 +338,7 @@ fun AdminConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { Text(text) },
+        text = { Text(text, modifier = Modifier.verticalScroll(rememberScrollState())) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(

@@ -2,22 +2,18 @@ package com.hanphone.blog.ui.admin
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.ui.components.Avatar
@@ -107,31 +104,71 @@ private fun FriendLinkRow(
         Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Avatar(url = link.avatar, name = link.name, size = 34.dp)
+        // 头像固定 34dp；行内只留一个固定宽度的菜单位，头像/文字不会再被操作按钮挤掉
+        Avatar(
+            url = link.avatar,
+            name = link.name,
+            size = 34.dp,
+            feature = ImageCaches.Feature.FRIEND
+        )
         Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
-            Text(link.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    link.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (link.recommend) {
+                    AdminStarMark(Modifier.padding(start = 6.dp))
+                }
+            }
             Text(
-                link.url,
+                // 后端两个字段都可能被用上（网页申请写 linkUrl、后台表单写 url），哪个有就显示哪个
+                link.url.ifBlank { link.linkUrl.orEmpty() }.ifBlank { "（未填写网址）" },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 3.dp)) {
+            MetaFlow(modifier = Modifier.padding(top = 3.dp)) {
                 AdminBadge(
                     if (link.published == true) "已上线" else "待审核",
                     if (link.published == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                 )
-                if (link.recommend) AdminBadge("推荐", MaterialTheme.colorScheme.secondary)
             }
         }
-        TextButton(onClick = onTogglePublished) { Text(if (link.published == true) "下线" else "上线") }
-        TextButton(onClick = onToggleRecommend) { Text(if (link.recommend) "取消推荐" else "推荐") }
-        IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, "编辑", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp)) }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-        }
+        AdminRowMenu(
+            listOf(
+                AdminMenuAction(
+                    label = if (link.published == true) "下线" else "上线",
+                    onClick = onTogglePublished
+                ),
+                AdminMenuAction(
+                    label = if (link.recommend) "取消推荐" else "设为推荐",
+                    onClick = onToggleRecommend
+                ),
+                AdminMenuAction(label = "编辑", onClick = onEdit),
+                AdminMenuAction(label = "删除", onClick = onDelete, destructive = true)
+            )
+        )
     }
+}
+
+/** 行内元信息（徽标）容器：空间不够时换行，而不是把后面的徽标压成一条竖线 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MetaFlow(
+    modifier: Modifier = Modifier,
+    content: @Composable FlowRowScope.() -> Unit
+) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        content = content
+    )
 }
 
 @Composable
@@ -217,31 +254,44 @@ fun AdminProjectsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text(project.title, style = MaterialTheme.typography.bodyLarge)
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    project.title,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                if (project.recommend) {
+                                    AdminStarMark(Modifier.padding(start = 6.dp))
+                                }
+                            }
+                            MetaFlow(modifier = Modifier.padding(top = 3.dp)) {
                                 AdminBadge(typeLabel(project.type), MaterialTheme.colorScheme.secondary)
                                 AdminBadge(
                                     if (project.published == true) "已发布" else "草稿",
                                     if (project.published == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                                 )
-                                if (project.recommend) AdminBadge("推荐", MaterialTheme.colorScheme.tertiary)
                             }
                         }
-                        TextButton(onClick = { vm.togglePublished(project) }) {
-                            Text(if (project.published == true) "下线" else "发布")
-                        }
-                        TextButton(onClick = { vm.toggleRecommend(project) }) {
-                            Text(if (project.recommend) "取消推荐" else "推荐")
-                        }
-                        IconButton(onClick = { editing = project }) {
-                            Icon(Icons.Filled.Edit, "编辑", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                        }
-                        IconButton(onClick = { pendingDelete = project }) {
-                            Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-                        }
+                        AdminRowMenu(
+                            listOf(
+                                AdminMenuAction(
+                                    label = if (project.published == true) "下线" else "发布",
+                                    onClick = { vm.togglePublished(project) }
+                                ),
+                                AdminMenuAction(
+                                    label = if (project.recommend) "取消推荐" else "设为推荐",
+                                    onClick = { vm.toggleRecommend(project) }
+                                ),
+                                AdminMenuAction(label = "编辑", onClick = { editing = project }),
+                                AdminMenuAction(
+                                    label = "删除",
+                                    onClick = { pendingDelete = project },
+                                    destructive = true
+                                )
+                            )
+                        )
                     }
                     AdminDivider()
                 }

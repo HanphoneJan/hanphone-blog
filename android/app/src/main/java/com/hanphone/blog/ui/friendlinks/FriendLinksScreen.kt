@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.ui.components.RecommendStar
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.ui.components.AppBackBar
@@ -154,7 +155,9 @@ private fun FriendLinkRow(link: FriendLink, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    // 名称不给 weight 就会把后面的「推荐」角标量成 0dp（角标整块消失/被压成一条线）
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 if (link.recommend) {
                     Surface(
@@ -167,7 +170,7 @@ private fun FriendLinkRow(link: FriendLink, onClick: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            Icon(Icons.Filled.Star, null, Modifier.size(10.dp), tint = Color(0xFFFBBF24))
+                            RecommendStar(size = 10.dp)
                             Text("推荐", style = MaterialTheme.typography.labelSmall)
                         }
                     }

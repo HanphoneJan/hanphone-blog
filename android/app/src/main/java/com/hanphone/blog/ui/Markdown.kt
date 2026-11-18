@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanphone.blog.util.decodeHtmlEntities
 import com.hanphone.blog.util.resolveImageUrl
 import com.mikepenz.markdown.coil2.Coil2ImageTransformerImpl
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeBlock
@@ -169,7 +170,7 @@ private fun MarkdownCore(content: String, modifier: Modifier) {
 private val markdownLinkRegex = Regex("""(!?\[[^\]]*\]\()([^)\s]+)(\))""")
 
 private fun preprocessMarkdown(raw: String): String {
-    val decoded = decodeHtmlEntities(raw)
+    val decoded = decodeHtmlEntities(raw).orEmpty()
     return markdownLinkRegex.replace(decoded) { match ->
         val (prefix, url, suffix) = match.destructured
         val absolute = if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -181,19 +182,3 @@ private fun preprocessMarkdown(raw: String): String {
     }
 }
 
-private fun decodeHtmlEntities(raw: String): String {
-    var s = raw
-    repeat(3) {
-        val decoded = s
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", "\"")
-            .replace("&#39;", "'")
-            .replace("&#x27;", "'")
-            .replace("&nbsp;", "\u00A0")
-            .replace("&amp;", "&")
-        if (decoded == s) return decoded
-        s = decoded
-    }
-    return s
-}

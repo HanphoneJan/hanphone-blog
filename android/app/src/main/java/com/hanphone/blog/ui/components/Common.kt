@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.hanphone.blog.data.cache.ImageCaches
+import com.hanphone.blog.ui.theme.RecommendGold
 import com.hanphone.blog.util.resolveImageUrl
 import kotlinx.coroutines.delay
 
@@ -415,4 +417,24 @@ fun CommentInputBar(
             }
         }
     }
+}
+/**
+ * 推荐星（全 App 统一）。
+ *
+ * 琥珀黄实心星 + 固定尺寸：不参与文字测量（不会被同行文字挤成一条线），
+ * 也不受主题影响（`colorScheme.tertiary` 在浅色主题下是 slate-600，看着就是黑星）。
+ * 后台的带底版本是 `ui/admin/AdminCommon.kt` 的 `AdminStarMark`，同样用 [RecommendGold]。
+ */
+@Composable
+fun RecommendStar(
+    modifier: Modifier = Modifier,
+    size: Dp = 14.dp,
+    contentDescription: String = "推荐"
+) {
+    Icon(
+        Icons.Filled.Star,
+        contentDescription = contentDescription,
+        tint = RecommendGold,
+        modifier = modifier.size(size)
+    )
 }

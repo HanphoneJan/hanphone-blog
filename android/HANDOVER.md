@@ -226,6 +226,11 @@ ui/
 - 底部导航：**自定义 Surface+Row**（内容区 54dp + `windowInsetsPadding(navigationBars)` 手势区有底色；图标 24dp、文字 11sp、图标与文字间距 2dp；选中主色）。
 - 按钮/输入框偏紧凑：输入框 48dp、主按钮 38dp、聊天输入单行 46dp、弹窗正文 minLines=2。
 - **图标/资源优先复用网站**：封面 `firstPicture || type.pic_url`、分类色点 `type.color`、`essayFileUrls` 图、友链头像、启动图标 = 网站 PWA `icon-512x512.png`（**图标放自适应安全区内约 62%，背景白**，勿满幅缩放/勿蓝底）。
+- **「推荐」标记统一用黄色实心星**（`ui/theme/Color.kt` 的 `RecommendGold` = #FBBF24，与网页 ★ 同色）：
+  - 列表/标题旁用 `ui/components/Common.kt` 的 `RecommendStar(size)`（纯星，固定尺寸）；
+  - 后台行用 `ui/admin/AdminCommon.kt` 的 `AdminStarMark()`（带浅底方块）。
+  - **不要再出现**「黑星」（曾误用 `colorScheme.tertiary`，浅色主题下是 slate-600 看着就是黑的）、
+    也不要回到 `AdminBadge("推荐")` 这种文字徽标（被挤就变成一条竖杠）。
 - 交互相容：下拉刷新、列表无限滚动、Toast 轻提示、系统返回优先。
 
 ## 6. 开发环境（本机 Linux）
@@ -383,6 +388,24 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     （服务端单次消费，重复兑换必失败，`handledOAuthCode` 去重）；登录成功后的收页由
     `OAuthLogin.lastResult` 驱动，**不要**改成监听 token 变化 —— 密码登录的 `onSuccess`
     会跟着双重 `popBackStack`。
+
+33. **后台列表「把内容挤成一条竖杠 / 头像消失」= Row 里的非 weight 子项被量成 0dp（2026-11 用户反馈）**：
+    友链页、项目页那种「左边内容 + 右边一排 TextButton/IconButton」的行，右侧固定件加起来能吃掉
+    200dp 以上（`TextButton` 最小 58dp、`cancel推荐` 这种 4 字标题 ~80dp、`IconButton` 各 48dp），
+    小屏（360dp 宽）上留给内容区只剩几十 dp —— 徽标文字被量成 0~几 dp、**视觉上就是一条彩色竖杠**，
+    头像/名称/推荐标记也跟着缩没。两条规矩：
+    - **列表行只留一个固定宽度的操作位**：操作收进 `AdminRowMenu`（`ui/admin/AdminCommon.kt` 的「⋮」菜单），
+      别再铺一排 TextButton；
+    - **同一行里文字与图标并存时，文字必须 `Modifier.weight(1f, fill = false)`**，否则它会把后面的
+      图标/徽标吃光（公开友链页的「推荐」角标、文库页的文件名+推荐星、热点页的作者+来源标签都踩过）。
+    推荐标记统一用 `AdminStarMark()`（固定 18dp 星形，不参与文字测量），别再用 `AdminBadge("推荐")`。
+34. **`Modifier.verticalScroll(...).heightIn(max = ...)` 顺序反了 = 弹窗内容滚不动且被截断（2026-11 用户反馈）**：
+    修饰符链最左边是外层。写成 `verticalScroll().heightIn()` 时，`heightIn` 是**滚动内容自己**的上限，
+    滚动容器量到的内容高度 ≈ 420dp，以为「就这么高、不用滚」→ 视觉上正文被裁掉一截且滑不动。
+    正确写法 `Modifier.heightIn(max = X).verticalScroll(rememberScrollState())`：heightIn 当视口、
+    verticalScroll 在内给内容无限高度。N 处一起修：设置页「发现新版本」弹窗、编辑资料弹窗；
+    其余弹窗（标签/分类表单、后台删除二次确认）补了 `verticalScroll`，键盘顶起来也不会裁掉输入框。
+    上限用屏幕高度算（`minOf(480.dp, screenHeightDp * 0.62f)`），矮屏也不会顶到按钮。
 
 ## 8. 路线图
 

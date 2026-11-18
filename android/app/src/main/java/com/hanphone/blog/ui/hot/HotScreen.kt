@@ -341,7 +341,15 @@ private fun HotItemCard(item: HotFeedItem, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item.author?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        // 不给 weight 的话，作者名一长就会把后面的来源标签量成 0dp
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
                 }
                 item.tags?.takeIf { it.isNotBlank() }?.let { tags ->
                     Surface(
@@ -698,7 +706,14 @@ private fun CompareTab(vm: HotViewModel) {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
-                            Text(m.displayName, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                            Text(
+                                m.displayName,
+                                style = MaterialTheme.typography.labelMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                // 模型名过长时会把这个删除 × 挤没，给它让位
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
                             Icon(
                                 Icons.Filled.Close, "移除",
                                 modifier = Modifier.size(14.dp).clickable { vm.removeModel(m.modelKey) }
