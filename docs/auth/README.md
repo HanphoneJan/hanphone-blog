@@ -79,8 +79,16 @@ App 流程：
 >   `sha256_cert_fingerprints` 必须与**实际签名证书**一致。当前 App 的 release 也用 debug 密钥签名
 >   （`android/app/build.gradle.kts` 的 `signingConfig = debug`，自分发阶段），所以指纹取自
 >   `~/.android/debug.keystore`；**S5 换成正式签名后必须同步改这里**，否则 App Links 静默失效（只退回浏览器中转页）。
+> - **nginx 的落点不是 `public/`**：`/etc/nginx/conf.d/hanphone.cn.conf` 里
+>   `location /.well-known/ { root /home/hanphone/client_blog; }`，所以文件必须在
+>   `~/client_blog/.well-known/assetlinks.json`。每次 web 部署后补一条：
+>   `ssh blog 'mkdir -p ~/client_blog/.well-known && cp ~/client_blog/public/.well-known/assetlinks.json ~/client_blog/.well-known/'`。
+>   验证：`curl -s https://hanphone.cn/.well-known/assetlinks.json`（必须是 `application/json`、无跳转）。
 > - 校验状态：`adb shell pm get-app-links com.hanphone.blog`；改完 assetlinks 或重装后用
->   `adb shell pm verify-app-links --re-verify com.hanphone.blog` 重新校验（`hanphone.cn: verified` 才算生效）。
+>   `adb shell pm verify-app-links --re-verify com.hanphone.blog` 重新校验。
+>   部分国产 ROM（HyperOS/MIUI 实测）即使校验通过，用户选择仍是「禁止」，
+>   需要用户在「应用信息 → 打开支持的链接」里放开，或 `adb shell pm set-app-links-user-selection
+>   --user 0 --package com.hanphone.blog true hanphone.cn`。
 > - 路径注意：中转页在 `/api/oauth/app/return`（nginx 只把 `/api` 转给后端），Manifest 的
 >   `pathPrefix` 与 `OAuthLogin.isCallback` 都按 `/api/oauth/app/` 匹配。
 
