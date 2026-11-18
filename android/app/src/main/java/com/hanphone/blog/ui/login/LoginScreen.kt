@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -114,17 +115,18 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
     Column(Modifier.fillMaxSize()) {
         AppBackBar(title = "", onBack = onBack)
         Column(
-            Modifier.fillMaxSize().imeLiftAboveKeyboard().verticalScroll(rememberScrollState()).padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            // 顶对齐：居中会在上下各留一大块空白（用户反馈「上方空白过多」）
+            Modifier.fillMaxSize().imeLiftAboveKeyboard().verticalScroll(rememberScrollState())
+                .padding(horizontal = 32.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 painter = painterResource(R.drawable.ic_blog),
                 contentDescription = "云林有风",
-                modifier = Modifier.size(76.dp).clip(CircleShape),
+                modifier = Modifier.size(60.dp).clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Text("登录云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 12.dp, bottom = 20.dp))
+            Text("登录云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp, bottom = 24.dp))
 
             OutlinedTextField(
                 value = username,
@@ -142,22 +144,33 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { doLogin() }),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                 textStyle = MaterialTheme.typography.bodyMedium
             )
             Button(
                 onClick = { doLogin() },
                 enabled = !loading,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
             ) {
                 Text(if (loading) "登录中…" else "登录")
             }
 
-            // 第三方登录：系统浏览器完成授权，回跳后由 MainActivity 换会话（见 data/auth/OAuthLogin.kt）
+            // 分隔线替代说明文字：第三方登录走系统浏览器，用户点下去自然就懂
             Row(
-                Modifier.fillMaxWidth().padding(top = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                Text(
+                    "或",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp)
+                )
+                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = { startOAuth(OAuthLogin.GITHUB) },
                     enabled = !loading,
@@ -173,20 +186,8 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
                     Text("Google 登录")
                 }
             }
-            Text(
-                "将在浏览器中完成授权，登录后自动返回",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
-            )
 
-            Text(
-                "登录后可点赞、发表随笔评论",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-            TextButton(onClick = onRegister, modifier = Modifier.padding(top = 8.dp)) {
+            TextButton(onClick = onRegister, modifier = Modifier.padding(top = 6.dp)) {
                 Text("没有账号？立即注册")
             }
         }
