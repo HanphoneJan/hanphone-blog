@@ -51,7 +51,7 @@ ui/
   friendlinks/FriendLinksViewModel.kt  search/SearchViewModel.kt
   projects/ProjectsScreen.kt + ProjectsViewModel.kt  项目页（/projects，筛选分组卡片）
   docs/DocsScreen.kt + DocsViewModel.kt         文库页（docNamespace 文件夹树/搜索/类型筛选）
-  hot/HotScreen.kt + HotViewModel.kt             热点聚合（对标 web /insight：热点流/模型榜单/综合对比；对比支持分享链接）
+  hot/HotScreen.kt + HotFeedTab/HotLeaderboardTab/HotCompareTab/HotUi + HotViewModel 热点聚合（拆分后每个视图/共享工具各一文件；对比支持分享链接）
   docs/DocMarkdownScreen.kt                     文库 MD 预览（拉文件服务原文 → Markdown 渲染）
   webview/WebViewScreen.kt      通用 WebView（项目链接 loadUrl / 文库 HTML 文档 fetch+loadDataWithBaseURL；
                                进度条/返回/浏览器外开；主框架加载失败显示「重试/在浏览器打开」错误层）
