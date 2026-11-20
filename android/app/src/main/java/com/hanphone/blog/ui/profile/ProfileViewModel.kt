@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hanphone.blog.core.auth
+import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
@@ -16,6 +18,7 @@ import com.hanphone.blog.data.repo.FileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -64,6 +67,8 @@ class ProfileViewModel @Inject constructor(
     fun refresh(fromPull: Boolean = false) {
         viewModelScope.launch {
             if (fromPull) refreshing = true
+            // 下拉刷新必须连用户资料一起重拉：头像/昵称是服务端数据，只刷统计会一直显示登录时的旧头像
+            if (fromPull) fetchProfile(TokenStore.userId.value)
             runCatching { repo.siteStats() }.onSuccess {
                 if (it.flag && it.data != null) {
                     stats = it.data
@@ -84,17 +89,51 @@ class ProfileViewModel @Inject constructor(
 
     /** 拉取当前登录用户资料（登录态变化后由 UI 触发） */
     fun loadProfile(userId: Long?) {
+        viewModelScope.launch { fetchProfile(userId) }
+    }
+
+    private suspend fun fetchProfile(userId: Long?) {
         if (userId == null) {
             profile = null
             return
         }
-        viewModelScope.launch {
-            profileLoading = true
-            try {
-                val res = repo.currentUser(userId)
-                if (res.flag) profile = res.data
-            } catch (_: Exception) { }
-            profileLoading = false
+        profileLoading = true
+        try {
+            val res = repo.currentUser(userId)
+            val data = res.data
+            if (res.flag && data != null) {
+                profile = data
+                syncSession(data)
+            }
+        } catch (_: Exception) { }
+        profileLoading = false
+    }
+
+    /**
+     * 把服务端资料同步到内存登录态与 DataStore。
+     *
+     * 不同步的话，冷启动后「我的」页在请求返回前、以及其他读 TokenStore.avatar 的地方，
+     * 会一直用登录当时缓存的旧头像——例如已换成本站地址的 Google 头像，本地还存着被墙的
+     * googleusercontent 链接，看起来就是「刷新了还是旧头像」。
+     */
+    private suspend fun syncSession(data: User) {
+        val token = TokenStore.token.value ?: return
+        val nickname = data.nickname ?: TokenStore.nickname.value
+        val avatar = data.avatar ?: TokenStore.avatar.value
+        val type = data.type ?: TokenStore.userType.value
+        TokenStore.restore(
+            token,
+            TokenStore.userId.value,
+            nickname,
+            avatar,
+            type,
+            TokenStore.refreshToken.value
+        )
+        runCatching {
+            val current = appContext.auth.first()
+            appContext.saveAuth(
+                current.copy(nickname = nickname, avatar = avatar, userType = type)
+            )
         }
     }
 
