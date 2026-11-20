@@ -22,6 +22,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import com.hanphone.blog.data.cache.CachedList
 
 /** 网页端 `next-api/metadata` 返回的补全信息 */
 private data class MetaResult(val title: String, val description: String, val avatar: String)
@@ -52,6 +53,13 @@ class FriendLinksViewModel @Inject constructor(
     var activeType by mutableStateOf<String?>(null)
         private set
 
+    private val cache = CachedList(
+        memory = { MemoryCache.friendLinks },
+        writeMemory = { MemoryCache.friendLinks = it },
+        readDisk = { ContentStore.readFriendLinks()?.let { raw -> normalizeLinks(raw) } },
+        writeDisk = { ContentStore.writeFriendLinks(it) }
+    )
+
     /** 补全尝试记录（linkId → 上次尝试时间）：拉不到 meta 的站点 1 小时内不重试 */
     private val enrichAttempts = mutableMapOf<String, Long>()
     private val enrichRetryMs = 60L * 60 * 1000
@@ -65,11 +73,7 @@ class FriendLinksViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val cached = ContentStore.readFriendLinks()
-            if (cached != null && links.isEmpty()) {
-                links = normalizeLinks(cached)
-                loading = false
-            }
+            cache.seed()?.let { if (links.isEmpty()) { links = it; loading = false } }
         }
         viewModelScope.launch {
             enrichAttempts.putAll(ContentStore.readEnrichAttempts() ?: emptyMap())
@@ -98,8 +102,7 @@ class FriendLinksViewModel @Inject constructor(
                     // 这样已补全结果会被缓存复用，而不是每次刷新清空重来。
                     val merged = mergeEnriched(known, normalizeLinks(res.data ?: emptyList()))
                     links = merged
-                    MemoryCache.friendLinks = merged
-                    ContentStore.writeFriendLinks(merged)
+                    cache.store(merged)
                     error = null
                     // 只对仍缺失的进行补全（静默，失败不影响列表）
                     enrichMissing(merged)
@@ -209,8 +212,7 @@ class FriendLinksViewModel @Inject constructor(
                 }
             }
             links = updated
-            MemoryCache.friendLinks = updated
-            ContentStore.writeFriendLinks(updated)
+            cache.store(updated)
             ContentStore.writeEnrichAttempts(enrichAttempts)
         }
     }

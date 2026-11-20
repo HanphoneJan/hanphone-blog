@@ -57,7 +57,6 @@ import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
 import com.hanphone.blog.core.applyLogin
 import com.hanphone.blog.data.auth.OAuthLogin
 import com.hanphone.blog.data.repo.BlogRepository
-import com.hanphone.blog.util.md5Hex
 import kotlinx.coroutines.launch
 
 /**
@@ -85,7 +84,7 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
         scope.launch {
             loading = true
             try {
-                val res = repo.login(username.trim(), md5Hex(password))
+                val res = repo.login(username.trim(), password)
                 val d = res.data
                 Log.i("BlogLogin", "flag=${res.flag} code=${res.code} msg=${res.message} data=${d != null}")
                 if (res.flag && d != null && d.token != null && d.user != null) {

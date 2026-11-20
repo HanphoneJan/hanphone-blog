@@ -13,6 +13,7 @@ import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.hanphone.blog.data.cache.CachedList
 
 /** 文件夹树节点（对齐 web DocsClient 的 buildTree） */
 data class DocNode(
@@ -44,6 +45,13 @@ class DocsViewModel @Inject constructor(
         private set
     var error by mutableStateOf<String?>(null)
         private set
+
+    private val cache = CachedList(
+        memory = { MemoryCache.docs },
+        writeMemory = { MemoryCache.docs = it },
+        readDisk = { ContentStore.readDocs() },
+        writeDisk = { ContentStore.writeDocs(it) }
+    )
 
     var query by mutableStateOf("")
         private set
@@ -100,13 +108,8 @@ class DocsViewModel @Inject constructor(
     init {
         // 冷启动：先读磁盘缓存展示，再静默刷新
         viewModelScope.launch {
-            val cached = ContentStore.readDocs()
-            if (cached != null && docs.isEmpty()) {
-                docs = cached
-                loading = false
-            }
+            cache.seed()?.let { if (docs.isEmpty()) { docs = it; loading = false } }
         }
-        // 首次加载
         refresh()
     }
 
@@ -121,8 +124,7 @@ class DocsViewModel @Inject constructor(
                 val res = repo.docs()
                 if (res.flag) {
                     docs = res.data ?: emptyList()
-                    MemoryCache.docs = docs
-                    ContentStore.writeDocs(docs)
+                    cache.store(docs)
                     error = null
                 } else error = res.message.ifBlank { "加载失败" }
             } catch (e: Exception) {

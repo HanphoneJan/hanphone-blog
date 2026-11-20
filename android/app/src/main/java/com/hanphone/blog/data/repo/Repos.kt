@@ -42,6 +42,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import com.hanphone.blog.util.md5Hex
 
 private const val PAGE_SIZE = 10
 
@@ -154,9 +155,10 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
             api.logout(mapOf("refreshToken" to (refreshToken ?: "")))
         }
 
+    /** 登录：入参是明文密码，这里统一做 md5（后端存的是 bcrypt(md5)） */
     suspend fun login(username: String, password: String): ApiResult<LoginData> =
         withContext(Dispatchers.IO) {
-            api.login(mapOf("username" to username, "password" to password))
+            api.login(mapOf("username" to username, "password" to md5Hex(password)))
         }
 
     /** 第三方登录：一次性 code 换会话并落盘（保存逻辑在 core/LoginSession.applyLogin） */
@@ -249,7 +251,7 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
                 "username" to username,
                 "nickname" to nickname,
                 "email" to email,
-                "password" to password,
+                "password" to md5Hex(password),
                 "avatar" to avatar,
                 "captcha" to captcha
             )

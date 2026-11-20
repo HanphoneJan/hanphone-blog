@@ -34,6 +34,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import com.hanphone.blog.util.md5Hex
 
 /**
  * 后台管理仓库。
@@ -332,11 +333,11 @@ class AdminRepository(
     suspend fun saveUser(fields: Map<String, Any?>): ApiResult<User> =
         withContext(Dispatchers.IO) { api.saveUser(mapOf("user" to fields)) }
 
-    /** 重置密码，passwordMd5 = md5(明文) */
-    suspend fun resetUserPassword(userId: Long, passwordMd5: String): ApiResult<Any?> =
+    /** 重置密码：入参明文，这里统一 md5（后端再 bcrypt） */
+    suspend fun resetUserPassword(userId: Long, password: String): ApiResult<Any?> =
         withContext(Dispatchers.IO) {
             api.resetUserPassword(
-                mapOf("userId" to userId.toString(), "newPassword" to passwordMd5)
+                mapOf("userId" to userId.toString(), "newPassword" to md5Hex(password))
             )
         }
 

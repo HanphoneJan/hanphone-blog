@@ -13,6 +13,7 @@ import com.hanphone.blog.data.repo.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.hanphone.blog.data.cache.CachedList
 
 /** 留言板 */
 @HiltViewModel
@@ -28,13 +29,16 @@ class MessageBoardViewModel @Inject constructor(
     var error by mutableStateOf<String?>(null)
         private set
 
+    private val cache = CachedList(
+        memory = { MemoryCache.boardMessages },
+        writeMemory = { MemoryCache.boardMessages = it },
+        readDisk = { ContentStore.readBoardMessages() },
+        writeDisk = { ContentStore.writeBoardMessages(it) }
+    )
+
     init {
         viewModelScope.launch {
-            val cached = ContentStore.readBoardMessages()
-            if (cached != null && items.isEmpty()) {
-                items = cached
-                loading = false
-            }
+            cache.seed()?.let { if (items.isEmpty()) { items = it; loading = false } }
         }
         // 首次加载留言列表
         refresh()
@@ -68,8 +72,7 @@ class MessageBoardViewModel @Inject constructor(
             val res = repo.messages()
             if (res.flag) {
                 items = res.data ?: emptyList()
-                MemoryCache.boardMessages = items
-                ContentStore.writeBoardMessages(items)
+                cache.store(items)
                 error = null
             } else error = res.message.ifBlank { "加载失败" }
         } catch (e: Exception) {

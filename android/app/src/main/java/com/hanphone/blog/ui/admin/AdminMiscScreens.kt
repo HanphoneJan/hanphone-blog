@@ -42,6 +42,9 @@ import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SearchField
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.hanphone.blog.util.emailError
+import com.hanphone.blog.util.nicknameError
+import com.hanphone.blog.util.passwordError
 
 /**
  * 文库维护。
@@ -398,14 +401,8 @@ private fun UserEditDialog(
     }
 
     fun save() {
-        if (nickname.trim().length !in 2..10) {
-            toast("昵称长度在 2-10 个字符之间")
-            return
-        }
-        if (!Regex("""^[^@\s]+@[^@\s]+\.[^@\s]+$""").matches(email.trim())) {
-            toast("请输入有效的邮箱地址")
-            return
-        }
+        nicknameError(nickname)?.let { toast(it); return }
+        emailError(email)?.let { toast(it); return }
         vm.saveProfile(user, nickname, email, avatar) { onDismiss() }
     }
 
@@ -483,14 +480,7 @@ private fun UserPasswordDialog(
     var confirm by remember { mutableStateOf("") }
 
     fun submit() {
-        if (password.length !in 6..20) {
-            toast("密码长度在 6-20 个字符之间")
-            return
-        }
-        if (!Regex("""^(?=.*[a-zA-Z])(?=.*\d).+$""").matches(password)) {
-            toast("密码必须包含字母和数字")
-            return
-        }
+        passwordError(password)?.let { toast(it); return }
         if (password != confirm) {
             toast("两次输入的密码不一致")
             return

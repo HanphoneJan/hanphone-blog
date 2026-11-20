@@ -22,7 +22,6 @@ import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.util.MediaPicker
 import com.hanphone.blog.util.adminMessage
 import com.hanphone.blog.util.decoded
-import com.hanphone.blog.util.md5Hex
 import com.hanphone.blog.util.normalized
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -279,7 +278,7 @@ class AdminUsersViewModel @Inject constructor(
         if (busy) return
         viewModelScope.launch {
             busy = true
-            val err = adminOp("重置失败") { repo.resetUserPassword(user.id, md5Hex(newPassword)) }
+            val err = adminOp("重置失败") { repo.resetUserPassword(user.id, newPassword) }
             if (err == null) {
                 notify("密码已重置")
                 done()

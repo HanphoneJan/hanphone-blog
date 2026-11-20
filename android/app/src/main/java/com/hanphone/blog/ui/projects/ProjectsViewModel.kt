@@ -13,6 +13,7 @@ import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.hanphone.blog.data.cache.CachedList
 
 /**
  * 项目页：一次拉全量公开项目（后端已过滤 type=0），
@@ -32,6 +33,13 @@ class ProjectsViewModel @Inject constructor(
         private set
     var error by mutableStateOf<String?>(null)
         private set
+
+    private val cache = CachedList(
+        memory = { MemoryCache.projects },
+        writeMemory = { MemoryCache.projects = it },
+        readDisk = { ContentStore.readProjects() },
+        writeDisk = { ContentStore.writeProjects(it) }
+    )
 
     /** 当前筛选类型：null = 全部（对应 web 的「全部」筛选） */
     var activeType by mutableStateOf<Int?>(null)
@@ -57,13 +65,8 @@ class ProjectsViewModel @Inject constructor(
     init {
         // 冷启动：先读磁盘缓存展示，再静默刷新
         viewModelScope.launch {
-            val cached = ContentStore.readProjects()
-            if (cached != null && projects.isEmpty()) {
-                projects = cached
-                loading = false
-            }
+            cache.seed()?.let { if (projects.isEmpty()) { projects = it; loading = false } }
         }
-        // 首次加载
         refresh()
     }
 
@@ -86,8 +89,7 @@ class ProjectsViewModel @Inject constructor(
                 val res = repo.projects()
                 if (res.flag) {
                     projects = res.data ?: emptyList()
-                    MemoryCache.projects = projects
-                    ContentStore.writeProjects(projects)
+                    cache.store(projects)
                     error = null
                 } else error = res.message.ifBlank { "加载失败" }
             } catch (e: Exception) {

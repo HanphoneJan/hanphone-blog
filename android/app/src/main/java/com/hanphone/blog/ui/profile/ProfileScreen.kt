@@ -72,10 +72,12 @@ import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
-import com.hanphone.blog.util.md5Hex
 import com.hanphone.blog.util.resolveImageUrl
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.hanphone.blog.util.emailError
+import com.hanphone.blog.util.isValidEmail
+import com.hanphone.blog.util.passwordError
 
 /** 我的：概览页（登录态/统计）+ 更多入口（项目/文库/留言板/友链/设置）；关于信息已移入设置页 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -347,7 +349,7 @@ private fun ProfileEditDialog(
     val toast = rememberToast()
 
     fun requestCaptcha() {
-        if (!Regex("""^[^@\s]+@[^@\s]+\.[^@\s]+$""").matches(email.trim())) {
+        if (!isValidEmail(email)) {
             toast("请先填写正确的新邮箱")
             return
         }
@@ -454,15 +456,10 @@ private fun ProfileEditDialog(
                 onClick = {
                     val pwd = password
                     if (pwd.isNotBlank()) {
-                        if (pwd.length < 6) { toast("密码长度不能少于 6 位"); return@TextButton }
-                        if (!Regex("""^(?=.*[a-zA-Z])(?=.*\d).+$""").matches(pwd)) {
-                            toast("密码必须包含字母和数字"); return@TextButton
-                        }
+                        passwordError(pwd)?.let { toast(it); return@TextButton }
                         if (pwd != confirmPassword) { toast("两次输入的密码不一致"); return@TextButton }
                     }
-                    if (!Regex("""^[^@\s]+@[^@\s]+\.[^@\s]+$""").matches(email.trim())) {
-                        toast("请输入有效的邮箱地址"); return@TextButton
-                    }
+                    emailError(email)?.let { toast(it); return@TextButton }
                     if (needCaptcha && captcha.isBlank()) {
                         toast("修改邮箱需要填写验证码"); return@TextButton
                     }
@@ -475,8 +472,7 @@ private fun ProfileEditDialog(
                     saving = true
                     val user = mutableMapOf("nickname" to nickname.trim(), "avatar" to avatarUrl)
                     if (emailChanged) user["email"] = email.trim()
-                    if (pwd.isNotBlank()) user["password"] = md5Hex(pwd)
-                    vm.saveAccount(uid, user, if (needCaptcha) captcha.trim() else null) { saved ->
+                    vm.saveAccount(uid, user, if (needCaptcha) captcha.trim() else null, password = pwd) { saved ->
                         saving = false
                         if (saved != null) {
                             onSaved(saved)

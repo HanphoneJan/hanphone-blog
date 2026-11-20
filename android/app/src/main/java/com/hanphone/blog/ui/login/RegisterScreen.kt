@@ -55,9 +55,9 @@ import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
 import com.hanphone.blog.core.applyLogin
 import com.hanphone.blog.data.repo.BlogRepository
-import com.hanphone.blog.util.md5Hex
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.hanphone.blog.util.passwordError
 
 private val PASSWORD_PATTERN = Regex("^(?=.*[A-Za-z])(?=.*\\d).+$")
 
@@ -105,12 +105,11 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
         if (username.isBlank() || email.isBlank() || password.isBlank() || captcha.isBlank()) {
             toast("请填写完整信息"); return
         }
-        if (password.length < 6) { toast("密码长度不能少于 6 位"); return }
-        if (!PASSWORD_PATTERN.matches(password)) { toast("密码必须包含字母和数字"); return }
+        passwordError(password)?.let { toast(it); return }
         scope.launch {
             sending = true
             try {
-                val res = repo.register(username.trim(), nickname.trim().ifEmpty { username.trim() }, email.trim(), md5Hex(password), "", captcha.trim())
+                val res = repo.register(username.trim(), nickname.trim().ifEmpty { username.trim() }, email.trim(), password, "", captcha.trim())
                 val d = res.data
                 if (res.flag && d != null && d.token != null && d.user != null) {
                     context.applyLogin(d)

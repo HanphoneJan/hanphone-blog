@@ -16,6 +16,7 @@ import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.hanphone.blog.data.cache.CachedList
 
 /**
  * 首页状态。ViewModel 持有状态：
@@ -66,17 +67,20 @@ class HomeViewModel @Inject constructor(
     var archiveError by mutableStateOf<String?>(null)
         private set
 
+    private val listCache = CachedList(
+        memory = { MemoryCache.homeBlogs },
+        writeMemory = { MemoryCache.homeBlogs = it },
+        readDisk = { ContentStore.readHomeBlogs() },
+        writeDisk = { ContentStore.writeHomeBlogs(it) }
+    )
+
     /** 请求代数：每次新筛选/刷新/加载更多使旧的过期响应作废，防快速切换被旧结果覆盖 */
     private var loadGeneration = 0
 
     init {
         // 冷启动：先读磁盘缓存，再走网络
         viewModelScope.launch {
-            val cached = ContentStore.readHomeBlogs()
-            if (cached != null && items.isEmpty()) {
-                items = cached
-                isLoading = false
-            }
+            listCache.seed()?.let { if (items.isEmpty()) { items = it; isLoading = false } }
         }
         // 冷启动：筛选元数据（分类/标签）+ 归档（筛选面板/归档视图秒显）
         viewModelScope.launch {
@@ -174,10 +178,9 @@ class HomeViewModel @Inject constructor(
                 error = null
                 // 仅缓存未筛选的默认列表，返回 / 切 Tab 时秒显
                 if (reset && selectedTypeId == null && selectedTagId == null) {
-                    MemoryCache.homeBlogs = d.content
+                    listCache.store(d.content)
                     MemoryCache.homePage = d.number + 1
                     MemoryCache.homeTotalPages = d.totalPages
-                    ContentStore.writeHomeBlogs(d.content)
                 }
             } else error = res.message.ifBlank { "加载失败" }
         } catch (e: Exception) {
