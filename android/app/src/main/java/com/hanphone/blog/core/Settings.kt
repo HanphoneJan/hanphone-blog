@@ -1,6 +1,7 @@
 package com.hanphone.blog.core
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -13,6 +14,7 @@ private val Context.dataStore by preferencesDataStore(name = "blog_settings")
 private val KEY_THEME = stringPreferencesKey("theme_mode")   // system / light / dark
 private val KEY_NICKNAME = stringPreferencesKey("nickname")   // 匿名评论昵称
 private val KEY_EMAIL = stringPreferencesKey("email")         // 匿名评论邮箱
+private val KEY_AUTO_CHECK_UPDATE = booleanPreferencesKey("auto_check_update") // 启动时检查更新
 
 /**
  * 本地设置：主题模式 + 访客身份（匿名评论/留言用）。
@@ -25,6 +27,14 @@ val Context.guestNickname: Flow<String> get() = dataStore.data.map { it[KEY_NICK
 val Context.guestEmail: Flow<String> get() = dataStore.data.map { it[KEY_EMAIL] ?: "" }
 
 suspend fun Context.setThemeMode(mode: String) = dataStore.edit { it[KEY_THEME] = mode }
+
+// ===== 启动时检查更新（默认开启；关闭后仍可在设置页手动检查）=====
+
+val Context.autoCheckUpdate: Flow<Boolean> get() = dataStore.data.map { it[KEY_AUTO_CHECK_UPDATE] ?: true }
+
+suspend fun Context.setAutoCheckUpdate(enabled: Boolean) = dataStore.edit {
+    it[KEY_AUTO_CHECK_UPDATE] = enabled
+}
 
 suspend fun Context.saveGuest(nickname: String, email: String) = dataStore.edit {
     it[KEY_NICKNAME] = nickname

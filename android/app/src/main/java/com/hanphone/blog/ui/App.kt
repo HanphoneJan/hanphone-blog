@@ -71,6 +71,8 @@ import com.hanphone.blog.data.auth.OAuthLogin
 import com.hanphone.blog.data.chat.ChatSocket
 import com.hanphone.blog.data.push.PushRegistrar
 import com.hanphone.blog.data.repo.BlogRepository
+import com.hanphone.blog.data.update.AppUpdateManager
+import com.hanphone.blog.ui.components.UpdateDialogs
 import com.hanphone.blog.ui.essay.EssayDetailScreen
 import com.hanphone.blog.ui.essay.EssayListScreen
 import com.hanphone.blog.ui.home.HomeScreen
@@ -191,6 +193,11 @@ fun BlogAppRoot() {
         PushRegistrar.sync(context)
     }
 
+    // 启动检查更新：设置里可关（默认开）；每进程一次，失败静默，有新版本由 UpdateDialogs 弹窗提示
+    LaunchedEffect(Unit) {
+        AppUpdateManager.checkOnStartup(context)
+    }
+
     // 管理员：启动即预取收件箱未读数，底部「消息」红点在冷启动时也能正确显示
     LaunchedEffect(token) {
         val t = token
@@ -212,6 +219,8 @@ fun BlogAppRoot() {
             Box(Modifier.fillMaxSize()) {
                 AppBackground(bgPath = bgPath, blurRadius = bgBlur, modifier = Modifier.fillMaxSize())
                 MainScaffold()
+                // 更新弹窗挂在根界面：启动检查与设置页手动检查共用，切页/旋转不丢
+                UpdateDialogs()
             }
         }
     }
