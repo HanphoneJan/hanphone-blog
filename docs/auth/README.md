@@ -112,6 +112,12 @@ Google 的两个额外约束：
   并核对 `aud == GOOGLE_CLIENT_ID`。旧实现只 `JWT.decode`（不验签、不校验受众），
   任何人拼一个 payload 就能以任意 `sub`/`email` 登录，且会被「邮箱合并」逻辑绑到已有账号——
   等于公开的账号接管入口，务必保留现在的校验。
+- **头像不能直接存 Google / GitHub 的 CDN 地址**：`lh3.googleusercontent.com`、
+  `avatars.githubusercontent.com` 国内直连超时（curl 000），客户端只会显示占位图。
+  `ExternalAvatarService` 在登录时把这类头像下载（走同一套代理）再经 `x-internal-key`
+  转存到文件服务（`blog/user/avatars`），库里只存 `hanphone.top` 地址；
+  转存失败时保留旧头像/默认头像，不再写入打不开的外链。已有本站头像的用户直接跳过，不重复上传。
+  依赖 admin-file 的 `INTERNAL_API_KEY`。
 
 ## 4. 安全规则
 

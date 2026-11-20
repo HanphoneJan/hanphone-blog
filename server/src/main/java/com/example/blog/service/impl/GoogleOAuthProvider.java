@@ -29,6 +29,7 @@ public class GoogleOAuthProvider implements OAuthProvider {
     private final UserService userService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final ExternalAvatarService externalAvatarService;
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleOAuthProvider.class);
 
@@ -45,12 +46,14 @@ public class GoogleOAuthProvider implements OAuthProvider {
                                UserService userService,
                                RestTemplateBuilder restTemplateBuilder,
                                ObjectMapper objectMapper,
+                               ExternalAvatarService externalAvatarService,
                                @Value("${GOOGLE_OAUTH_PROXY_HOST:}") String proxyHost,
                                @Value("${GOOGLE_OAUTH_PROXY_PORT:0}") int proxyPort,
                                @Value("${HOT_PROXY:}") String fallbackProxy) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.objectMapper = objectMapper;
+        this.externalAvatarService = externalAvatarService;
 
         // 注意：代理参数必须由构造器注入。写成 @Value 字段在构造器里读，
         // 字段此时还没注入（恒为 null/0），代理永远不生效——这里踩过。
@@ -193,7 +196,8 @@ public class GoogleOAuthProvider implements OAuthProvider {
         if (user != null) {
             user.setLastLoginTime(new Date());
             user.setUpdateTime(new Date());
-            if (avatarUrl != null) user.setAvatar(avatarUrl);
+            String avatar = resolveAvatar(user, avatarUrl);
+            if (avatar != null) user.setAvatar(avatar);
             userService.save(user);
         } else if (email != null && !email.isEmpty()) {
             user = userRepository.findByEmail(email);
@@ -202,16 +206,38 @@ public class GoogleOAuthProvider implements OAuthProvider {
                 user.setOauthProvider("google");
                 user.setLastLoginTime(new Date());
                 user.setUpdateTime(new Date());
-                if (avatarUrl != null) user.setAvatar(avatarUrl);
+                String avatar = resolveAvatar(user, avatarUrl);
+                if (avatar != null) user.setAvatar(avatar);
                 userService.save(user);
                 logger.info("Auto-bound Google ID {} to existing user {} by email match", providerId, user.getId());
             } else {
-                user = createNewUser(providerId, nickname, avatarUrl, email);
+                user = createNewUser(providerId, nickname, resolveAvatar(null, avatarUrl), email);
             }
         } else {
-            user = createNewUser(providerId, nickname, avatarUrl, null);
+            user = createNewUser(providerId, nickname, resolveAvatar(null, avatarUrl), null);
         }
         return user;
+    }
+
+    /**
+     * 头像落库策略：Google 的 lh3.googleusercontent.com 国内直连不通，原样入库会让客户端
+     * 一直显示占位图。可直连的 URL 原样使用；外链头像转存到本站文件服务；
+     * 转存失败则保留旧头像（新用户为 null → 默认头像），绝不写入打不开的外链。
+     * 已有本站头像时跳过转存，避免每次登录都重复下载/上传。
+     */
+    private String resolveAvatar(User existing, String incoming) {
+        if (incoming == null || incoming.isBlank()) {
+            return existing == null ? null : existing.getAvatar();
+        }
+        if (!externalAvatarService.needsMirror(incoming)) {
+            return incoming;
+        }
+        String current = existing == null ? null : existing.getAvatar();
+        if (current != null && !current.isBlank() && !externalAvatarService.needsMirror(current)) {
+            return current;
+        }
+        String mirrored = externalAvatarService.mirror(incoming);
+        return mirrored != null ? mirrored : current;
     }
 
     private User createNewUser(String providerId, String nickname, String avatarUrl, String email) {

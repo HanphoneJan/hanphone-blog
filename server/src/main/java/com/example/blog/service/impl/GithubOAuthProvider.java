@@ -26,6 +26,7 @@ public class GithubOAuthProvider implements OAuthProvider {
     private final UserService userService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final ExternalAvatarService externalAvatarService;
 
     private static final Logger logger = LoggerFactory.getLogger(GithubOAuthProvider.class);
 
@@ -41,9 +42,11 @@ public class GithubOAuthProvider implements OAuthProvider {
     public GithubOAuthProvider(UserRepository userRepository,
                                UserService userService,
                                RestTemplateBuilder restTemplateBuilder,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               ExternalAvatarService externalAvatarService) {
         this.userRepository = userRepository;
         this.userService = userService;
+        this.externalAvatarService = externalAvatarService;
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(5))
                 .setReadTimeout(Duration.ofSeconds(10))
@@ -104,7 +107,8 @@ public class GithubOAuthProvider implements OAuthProvider {
         if (user != null) {
             user.setLastLoginTime(new Date());
             user.setUpdateTime(new Date());
-            user.setAvatar(avatarUrl);
+            String avatar = resolveAvatar(user, avatarUrl);
+            if (avatar != null) user.setAvatar(avatar);
             userService.save(user);
         } else if (email != null && !email.isEmpty()) {
             user = userRepository.findByEmail(email);
@@ -113,16 +117,36 @@ public class GithubOAuthProvider implements OAuthProvider {
                 user.setOauthProvider("github");
                 user.setLastLoginTime(new Date());
                 user.setUpdateTime(new Date());
-                user.setAvatar(avatarUrl);
+                String avatar = resolveAvatar(user, avatarUrl);
+                if (avatar != null) user.setAvatar(avatar);
                 userService.save(user);
                 logger.info("Auto-bound GitHub ID {} to existing user {} by email match", providerId, user.getId());
             } else {
-                user = createNewUser(providerId, nickname, avatarUrl, email);
+                user = createNewUser(providerId, nickname, resolveAvatar(null, avatarUrl), email);
             }
         } else {
-            user = createNewUser(providerId, nickname, avatarUrl, null);
+            user = createNewUser(providerId, nickname, resolveAvatar(null, avatarUrl), null);
         }
         return user;
+    }
+
+    /**
+     * 头像落库策略同 Google：avatars.githubusercontent.com 国内常不可直连，
+     * 转存到本站文件服务；失败保留旧头像（新用户为 null → 默认头像）。
+     */
+    private String resolveAvatar(User existing, String incoming) {
+        if (incoming == null || incoming.isBlank()) {
+            return existing == null ? null : existing.getAvatar();
+        }
+        if (!externalAvatarService.needsMirror(incoming)) {
+            return incoming;
+        }
+        String current = existing == null ? null : existing.getAvatar();
+        if (current != null && !current.isBlank() && !externalAvatarService.needsMirror(current)) {
+            return current;
+        }
+        String mirrored = externalAvatarService.mirror(incoming);
+        return mirrored != null ? mirrored : current;
     }
 
     private User createNewUser(String providerId, String nickname, String avatarUrl, String email) {
