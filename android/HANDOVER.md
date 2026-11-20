@@ -461,3 +461,5 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
    - 聊天页**不加**：消息由 socket 实时推送、列表还会自动滚到底，下拉手势与阅读历史冲突；断线有重连入口。
 
 17. **后台列表/表单统一模板（2026-11）**：列表 VM 继承 `AdminListViewModel<T>`（`ui/admin/AdminListViewModel.kt`），只实现 `fetchPage()` 并在 init 末尾 `start()`；分页、下拉刷新、搜索防抖、错误提示由基类统一。页面侧用 `AdminListBody`（简单行）/ `AdminListFrame`（复杂行）收掉「骨架/空态/列表」三态，表单弹窗用 `AdminFormDialog`（标题 + 可滚动字段区 + 保存/取消）。新增后台页面照这个结构写，不要再抄 `items/loading/loadingMore/message` 五件套。
+
+18. **提示与后台写操作统一（2026-11）**：页面轻提示用 `rememberToast()`（`ui/components/Toast.kt`），VM 一次性消息用 `ToastMessage(vm.message, vm::consumeMessage)`，不再每页写 `fun toast(...)` / `LaunchedMessage`。后台写操作统一 `adminOp(fallback) { repo.xxx() }`（`ui/admin/AdminCall.kt`）：成功返回 null、失败返回可直接提示的文案，页面只判 `err == null`，接口 message / HTTP 异常映射都收在一处。

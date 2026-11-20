@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.R
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
 import com.hanphone.blog.core.applyLogin
@@ -83,7 +84,7 @@ fun RegisterScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
         if (countdown > 0) { delay(1000); countdown-- }
     }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     fun sendCaptcha() {
         if (email.isBlank()) { toast("请先填写邮箱"); return }

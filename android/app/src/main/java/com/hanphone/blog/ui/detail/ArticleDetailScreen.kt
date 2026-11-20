@@ -65,6 +65,7 @@ import com.hanphone.blog.ui.MarkdownBlockContent
 import com.hanphone.blog.ui.extractTocHeadings
 import com.hanphone.blog.ui.splitMarkdownBlocks
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.CommentInputBar
 import com.hanphone.blog.ui.components.DetailSkeleton
@@ -118,7 +119,7 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
         context.saveDraft(draftKind, commentDraft)
     }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     fun doComment() {
         val uid = TokenStore.userId.value

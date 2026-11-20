@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hanphone.blog.data.model.Blog
+import com.hanphone.blog.ui.components.ToastMessage
 import com.hanphone.blog.ui.components.SearchField
 import com.hanphone.blog.util.formatDate
 
@@ -51,10 +52,7 @@ fun AdminBlogsScreen(
     val context = LocalContext.current
     var pendingDelete by remember { mutableStateOf<Blog?>(null) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
     LifecycleResumeEffect(Unit) {
         if (AdminEditBus.blogDirty) {
             AdminEditBus.blogDirty = false

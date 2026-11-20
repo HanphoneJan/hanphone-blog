@@ -51,49 +51,34 @@ class AdminFriendLinksViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            runCatching { repo.saveFriendLink(link.decoded()) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        done()
-                        refresh()
-                    } else {
-                        notify(res.message.ifBlank { "保存失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("保存失败") }
+            val err = adminOp("保存失败") { repo.saveFriendLink(link.decoded()) }
+            if (err != null) return@launch notify(err)
+            done()
+            refresh()
         }
     }
 
     fun togglePublished(link: FriendLink) {
         viewModelScope.launch {
-            runCatching { repo.toggleFriendLinkPublished(link) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.map { if (it.id == link.id) it.copy(published = link.published != true) else it }
-                    else notify(res.message.ifBlank { "操作失败" })
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleFriendLinkPublished(link) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == link.id) it.copy(published = link.published != true) else it }
         }
     }
 
     fun toggleRecommend(link: FriendLink) {
         viewModelScope.launch {
-            runCatching { repo.toggleFriendLinkRecommend(link) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.map { if (it.id == link.id) it.copy(recommend = !link.recommend) else it }
-                    else notify(res.message.ifBlank { "操作失败" })
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleFriendLinkRecommend(link) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == link.id) it.copy(recommend = !link.recommend) else it }
         }
     }
 
     fun delete(link: FriendLink) {
         viewModelScope.launch {
-            runCatching { repo.deleteFriendLink(link.id) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.filterNot { it.id == link.id }
-                    else notify(res.message.ifBlank { "删除失败" })
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteFriendLink(link.id) }
+            if (err != null) return@launch notify(err)
+            items = items.filterNot { it.id == link.id }
         }
     }
 }
@@ -115,49 +100,34 @@ class AdminProjectsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            runCatching { repo.saveProject(project) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        done()
-                        refresh()
-                    } else {
-                        notify(res.message.ifBlank { "保存失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("保存失败") }
+            val err = adminOp("保存失败") { repo.saveProject(project) }
+            if (err != null) return@launch notify(err)
+            done()
+            refresh()
         }
     }
 
     fun togglePublished(project: Project) {
         viewModelScope.launch {
-            runCatching { repo.toggleProjectPublished(project) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.map { if (it.id == project.id) it.copy(published = project.published != true) else it }
-                    else notify(res.message.ifBlank { "操作失败" })
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleProjectPublished(project) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == project.id) it.copy(published = project.published != true) else it }
         }
     }
 
     fun toggleRecommend(project: Project) {
         viewModelScope.launch {
-            runCatching { repo.toggleProjectRecommend(project) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.map { if (it.id == project.id) it.copy(recommend = !project.recommend) else it }
-                    else notify(res.message.ifBlank { "操作失败" })
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleProjectRecommend(project) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == project.id) it.copy(recommend = !project.recommend) else it }
         }
     }
 
     fun delete(project: Project) {
         viewModelScope.launch {
-            runCatching { repo.deleteProject(project.id) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.filterNot { it.id == project.id }
-                    else notify(res.message.ifBlank { "删除失败" })
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteProject(project.id) }
+            if (err != null) return@launch notify(err)
+            items = items.filterNot { it.id == project.id }
         }
     }
 }
@@ -175,49 +145,34 @@ class AdminDocsViewModel @Inject constructor(
 
     fun save(doc: Map<String, Any?>, done: () -> Unit) {
         viewModelScope.launch {
-            runCatching { repo.saveDoc(doc) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        done()
-                        refresh()
-                    } else {
-                        notify(res.message.ifBlank { "保存失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("保存失败") }
+            val err = adminOp("保存失败") { repo.saveDoc(doc) }
+            if (err != null) return@launch notify(err)
+            done()
+            refresh()
         }
     }
 
     fun togglePublished(doc: Doc) {
         viewModelScope.launch {
-            runCatching { repo.toggleDocPublished(doc) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.map { if (it.id == doc.id) it.copy(published = doc.published != true) else it }
-                    else notify(res.message.ifBlank { "操作失败" })
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleDocPublished(doc) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == doc.id) it.copy(published = doc.published != true) else it }
         }
     }
 
     fun toggleRecommend(doc: Doc) {
         viewModelScope.launch {
-            runCatching { repo.toggleDocRecommend(doc) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.map { if (it.id == doc.id) it.copy(recommend = !doc.recommend) else it }
-                    else notify(res.message.ifBlank { "操作失败" })
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleDocRecommend(doc) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == doc.id) it.copy(recommend = !doc.recommend) else it }
         }
     }
 
     fun delete(doc: Doc) {
         viewModelScope.launch {
-            runCatching { repo.deleteDoc(doc.id) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.filterNot { it.id == doc.id }
-                    else notify(res.message.ifBlank { "删除失败" })
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteDoc(doc.id) }
+            if (err != null) return@launch notify(err)
+            items = items.filterNot { it.id == doc.id }
         }
     }
 
@@ -277,7 +232,7 @@ class AdminUsersViewModel @Inject constructor(
         if (busy) return
         viewModelScope.launch {
             busy = true
-            runCatching {
+            val err = adminOp("保存失败") {
                 repo.saveUser(
                     mapOf(
                         "id" to user.id,
@@ -286,23 +241,18 @@ class AdminUsersViewModel @Inject constructor(
                         "avatar" to avatar.trim()
                     )
                 )
-            }.onSuccess { res ->
-                if (res.flag) {
-                    items = items.map {
-                        if (it.id == user.id) {
-                            it.copy(
-                                nickname = nickname.trim(),
-                                email = email.trim(),
-                                avatar = avatar.trim()
-                            )
-                        } else it
-                    }
-                    notify("已保存")
-                    done()
-                } else {
-                    notify(res.message.ifBlank { "保存失败" })
+            }
+            if (err == null) {
+                items = items.map {
+                    if (it.id == user.id) {
+                        it.copy(nickname = nickname.trim(), email = email.trim(), avatar = avatar.trim())
+                    } else it
                 }
-            }.onFailure { message = it.adminMessage("保存失败") }
+                notify("已保存")
+                done()
+            } else {
+                notify(err)
+            }
             busy = false
         }
     }
@@ -313,16 +263,13 @@ class AdminUsersViewModel @Inject constructor(
         viewModelScope.launch {
             busy = true
             val type = if (admin) "1" else "0"
-            runCatching { repo.saveUser(mapOf("id" to user.id, "type" to type)) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.map { if (it.id == user.id) it.copy(type = type) else it }
-                        notify(if (admin) "已设为管理员" else "已取消管理员")
-                    } else {
-                        notify(res.message.ifBlank { "操作失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.saveUser(mapOf("id" to user.id, "type" to type)) }
+            if (err == null) {
+                items = items.map { if (it.id == user.id) it.copy(type = type) else it }
+                notify(if (admin) "已设为管理员" else "已取消管理员")
+            } else {
+                notify(err)
+            }
             busy = false
         }
     }
@@ -332,16 +279,13 @@ class AdminUsersViewModel @Inject constructor(
         if (busy) return
         viewModelScope.launch {
             busy = true
-            runCatching { repo.resetUserPassword(user.id, md5Hex(newPassword)) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        notify("密码已重置")
-                        done()
-                    } else {
-                        notify(res.message.ifBlank { "重置失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("重置失败") }
+            val err = adminOp("重置失败") { repo.resetUserPassword(user.id, md5Hex(newPassword)) }
+            if (err == null) {
+                notify("密码已重置")
+                done()
+            } else {
+                notify(err)
+            }
             busy = false
         }
     }
@@ -350,16 +294,13 @@ class AdminUsersViewModel @Inject constructor(
         if (busy || isProtected(user)) return
         viewModelScope.launch {
             busy = true
-            runCatching { repo.deleteUser(user.id) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.filterNot { it.id == user.id }
-                        notify("已删除用户")
-                    } else {
-                        notify(res.message.ifBlank { "删除失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteUser(user.id) }
+            if (err == null) {
+                items = items.filterNot { it.id == user.id }
+                notify("已删除用户")
+            } else {
+                notify(err)
+            }
             busy = false
         }
     }

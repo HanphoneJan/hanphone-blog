@@ -112,6 +112,7 @@ import com.hanphone.blog.ui.settings.SettingsScreen
 import com.hanphone.blog.ui.webview.WebViewScreen
 import com.hanphone.blog.ui.theme.BlogTheme
 import kotlinx.coroutines.flow.first
+import com.hanphone.blog.ui.components.rememberToast
 
 enum class MainTab(val route: String, val label: String, val icon: ImageVector) {
     HOME("home", "首页", Icons.Filled.Home),
@@ -230,6 +231,7 @@ fun BlogAppRoot() {
 private fun MainScaffold() {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val toast = rememberToast()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = MainTab.entries.any { it.route == currentRoute }
@@ -242,12 +244,12 @@ private fun MainScaffold() {
     LaunchedEffect(oauthResult) {
         when (val r = oauthResult) {
             is OAuthLogin.Outcome.Success -> {
-                Toast.makeText(context, "${OAuthLogin.label(r.provider)} 登录成功", Toast.LENGTH_SHORT).show()
+                toast("${OAuthLogin.label(r.provider)} 登录成功")
                 if (currentRoute == "login" || currentRoute == "register") navController.popBackStack()
                 OAuthLogin.clearResult()
             }
             is OAuthLogin.Outcome.Failure -> {
-                Toast.makeText(context, r.message, Toast.LENGTH_SHORT).show()
+                toast(r.message)
                 OAuthLogin.clearResult()
             }
             null -> Unit

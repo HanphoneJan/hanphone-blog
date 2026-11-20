@@ -31,6 +31,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.Project
+import com.hanphone.blog.ui.components.ToastMessage
 import com.hanphone.blog.ui.components.Avatar
 
 /** 友链审核/维护 */
@@ -44,10 +45,7 @@ fun AdminFriendLinksScreen(
     var creating by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<FriendLink?>(null) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
         title = "友链管理",
@@ -222,10 +220,7 @@ fun AdminProjectsScreen(
     var creating by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Project?>(null) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
         title = "项目管理",

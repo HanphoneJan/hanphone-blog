@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.OutlinedButton
 import com.hanphone.blog.R
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
 import com.hanphone.blog.core.applyLogin
@@ -74,7 +75,7 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
     var password by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     fun doLogin() {
         if (username.isBlank() || password.isBlank()) {

@@ -33,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hanphone.blog.data.model.AdminCollectRun
 import com.hanphone.blog.data.model.AdminRebuildSummary
 import com.hanphone.blog.data.model.HotSourceStatus
+import com.hanphone.blog.ui.components.ToastMessage
 import com.hanphone.blog.ui.components.SearchField
 import com.hanphone.blog.util.formatDateTime
 
@@ -50,10 +51,7 @@ fun AdminInsightScreen(
     val context = LocalContext.current
     var confirmRebuild by remember { mutableStateOf(false) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
         title = "聚合数据",

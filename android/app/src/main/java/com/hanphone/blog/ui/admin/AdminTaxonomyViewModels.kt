@@ -5,7 +5,6 @@ import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.TagBlogCount
 import com.hanphone.blog.data.model.Type
 import com.hanphone.blog.data.repo.AdminRepository
-import com.hanphone.blog.util.adminMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,31 +26,19 @@ class AdminTagsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            runCatching { repo.saveTag(id, name.trim()) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        done()
-                        refresh()
-                    } else {
-                        notify(res.message.ifBlank { "保存失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("保存失败") }
+            val err = adminOp("保存失败") { repo.saveTag(id, name.trim()) }
+            if (err != null) return@launch notify(err)
+            done()
+            refresh()
         }
     }
 
     fun delete(tag: TagBlogCount) {
         viewModelScope.launch {
-            runCatching { repo.deleteTag(tag.id) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.filterNot { it.id == tag.id }
-                        notify("已删除")
-                    } else {
-                        notify(res.message.ifBlank { "删除失败（可能仍有关联文章）" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("删除失败（可能仍有关联文章）") }
+            val err = adminOp("删除失败（可能仍有关联文章）") { repo.deleteTag(tag.id) }
+            if (err != null) return@launch notify(err)
+            items = items.filterNot { it.id == tag.id }
+            notify("已删除")
         }
     }
 }
@@ -73,31 +60,19 @@ class AdminTypesViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            runCatching { repo.saveType(id, name.trim(), picUrl?.takeIf { it.isNotBlank() }) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        done()
-                        refresh()
-                    } else {
-                        notify(res.message.ifBlank { "保存失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("保存失败") }
+            val err = adminOp("保存失败") { repo.saveType(id, name.trim(), picUrl?.takeIf { it.isNotBlank() }) }
+            if (err != null) return@launch notify(err)
+            done()
+            refresh()
         }
     }
 
     fun delete(type: Type, syncDeleteImage: Boolean = true) {
         viewModelScope.launch {
-            runCatching { repo.deleteType(type.id, syncDeleteImage) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.filterNot { it.id == type.id }
-                        notify("已删除")
-                    } else {
-                        notify(res.message.ifBlank { "删除失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteType(type.id, syncDeleteImage) }
+            if (err != null) return@launch notify(err)
+            items = items.filterNot { it.id == type.id }
+            notify("已删除")
         }
     }
 }

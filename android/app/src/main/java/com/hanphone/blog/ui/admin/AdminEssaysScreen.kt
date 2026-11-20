@@ -53,6 +53,7 @@ import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayFileUrl
 import com.hanphone.blog.util.formatDate
 import android.widget.Toast
+import com.hanphone.blog.ui.components.ToastMessage
 
 /** 随笔管理列表：含未发布、发布/推荐切换、删除、进入编辑 */
 @Composable
@@ -65,10 +66,7 @@ fun AdminEssaysScreen(
     val context = LocalContext.current
     var pendingDelete by remember { mutableStateOf<Essay?>(null) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
     // 从编辑页返回时列表 VM 不会被重建，靠脏标记触发刷新
     LifecycleResumeEffect(Unit) {
         if (AdminEditBus.essayDirty) {
@@ -215,10 +213,7 @@ fun AdminEssayEditScreen(
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris -> if (uris.isNotEmpty()) vm.addAttachments(uris) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
     LaunchedEffect(vm.saved) {
         if (vm.saved) onSaved()
     }

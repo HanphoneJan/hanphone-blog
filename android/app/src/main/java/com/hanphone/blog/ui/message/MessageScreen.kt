@@ -39,6 +39,7 @@ import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Message
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.Avatar
@@ -74,7 +75,7 @@ fun MessageScreen(onBack: () -> Unit) {
         context.saveDraft(draftKind, content)
     }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     fun sendMessage() {
         if (sending) return

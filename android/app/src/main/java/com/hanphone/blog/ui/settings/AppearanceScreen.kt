@@ -42,6 +42,7 @@ import com.hanphone.blog.core.setBackgroundBlur
 import com.hanphone.blog.core.setBackgroundPath
 import com.hanphone.blog.core.setThemeMode
 import com.hanphone.blog.core.themeMode
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.AppBackBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -64,7 +65,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
     var blurNow by remember { mutableIntStateOf(10) }
     LaunchedEffect(bgBlur) { blurNow = bgBlur }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     suspend fun copyToFile(uri: Uri): File? = withContext(Dispatchers.IO) {
         try {

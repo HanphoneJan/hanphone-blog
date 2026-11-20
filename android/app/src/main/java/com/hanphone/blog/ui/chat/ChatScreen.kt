@@ -75,6 +75,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.flow.drop
+import com.hanphone.blog.ui.components.rememberToast
 
 /**
  * 消息页（Hub）：公告 + 【聊天室 | 私信】双 Tab，对应 hanphone-chat 移动端。
@@ -83,6 +84,7 @@ import kotlinx.coroutines.flow.drop
 @Composable
 fun ChatScreen(onLogin: () -> Unit) {
     val context = LocalContext.current
+    val toast = rememberToast()
     val token by TokenStore.token.collectAsState()
     val userType by TokenStore.userType.collectAsState()
     val state by ChatSocket.state.collectAsState()
@@ -100,7 +102,7 @@ fun ChatScreen(onLogin: () -> Unit) {
     // socket 提示（服务端 notification 事件）；drop(1) 避免每次进入消息页重弹上次的通知
     LaunchedEffect(Unit) {
         ChatSocket.notice.drop(1).collect { n ->
-            if (n != null) Toast.makeText(context, n, Toast.LENGTH_SHORT).show()
+            if (n != null) toast(n)
         }
     }
 

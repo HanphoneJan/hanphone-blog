@@ -68,6 +68,7 @@ import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.User
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
@@ -105,7 +106,7 @@ fun ProfileScreen(
     // 登录态变化时拉取完整资料（头像/昵称/用户名）
     LaunchedEffect(userId) { vm.loadProfile(userId) }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     // 展示优先级：网络资料 > 本地登录态缓存
     val displayName = vm.profile?.nickname?.takeIf { it.isNotBlank() } ?: (userName ?: "云林访客")
@@ -343,7 +344,7 @@ private fun ProfileEditDialog(
     val emailChanged = email.isNotBlank() && email.trim() != currentEmail
     val needCaptcha = emailChanged && !isAdmin
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     fun requestCaptcha() {
         if (!Regex("""^[^@\s]+@[^@\s]+\.[^@\s]+$""").matches(email.trim())) {

@@ -3,7 +3,6 @@ package com.hanphone.blog.ui.admin
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.data.repo.AdminRepository
-import com.hanphone.blog.util.adminMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,12 +31,9 @@ class AdminCommentsViewModel @Inject constructor(
 
     fun delete(comment: Comment) {
         viewModelScope.launch {
-            runCatching { repo.deleteComment(comment.id) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.filterNot { it.id == comment.id }
-                    else notify(res.message.ifBlank { "删除失败" })
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteComment(comment.id) }
+            if (err != null) return@launch notify(err)
+            items = items.filterNot { it.id == comment.id }
         }
     }
 }

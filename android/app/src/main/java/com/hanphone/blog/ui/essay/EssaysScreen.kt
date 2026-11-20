@@ -66,6 +66,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.core.draftFlow
@@ -120,7 +121,7 @@ fun EssayListScreen(onOpenEssay: (Long) -> Unit, onLogin: () -> Unit) {
     var compose by remember { mutableStateOf<EssayCompose?>(null) }
     var sending by remember { mutableStateOf(false) }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -273,7 +274,7 @@ private fun MomentsRow(
     val vm: EssayListViewModel = hiltViewModel()
     val context = LocalContext.current
 
-    fun toast(m: String) = Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     var liked by remember { mutableStateOf(essay.liked) }
     var expanded by remember { mutableStateOf(false) }
@@ -478,7 +479,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
     var showCommentDialog by remember { mutableStateOf(false) }
     var replyTarget by remember { mutableStateOf<EssayComment?>(null) }
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     fun share() {
         val url = "https://hanphone.cn/essays/$essayId"
@@ -629,6 +630,7 @@ private fun EssayCommentDialog(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val toast = rememberToast()
     val submitVm: EssayListViewModel = hiltViewModel()
     // 草稿持久化（按随笔 id 分键，进入弹窗恢复、发送后清除）
     val draftKey = remember(essayId) { "essay_detail_comment_$essayId" }
@@ -667,7 +669,7 @@ private fun EssayCommentDialog(
                             onPosted(c)
                             onDismiss()
                         } else {
-                            Toast.makeText(context, "评论失败", Toast.LENGTH_SHORT).show()
+                            toast("评论失败")
                         }
                     }
                 }

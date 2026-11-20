@@ -39,6 +39,7 @@ import com.hanphone.blog.ui.MarkdownContent
 @Composable
 fun UpdateDialogs() {
     val context = LocalContext.current
+    val toast = rememberToast()
     val offer by AppUpdateManager.offer.collectAsState()
     val state by AppUpdateManager.state.collectAsState()
 
@@ -55,7 +56,7 @@ fun UpdateDialogs() {
         val ready = AppUpdateManager.state.value as? AppUpdateManager.State.Ready
         if (ready != null && AppUpdateManager.canInstall(context)) {
             runCatching { AppUpdateManager.install(context, ready.file) }
-                .onFailure { Toast.makeText(context, "无法启动安装器", Toast.LENGTH_SHORT).show() }
+                .onFailure { toast("无法启动安装器") }
             AppUpdateManager.reset()
         }
     }
@@ -65,7 +66,7 @@ fun UpdateDialogs() {
         val ready = state as? AppUpdateManager.State.Ready ?: return@LaunchedEffect
         if (AppUpdateManager.canInstall(context)) {
             runCatching { AppUpdateManager.install(context, ready.file) }
-                .onFailure { Toast.makeText(context, "无法启动安装器", Toast.LENGTH_SHORT).show() }
+                .onFailure { toast("无法启动安装器") }
             AppUpdateManager.reset()
         }
     }

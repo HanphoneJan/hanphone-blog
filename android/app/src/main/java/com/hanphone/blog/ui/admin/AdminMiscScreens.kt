@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.User
+import com.hanphone.blog.ui.components.rememberToast
+import com.hanphone.blog.ui.components.ToastMessage
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SearchField
 import kotlinx.coroutines.launch
@@ -57,10 +59,7 @@ fun AdminDocsScreen(
     var creating by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Doc?>(null) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
         title = "文库管理",
@@ -158,6 +157,7 @@ private fun DocDialog(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val toast = rememberToast()
     var title by remember { mutableStateOf(initial?.title.orEmpty()) }
     var description by remember { mutableStateOf(initial?.description.orEmpty()) }
     var namespace by remember { mutableStateOf(initial?.docNamespace?.ifBlank { "blog/docs" } ?: "blog/docs") }
@@ -197,7 +197,7 @@ private fun DocDialog(
         saving = uploading,
         onSave = {
             if (filename.isBlank()) {
-                Toast.makeText(context, "请先上传文件", Toast.LENGTH_SHORT).show()
+                toast("请先上传文件")
             } else {
                 val docId = initial?.docId?.takeIf { it.isNotBlank() }
                     ?: "doc-${System.currentTimeMillis()}-${UUID.randomUUID().toString().take(6)}"
@@ -252,10 +252,7 @@ fun AdminUsersScreen(
     var resetting by remember { mutableStateOf<User?>(null) }
     var pendingDelete by remember { mutableStateOf<User?>(null) }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
         title = "用户管理",
@@ -384,7 +381,7 @@ private fun UserEditDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     var nickname by remember { mutableStateOf(user.nickname.orEmpty()) }
     var email by remember { mutableStateOf(user.email.orEmpty()) }
@@ -480,7 +477,7 @@ private fun UserPasswordDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }

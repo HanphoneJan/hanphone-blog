@@ -44,6 +44,7 @@ import com.hanphone.blog.R
 import com.hanphone.blog.core.autoCheckUpdate
 import com.hanphone.blog.core.setAutoCheckUpdate
 import com.hanphone.blog.data.update.AppUpdateManager
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.SectionTitle
 import kotlinx.coroutines.launch
@@ -66,7 +67,7 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
 
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val toast = rememberToast()
 
     // ===== 检查更新（GitHub Release）=====
     var checking by remember { mutableStateOf(false) }

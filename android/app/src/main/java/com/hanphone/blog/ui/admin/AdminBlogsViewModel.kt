@@ -2,7 +2,6 @@ package com.hanphone.blog.ui.admin
 
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.repo.AdminRepository
-import com.hanphone.blog.util.adminMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
@@ -28,42 +27,27 @@ class AdminBlogsViewModel @Inject constructor(
 
     fun togglePublished(blog: Blog) {
         viewModelScope.launch {
-            runCatching { repo.toggleBlogPublished(blog) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.map { if (it.id == blog.id) it.copy(published = !blog.published) else it }
-                        notify(if (blog.published) "已取消发布（网页详情页需重新构建才会下线）" else "已发布（网页详情页需重新构建才会生效）")
-                    } else {
-                        notify(res.message.ifBlank { "操作失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleBlogPublished(blog) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == blog.id) it.copy(published = !blog.published) else it }
+            notify(if (blog.published) "已取消发布（网页详情页需重新构建才会下线）" else "已发布（网页详情页需重新构建才会生效）")
         }
     }
 
     fun toggleRecommend(blog: Blog) {
         viewModelScope.launch {
-            runCatching { repo.toggleBlogRecommend(blog) }
-                .onSuccess { res ->
-                    if (res.flag) items = items.map { if (it.id == blog.id) it.copy(recommend = !blog.recommend) else it }
-                    else notify(res.message.ifBlank { "操作失败" })
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.toggleBlogRecommend(blog) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == blog.id) it.copy(recommend = !blog.recommend) else it }
         }
     }
 
     fun delete(blog: Blog) {
         viewModelScope.launch {
-            runCatching { repo.deleteBlog(blog.id) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.filterNot { it.id == blog.id }
-                        notify("已删除")
-                    } else {
-                        notify(res.message.ifBlank { "删除失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteBlog(blog.id) }
+            if (err != null) return@launch notify(err)
+            items = items.filterNot { it.id == blog.id }
+            notify("已删除")
         }
     }
 }

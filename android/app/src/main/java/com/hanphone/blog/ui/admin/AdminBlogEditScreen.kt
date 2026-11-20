@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import com.hanphone.blog.util.resolveImageUrl
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
+import com.hanphone.blog.ui.components.ToastMessage
 
 private enum class BodyMode { RICH, SOURCE }
 
@@ -84,10 +85,7 @@ fun AdminBlogEditScreen(
         }
     }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
     LaunchedEffect(vm.saved) {
         if (vm.saved) onSaved()
     }

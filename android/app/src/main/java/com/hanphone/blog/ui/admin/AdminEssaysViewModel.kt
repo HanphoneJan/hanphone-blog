@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.repo.AdminRepository
-import com.hanphone.blog.util.adminMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -38,50 +37,31 @@ class AdminEssaysViewModel @Inject constructor(
 
     fun togglePublished(essay: Essay) {
         viewModelScope.launch {
-            runCatching { repo.publishEssay(essay.id, essay.published != true) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.map {
-                            if (it.id == essay.id) it.copy(published = essay.published != true) else it
-                        }
-                        notify(if (essay.published == true) "已取消发布" else "已发布")
-                    } else {
-                        notify(res.message.ifBlank { "操作失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.publishEssay(essay.id, essay.published != true) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == essay.id) it.copy(published = essay.published != true) else it }
+            notify(if (essay.published == true) "已取消发布" else "已发布")
         }
     }
 
     fun toggleRecommend(essay: Essay) {
         viewModelScope.launch {
-            runCatching { repo.recommendEssay(essay.id, !essay.recommend) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.map {
-                            if (it.id == essay.id) it.copy(recommend = !essay.recommend) else it
-                        }
-                    } else {
-                        notify(res.message.ifBlank { "操作失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("操作失败") }
+            val err = adminOp("操作失败") { repo.recommendEssay(essay.id, !essay.recommend) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == essay.id) it.copy(recommend = !essay.recommend) else it }
         }
     }
 
     fun delete(essay: Essay) {
         viewModelScope.launch {
             deletingId = essay.id
-            runCatching { repo.deleteEssay(essay.id) }
-                .onSuccess { res ->
-                    if (res.flag) {
-                        items = items.filterNot { it.id == essay.id }
-                        notify("已删除")
-                    } else {
-                        notify(res.message.ifBlank { "删除失败" })
-                    }
-                }
-                .onFailure { message = it.adminMessage("删除失败") }
+            val err = adminOp("删除失败") { repo.deleteEssay(essay.id) }
+            if (err != null) {
+                notify(err)
+            } else {
+                items = items.filterNot { it.id == essay.id }
+                notify("已删除")
+            }
             deletingId = null
         }
     }

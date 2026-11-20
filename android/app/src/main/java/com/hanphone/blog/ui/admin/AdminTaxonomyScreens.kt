@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hanphone.blog.data.model.TagBlogCount
 import com.hanphone.blog.data.model.Type
+import com.hanphone.blog.ui.components.ToastMessage
 
 /** 标签管理：列表（含关联文章数）+ 新增/改名/删除 */
 @Composable
@@ -49,10 +50,7 @@ fun AdminTagsScreen(
     var pendingDelete by remember { mutableStateOf<TagBlogCount?>(null) }
     var name by remember { mutableStateOf("") }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
         title = "标签管理",
@@ -130,10 +128,7 @@ fun AdminTypesScreen(
     var name by remember { mutableStateOf("") }
     var picUrl by remember { mutableStateOf("") }
 
-    LaunchedMessage(vm.message) {
-        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-        vm.consumeMessage()
-    }
+    ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
         title = "分类管理",
