@@ -37,7 +37,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.RecommendStar
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.data.cache.ImageCaches
@@ -110,11 +110,7 @@ fun ProjectsScreen(onBack: () -> Unit, onOpenUrl: (url: String, title: String) -
         }
 
         Box(Modifier.weight(1f)) {
-            PullToRefreshBox(
-                isRefreshing = vm.refreshing,
-                onRefresh = { vm.refresh(fromPull = true) },
-                modifier = Modifier.fillMaxSize()
-            ) {
+            PullRefresh(vm, Modifier.fillMaxSize()) {
                 when {
                     vm.loading && vm.projects.isEmpty() -> ProjectGridSkeleton()
                     vm.error != null && vm.projects.isEmpty() -> ErrorBox(vm.error!!, onRetry = { vm.refresh() })

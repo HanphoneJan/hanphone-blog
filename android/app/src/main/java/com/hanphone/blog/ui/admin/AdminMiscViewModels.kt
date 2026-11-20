@@ -22,6 +22,7 @@ import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.HotSourceStatus
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.User
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -37,7 +38,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminFriendLinksViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var items by mutableStateOf<List<FriendLink>>(emptyList())
         private set
@@ -48,7 +51,7 @@ class AdminFriendLinksViewModel @Inject constructor(
 
     init { refresh() }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {
@@ -122,7 +125,9 @@ class AdminFriendLinksViewModel @Inject constructor(
 @HiltViewModel
 class AdminProjectsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var items by mutableStateOf<List<Project>>(emptyList())
         private set
@@ -133,7 +138,7 @@ class AdminProjectsViewModel @Inject constructor(
 
     init { refresh() }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {
@@ -200,7 +205,9 @@ class AdminProjectsViewModel @Inject constructor(
 @HiltViewModel
 class AdminDocsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var items by mutableStateOf<List<Doc>>(emptyList())
         private set
@@ -211,7 +218,7 @@ class AdminDocsViewModel @Inject constructor(
 
     init { refresh() }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {
@@ -288,7 +295,9 @@ class AdminUsersViewModel @Inject constructor(
     private val repo: AdminRepository,
     @ApplicationContext private val appContext: Context,
     private val fileRepo: FileRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var all by mutableStateOf<List<User>>(emptyList())
         private set
@@ -327,7 +336,7 @@ class AdminUsersViewModel @Inject constructor(
 
     fun search(v: String) { keyword = v }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {
@@ -467,7 +476,9 @@ class AdminUsersViewModel @Inject constructor(
 @HiltViewModel
 class AdminInsightViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var running by mutableStateOf(false)
         private set
@@ -538,6 +549,8 @@ class AdminInsightViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     init { loadAll() }
+
+    override fun refresh() = loadAll()
 
     fun loadAll() {
         viewModelScope.launch {

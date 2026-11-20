@@ -11,6 +11,7 @@ import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -24,7 +25,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repo: BlogRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     var mode by mutableStateOf("latest")                 // latest / archive
         private set
@@ -50,7 +51,9 @@ class HomeViewModel @Inject constructor(
     var isLoading by mutableStateOf(MemoryCache.homeBlogs == null)
         private set
     var isRefreshing by mutableStateOf(false)
-        private set
+
+    override val refreshing: Boolean get() = isRefreshing
+
     var loadingMore by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
@@ -136,6 +139,10 @@ class HomeViewModel @Inject constructor(
     }
 
     fun changeSort(s: String) { sortBy = s }
+
+    override fun refresh() {
+        refresh(fromPull = true)
+    }
 
     fun refresh(fromPull: Boolean = false) {
         viewModelScope.launch {

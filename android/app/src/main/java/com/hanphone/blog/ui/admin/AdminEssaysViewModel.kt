@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.util.adminMessage
 import com.hanphone.blog.data.model.Essay
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -21,7 +22,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminEssaysViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var items by mutableStateOf<List<Essay>>(emptyList())
         private set
@@ -43,7 +46,7 @@ class AdminEssaysViewModel @Inject constructor(
         refresh()
     }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {

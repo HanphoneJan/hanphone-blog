@@ -69,6 +69,7 @@ import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.CommentInputBar
 import com.hanphone.blog.ui.components.DetailSkeleton
 import com.hanphone.blog.ui.components.ErrorBox
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.hideKeyboard
 import com.hanphone.blog.util.formatDate
 import com.hanphone.blog.util.formatDateTime
@@ -188,7 +189,7 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                 val blocks = remember(blog!!.content) { splitMarkdownBlocks(blog!!.content) }
                 val headings = remember(blocks) { extractTocHeadings(blocks) }
 
-                Box(Modifier.weight(1f).fillMaxWidth()) {
+                PullRefresh(vm, Modifier.weight(1f).fillMaxWidth()) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),

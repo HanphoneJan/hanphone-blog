@@ -60,7 +60,8 @@ fun AdminInsightScreen(
         onBack = onBack,
         actions = {
             TextButton(onClick = vm::loadAll, enabled = !vm.loading) { Text("刷新") }
-        }
+        },
+        refreshable = vm,
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
 

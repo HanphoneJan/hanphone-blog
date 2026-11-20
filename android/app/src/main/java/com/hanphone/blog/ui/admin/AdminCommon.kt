@@ -49,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hanphone.blog.ui.components.AppBackBar
+import com.hanphone.blog.ui.components.PullRefresh
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.ui.theme.RecommendGold
 
 /**
@@ -64,6 +66,8 @@ fun AdminScaffold(
     modifier: Modifier = Modifier,
     floating: @Composable (() -> Unit)? = null,
     actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
+    /** 传入实现 [PullRefreshHost] 的 VM 即启用下拉刷新；列表/概览页统一接 vm */
+    refreshable: PullRefreshHost? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Scaffold(
@@ -75,7 +79,22 @@ fun AdminScaffold(
         },
         floatingActionButton = { floating?.invoke() }
     ) { padding ->
-        Column(modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp), content = content)
+        if (refreshable != null) {
+            PullRefresh(
+                host = refreshable,
+                modifier = modifier.fillMaxSize().padding(padding)
+            ) {
+                Column(
+                    Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                    content = content
+                )
+            }
+        } else {
+            Column(
+                modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp),
+                content = content
+            )
+        }
     }
 }
 

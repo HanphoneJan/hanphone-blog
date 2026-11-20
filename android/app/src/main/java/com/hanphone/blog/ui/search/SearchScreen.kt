@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.data.model.SearchResultItem
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
 import com.hanphone.blog.ui.components.RowListSkeleton
@@ -89,7 +90,7 @@ fun SearchScreen(
             )
         }
 
-        Box(Modifier.weight(1f)) {
+        PullRefresh(vm, Modifier.weight(1f).fillMaxWidth()) {
             when {
                 loading -> RowListSkeleton(count = 8, leading = null, contentPadding = 16.dp)
                 error != null -> ErrorBox(error!!, onRetry = { vm.submit() })

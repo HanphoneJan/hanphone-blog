@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -32,6 +33,7 @@ import com.hanphone.blog.ui.MarkdownContent
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.DetailSkeleton
 import com.hanphone.blog.ui.components.ErrorBox
+import com.hanphone.blog.ui.components.PullRefresh
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.URL
@@ -55,13 +57,15 @@ fun DocMarkdownScreen(url: String, title: String, onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
     var attempt by remember { mutableIntStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
+    var pullTick by remember { mutableIntStateOf(0) }
     val cacheKey = remember(url) { docCacheKey(url, "md") }
 
-    LaunchedEffect(url, attempt) {
+    LaunchedEffect(url, attempt, pullTick) {
         loading = true
         error = null
-        // 磁盘缓存秒显（缓存命中不再走网络；失效才重新拉取）
-        val cached = ContentStore.readRawText(cacheKey, maxAgeMs = DOC_TEXT_TTL_MS)
+        // 磁盘缓存秒显（缓存命中不再走网络；下拉刷新时跳过缓存强制重拉）
+        val cached = if (pullTick == 0) ContentStore.readRawText(cacheKey, maxAgeMs = DOC_TEXT_TTL_MS) else null
         if (cached != null) {
             markdown = cached
             loading = false
@@ -78,6 +82,7 @@ fun DocMarkdownScreen(url: String, title: String, onBack: () -> Unit) {
                 if (markdown == null) error = it.message ?: "加载失败"
             }
             loading = false
+            refreshing = false
         }
     }
 
@@ -87,9 +92,13 @@ fun DocMarkdownScreen(url: String, title: String, onBack: () -> Unit) {
             onBack = onBack,
             actions = {}
         )
-        Box(Modifier.weight(1f)) {
+        PullRefresh(
+            refreshing = refreshing,
+            onRefresh = { refreshing = true; pullTick++ },
+            modifier = Modifier.weight(1f).fillMaxWidth()
+        ) {
             when {
-                loading -> DetailSkeleton(Modifier.padding(top = 8.dp))
+                loading && markdown == null -> DetailSkeleton(Modifier.padding(top = 8.dp))
                 error != null -> ErrorBox(error!!, onRetry = { attempt++ })
                 markdown != null -> Column(
                     Modifier.fillMaxSize()

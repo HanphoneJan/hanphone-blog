@@ -57,7 +57,8 @@ fun AdminTagsScreen(
     AdminScaffold(
         title = "标签管理",
         onBack = onBack,
-        actions = { TextButton(onClick = { creating = true; name = "" }) { Text("新增") } }
+        actions = { TextButton(onClick = { creating = true; name = "" }) { Text("新增") } },
+        refreshable = vm,
     ) {
         when {
             vm.loading && vm.items.isEmpty() -> AdminLoading()
@@ -150,7 +151,8 @@ fun AdminTypesScreen(
         onBack = onBack,
         actions = {
             TextButton(onClick = { creating = true; name = ""; picUrl = "" }) { Text("新增") }
-        }
+        },
+        refreshable = vm,
     ) {
         when {
             vm.loading && vm.items.isEmpty() -> AdminLoading()

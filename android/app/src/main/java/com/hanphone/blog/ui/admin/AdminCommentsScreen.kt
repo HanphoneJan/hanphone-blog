@@ -50,7 +50,11 @@ fun AdminCommentsScreen(
         vm.consumeMessage()
     }
 
-    AdminScaffold(title = "评论管理", onBack = onBack) {
+    AdminScaffold(
+        title = "评论管理",
+        onBack = onBack,
+        refreshable = vm,
+    ) {
         Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             SearchField(
                 value = vm.keyword,

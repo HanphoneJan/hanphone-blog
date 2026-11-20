@@ -60,7 +60,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -86,6 +85,7 @@ import com.hanphone.blog.data.model.HotFeedItem
 import com.hanphone.blog.data.model.LeaderboardTrend
 import com.hanphone.blog.data.model.ModelBenchmarkRow
 import com.hanphone.blog.data.model.ModelCompare
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
@@ -242,11 +242,7 @@ private fun FeedTab(vm: HotViewModel, onOpenUrl: (String, String) -> Unit) {
             }
         }
 
-        PullToRefreshBox(
-            isRefreshing = vm.refreshing,
-            onRefresh = { vm.refresh(fromPull = true) },
-            modifier = Modifier.fillMaxSize()
-        ) {
+PullRefresh(vm, Modifier.fillMaxSize()) {
             when {
                 vm.loading && vm.feeds.isEmpty() && vm.overview == null -> HotFeedSkeleton()
                 vm.error != null && vm.feeds.isEmpty() -> ErrorBox(vm.error!!, onRetry = { vm.refresh() })
@@ -429,10 +425,10 @@ private fun LeaderboardTab(vm: HotViewModel, onOpenUrl: (String, String) -> Unit
             }
         }
 
-        PullToRefreshBox(
-            isRefreshing = vm.refreshing || vm.leaderboardsLoading,
+        PullRefresh(
+            refreshing = vm.refreshing || vm.leaderboardsLoading,
             onRefresh = {
-                vm.refresh(fromPull = true)
+                vm.refresh()
                 vm.reloadLeaderboards()
             },
             modifier = Modifier.fillMaxSize()

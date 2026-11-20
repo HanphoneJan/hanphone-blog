@@ -52,7 +52,8 @@ fun AdminFriendLinksScreen(
     AdminScaffold(
         title = "友链管理",
         onBack = onBack,
-        actions = { TextButton(onClick = { creating = true }) { Text("新增") } }
+        actions = { TextButton(onClick = { creating = true }) { Text("新增") } },
+        refreshable = vm,
     ) {
         when {
             vm.loading && vm.items.isEmpty() -> AdminLoading()
@@ -242,7 +243,8 @@ fun AdminProjectsScreen(
     AdminScaffold(
         title = "项目管理",
         onBack = onBack,
-        actions = { TextButton(onClick = { creating = true }) { Text("新增") } }
+        actions = { TextButton(onClick = { creating = true }) { Text("新增") } },
+        refreshable = vm,
     ) {
         when {
             vm.loading && vm.items.isEmpty() -> AdminLoading()

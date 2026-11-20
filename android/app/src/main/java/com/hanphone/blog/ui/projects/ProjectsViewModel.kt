@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Project
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -21,13 +22,13 @@ import javax.inject.Inject
 @HiltViewModel
 class ProjectsViewModel @Inject constructor(
     private val repo: BlogRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     var projects by mutableStateOf(MemoryCache.projects ?: emptyList())
         private set
     var loading by mutableStateOf(MemoryCache.projects == null)
         private set
-    var refreshing by mutableStateOf(false)
+    override var refreshing by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
         private set
@@ -72,6 +73,10 @@ class ProjectsViewModel @Inject constructor(
 
     fun onQueryChange(q: String) {
         query = q
+    }
+
+    override fun refresh() {
+        refresh(fromPull = true)
     }
 
     fun refresh(fromPull: Boolean = false) {

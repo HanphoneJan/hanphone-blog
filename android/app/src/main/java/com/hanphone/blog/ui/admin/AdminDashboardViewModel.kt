@@ -10,6 +10,7 @@ import com.hanphone.blog.data.model.AdminStats
 import com.hanphone.blog.data.model.AdminTypeStat
 import com.hanphone.blog.data.model.AdminVisitorArea
 import com.hanphone.blog.data.model.TagBlogCount
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
 import com.hanphone.blog.util.adminMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +26,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminDashboardViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     /** 指标 key 与后端 /admin/get*ByMonth 一一对应 */
     val metrics = listOf(
@@ -63,7 +66,7 @@ class AdminDashboardViewModel @Inject constructor(
         refresh()
     }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             error = null

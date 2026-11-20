@@ -17,6 +17,7 @@ import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.EssayRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -162,9 +163,13 @@ class EssayPagingSource(
 class EssayDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repo: EssayRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     private val essayId: Long = checkNotNull(savedStateHandle["essayId"])
+
+    override val refreshing: Boolean get() = refreshingNow
+
+    private var refreshingNow by mutableStateOf(false)
 
     var essay by mutableStateOf(MemoryCache.essayDetail(essayId))
         private set
@@ -199,27 +204,39 @@ class EssayDetailViewModel @Inject constructor(
     }
 
     fun load() {
+        viewModelScope.launch { loadInternal() }
+    }
+
+    /** 下拉刷新：重拉正文 + 评论 */
+    override fun refresh() {
+        if (refreshingNow) return
         viewModelScope.launch {
-            error = null
-            try {
-                val e = repo.essay(essayId)
-                if (e.flag && e.data != null) {
-                    essay = e.data
-                    liked = e.data.liked
-                    likesCount = e.data.likes
-                    MemoryCache.putEssayDetail(essayId, e.data)
-                    ContentStore.writeEssayDetail(essayId, e.data)
-                } else error = e.message.ifBlank { "加载失败" }
-                val c = repo.comments(essayId)
-                if (c.flag) {
-                    comments = c.data ?: emptyList()
-                    ContentStore.writeEssayComments(essayId, c.data ?: emptyList())
-                }
-            } catch (ex: Exception) {
-                error = ex.message ?: "网络错误"
-            }
-            loading = false
+            refreshingNow = true
+            loadInternal()
+            refreshingNow = false
         }
+    }
+
+    private suspend fun loadInternal() {
+        error = null
+        try {
+            val e = repo.essay(essayId)
+            if (e.flag && e.data != null) {
+                essay = e.data
+                liked = e.data.liked
+                likesCount = e.data.likes
+                MemoryCache.putEssayDetail(essayId, e.data)
+                ContentStore.writeEssayDetail(essayId, e.data)
+            } else error = e.message.ifBlank { "加载失败" }
+            val c = repo.comments(essayId)
+            if (c.flag) {
+                comments = c.data ?: emptyList()
+                ContentStore.writeEssayComments(essayId, c.data ?: emptyList())
+            }
+        } catch (ex: Exception) {
+            error = ex.message ?: "网络错误"
+        }
+        loading = false
     }
 
     fun toggleLike(uid: Long) {

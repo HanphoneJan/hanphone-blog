@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.RecommendStar
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.cache.ImageCaches
@@ -84,11 +84,7 @@ fun FriendLinksScreen(onBack: () -> Unit) {
         }
 
         Box(Modifier.weight(1f)) {
-            PullToRefreshBox(
-                isRefreshing = vm.refreshing,
-                onRefresh = { vm.refresh(fromPull = true) },
-                modifier = Modifier.fillMaxSize()
-            ) {
+            PullRefresh(vm, Modifier.fillMaxSize()) {
                 when {
                     vm.loading && filtered.isEmpty() -> RowListSkeleton(Modifier.padding(top = 8.dp), count = 6)
                     vm.error != null && filtered.isEmpty() -> ErrorBox(vm.error!!, onRetry = { vm.refresh() })

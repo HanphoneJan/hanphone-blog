@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.FriendLink
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.util.normalized
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,13 +37,13 @@ private fun normalizeLinks(links: List<FriendLink>): List<FriendLink> = links.no
 @HiltViewModel
 class FriendLinksViewModel @Inject constructor(
     private val repo: BlogRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     var links by mutableStateOf(normalizeLinks(MemoryCache.friendLinks ?: emptyList()))
         private set
     var loading by mutableStateOf(MemoryCache.friendLinks == null)
         private set
-    var refreshing by mutableStateOf(false)
+    override var refreshing by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
         private set
@@ -75,6 +76,10 @@ class FriendLinksViewModel @Inject constructor(
         }
         // 首次加载友链列表
         refresh()
+    }
+
+    override fun refresh() {
+        refresh(fromPull = true)
     }
 
     fun refresh(fromPull: Boolean = false) {

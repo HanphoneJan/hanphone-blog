@@ -11,6 +11,7 @@ import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -21,7 +22,7 @@ import javax.inject.Inject
 class ArticleDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repo: BlogRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     private val blogId: Long = checkNotNull(savedStateHandle["blogId"])
 
@@ -36,6 +37,8 @@ class ArticleDetailViewModel @Inject constructor(
     var liked by mutableStateOf(false)
         private set
     var likesCount by mutableIntStateOf(0)
+        private set
+    override var refreshing by mutableStateOf(false)
         private set
 
     init {
@@ -59,29 +62,41 @@ class ArticleDetailViewModel @Inject constructor(
 
     fun retry() { load() }
 
-    private fun load() {
+    /** 下拉刷新：重拉正文 + 评论（loading 只控制首次骨架，这里用 refreshing 走顶部指示器） */
+    override fun refresh() {
+        if (refreshing) return
         viewModelScope.launch {
-            loading = true
-            error = null
-            try {
-                val b = repo.blog(blogId)
-                if (b.flag && b.data != null) {
-                    blog = b.data
-                    liked = b.data.liked
-                    likesCount = b.data.likes
-                    MemoryCache.putArticleDetail(blogId, b.data)
-                    ContentStore.writeArticleDetail(blogId, b.data)
-                } else error = b.message.ifBlank { "加载失败" }
-                val c = repo.comments(blogId)
-                if (c.flag) {
-                    comments = c.data ?: emptyList()
-                    ContentStore.writeArticleComments(blogId, c.data ?: emptyList())
-                }
-            } catch (e: Exception) {
-                error = e.message ?: "网络错误"
-            }
-            loading = false
+            refreshing = true
+            loadInternal()
+            refreshing = false
         }
+    }
+
+    private fun load() {
+        viewModelScope.launch { loadInternal() }
+    }
+
+    private suspend fun loadInternal() {
+        loading = true
+        error = null
+        try {
+            val b = repo.blog(blogId)
+            if (b.flag && b.data != null) {
+                blog = b.data
+                liked = b.data.liked
+                likesCount = b.data.likes
+                MemoryCache.putArticleDetail(blogId, b.data)
+                ContentStore.writeArticleDetail(blogId, b.data)
+            } else error = b.message.ifBlank { "加载失败" }
+            val c = repo.comments(blogId)
+            if (c.flag) {
+                comments = c.data ?: emptyList()
+                ContentStore.writeArticleComments(blogId, c.data ?: emptyList())
+            }
+        } catch (e: Exception) {
+            error = e.message ?: "网络错误"
+        }
+        loading = false
     }
 
     fun toggleLike(uid: Long) {

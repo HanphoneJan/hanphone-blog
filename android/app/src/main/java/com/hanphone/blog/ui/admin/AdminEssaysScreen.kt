@@ -82,6 +82,7 @@ fun AdminEssaysScreen(
         title = "随笔管理",
         onBack = onBack,
         actions = { TextButton(onClick = vm::refresh) { Text("刷新") } },
+        refreshable = vm,
         floating = {
             ExtendedFloatingActionButton(
                 onClick = onCreate,

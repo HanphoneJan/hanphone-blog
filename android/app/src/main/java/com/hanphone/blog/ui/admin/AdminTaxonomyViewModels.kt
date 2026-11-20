@@ -9,6 +9,7 @@ import com.hanphone.blog.util.adminMessage
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.TagBlogCount
 import com.hanphone.blog.data.model.Type
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -18,7 +19,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminTagsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var items by mutableStateOf<List<TagBlogCount>>(emptyList())
         private set
@@ -29,7 +32,7 @@ class AdminTagsViewModel @Inject constructor(
 
     init { refresh() }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {
@@ -85,7 +88,9 @@ class AdminTagsViewModel @Inject constructor(
 @HiltViewModel
 class AdminTypesViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var items by mutableStateOf<List<Type>>(emptyList())
         private set
@@ -96,7 +101,7 @@ class AdminTypesViewModel @Inject constructor(
 
     init { refresh() }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {

@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.util.adminMessage
 import com.hanphone.blog.data.model.Comment
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -16,7 +17,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminCommentsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var all by mutableStateOf<List<Comment>>(emptyList())
         private set
@@ -46,7 +49,7 @@ class AdminCommentsViewModel @Inject constructor(
         keyword = value
     }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {

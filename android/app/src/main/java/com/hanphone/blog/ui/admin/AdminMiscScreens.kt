@@ -65,7 +65,8 @@ fun AdminDocsScreen(
     AdminScaffold(
         title = "文库管理",
         onBack = onBack,
-        actions = { TextButton(onClick = { creating = true }) { Text("新增") } }
+        actions = { TextButton(onClick = { creating = true }) { Text("新增") } },
+        refreshable = vm,
     ) {
         when {
             vm.loading && vm.items.isEmpty() -> AdminLoading()
@@ -267,7 +268,11 @@ fun AdminUsersScreen(
         vm.consumeMessage()
     }
 
-    AdminScaffold(title = "用户管理", onBack = onBack) {
+    AdminScaffold(
+        title = "用户管理",
+        onBack = onBack,
+        refreshable = vm,
+    ) {
         SearchField(
             value = vm.keyword,
             onValueChange = vm::search,

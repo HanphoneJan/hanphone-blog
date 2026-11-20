@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Message
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.MessageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -17,12 +18,12 @@ import javax.inject.Inject
 @HiltViewModel
 class MessageBoardViewModel @Inject constructor(
     private val repo: MessageRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
     var items by mutableStateOf(MemoryCache.boardMessages ?: emptyList())
         private set
     var loading by mutableStateOf(MemoryCache.boardMessages == null)
         private set
-    var refreshing by mutableStateOf(false)
+    override var refreshing by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
         private set
@@ -37,6 +38,10 @@ class MessageBoardViewModel @Inject constructor(
         }
         // 首次加载留言列表
         refresh()
+    }
+
+    override fun refresh() {
+        refresh(fromPull = true)
     }
 
     fun refresh(fromPull: Boolean = false) {

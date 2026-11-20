@@ -66,6 +66,7 @@ fun AdminBlogsScreen(
     AdminScaffold(
         title = "博客管理",
         onBack = onBack,
+        refreshable = vm,
         floating = {
             ExtendedFloatingActionButton(
                 onClick = onCreate,

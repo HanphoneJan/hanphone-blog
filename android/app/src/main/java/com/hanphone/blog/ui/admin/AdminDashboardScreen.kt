@@ -82,7 +82,8 @@ fun AdminDashboardScreen(
     AdminScaffold(
         title = "站点概览",
         onBack = onBack,
-        actions = { TextButton(onClick = vm::refresh, enabled = !vm.loading) { Text("刷新") } }
+        actions = { TextButton(onClick = vm::refresh, enabled = !vm.loading) { Text("刷新") } },
+        refreshable = vm,
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
             if (vm.loading && stats == AdminStats() && monthly.isEmpty()) {

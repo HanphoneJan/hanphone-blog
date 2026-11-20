@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.SearchResultItem
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -18,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repo: BlogRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     var query by mutableStateOf("")
         private set
@@ -29,6 +30,9 @@ class SearchViewModel @Inject constructor(
     var error by mutableStateOf<String?>(null)
         private set
     var searched by mutableStateOf(false)
+        private set
+
+    override var refreshing by mutableStateOf(false)
         private set
 
     private var debounceJob: Job? = null
@@ -54,20 +58,29 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun submit() {
+    fun submit() = doSearch(force = false)
+
+    /** 下拉刷新：作废该词缓存、强制走网络；用 refreshing 走顶部指示器（不闪骨架屏） */
+    override fun refresh() = doSearch(force = true)
+
+    private fun doSearch(force: Boolean) {
         val q = query.trim()
         if (q.isEmpty()) return
-        // 结果缓存命中：不再发请求（5 分钟有效）
-        MemoryCache.searchResult(q)?.let { cached ->
-            results = cached
-            searched = true
-            return
+        if (!force) {
+            // 结果缓存命中：不再发请求（5 分钟有效）
+            MemoryCache.searchResult(q)?.let { cached ->
+                results = cached
+                searched = true
+                return
+            }
+        } else {
+            MemoryCache.invalidateSearch(q)
         }
         // 同词请求去重（防抖与回车同时触发）
         if (!MemoryCache.beginSearch(q)) return
         val gen = searchGeneration
         viewModelScope.launch {
-            loading = true
+            if (force) refreshing = true else loading = true
             error = null
             try {
                 val res = repo.search(q)
@@ -84,6 +97,7 @@ class SearchViewModel @Inject constructor(
             }
             if (gen == searchGeneration) {
                 loading = false
+                refreshing = false
                 searched = true
             }
         }

@@ -13,6 +13,7 @@ import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.User
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.data.repo.FileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,13 +33,13 @@ class ProfileViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val repo: BlogRepository,
     private val fileRepo: FileRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     var stats by mutableStateOf(MemoryCache.siteStats)
         private set
     var visits by mutableStateOf(MemoryCache.visitCount)
         private set
-    var refreshing by mutableStateOf(false)
+    override var refreshing by mutableStateOf(false)
         private set
 
     /** 登录用户的完整资料（/user/current） */
@@ -62,6 +63,10 @@ class ProfileViewModel @Inject constructor(
     /** 退出登录：吊销服务端会话（失败无所谓，本地照样清） */
     suspend fun logout() {
         runCatching { repo.logout(TokenStore.refreshToken.value) }
+    }
+
+    override fun refresh() {
+        refresh(fromPull = true)
     }
 
     fun refresh(fromPull: Boolean = false) {

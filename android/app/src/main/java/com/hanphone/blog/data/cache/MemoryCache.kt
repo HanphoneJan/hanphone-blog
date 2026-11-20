@@ -97,6 +97,11 @@ object MemoryCache {
         searchCache[query] = System.currentTimeMillis() to results
     }
 
+    /** 下拉刷新：作废该词的缓存，强制走网络 */
+    fun invalidateSearch(query: String) {
+        searchCache.remove(query)
+    }
+
     /** 同词请求去重：已在飞行中的搜索词返回 true（VM 侧短路） */
     fun beginSearch(query: String): Boolean {
         if (searchInFlight == query) return false

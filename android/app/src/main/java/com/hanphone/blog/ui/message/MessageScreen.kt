@@ -18,7 +18,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,6 +39,7 @@ import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Message
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.CommentInputBar
@@ -107,11 +107,7 @@ fun MessageScreen(onBack: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         AppBackBar(title = "留言板", onBack = onBack)
         Column(Modifier.weight(1f).fillMaxWidth()) {
-            PullToRefreshBox(
-                isRefreshing = vm.refreshing,
-                onRefresh = { vm.refresh(fromPull = true) },
-                modifier = Modifier.fillMaxSize()
-            ) {
+            PullRefresh(vm, Modifier.fillMaxSize()) {
                 when {
                     vm.loading && items.isEmpty() -> RowListSkeleton(Modifier.padding(top = 8.dp), count = 5)
                     vm.error != null && items.isEmpty() -> ErrorBox(vm.error!!, onRetry = { vm.refresh() })

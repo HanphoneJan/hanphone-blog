@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.util.adminMessage
 import com.hanphone.blog.data.model.Blog
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -18,7 +19,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminBlogsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     var items by mutableStateOf<List<Blog>>(emptyList())
         private set
@@ -51,7 +54,7 @@ class AdminBlogsViewModel @Inject constructor(
         }
     }
 
-    fun refresh() = load(reset = true)
+    override fun refresh() = load(reset = true)
 
     fun loadMore() {
         if (loading || loadingMore || page >= totalPages) return

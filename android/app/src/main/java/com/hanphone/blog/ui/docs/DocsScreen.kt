@@ -35,7 +35,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -48,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.RecommendStar
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.data.model.Doc
@@ -162,11 +162,7 @@ fun DocsScreen(
         }
 
         Box(Modifier.weight(1f)) {
-            PullToRefreshBox(
-                isRefreshing = vm.refreshing,
-                onRefresh = { vm.refresh(fromPull = true) },
-                modifier = Modifier.fillMaxSize()
-            ) {
+            PullRefresh(vm, Modifier.fillMaxSize()) {
                 when {
                     vm.loading && vm.docs.isEmpty() -> RowListSkeleton(leading = 36.dp, contentPadding = 16.dp)
                     vm.error != null && vm.docs.isEmpty() -> ErrorBox(vm.error!!, onRetry = { vm.refresh() })

@@ -454,3 +454,8 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
    - 聊天会话页 `Column`（主 Tab，键盘弹出时底部导航栏自动隐藏——`App.kt` 里 `imeVisible` 判断 `WindowInsets.ime`，避免主 Tab 底栏占位挡住输入；消息 Hub 的**聊天室**与**私信**两个输入栏都要加）
    - 登录/注册表单容器（垂直居中表单上移）
    验证：`adb shell dumpsys window displays | grep 'type=ime'` 可查键盘顶位置，配合截图像素核对输入条是否贴齐。
+
+16. **下拉刷新统一走 `ui/components/PullRefresh.kt`（2026-11）**：页面侧只写 `PullRefresh(vm) { 内容 }`，不再各自 import M3 的 `PullToRefreshBox`。VM 实现 `PullRefreshHost`（`refreshing` + `refresh()`）；后台页面用 `AdminScaffold(refreshable = vm)` 一行接入；Paging / 本地状态页用 `PullRefresh(refreshing, onRefresh)` 重载。
+   - **`refresh()` 必须重拉该页全部服务端数据**，不能只刷统计：曾因「我的」下拉只刷站点统计、不重拉 `/user/current`，换了头像刷新也看不到；资料返回后还要同步 `TokenStore` + DataStore，否则冷启动/其他页面仍用登录时的旧值。
+   - 详情页（文章/随笔）下拉重拉正文 + 评论；搜索页下拉作废 5 分钟结果缓存后强制重搜（走顶部指示器，不闪骨架屏）；文库 MD 预览下拉跳过 24h 磁盘缓存。
+   - 聊天页**不加**：消息由 socket 实时推送、列表还会自动滚到底，下拉手势与阅读历史冲突；断线有重连入口。

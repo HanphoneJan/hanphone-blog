@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.model.Doc
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -33,13 +34,13 @@ const val DOC_TYPE_ALL = "all"
 @HiltViewModel
 class DocsViewModel @Inject constructor(
     private val repo: BlogRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     var docs by mutableStateOf(MemoryCache.docs ?: emptyList())
         private set
     var loading by mutableStateOf(MemoryCache.docs == null)
         private set
-    var refreshing by mutableStateOf(false)
+    override var refreshing by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
         private set
@@ -107,6 +108,10 @@ class DocsViewModel @Inject constructor(
         }
         // 首次加载
         refresh()
+    }
+
+    override fun refresh() {
+        refresh(fromPull = true)
     }
 
     fun refresh(fromPull: Boolean = false) {

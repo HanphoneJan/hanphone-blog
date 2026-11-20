@@ -54,7 +54,8 @@ fun AdminVisitorsScreen(
         actions = {
             TextButton(onClick = vm::refresh, enabled = !vm.loading) { Text("刷新") }
             TextButton(onClick = { confirmClear = true }) { Text("清理") }
-        }
+        },
+        refreshable = vm,
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
             AdminSectionTitle("访客概览")

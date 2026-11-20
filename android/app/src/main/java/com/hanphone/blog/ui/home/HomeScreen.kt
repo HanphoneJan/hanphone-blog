@@ -37,7 +37,6 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -57,6 +56,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.ArticleCard
 import com.hanphone.blog.ui.components.ArticleListSkeleton
 import com.hanphone.blog.ui.components.EmptyBox
@@ -198,11 +198,7 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
 
             // 内容区
             Box(Modifier.weight(1f)) {
-                PullToRefreshBox(
-                    isRefreshing = vm.isRefreshing,
-                    onRefresh = { vm.refresh(fromPull = true) },
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                PullRefresh(vm, Modifier.fillMaxSize()) {
                     if (mode == "latest") {
                         when {
                             vm.isLoading && items.isEmpty() -> ArticleListSkeleton(Modifier.padding(16.dp))

@@ -44,7 +44,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +66,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.core.draftFlow
 import com.hanphone.blog.core.saveDraft
@@ -124,8 +124,8 @@ fun EssayListScreen(onOpenEssay: (Long) -> Unit, onLogin: () -> Unit) {
 
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            PullToRefreshBox(
-                isRefreshing = refreshing && userPulled,
+            PullRefresh(
+                refreshing = refreshing && userPulled,
                 onRefresh = { userPulled = true; items.refresh() },
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -501,7 +501,8 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
             loading && essay == null -> Box(Modifier.weight(1f).fillMaxWidth()) { DetailSkeleton() }
             error != null && essay == null -> Box(Modifier.weight(1f).fillMaxWidth()) { ErrorBox(error!!, onRetry = { vm.load() }) }
             essay != null -> {
-                LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(bottom = 24.dp)) {
+                PullRefresh(vm, Modifier.weight(1f).fillMaxWidth()) {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                     item {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Avatar(url = essay!!.user?.avatar, name = essay!!.user?.nickname ?: "友", size = 42.dp, shape = RoundedCornerShape(8.dp), feature = ImageCaches.Feature.ESSAY)
@@ -561,6 +562,7 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                             }
                         }
                     }
+                }
                 }
                 // 底部操作栏（轻量：细分割线 + 单行图标文字）
                 Column {

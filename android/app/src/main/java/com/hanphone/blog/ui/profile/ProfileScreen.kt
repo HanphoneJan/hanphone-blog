@@ -39,7 +39,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +68,7 @@ import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.User
+import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
 import com.hanphone.blog.util.md5Hex
@@ -112,11 +112,7 @@ fun ProfileScreen(
     val displayAvatar = vm.profile?.avatar ?: userAvatar
     val displayUsername = vm.profile?.username ?: ""
 
-    PullToRefreshBox(
-        isRefreshing = vm.refreshing,
-        onRefresh = { vm.refresh(fromPull = true) },
-        modifier = Modifier.fillMaxSize()
-    ) {
+    PullRefresh(vm, Modifier.fillMaxSize()) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -261,7 +257,7 @@ fun ProfileScreen(
             }
         }
         } // Column
-    } // PullToRefreshBox
+    } // PullRefresh
 
     // ===== 编辑资料对话框 =====
     if (showEditProfile) {

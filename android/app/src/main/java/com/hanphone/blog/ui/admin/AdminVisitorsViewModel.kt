@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.model.AdminVisitorIp
 import com.hanphone.blog.data.model.AdminVisitorOverview
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
 import com.hanphone.blog.util.adminMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +24,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminVisitorsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
+
+    override val refreshing: Boolean get() = loading
 
     companion object {
         const val PAGE_SIZE = 20
@@ -59,7 +62,7 @@ class AdminVisitorsViewModel @Inject constructor(
         refresh()
     }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             loading = true
             try {

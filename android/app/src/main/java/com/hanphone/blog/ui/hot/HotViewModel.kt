@@ -17,6 +17,7 @@ import com.hanphone.blog.data.model.ModelBenchmarkRow
 import com.hanphone.blog.data.model.ModelCompare
 import com.hanphone.blog.data.model.ModelLeaderboard
 import com.hanphone.blog.data.model.Vendor
+import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.HotRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Deferred
@@ -46,7 +47,7 @@ data class SelectedModel(
 @HiltViewModel
 class HotViewModel @Inject constructor(
     private val repo: HotRepository
-) : ViewModel() {
+) : ViewModel(), PullRefreshHost {
 
     companion object {
         val FEED_CATEGORIES = listOf("github", "hf", "ai-news")
@@ -61,7 +62,7 @@ class HotViewModel @Inject constructor(
     // ===== 首载 / 刷新状态 =====
     var loading by mutableStateOf(MemoryCache.hotOverview == null && MemoryCache.hotFeeds == null)
         private set
-    var refreshing by mutableStateOf(false)
+    override var refreshing by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
         private set
@@ -217,6 +218,10 @@ class HotViewModel @Inject constructor(
     }
 
     /** 拉取总览 + 三分类热点流 + 信源 + 榜单元数据 + 精选模型（并行） */
+    override fun refresh() {
+        refresh(fromPull = true)
+    }
+
     fun refresh(fromPull: Boolean = false) {
         viewModelScope.launch {
             if (fromPull) refreshing = true else if (feeds.isEmpty() && overview == null) loading = true
