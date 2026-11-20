@@ -196,13 +196,14 @@ fun UpdateDialogs() {
 }
 
 /**
- * 弹窗正文的最大高度：按屏幕高度取一个上限（矮屏也不会顶到按钮），最多 480dp。
- * 配合 `heightIn(...).verticalScroll(...)` 的正确顺序，长内容可以滚动看全。
+ * 弹窗正文的最大高度：按屏幕高度取一个上限（矮屏也不会顶到按钮），最多 320dp。
+ * 更新说明一般几行就够，弹窗太大反而挡内容；配合 `heightIn(...).verticalScroll(...)` 的正确顺序，
+ * 长内容仍可以滚动看全。
  */
 @Composable
 private fun dialogTextMaxHeight(): Dp {
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-    return minOf(480.dp, screenHeight * 0.62f)
+    return minOf(320.dp, screenHeight * 0.45f)
 }
 
 /** 下载进度里的文件大小 */

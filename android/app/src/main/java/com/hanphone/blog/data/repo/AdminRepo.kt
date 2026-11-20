@@ -328,6 +328,21 @@ class AdminRepository(
     // ===== 用户 =====
     suspend fun users(): ApiResult<List<User>> = withContext(Dispatchers.IO) { api.users() }
 
+    /** 修改用户资料：只传要改的字段（id 必传） */
+    suspend fun saveUser(fields: Map<String, Any?>): ApiResult<User> =
+        withContext(Dispatchers.IO) { api.saveUser(mapOf("user" to fields)) }
+
+    /** 重置密码，passwordMd5 = md5(明文) */
+    suspend fun resetUserPassword(userId: Long, passwordMd5: String): ApiResult<Any?> =
+        withContext(Dispatchers.IO) {
+            api.resetUserPassword(
+                mapOf("userId" to userId.toString(), "newPassword" to passwordMd5)
+            )
+        }
+
+    suspend fun deleteUser(id: Long): ApiResult<Any?> =
+        withContext(Dispatchers.IO) { api.deleteUser(id) }
+
     // ===== 聚合数据 =====
     suspend fun collectHot(): ApiResult<Map<String, Any?>> =
         withContext(Dispatchers.IO) { api.collectHot() }

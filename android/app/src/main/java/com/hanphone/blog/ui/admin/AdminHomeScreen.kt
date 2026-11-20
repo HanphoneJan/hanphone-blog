@@ -80,7 +80,7 @@ fun AdminHomeScreen(
             AdminEntry(
                 Icons.Filled.People,
                 "用户",
-                "只读：注册用户列表",
+                "编辑 · 权限 · 重置密码 · 删除",
                 onOpenUsers,
                 tint = Color(0xFF7A6FF0)
             )

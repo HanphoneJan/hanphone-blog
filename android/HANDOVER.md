@@ -138,7 +138,7 @@ ui/
 | 评论 | `/admin/getCommentList`、`DELETE /comments/{id}` | ⚠️ 删除接口后端**无鉴权**，只靠前端藏入口 |
 | 标签/分类 | `/admin/getFullTagListAndBlogNumber`、`/admin/tags`、`/admin/getFullTypeList`、`/admin/types` | 分类色由后端固定 blue |
 | 友链/项目/文库 | `/admin/friendLink(s)`、`/admin/project(s)`、`/admin/doc(s)` | 文库新增 = 先传文件再登记 Doc（docId 前端生成） |
-| 用户 | `/admin/users` | **只读**：不做删除/重置密码（手机误触代价太高） |
+| 用户 | `/admin/users` · `/admin/user` · `/admin/user/resetPassword` | **完整管理**：改资料（昵称/邮箱/头像）、设/取消管理员、重置密码、删除；id=1 与自己不可降级/删除（对齐网页后台） |
 | 聚合数据 | `/admin/hot/{status,collect,sources,runs/page,models/rebuild-normalization,settings/summary}` | 对标网页 `/admin/insight`：采集状态 + 信源健康度、采集记录（方式/结果/近 7·30 天/关键词 + 分页）、AI 摘要（启用/保存/测试）、模型归一重建（预演/执行）；采集为异步任务，触发后每 3 秒轮询直到结束 |
 
 附件上传（随笔/封面/文库）：`AdminFileApi`（base `https://hanphone.top/`，**手动带 Token**）→
@@ -415,7 +415,8 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ 随笔图片缩略图（九宫格走 `displayUrl()`，详情页走 `originalUrl()`；21 张图 74.65 MB → 0.75 MB，100×）、修掉 `urlType != "video"` 大小写导致视频被当图片加载的 bug。详见 `docs/photo-wall-image-optimization.md`。
 - ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
 - ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**v1.0.1** 发布：页面更名「热点」、榜单名次=排序位置、切换领域重置滚动、默认对比六家代表厂商、更新弹窗 Markdown 渲染。**v1.0.2**（`hanphone-1.0.2-android.apk`，versionCode 16）补充顶部**「名称归一」开关（默认开）**——关闭时厂商名与模型行变体/日期后缀按信源原始展示（`anthropic`、`Alibaba-ATH`、`z-ai`），实体合并不受影响；后端支持 `normalized` 参数（仅展示层）。后端榜单改用 AA 代码指数排序 + 模型名归一（变体后缀）+ LMArena 经服务器代理采集（见 server 文档）。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
-- ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线 + 标签/分类/访客区域分布）、访客明细（UV/PV + IP 归属地搜索排序分页 + 清理）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据（采集轮询 + 信源健康度 + 采集记录筛选分页 + AI 摘要配置 + 模型归一重建）、用户只读列表。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
+- ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线 + 标签/分类/访客区域分布）、访客明细（UV/PV + IP 归属地搜索排序分页 + 清理）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据（采集轮询 + 信源健康度 + 采集记录筛选分页 + AI 摘要配置 + 模型归一重建）、用户管理（编辑资料/管理员权限/重置密码/删除）。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
+- ✅ **v1.3.0 启动时检查更新 + 用户管理**：冷启动自动查 GitHub Release（每进程一次、失败静默），设「启动时检查更新」开关默认开；更新弹窗上提到根界面（`ui/components/UpdateDialogs.kt`）并收紧正文高度（≤320dp / 屏高 45%，长说明仍可滚动）。管理中心「用户」从只读列表改为完整管理：资料（昵称/邮箱/头像，改邮箱二次确认）、管理员开关、重置密码（md5→bcrypt，成功后该用户全端下线）、删除；服务端 `updateUser` 顺带修掉「管理端保存把 passwordVersion 归零 / isOnline 写成 false」的隐患。
 - ✅ **v1.2.0 应用内更新**：设置 → 检查更新 →「立即更新」在 App 内下载 APK（进度/取消，应用级协程），完成后经 `FileProvider` 调起系统安装器；首次引导授权「安装未知应用」，授权返回自动继续。不再跳浏览器。
 - ✅ **v1.3.0 启动时检查更新**：冷启动自动查 GitHub Release（每进程一次、失败静默），设「启动时检查更新」开关默认开、可在设置页关闭；更新弹窗上提到根界面（`ui/components/UpdateDialogs.kt`），手动/启动共用，下载不再随设置页销毁中断。
 - ✅ **第三方登录（GitHub / Google）**：登录页「GitHub 登录 / Google 登录」→ 系统浏览器授权 → `hanphone://oauth/callback`（只带一次性 code）→ `POST /oauth/app/exchange` → 与密码登录共用 `core/LoginSession.applyLogin`。服务端 `state=app` 分支 + `OAuthExchangeCodeStore`（32 字节、单次、2 分钟）。网页上 GitHub 注册的账号（`gh_<id>`，无密码）终于能在 App 里登录。Google 需服务端能出站（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。

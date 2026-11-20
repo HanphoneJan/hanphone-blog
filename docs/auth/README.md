@@ -120,6 +120,9 @@ Google 的两个额外约束：
    ⚠️ 实现注意：吊销后要抛异常，`refresh()` 标注了 `noRollbackFor = RefreshException`，否则吊销会被事务回滚。
 3. **改密码**：`password_version + 1` + 吊销该用户全部会话（用户自己改密码时保留当前 `sid`）。
    `TokenInterceptor` 校验 `pwdv`，所以旧 access 立即 401（缓存 5 分钟，改密时主动 evict）。
+   ⚠️ 管理端更新用户（`UserServiceImpl.updateUser`，`POST /admin/user`、`/admin/setAvatar`）必须排除
+   `passwordVersion` 与 `isOnline` 再 `copyProperties`：`passwordVersion` 是 `@JsonIgnore`（客户端拿不到，
+   反序列化默认 0），复制会把密码版本归零，等于让改密前签发的旧 access 复活；`isOnline` 默认 false，编辑资料会把人显示成离线。
 4. **限流**：`/auth/refresh` 走 `PublicWriteRateLimitFilter`（10 次/分/IP）。
 5. **日志**：会话创建/吊销/重放检测都打 info/warn 日志（含 sid、userId、ip）。
 6. **OAuth 的 `state` 白名单**：只接受空或 `app`，其他值直接 400 —— 避免 `/oauth/{provider}/authorize` 被当成任意跳转。

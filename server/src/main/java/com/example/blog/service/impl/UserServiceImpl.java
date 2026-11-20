@@ -148,7 +148,11 @@ public class UserServiceImpl implements UserService {
             User u = userRepository.getReferenceById(id);
             Objects.requireNonNull(u, "User not found with id: " + id);
 
-            BeanUtils.copyProperties(admin, u, MyBeanUtils.getNullPropertyNames(admin));
+            // passwordVersion / isOnline 不参与管理端更新：
+            // - passwordVersion 被 @JsonIgnore（客户端拿不到，POST 回来时是默认 0），复制会把密码版本归零，
+            //   让「改密码后旧 access token 立即失效」的保护失效；
+            // - isOnline 是默认 false 的在线标记，编辑资料时被写成 false 会让在线用户显示成离线。
+            BeanUtils.copyProperties(admin, u, MyBeanUtils.getNullPropertyNames(admin, "passwordVersion", "isOnline"));
             if (admin.getPassword() != null && !admin.getPassword().isEmpty()) {
                 String hashedPassword = BcryptUtils.encrypt(admin.getPassword());
                 u.setPassword(hashedPassword);

@@ -216,9 +216,23 @@ interface AdminApi {
     @POST("admin/docs/published")
     suspend fun publishDoc(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<Any?>
 
-    // ===== 用户（只读） =====
+    // ===== 用户管理 =====
     @GET("admin/users")
     suspend fun users(): ApiResult<List<User>>
+
+    /**
+     * 修改用户（POST /admin/user）。后端 `{ "user": {...} }` 包一层，且按 null 忽略字段，
+     * 所以只传要改的键即可（改密码时 password 传 md5，但 App 走 [resetUserPassword]）。
+     */
+    @POST("admin/user")
+    suspend fun saveUser(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<User>
+
+    /** 重置密码：newPassword 必须是 md5(明文)（后端再 bcrypt，与网页后台一致） */
+    @POST("admin/user/resetPassword")
+    suspend fun resetUserPassword(@Body body: Map<String, String>): ApiResult<Any?>
+
+    @DELETE("admin/users/{id}")
+    suspend fun deleteUser(@Path("id") id: Long): ApiResult<Any?>
 
     // ===== 聚合数据 =====
     @POST("admin/hot/collect")

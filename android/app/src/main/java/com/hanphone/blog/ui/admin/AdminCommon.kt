@@ -191,7 +191,10 @@ fun AdminRowMenu(actions: List<AdminMenuAction>) {
                         Text(
                             action.label,
                             color = if (action.destructive) {
-                                MaterialTheme.colorScheme.error
+                                // 显式给红色时 Material 的 enabled 淡出会被盖掉，禁用态要自己压透明度
+                                MaterialTheme.colorScheme.error.copy(
+                                    alpha = if (action.enabled) 1f else 0.38f
+                                )
                             } else {
                                 LocalContentColor.current
                             }
