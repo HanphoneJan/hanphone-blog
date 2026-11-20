@@ -68,10 +68,8 @@ fun AdminDocsScreen(
         actions = { TextButton(onClick = { creating = true }) { Text("新增") } },
         refreshable = vm,
     ) {
-        when {
-            vm.loading && vm.items.isEmpty() -> AdminLoading()
-            vm.items.isEmpty() -> AdminEmpty("还没有文库文件")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
+        AdminListFrame(vm.loading, vm.items.isEmpty(), "还没有文库文件") {
+            LazyColumn(Modifier.fillMaxWidth()) {
                 items(vm.items, key = { it.id }) { doc ->
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -193,38 +191,14 @@ private fun DocDialog(
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "新增文库文件" else "编辑文库文件") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                AdminField(title, { title = it }, "标题")
-                AdminGap(8)
-                AdminField(description, { description = it }, "简介", singleLine = false, minLines = 2)
-                AdminGap(8)
-                AdminField(namespace, { namespace = it }, "命名空间", placeholder = "blog/docs")
-                AdminGap(8)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = {
-                        filePicker.launch(arrayOf("*/*"))
-                    }, enabled = !uploading) { Text(if (uploading) "上传中…" else "选择并上传文件") }
-                }
-                Text(
-                    if (filename.isBlank()) "尚未选择文件" else "$filename（${fileType.ifBlank { "?" }}）",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                AdminGap(8)
-                AdminSwitchRow("发布", published, { published = it })
-                AdminSwitchRow("推荐", recommend, { recommend = it })
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                if (filename.isBlank()) {
-                    Toast.makeText(context, "请先上传文件", Toast.LENGTH_SHORT).show()
-                    return@TextButton
-                }
+    AdminFormDialog(
+        title = if (initial == null) "新增文库文件" else "编辑文库文件",
+        onDismiss = onDismiss,
+        saving = uploading,
+        onSave = {
+            if (filename.isBlank()) {
+                Toast.makeText(context, "请先上传文件", Toast.LENGTH_SHORT).show()
+            } else {
                 val docId = initial?.docId?.takeIf { it.isNotBlank() }
                     ?: "doc-${System.currentTimeMillis()}-${UUID.randomUUID().toString().take(6)}"
                 val payload = mutableMapOf<String, Any?>(
@@ -239,10 +213,25 @@ private fun DocDialog(
                 )
                 if (initial != null) payload["id"] = initial.id
                 onSave(payload)
-            }) { Text("保存") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
-    )
+            }
+        }
+    ) {
+        AdminField(title, { title = it }, "标题")
+        AdminField(description, { description = it }, "简介", singleLine = false, minLines = 2)
+        AdminField(namespace, { namespace = it }, "命名空间", placeholder = "blog/docs")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !uploading) {
+                Text(if (uploading) "上传中…" else "选择并上传文件")
+            }
+        }
+        Text(
+            if (filename.isBlank()) "尚未选择文件" else "$filename（${fileType.ifBlank { "?" }}）",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        AdminSwitchRow("发布", published, { published = it })
+        AdminSwitchRow("推荐", recommend, { recommend = it })
+    }
 }
 
 private fun queryName(context: android.content.Context, uri: android.net.Uri): String? = runCatching {
@@ -284,10 +273,8 @@ fun AdminUsersScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        when {
-            vm.loading && vm.all.isEmpty() -> AdminLoading()
-            vm.filtered.isEmpty() -> AdminEmpty("没有匹配的用户")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
+        AdminListFrame(vm.loading, vm.filtered.isEmpty(), "没有匹配的用户") {
+            LazyColumn(Modifier.fillMaxWidth()) {
                 items(vm.filtered, key = { it.id }) { user ->
                     UserRow(
                         user = user,
@@ -429,59 +416,45 @@ private fun UserEditDialog(
         if (email.trim() != originalEmail.trim()) confirmEmail = true else save()
     }
 
-    AlertDialog(
-        onDismissRequest = { if (!vm.busy && !vm.uploading) onDismiss() },
-        title = { Text("编辑用户") },
-        text = {
-            Column(
-                Modifier
-                    .heightIn(max = minOf(420.dp, LocalConfiguration.current.screenHeightDp.dp * 0.6f))
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    "用户名 ${user.username ?: "—"}（不可修改）",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Box(
-                    Modifier.clickable(enabled = !vm.uploading) { picker.launch("image/*") },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Avatar(
-                        url = avatar.ifBlank { null },
-                        name = nickname.ifBlank { "友" },
-                        size = 64.dp
-                    )
-                    if (vm.uploading) {
-                        CircularProgressIndicator(Modifier.size(64.dp), strokeWidth = 2.dp)
-                    }
-                }
-                Text(
-                    if (vm.uploading) "头像上传中…" else "点击头像从相册更换",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                AdminField(avatar, { avatar = it }, "头像 URL", placeholder = "可留空")
-                AdminField(nickname, { nickname = it }, "昵称")
-                AdminField(
-                    email,
-                    { email = it },
-                    "邮箱",
-                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
-                )
+    AdminFormDialog(
+        title = "编辑用户",
+        onDismiss = onDismiss,
+        saving = vm.busy,
+        enabled = !vm.uploading,
+        onSave = ::requestSave
+    ) {
+        Text(
+            "用户名 ${user.username ?: "—"}（不可修改）",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+        Box(
+            Modifier.fillMaxWidth().clickable(enabled = !vm.uploading) { picker.launch("image/*") },
+            contentAlignment = Alignment.Center
+        ) {
+            Avatar(
+                url = avatar.ifBlank { null },
+                name = nickname.ifBlank { "友" },
+                size = 64.dp
+            )
+            if (vm.uploading) {
+                CircularProgressIndicator(Modifier.size(64.dp), strokeWidth = 2.dp)
             }
-        },
-        confirmButton = {
-            TextButton(enabled = !vm.busy && !vm.uploading, onClick = ::requestSave) {
-                Text(if (vm.busy) "保存中…" else "保存")
-            }
-        },
-        dismissButton = {
-            TextButton(enabled = !vm.busy && !vm.uploading, onClick = onDismiss) { Text("取消") }
         }
-    )
+        Text(
+            if (vm.uploading) "头像上传中…" else "点击头像从相册更换",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+        AdminField(avatar, { avatar = it }, "头像 URL", placeholder = "可留空")
+        AdminField(nickname, { nickname = it }, "昵称")
+        AdminField(
+            email,
+            { email = it },
+            "邮箱",
+            keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
+        )
+    }
 
     // 改邮箱 = 改登录账号，和网页后台一样先确认一次。
     // 放在编辑弹窗之后声明：两个 Dialog 各是一层窗口，后声明的在上，确认框不会被编辑框盖住。
@@ -528,34 +501,26 @@ private fun UserPasswordDialog(
         vm.resetPassword(user, password) { onDismiss() }
     }
 
-    AlertDialog(
-        onDismissRequest = { if (!vm.busy) onDismiss() },
-        title = { Text("重置密码") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    "为「${user.nickname ?: user.username.orEmpty()}」设置新密码，重置后该用户所有设备需重新登录。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                AdminField(password, { password = it }, "新密码", password = true)
-                AdminField(confirm, { confirm = it }, "确认新密码", password = true)
-                Text(
-                    "6-20 位，需包含字母和数字",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = !vm.busy, onClick = ::submit) {
-                Text(if (vm.busy) "提交中…" else "重置")
-            }
-        },
-        dismissButton = {
-            TextButton(enabled = !vm.busy, onClick = onDismiss) { Text("取消") }
-        }
-    )
+    AdminFormDialog(
+        title = "重置密码",
+        onDismiss = onDismiss,
+        saving = vm.busy,
+        saveText = "重置",
+        onSave = ::submit
+    ) {
+        Text(
+            "为「${user.nickname ?: user.username.orEmpty()}」设置新密码，重置后该用户所有设备需重新登录。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        AdminField(password, { password = it }, "新密码", password = true)
+        AdminField(confirm, { confirm = it }, "确认新密码", password = true)
+        Text(
+            "6-20 位，需包含字母和数字",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+    }
 }
 
 /** 聚合数据：见 AdminInsightScreen.kt（对标网页后台 /admin/insight） */

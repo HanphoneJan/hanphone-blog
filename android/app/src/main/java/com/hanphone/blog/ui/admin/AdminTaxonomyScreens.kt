@@ -60,10 +60,8 @@ fun AdminTagsScreen(
         actions = { TextButton(onClick = { creating = true; name = "" }) { Text("新增") } },
         refreshable = vm,
     ) {
-        when {
-            vm.loading && vm.items.isEmpty() -> AdminLoading()
-            vm.items.isEmpty() -> AdminEmpty("还没有标签")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
+        AdminListFrame(vm.loading, vm.items.isEmpty(), "还没有标签") {
+            LazyColumn(Modifier.fillMaxWidth()) {
                 items(vm.items, key = { it.id }) { tag ->
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -96,24 +94,15 @@ fun AdminTagsScreen(
     }
 
     if (creating || editing != null) {
-        AlertDialog(
-            onDismissRequest = { creating = false; editing = null },
-            title = { Text(if (creating) "新增标签" else "重命名标签") },
-            text = {
-                // 键盘弹出时对话框高度会被压缩，正文必须可滚动，否则输入框会被裁掉
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    AdminGap(4)
-                    AdminField(name, { name = it }, "标签名", placeholder = "例如：Kotlin")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val id = editing?.id
-                    vm.save(id, name) { creating = false; editing = null }
-                }) { Text("保存") }
-            },
-            dismissButton = { TextButton(onClick = { creating = false; editing = null }) { Text("取消") } }
-        )
+        AdminFormDialog(
+            title = if (creating) "新增标签" else "重命名标签",
+            onDismiss = { creating = false; editing = null },
+            onSave = {
+                vm.save(editing?.id, name) { creating = false; editing = null }
+            }
+        ) {
+            AdminField(name, { name = it }, "标签名", placeholder = "例如：Kotlin")
+        }
     }
 
     pendingDelete?.let { tag ->
@@ -154,10 +143,8 @@ fun AdminTypesScreen(
         },
         refreshable = vm,
     ) {
-        when {
-            vm.loading && vm.items.isEmpty() -> AdminLoading()
-            vm.items.isEmpty() -> AdminEmpty("还没有分类")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
+        AdminListFrame(vm.loading, vm.items.isEmpty(), "还没有分类") {
+            LazyColumn(Modifier.fillMaxWidth()) {
                 items(vm.items, key = { it.id }) { type ->
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -186,30 +173,21 @@ fun AdminTypesScreen(
     }
 
     if (creating || editing != null) {
-        AlertDialog(
-            onDismissRequest = { creating = false; editing = null },
-            title = { Text(if (creating) "新增分类" else "编辑分类") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    AdminGap(4)
-                    AdminField(name, { name = it }, "分类名")
-                    AdminGap(8)
-                    AdminField(
-                        picUrl,
-                        { picUrl = it },
-                        "分类图 URL",
-                        placeholder = "可留空；也可直接粘贴图片地址"
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val id = editing?.id
-                    vm.save(id, name, picUrl) { creating = false; editing = null }
-                }) { Text("保存") }
-            },
-            dismissButton = { TextButton(onClick = { creating = false; editing = null }) { Text("取消") } }
-        )
+        AdminFormDialog(
+            title = if (creating) "新增分类" else "编辑分类",
+            onDismiss = { creating = false; editing = null },
+            onSave = {
+                vm.save(editing?.id, name, picUrl) { creating = false; editing = null }
+            }
+        ) {
+            AdminField(name, { name = it }, "分类名")
+            AdminField(
+                picUrl,
+                { picUrl = it },
+                "分类图 URL",
+                placeholder = "可留空；也可直接粘贴图片地址"
+            )
+        }
     }
 
     pendingDelete?.let { type ->

@@ -69,15 +69,13 @@ fun AdminCommentsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        when {
-            vm.loading && vm.all.isEmpty() -> AdminLoading()
-            vm.filtered.isEmpty() -> AdminEmpty("没有匹配的评论")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
-                items(vm.filtered, key = { it.id }) { comment ->
-                    CommentRow(comment) { pendingDelete = comment }
-                    AdminDivider()
-                }
-            }
+        AdminListBody(
+            loading = vm.loading,
+            list = vm.filtered,
+            emptyText = "没有匹配的评论",
+            key = { it.id }
+        ) { comment ->
+            CommentRow(comment) { pendingDelete = comment }
         }
     }
 

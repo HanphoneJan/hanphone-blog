@@ -91,10 +91,8 @@ fun AdminEssaysScreen(
             )
         }
     ) {
-        when {
-            vm.loading && vm.items.isEmpty() -> AdminLoading()
-            vm.items.isEmpty() -> AdminEmpty("还没有随笔，点右下角新建")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
+        AdminListFrame(vm.loading, vm.items.isEmpty(), "还没有随笔，点右下角新建") {
+            LazyColumn(Modifier.fillMaxWidth()) {
                 items(vm.items, key = { it.id }) { essay ->
                     EssayAdminRow(
                         essay = essay,

@@ -81,10 +81,8 @@ fun AdminBlogsScreen(
             placeholder = "按标题搜索",
             modifier = Modifier.padding(vertical = 8.dp)
         )
-        when {
-            vm.loading && vm.items.isEmpty() -> AdminLoading()
-            vm.items.isEmpty() -> AdminEmpty("没有匹配的博客")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
+        AdminListFrame(vm.loading, vm.items.isEmpty(), "没有匹配的博客") {
+            LazyColumn(Modifier.fillMaxWidth()) {
                 items(vm.items, key = { it.id }) { blog ->
                     BlogAdminRow(
                         blog = blog,

@@ -8,12 +8,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.auth.TokenStore
-import com.hanphone.blog.data.repo.FileRepository
-import com.hanphone.blog.util.MediaPicker
-import com.hanphone.blog.util.adminMessage
-import com.hanphone.blog.util.decoded
-import com.hanphone.blog.util.md5Hex
-import com.hanphone.blog.util.normalized
 import com.hanphone.blog.data.model.AdminCollectRun
 import com.hanphone.blog.data.model.AdminRebuildSummary
 import com.hanphone.blog.data.model.AdminSummarySettings
@@ -22,8 +16,14 @@ import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.HotSourceStatus
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.User
-import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.AdminRepository
+import com.hanphone.blog.data.repo.FileRepository
+import com.hanphone.blog.ui.components.PullRefreshHost
+import com.hanphone.blog.util.MediaPicker
+import com.hanphone.blog.util.adminMessage
+import com.hanphone.blog.util.decoded
+import com.hanphone.blog.util.md5Hex
+import com.hanphone.blog.util.normalized
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -38,50 +38,29 @@ import javax.inject.Inject
 @HiltViewModel
 class AdminFriendLinksViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel(), PullRefreshHost {
+) : AdminListViewModel<FriendLink>(paged = false) {
 
-    override val refreshing: Boolean get() = loading
+    init { start() }
 
-    var items by mutableStateOf<List<FriendLink>>(emptyList())
-        private set
-    var loading by mutableStateOf(true)
-        private set
-    var message by mutableStateOf<String?>(null)
-        private set
-
-    init { refresh() }
-
-    override fun refresh() {
-        viewModelScope.launch {
-            loading = true
-            try {
-                // 后台接口同样会把 URL 里的 & 存成 &amp;（qlogo 头像就是），这里必须和公开友链页走同一套归一化
-                items = repo.friendLinks().data.orEmpty().normalized()
-            } catch (e: Exception) {
-                message = e.adminMessage("加载失败")
-            } finally {
-                loading = false
-            }
-        }
-    }
+    override suspend fun fetchPage(page: Int, keyword: String): AdminPage<FriendLink> =
+        AdminPage(repo.friendLinks().data.orEmpty().normalized())
 
     fun save(link: FriendLink, done: () -> Unit) {
         if (link.name.isBlank() || link.url.isBlank()) {
-            message = "名称与链接不能为空"
+            notify("名称与链接不能为空")
             return
         }
         viewModelScope.launch {
-            try {
-                val res = repo.saveFriendLink(link.decoded())
-                if (res.flag) {
-                    done()
-                    refresh()
-                } else {
-                    message = res.message.ifBlank { "保存失败" }
+            runCatching { repo.saveFriendLink(link.decoded()) }
+                .onSuccess { res ->
+                    if (res.flag) {
+                        done()
+                        refresh()
+                    } else {
+                        notify(res.message.ifBlank { "保存失败" })
+                    }
                 }
-            } catch (e: Exception) {
-                message = e.adminMessage("保存失败")
-            }
+                .onFailure { message = it.adminMessage("保存失败") }
         }
     }
 
@@ -90,7 +69,7 @@ class AdminFriendLinksViewModel @Inject constructor(
             runCatching { repo.toggleFriendLinkPublished(link) }
                 .onSuccess { res ->
                     if (res.flag) items = items.map { if (it.id == link.id) it.copy(published = link.published != true) else it }
-                    else message = res.message.ifBlank { "操作失败" }
+                    else notify(res.message.ifBlank { "操作失败" })
                 }
                 .onFailure { message = it.adminMessage("操作失败") }
         }
@@ -101,7 +80,7 @@ class AdminFriendLinksViewModel @Inject constructor(
             runCatching { repo.toggleFriendLinkRecommend(link) }
                 .onSuccess { res ->
                     if (res.flag) items = items.map { if (it.id == link.id) it.copy(recommend = !link.recommend) else it }
-                    else message = res.message.ifBlank { "操作失败" }
+                    else notify(res.message.ifBlank { "操作失败" })
                 }
                 .onFailure { message = it.adminMessage("操作失败") }
         }
@@ -112,54 +91,38 @@ class AdminFriendLinksViewModel @Inject constructor(
             runCatching { repo.deleteFriendLink(link.id) }
                 .onSuccess { res ->
                     if (res.flag) items = items.filterNot { it.id == link.id }
-                    else message = res.message.ifBlank { "删除失败" }
+                    else notify(res.message.ifBlank { "删除失败" })
                 }
                 .onFailure { message = it.adminMessage("删除失败") }
         }
     }
-
-    fun consumeMessage() { message = null }
 }
 
 /** 项目：发布、推荐、增删改 */
 @HiltViewModel
 class AdminProjectsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel(), PullRefreshHost {
+) : AdminListViewModel<Project>(paged = false) {
 
-    override val refreshing: Boolean get() = loading
+    init { start() }
 
-    var items by mutableStateOf<List<Project>>(emptyList())
-        private set
-    var loading by mutableStateOf(true)
-        private set
-    var message by mutableStateOf<String?>(null)
-        private set
-
-    init { refresh() }
-
-    override fun refresh() {
-        viewModelScope.launch {
-            loading = true
-            try {
-                items = repo.projects().data.orEmpty()
-            } catch (e: Exception) {
-                message = e.adminMessage("加载失败")
-            } finally {
-                loading = false
-            }
-        }
-    }
+    override suspend fun fetchPage(page: Int, keyword: String): AdminPage<Project> =
+        AdminPage(repo.projects().data.orEmpty())
 
     fun save(project: Project, done: () -> Unit) {
         if (project.title.isBlank()) {
-            message = "标题不能为空"
+            notify("标题不能为空")
             return
         }
         viewModelScope.launch {
             runCatching { repo.saveProject(project) }
                 .onSuccess { res ->
-                    if (res.flag) { done(); refresh() } else message = res.message.ifBlank { "保存失败" }
+                    if (res.flag) {
+                        done()
+                        refresh()
+                    } else {
+                        notify(res.message.ifBlank { "保存失败" })
+                    }
                 }
                 .onFailure { message = it.adminMessage("保存失败") }
         }
@@ -170,7 +133,7 @@ class AdminProjectsViewModel @Inject constructor(
             runCatching { repo.toggleProjectPublished(project) }
                 .onSuccess { res ->
                     if (res.flag) items = items.map { if (it.id == project.id) it.copy(published = project.published != true) else it }
-                    else message = res.message.ifBlank { "操作失败" }
+                    else notify(res.message.ifBlank { "操作失败" })
                 }
                 .onFailure { message = it.adminMessage("操作失败") }
         }
@@ -181,7 +144,7 @@ class AdminProjectsViewModel @Inject constructor(
             runCatching { repo.toggleProjectRecommend(project) }
                 .onSuccess { res ->
                     if (res.flag) items = items.map { if (it.id == project.id) it.copy(recommend = !project.recommend) else it }
-                    else message = res.message.ifBlank { "操作失败" }
+                    else notify(res.message.ifBlank { "操作失败" })
                 }
                 .onFailure { message = it.adminMessage("操作失败") }
         }
@@ -192,50 +155,34 @@ class AdminProjectsViewModel @Inject constructor(
             runCatching { repo.deleteProject(project.id) }
                 .onSuccess { res ->
                     if (res.flag) items = items.filterNot { it.id == project.id }
-                    else message = res.message.ifBlank { "删除失败" }
+                    else notify(res.message.ifBlank { "删除失败" })
                 }
                 .onFailure { message = it.adminMessage("删除失败") }
         }
     }
-
-    fun consumeMessage() { message = null }
 }
 
 /** 文库：发布、推荐、删除；新增走「上传文件 + 填元数据」 */
 @HiltViewModel
 class AdminDocsViewModel @Inject constructor(
     private val repo: AdminRepository
-) : ViewModel(), PullRefreshHost {
+) : AdminListViewModel<Doc>(paged = false) {
 
-    override val refreshing: Boolean get() = loading
+    init { start() }
 
-    var items by mutableStateOf<List<Doc>>(emptyList())
-        private set
-    var loading by mutableStateOf(true)
-        private set
-    var message by mutableStateOf<String?>(null)
-        private set
-
-    init { refresh() }
-
-    override fun refresh() {
-        viewModelScope.launch {
-            loading = true
-            try {
-                items = repo.docs().data.orEmpty()
-            } catch (e: Exception) {
-                message = e.adminMessage("加载失败")
-            } finally {
-                loading = false
-            }
-        }
-    }
+    override suspend fun fetchPage(page: Int, keyword: String): AdminPage<Doc> =
+        AdminPage(repo.docs().data.orEmpty())
 
     fun save(doc: Map<String, Any?>, done: () -> Unit) {
         viewModelScope.launch {
             runCatching { repo.saveDoc(doc) }
                 .onSuccess { res ->
-                    if (res.flag) { done(); refresh() } else message = res.message.ifBlank { "保存失败" }
+                    if (res.flag) {
+                        done()
+                        refresh()
+                    } else {
+                        notify(res.message.ifBlank { "保存失败" })
+                    }
                 }
                 .onFailure { message = it.adminMessage("保存失败") }
         }
@@ -246,7 +193,7 @@ class AdminDocsViewModel @Inject constructor(
             runCatching { repo.toggleDocPublished(doc) }
                 .onSuccess { res ->
                     if (res.flag) items = items.map { if (it.id == doc.id) it.copy(published = doc.published != true) else it }
-                    else message = res.message.ifBlank { "操作失败" }
+                    else notify(res.message.ifBlank { "操作失败" })
                 }
                 .onFailure { message = it.adminMessage("操作失败") }
         }
@@ -257,7 +204,7 @@ class AdminDocsViewModel @Inject constructor(
             runCatching { repo.toggleDocRecommend(doc) }
                 .onSuccess { res ->
                     if (res.flag) items = items.map { if (it.id == doc.id) it.copy(recommend = !doc.recommend) else it }
-                    else message = res.message.ifBlank { "操作失败" }
+                    else notify(res.message.ifBlank { "操作失败" })
                 }
                 .onFailure { message = it.adminMessage("操作失败") }
         }
@@ -268,25 +215,23 @@ class AdminDocsViewModel @Inject constructor(
             runCatching { repo.deleteDoc(doc.id) }
                 .onSuccess { res ->
                     if (res.flag) items = items.filterNot { it.id == doc.id }
-                    else message = res.message.ifBlank { "删除失败" }
+                    else notify(res.message.ifBlank { "删除失败" })
                 }
                 .onFailure { message = it.adminMessage("删除失败") }
         }
     }
 
     /** 上传文件到指定命名空间，返回 (filename, fileType) */
-    suspend fun uploadDoc(file: java.io.File, mimeType: String, namespace: String): Pair<String, String>? {
+    suspend fun uploadDoc(file: File, mimeType: String, namespace: String): Pair<String, String>? {
         val item = repo.uploadFile(file, namespace, mimeType)
         if (!item.success || item.url == null) {
-            message = item.error ?: "上传失败"
+            notify(item.error ?: "上传失败")
             return null
         }
         val filename = item.url.substringAfterLast('/')
         val fileType = filename.substringAfterLast('.', "").uppercase()
         return filename to fileType
     }
-
-    fun consumeMessage() { message = null }
 }
 
 /** 用户管理：改资料 / 管理员权限 / 重置密码 / 删除（对齐网页后台 /admin/users） */
@@ -295,21 +240,11 @@ class AdminUsersViewModel @Inject constructor(
     private val repo: AdminRepository,
     @ApplicationContext private val appContext: Context,
     private val fileRepo: FileRepository
-) : ViewModel(), PullRefreshHost {
+) : AdminListViewModel<User>(paged = false) {
 
-    override val refreshing: Boolean get() = loading
-
-    var all by mutableStateOf<List<User>>(emptyList())
-        private set
-    var keyword by mutableStateOf("")
-        private set
-    var loading by mutableStateOf(true)
-        private set
     var busy by mutableStateOf(false)
         private set
     var uploading by mutableStateOf(false)
-        private set
-    var message by mutableStateOf<String?>(null)
         private set
 
     /** 当前登录的管理员 id */
@@ -324,30 +259,18 @@ class AdminUsersViewModel @Inject constructor(
     val filtered: List<User>
         get() {
             val k = keyword.trim()
-            if (k.isEmpty()) return all
-            return all.filter {
+            if (k.isEmpty()) return items
+            return items.filter {
                 (it.nickname ?: "").contains(k, ignoreCase = true) ||
                     (it.username ?: "").contains(k, ignoreCase = true) ||
                     (it.email ?: "").contains(k, ignoreCase = true)
             }
         }
 
-    init { refresh() }
+    init { start() }
 
-    fun search(v: String) { keyword = v }
-
-    override fun refresh() {
-        viewModelScope.launch {
-            loading = true
-            try {
-                all = repo.users().data.orEmpty()
-            } catch (e: Exception) {
-                message = e.adminMessage("加载失败")
-            } finally {
-                loading = false
-            }
-        }
-    }
+    override suspend fun fetchPage(page: Int, keyword: String): AdminPage<User> =
+        AdminPage(repo.users().data.orEmpty())
 
     /** 保存资料（昵称/邮箱/头像）；头像先由 [uploadAvatar] 换成外链 URL */
     fun saveProfile(user: User, nickname: String, email: String, avatar: String, done: () -> Unit) {
@@ -365,7 +288,7 @@ class AdminUsersViewModel @Inject constructor(
                 )
             }.onSuccess { res ->
                 if (res.flag) {
-                    all = all.map {
+                    items = items.map {
                         if (it.id == user.id) {
                             it.copy(
                                 nickname = nickname.trim(),
@@ -374,10 +297,10 @@ class AdminUsersViewModel @Inject constructor(
                             )
                         } else it
                     }
-                    message = "已保存"
+                    notify("已保存")
                     done()
                 } else {
-                    message = res.message.ifBlank { "保存失败" }
+                    notify(res.message.ifBlank { "保存失败" })
                 }
             }.onFailure { message = it.adminMessage("保存失败") }
             busy = false
@@ -393,10 +316,10 @@ class AdminUsersViewModel @Inject constructor(
             runCatching { repo.saveUser(mapOf("id" to user.id, "type" to type)) }
                 .onSuccess { res ->
                     if (res.flag) {
-                        all = all.map { if (it.id == user.id) it.copy(type = type) else it }
-                        message = if (admin) "已设为管理员" else "已取消管理员"
+                        items = items.map { if (it.id == user.id) it.copy(type = type) else it }
+                        notify(if (admin) "已设为管理员" else "已取消管理员")
                     } else {
-                        message = res.message.ifBlank { "操作失败" }
+                        notify(res.message.ifBlank { "操作失败" })
                     }
                 }
                 .onFailure { message = it.adminMessage("操作失败") }
@@ -412,10 +335,10 @@ class AdminUsersViewModel @Inject constructor(
             runCatching { repo.resetUserPassword(user.id, md5Hex(newPassword)) }
                 .onSuccess { res ->
                     if (res.flag) {
-                        message = "密码已重置"
+                        notify("密码已重置")
                         done()
                     } else {
-                        message = res.message.ifBlank { "重置失败" }
+                        notify(res.message.ifBlank { "重置失败" })
                     }
                 }
                 .onFailure { message = it.adminMessage("重置失败") }
@@ -430,10 +353,10 @@ class AdminUsersViewModel @Inject constructor(
             runCatching { repo.deleteUser(user.id) }
                 .onSuccess { res ->
                     if (res.flag) {
-                        all = all.filterNot { it.id == user.id }
-                        message = "已删除用户"
+                        items = items.filterNot { it.id == user.id }
+                        notify("已删除用户")
                     } else {
-                        message = res.message.ifBlank { "删除失败" }
+                        notify(res.message.ifBlank { "删除失败" })
                     }
                 }
                 .onFailure { message = it.adminMessage("删除失败") }
@@ -452,10 +375,10 @@ class AdminUsersViewModel @Inject constructor(
                 temp = media.file
                 val res = runCatching { fileRepo.uploadAvatar(media.file) }.getOrNull()
                 val url = res?.url?.takeIf { it.isNotBlank() }
-                if (url == null) message = "头像上传失败"
+                if (url == null) notify("头像上传失败")
                 done(url)
             } catch (e: Exception) {
-                message = "头像上传失败"
+                notify("头像上传失败")
                 done(null)
             } finally {
                 MediaPicker.cleanup(temp)
@@ -463,8 +386,6 @@ class AdminUsersViewModel @Inject constructor(
             }
         }
     }
-
-    fun consumeMessage() { message = null }
 }
 
 /**

@@ -459,3 +459,5 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
    - **`refresh()` 必须重拉该页全部服务端数据**，不能只刷统计：曾因「我的」下拉只刷站点统计、不重拉 `/user/current`，换了头像刷新也看不到；资料返回后还要同步 `TokenStore` + DataStore，否则冷启动/其他页面仍用登录时的旧值。
    - 详情页（文章/随笔）下拉重拉正文 + 评论；搜索页下拉作废 5 分钟结果缓存后强制重搜（走顶部指示器，不闪骨架屏）；文库 MD 预览下拉跳过 24h 磁盘缓存。
    - 聊天页**不加**：消息由 socket 实时推送、列表还会自动滚到底，下拉手势与阅读历史冲突；断线有重连入口。
+
+17. **后台列表/表单统一模板（2026-11）**：列表 VM 继承 `AdminListViewModel<T>`（`ui/admin/AdminListViewModel.kt`），只实现 `fetchPage()` 并在 init 末尾 `start()`；分页、下拉刷新、搜索防抖、错误提示由基类统一。页面侧用 `AdminListBody`（简单行）/ `AdminListFrame`（复杂行）收掉「骨架/空态/列表」三态，表单弹窗用 `AdminFormDialog`（标题 + 可滚动字段区 + 保存/取消）。新增后台页面照这个结构写，不要再抄 `items/loading/loadingMore/message` 五件套。

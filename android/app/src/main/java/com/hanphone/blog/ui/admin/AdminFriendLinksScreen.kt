@@ -55,21 +55,19 @@ fun AdminFriendLinksScreen(
         actions = { TextButton(onClick = { creating = true }) { Text("新增") } },
         refreshable = vm,
     ) {
-        when {
-            vm.loading && vm.items.isEmpty() -> AdminLoading()
-            vm.items.isEmpty() -> AdminEmpty("还没有友链申请")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
-                items(vm.items, key = { it.id }) { link ->
-                    FriendLinkRow(
-                        link = link,
-                        onEdit = { editing = link },
-                        onTogglePublished = { vm.togglePublished(link) },
-                        onToggleRecommend = { vm.toggleRecommend(link) },
-                        onDelete = { pendingDelete = link }
-                    )
-                    AdminDivider()
-                }
-            }
+        AdminListBody(
+            loading = vm.loading,
+            list = vm.items,
+            emptyText = "还没有友链申请",
+            key = { it.id }
+        ) { link ->
+            FriendLinkRow(
+                link = link,
+                onEdit = { editing = link },
+                onTogglePublished = { vm.togglePublished(link) },
+                onToggleRecommend = { vm.toggleRecommend(link) },
+                onDelete = { pendingDelete = link }
+            )
         }
     }
 
@@ -186,42 +184,31 @@ private fun FriendLinkDialog(
     var published by remember { mutableStateOf(initial?.published == true) }
     var recommend by remember { mutableStateOf(initial?.recommend ?: false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "新增友链" else "编辑友链") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                AdminField(name, { name = it }, "名称")
-                AdminGap(8)
-                AdminField(url, { url = it }, "链接", placeholder = "https://")
-                AdminGap(8)
-                AdminField(description, { description = it }, "简介", singleLine = false, minLines = 2)
-                AdminGap(8)
-                AdminField(avatar, { avatar = it }, "头像 URL", placeholder = "可留空")
-                AdminGap(8)
-                AdminField(nickname, { nickname = it }, "站长昵称", placeholder = "可留空")
-                AdminGap(8)
-                AdminSwitchRow("上线（审核通过）", published, { published = it })
-                AdminSwitchRow("推荐", recommend, { recommend = it })
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onSave(
-                    (initial ?: FriendLink(id = 0)).copy(
-                        name = name.trim(),
-                        url = url.trim(),
-                        description = description.trim(),
-                        avatar = avatar.trim().ifBlank { null },
-                        nickname = nickname.trim().ifBlank { null },
-                        published = published,
-                        recommend = recommend
-                    )
+    AdminFormDialog(
+        title = if (initial == null) "新增友链" else "编辑友链",
+        onDismiss = onDismiss,
+        onSave = {
+            onSave(
+                (initial ?: FriendLink(id = 0)).copy(
+                    name = name.trim(),
+                    url = url.trim(),
+                    description = description.trim(),
+                    avatar = avatar.trim().ifBlank { null },
+                    nickname = nickname.trim().ifBlank { null },
+                    published = published,
+                    recommend = recommend
                 )
-            }) { Text("保存") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
-    )
+            )
+        }
+    ) {
+        AdminField(name, { name = it }, "名称")
+        AdminField(url, { url = it }, "链接", placeholder = "https://")
+        AdminField(description, { description = it }, "简介", singleLine = false, minLines = 2)
+        AdminField(avatar, { avatar = it }, "头像 URL", placeholder = "可留空")
+        AdminField(nickname, { nickname = it }, "站长昵称", placeholder = "可留空")
+        AdminSwitchRow("上线（审核通过）", published, { published = it })
+        AdminSwitchRow("推荐", recommend, { recommend = it })
+    }
 }
 
 /** 项目维护 */
@@ -246,57 +233,55 @@ fun AdminProjectsScreen(
         actions = { TextButton(onClick = { creating = true }) { Text("新增") } },
         refreshable = vm,
     ) {
-        when {
-            vm.loading && vm.items.isEmpty() -> AdminLoading()
-            vm.items.isEmpty() -> AdminEmpty("还没有项目")
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
-                items(vm.items, key = { it.id }) { project ->
-                    Row(
-                        Modifier.fillMaxWidth().padding(vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    project.title,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f, fill = false)
-                                )
-                                if (project.recommend) {
-                                    AdminStarMark(Modifier.padding(start = 6.dp))
-                                }
-                            }
-                            MetaFlow(modifier = Modifier.padding(top = 3.dp)) {
-                                AdminBadge(typeLabel(project.type), MaterialTheme.colorScheme.secondary)
-                                AdminBadge(
-                                    if (project.published == true) "已发布" else "草稿",
-                                    if (project.published == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                                )
-                            }
+        AdminListBody(
+            loading = vm.loading,
+            list = vm.items,
+            emptyText = "还没有项目",
+            key = { it.id }
+        ) { project ->
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            project.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (project.recommend) {
+                            AdminStarMark(Modifier.padding(start = 6.dp))
                         }
-                        AdminRowMenu(
-                            listOf(
-                                AdminMenuAction(
-                                    label = if (project.published == true) "下线" else "发布",
-                                    onClick = { vm.togglePublished(project) }
-                                ),
-                                AdminMenuAction(
-                                    label = if (project.recommend) "取消推荐" else "设为推荐",
-                                    onClick = { vm.toggleRecommend(project) }
-                                ),
-                                AdminMenuAction(label = "编辑", onClick = { editing = project }),
-                                AdminMenuAction(
-                                    label = "删除",
-                                    onClick = { pendingDelete = project },
-                                    destructive = true
-                                )
-                            )
+                    }
+                    MetaFlow(modifier = Modifier.padding(top = 3.dp)) {
+                        AdminBadge(typeLabel(project.type), MaterialTheme.colorScheme.secondary)
+                        AdminBadge(
+                            if (project.published == true) "已发布" else "草稿",
+                            if (project.published == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         )
                     }
-                    AdminDivider()
                 }
+                AdminRowMenu(
+                    listOf(
+                        AdminMenuAction(
+                            label = if (project.published == true) "下线" else "发布",
+                            onClick = { vm.togglePublished(project) }
+                        ),
+                        AdminMenuAction(
+                            label = if (project.recommend) "取消推荐" else "设为推荐",
+                            onClick = { vm.toggleRecommend(project) }
+                        ),
+                        AdminMenuAction(label = "编辑", onClick = { editing = project }),
+                        AdminMenuAction(
+                            label = "删除",
+                            onClick = { pendingDelete = project },
+                            destructive = true
+                        )
+                    )
+                )
             }
         }
     }
@@ -336,49 +321,37 @@ private fun ProjectDialog(
     var published by remember { mutableStateOf(initial?.published != false) }
     var recommend by remember { mutableStateOf(initial?.recommend ?: false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "新增项目" else "编辑项目") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                AdminField(title, { title = it }, "标题")
-                AdminGap(8)
-                AdminField(content, { content = it }, "简介", singleLine = false, minLines = 3)
-                AdminGap(8)
-                AdminField(url, { url = it }, "链接", placeholder = "https://")
-                AdminGap(8)
-                AdminField(techs, { techs = it }, "技术栈", placeholder = "逗号分隔，如：Vue3, Vite")
-                AdminGap(8)
-                AdminField(picUrl, { picUrl = it }, "封面 URL", placeholder = "可留空")
-                AdminGap(10)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(1 to "完整项目", 2 to "工具箱", 3 to "小游戏", 4 to "小练习").forEach { (v, label) ->
-                        AdminChip(label, type == v) { type = v }
-                    }
-                }
-                AdminGap(8)
-                AdminSwitchRow("发布", published, { published = it })
-                AdminSwitchRow("推荐", recommend, { recommend = it })
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onSave(
-                    (initial ?: Project(id = 0)).copy(
-                        title = title.trim(),
-                        content = content,
-                        url = url.trim().ifBlank { null },
-                        techs = techs.trim(),
-                        picUrl = picUrl.trim().ifBlank { null },
-                        type = type,
-                        published = published,
-                        recommend = recommend
-                    )
+    AdminFormDialog(
+        title = if (initial == null) "新增项目" else "编辑项目",
+        onDismiss = onDismiss,
+        onSave = {
+            onSave(
+                (initial ?: Project(id = 0)).copy(
+                    title = title.trim(),
+                    content = content,
+                    url = url.trim().ifBlank { null },
+                    techs = techs.trim(),
+                    picUrl = picUrl.trim().ifBlank { null },
+                    type = type,
+                    published = published,
+                    recommend = recommend
                 )
-            }) { Text("保存") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
-    )
+            )
+        }
+    ) {
+        AdminField(title, { title = it }, "标题")
+        AdminField(content, { content = it }, "简介", singleLine = false, minLines = 3)
+        AdminField(url, { url = it }, "链接", placeholder = "https://")
+        AdminField(techs, { techs = it }, "技术栈", placeholder = "逗号分隔，如：Vue3, Vite")
+        AdminField(picUrl, { picUrl = it }, "封面 URL", placeholder = "可留空")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(1 to "完整项目", 2 to "工具箱", 3 to "小游戏", 4 to "小练习").forEach { (v, label) ->
+                AdminChip(label, type == v) { type = v }
+            }
+        }
+        AdminSwitchRow("发布", published, { published = it })
+        AdminSwitchRow("推荐", recommend, { recommend = it })
+    }
 }
 
 private fun typeLabel(type: Int): String = when (type) {
