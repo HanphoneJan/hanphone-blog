@@ -111,6 +111,20 @@ pnpm --filter web test:watch
 pnpm --filter web test:coverage
 ```
 
+### Android 测试
+
+纯逻辑（版本比较、表单校验等）用 JUnit 4 单元测试，位于 `android/app/src/test/`：
+
+```bash
+cd android
+
+# 运行单元测试
+./gradlew :app:testDebugUnitTest
+
+# 只跑某个类
+./gradlew :app:testDebugUnitTest --tests "com.hanphone.blog.BasicsTest"
+```
+
 ### admin-file (Express.js) 测试
 
 目前 admin-file 模块暂未配置独立的测试框架。需要时可引入 [Jest](https://jestjs.io/) 或 [Vitest](https://vitest.dev/) 并编写接口测试：
@@ -136,7 +150,8 @@ curl -X POST http://localhost:4000/upload/avatar \
 
 1. **Server Tests**: Maven 单元测试 (JUnit 5)
 2. **Web Unit Tests**: Vitest 单元测试
-3. **Build Verification**: 服务端打包 + Gomoku 构建 + Web 构建
+3. **Android Build & Unit Tests**: `:app:testDebugUnitTest` + `:app:assembleDebug`
+4. **Build Verification**: 服务端打包 + Gomoku 构建 + Web 构建
 
 ### 测试结果
 
