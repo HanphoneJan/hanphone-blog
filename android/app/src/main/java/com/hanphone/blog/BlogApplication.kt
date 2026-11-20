@@ -1,7 +1,8 @@
 package com.hanphone.blog
 
 import android.app.Application
-import com.hanphone.blog.core.saveTokens
+import com.hanphone.blog.core.AuthData
+import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ContentStore
 import kotlinx.coroutines.CoroutineScope
@@ -25,9 +26,21 @@ class BlogApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // 刷新 token 后由网络层回调，这里异步落盘（网络层不持有 Context）
-        TokenStore.persistTokens = { token, refreshToken ->
-            appScope.launch { saveTokens(token, refreshToken) }
+        // 登录/资料更新/静默续期都经 TokenStore 这一个入口，这里负责落盘（网络层不持有 Context）
+        TokenStore.persistSnapshot = { snapshot ->
+            appScope.launch {
+                saveAuth(
+                    AuthData(
+                        token = snapshot.token,
+                        userId = snapshot.userId,
+                        nickname = snapshot.nickname,
+                        avatar = snapshot.avatar,
+                        userType = snapshot.userType,
+                        username = snapshot.username,
+                        refreshToken = snapshot.refreshToken
+                    )
+                )
+            }
         }
         ContentStore.init(this)
         ImageCaches.init(this)

@@ -113,6 +113,7 @@ import com.hanphone.blog.ui.webview.WebViewScreen
 import com.hanphone.blog.ui.theme.BlogTheme
 import kotlinx.coroutines.flow.first
 import com.hanphone.blog.ui.components.rememberToast
+import com.hanphone.blog.data.auth.SessionSnapshot
 
 enum class MainTab(val route: String, val label: String, val icon: ImageVector) {
     HOME("home", "首页", Icons.Filled.Home),
@@ -155,7 +156,15 @@ fun BlogAppRoot() {
         val auth = context.auth.first()
         // 先恢复（含 refresh），再决定要不要续期
         TokenStore.restore(
-            auth.token, auth.userId, auth.nickname, auth.avatar, auth.userType, auth.refreshToken
+            SessionSnapshot(
+                token = auth.token,
+                userId = auth.userId,
+                nickname = auth.nickname,
+                avatar = auth.avatar,
+                userType = auth.userType,
+                username = auth.username,
+                refreshToken = auth.refreshToken
+            )
         )
         if (Jwt.isExpired(auth.token, skewSeconds = 120)) {
             // access 过期：用 refresh 静默续期；没有 refresh 或续期失败才退回未登录

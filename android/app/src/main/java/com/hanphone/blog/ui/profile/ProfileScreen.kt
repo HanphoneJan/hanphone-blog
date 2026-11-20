@@ -62,9 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.R
 import com.hanphone.blog.core.AuthBridge
-import com.hanphone.blog.core.AuthData
 import com.hanphone.blog.core.clearAuth
-import com.hanphone.blog.core.saveAuth
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.User
@@ -272,20 +270,8 @@ fun ProfileScreen(
             vm = vm,
             onDismiss = { showEditProfile = false },
             onSaved = { user ->
-                // 同步更新登录态展示（内存 + DataStore 持久化）
-                TokenStore.restore(token, userId, user.nickname, user.avatar, userType)
-                scope.launch {
-                    context.saveAuth(
-                        AuthData(
-                            token = token,
-                            userId = userId,
-                            nickname = user.nickname,
-                            avatar = user.avatar,
-                            userType = userType,
-                            username = user.username
-                        )
-                    )
-                }
+                // 同步更新登录态（TokenStore 统一落盘，不再手工拼 DataStore 对象）
+                TokenStore.updateProfile(user.nickname, user.avatar, userType)
             }
         )
     }

@@ -30,6 +30,8 @@ vico = "3.3.1"
 exifinterface = "1.4.2"
 # WebViewCompat.addDocumentStartJavaScript：把 App 登录态在页面脚本之前注入第一方页面
 webkit = "1.18.0"
+# 单元测试
+junit = "4.13.2"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,6 +40,7 @@ richeditor-compose = { group = "com.mohamedrejeb.richeditor", name = "richeditor
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 coil-video = { group = "io.coil-kt", name = "coil-video", version.ref = "coil" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }

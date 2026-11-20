@@ -466,3 +466,5 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 
 19. **表单校验与密码哈希的位置（2026-11）**：邮箱/昵称/密码规则统一在 `util/Validation.kt`（`emailError/nicknameError/passwordError`，返回 null 表示通过），页面不再自带正则；md5(明文) 统一在 Repository 层做（`BlogRepository.login/register`、`AdminRepository.resetUserPassword`），UI 不出现 `md5Hex`。
 20. **列表三级缓存用 `CachedList`（2026-11）**：`data/cache/CachedList.kt` 收口「冷启动 seed（内存→磁盘→回填）」与「网络结果 store（内存+落盘）」，首页/项目/文库/友链/留言板已接入；网络请求与筛选仍留在各自 VM。
+
+21. **登录态单一入口 `TokenStore`（2026-11）**：内存与 DataStore 只通过 `SessionSnapshot` 同步——`apply()`（登录/资料更新，自动落盘）、`restore()`（启动恢复）、`updateTokens()`（静默续期）；`persistSnapshot` 由 `BlogApplication` 注入。`SessionSnapshot` 含 `username`，改资料不再手工拼 `AuthData`（之前那里漏了 `refreshToken`，保存资料会把长期登录清掉）。新增登录入口/资料写入一律走 TokenStore，不要直接 `saveAuth`。

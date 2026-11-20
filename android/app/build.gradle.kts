@@ -99,6 +99,8 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.socketio.client)
 
+    testImplementation(libs.junit)
+
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
 }

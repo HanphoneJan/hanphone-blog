@@ -1,6 +1,7 @@
 package com.hanphone.blog.core
 
 import android.content.Context
+import com.hanphone.blog.data.auth.SessionSnapshot
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.LoginData
 
@@ -15,9 +16,8 @@ import com.hanphone.blog.data.model.LoginData
 suspend fun Context.applyLogin(data: LoginData) {
     val token = data.token ?: return
     val user = data.user ?: return
-    TokenStore.restore(token, user.id, user.nickname, user.avatar, user.type, data.refreshToken)
-    saveAuth(
-        AuthData(
+    TokenStore.apply(
+        SessionSnapshot(
             token = token,
             userId = user.id,
             nickname = user.nickname,

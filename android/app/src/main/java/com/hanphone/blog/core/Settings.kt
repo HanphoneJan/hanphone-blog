@@ -91,12 +91,6 @@ suspend fun Context.saveAuth(auth: AuthData) = dataStore.edit {
     it[KEY_REFRESH_TOKEN] = auth.refreshToken ?: ""
 }
 
-/** 只更新 token 对（刷新后落盘用） */
-suspend fun Context.saveTokens(token: String, refreshToken: String?) = dataStore.edit {
-    it[KEY_TOKEN] = token
-    it[KEY_REFRESH_TOKEN] = refreshToken ?: ""
-}
-
 suspend fun Context.clearAuth() = dataStore.edit {
     it.remove(KEY_TOKEN)
     it.remove(KEY_USER_ID)
