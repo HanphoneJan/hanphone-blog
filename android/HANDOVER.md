@@ -474,6 +474,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ **v1.3.0 启动时检查更新**：冷启动自动查 GitHub Release（每进程一次、失败静默），设「启动时检查更新」开关默认开、可在设置页关闭；更新弹窗上提到根界面（`ui/components/UpdateDialogs.kt`），手动/启动共用，下载不再随设置页销毁中断。
 - ✅ **第三方登录（GitHub / Google）**：登录页「GitHub 登录 / Google 登录」→ 系统浏览器授权 → `hanphone://oauth/callback`（只带一次性 code）→ `POST /oauth/app/exchange` → 与密码登录共用 `core/LoginSession.applyLogin`。服务端 `state=app` 分支 + `OAuthExchangeCodeStore`（32 字节、单次、2 分钟）。网页上 GitHub 注册的账号（`gh_<id>`，无密码）终于能在 App 里登录。Google 需服务端能出站（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。
 - ✅ **v1.3.2 站内通知 + 收藏 + 深链（2026-11）**：「我的 → 通知」评论/回复通知（未读角标、全部已读）、「我的 → 收藏」博客/随笔/文档（`BookmarkStore` 进程级状态 + 乐观更新）、详情/随笔/文库收藏按钮；`https://hanphone.cn/{blog,essays,docs}` App Links（`DeepLinkBus` + 纯函数解析 + 单测）。收藏文档本轮点击回文库列表。小版本发布，versionCode 26 / versionName 1.3.2；Release 包用 debug 密钥签名，可直接覆盖 1.3.1。
+- ✅ **v1.3.3「我的」页身份区重做（2026-11）**：登录后头像/昵称只出现一次（原来顶部大头像 + 「已登录」卡片各画一遍，且卡片读 TokenStore、头部读服务端资料，可能同时显示新旧昵称）；头像右下铅笔角标替代「点击头像可修改资料」，编辑/退出收进头像下方动作行；未登录态改为品牌头图 + 实心「登录」按钮，去掉「未登录」卡片。versionCode 27 / versionName 1.3.3。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 
