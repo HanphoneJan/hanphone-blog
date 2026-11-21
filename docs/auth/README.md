@@ -1,6 +1,6 @@
 # 登录与会话（access + refresh · 第三方登录）
 
-> 适用：Web（Next.js）、Android、Windows（Tauri）。
+> 适用：Web（Next.js）、Android。
 > 代码位置：`server/.../web/AuthController.java`、`web/OAuthController.java`、`service/AuthSessionService*`、`service/OAuthExchangeCodeStore.java`、`po/UserSession.java`、`service/impl/{Github,Google}OAuthProvider.java`；
 > Web 侧 `web/src/lib/authApi.ts` + `web/src/app/next-api/auth/*` + `web/src/components/LoginForm.tsx`；Android 侧 `data/auth/{TokenRefresher,OAuthLogin}.kt`。
 
@@ -9,7 +9,7 @@
 | 令牌 | 形态 | 时长 | 存放 |
 |---|---|---|---|
 | access | JWT（HS256） | **30 分钟**（`JWT_EXPIRE_TIME=1800000`） | 客户端内存/localStorage；请求头 `Token` 或 `Authorization: Bearer` |
-| refresh | 32 字节随机串（base64url） | **90 天** | Web：HttpOnly Cookie（`hp_rt`）；Android：DataStore；Tauri：localStorage |
+| refresh | 32 字节随机串（base64url） | **90 天** | Web：HttpOnly Cookie（`hp_rt`）；Android：DataStore |
 
 access claims：`userId`、`userType`、`pwdv`（密码版本）、`sid`（会话 id）、`iss`、`exp`。
 
@@ -149,11 +149,6 @@ Google 的两个额外约束：
 - 退出登录调用 `/auth/logout` 吊销会话。
 - 登录入口：用户名 + 密码；「使用 GitHub 登录」→ `data/auth/OAuthLogin.kt`（系统浏览器 → `hanphone://` 回跳 → `POST /oauth/app/exchange` → `core/LoginSession.applyLogin`）。
   三个登录入口（登录/注册/第三方）都走 `applyLogin`，字段一致，别再各写一份。
-
-### Tauri（静态导出）
-没有 Node 路由 → 构建时注入 `NEXT_PUBLIC_AUTH_DIRECT=1`（见 `web/scripts/build-tauri.mjs`），
-直连后端、refresh 存 localStorage。Web 与 Tauri 共用 `lib/authApi.ts` 的两条分支。
-Tauri 走网页流程（`state` 为空）；若要接客户端流程，同样用 `state=app` + `APP_OAUTH_REDIRECT`。
 
 ## 6. 部署与灰度
 

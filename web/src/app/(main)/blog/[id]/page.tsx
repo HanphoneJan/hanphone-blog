@@ -23,7 +23,7 @@ interface BlogDetailPageProps {
 // （实测报 `Invalid segment configuration export detected`）。
 export const revalidate = 300
 
-// 静态导出：构建时预生成所有博客详情页面
+// 构建期预生成详情页参数（新文章由 ISR 按需生成）
 export async function generateStaticParams() {
   try {
     const res = await fetch(`${ENDPOINTS.BLOGS}?pagenum=1&pagesize=100`)

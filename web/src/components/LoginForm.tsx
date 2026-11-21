@@ -46,7 +46,7 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
-  const { setUserInfo, setToken, setRefreshToken, onShowRegister, setExpire } = useUser()
+  const { setUserInfo, setToken, onShowRegister, setExpire } = useUser()
   const { theme } = useTheme()
   const [isResetMode, setIsResetMode] = useState(false)
 
@@ -279,7 +279,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ visible, onClose }) => {
           oauthProvider: response.data.user.oauthProvider
         })
         setToken(response.data.token)
-        setRefreshToken(response.data.refreshToken)
         setExpire(response.data.expire)
 
         window.localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(response.data.token))

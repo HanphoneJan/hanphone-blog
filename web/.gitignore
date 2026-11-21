@@ -33,8 +33,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-# .env.build 只含 NEXT_PUBLIC_* 公开变量，用于让 CI 与本地构建产物一致，允许提交
-!.env.build
 
 # Serwist
 public/sw*
@@ -61,8 +59,3 @@ next-env.d.ts
 *.zip
 *.rar
 .workbuddy
-
-# Tauri
-/src-tauri/target
-/src-tauri/Cargo.lock
-/src-tauri/gen

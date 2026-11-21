@@ -357,7 +357,6 @@ export const DEFAULT_LOCATION = {
 export const STORAGE_KEYS = {
   TOKEN: 'token',
   USER_INFO: 'userInfo',
-  REFRESH_TOKEN: 'refreshToken',
   EXPIRE: 'expire',
   THEME: 'theme',
   // 管理后台当前选中的导航路径

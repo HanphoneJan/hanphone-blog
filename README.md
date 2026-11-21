@@ -47,7 +47,7 @@
 
 ## 技术栈
 
-- **前端主站**: Next.js 15 + React 18 + TypeScript + Tailwind CSS + Tauri
+- **前端主站**: Next.js 15 + React 18 + TypeScript + Tailwind CSS
 - **照片墙**: Vue 3 + Vite + Element Plus + Pinia
 - **聊天前端**: React 18 + Vite + shadcn/ui（`apps/chat-client`，`/chat/` 托管）
 - **Android 客户端**: Kotlin 2.0 + Jetpack Compose (M3)（`android/`）
@@ -210,7 +210,6 @@ hanphone-blog/
 │   │   ├── games/          # 小游戏构建产物 (Git 忽略)
 │   │   ├── atlas/          # 照片墙构建产物 (Git 忽略)
 │   │   └── shared/         # 共享资源
-│   └── src-tauri/          # Tauri 桌面应用
 ├── admin-file/             # 文件服务 (Express.js 5，端口 4000)
 ├── photo-wall-server/      # 照片墙后端 (Express.js 5，端口 4001)
 │   ├── app.js              # 应用入口

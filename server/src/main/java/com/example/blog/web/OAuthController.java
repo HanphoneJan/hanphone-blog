@@ -29,7 +29,7 @@ import java.util.Map;
  *
  * 两条回跳路径，靠授权 URL 里的 `state` 区分（第三方原样回传）：
  * - 网页：`state` 为空 → 回 `FRONTEND_URL/oauth/callback?token=…`，由 BFF 把 refresh 写进 Cookie；
- * - 客户端（Android / Tauri）：`state=app` → 回 `APP_OAUTH_REDIRECT`（自定义 scheme），
+ * - 客户端（Android）：`state=app` → 回 `APP_OAUTH_REDIRECT`（自定义 scheme），
  *   只带一枚一次性 code，App 再 `POST /oauth/app/exchange` 换成完整会话。
  *   这样 token 不出现在 URL 里 —— 自定义 scheme 谁都能注册，URL 会被别的 App 看到。
  */

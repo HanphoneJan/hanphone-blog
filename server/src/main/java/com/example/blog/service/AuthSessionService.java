@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 长期登录：会话（refresh token）的签发 / 轮换 / 吊销。
  *
- * 三端（Web / Android / Tauri）共用同一套接口：登录拿 access + refresh，
+ * 两端（Web / Android）共用同一套接口：登录拿 access + refresh，
  * access 短命（默认 30 分钟），refresh 90 天且每次使用都会轮换。
  */
 public interface AuthSessionService {

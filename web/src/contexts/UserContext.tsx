@@ -24,7 +24,6 @@ interface UserInfo {
 interface UserContextType {
   userInfo: UserInfo | null
   token: string | null
-  refreshToken: string | null
   expire: string | null // 新增expire字段
   administrator: boolean
   loginFormVisiable: boolean
@@ -33,7 +32,6 @@ interface UserContextType {
   setUserInfo: (info: UserInfo | null) => void
   updateUserInfo: (info: Partial<UserInfo>) => void // 新增部分更新方法
   setToken: (token: string | null) => void
-  setRefreshToken: (refreshToken: string | null) => void
   setExpire: (expire: string | null) => void // 新增expire设置方法
   setLoginFormVisiable: (visible: boolean) => void
   setRegistorFormVisiable: (visible: boolean) => void
@@ -50,7 +48,6 @@ interface UserContextType {
 const UserContext = createContext<UserContextType>({
   userInfo: null,
   token: null,
-  refreshToken: null,
   expire: null, // 初始化expire默认值
   administrator: false,
   loginFormVisiable: false,
@@ -59,7 +56,6 @@ const UserContext = createContext<UserContextType>({
   setUserInfo: () => {},
   updateUserInfo: () => {}, // 初始化默认方法
   setToken: () => {},
-  setRefreshToken: () => {},
   setExpire: () => {}, // 初始化expire默认方法
   setLoginFormVisiable: () => {},
   setRegistorFormVisiable: () => {},
@@ -79,7 +75,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 状态初始化
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [token, setToken] = useState<string | null>(null)
-  const [refreshToken, setRefreshToken] = useState<string | null>(null)
   const [expire, setExpire] = useState<string | null>(null) // 新增expire状态
   const [administrator, setAdministrator] = useState<boolean>(false)
   const [loginFormVisiable, setLoginFormVisiable] = useState<boolean>(false)
@@ -107,7 +102,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const storedUser = localStorage.getItem(STORAGE_KEYS.USER_INFO)
       const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN)
-      const storedRefreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
       const storedExpire = localStorage.getItem(STORAGE_KEYS.EXPIRE)
 
       // 检查是否过期
@@ -136,10 +130,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setToken(JSON.parse(storedToken))
       }
 
-      if (storedRefreshToken) {
-        setRefreshToken(JSON.parse(storedRefreshToken))
-      }
-
       if (storedExpire) {
         setExpire(JSON.parse(storedExpire))
       }
@@ -151,7 +141,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // 清除可能损坏的本地存储数据
       localStorage.removeItem(STORAGE_KEYS.USER_INFO)
       localStorage.removeItem(STORAGE_KEYS.TOKEN)
-      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
       localStorage.removeItem(STORAGE_KEYS.EXPIRE)
     }
   }, [])
@@ -217,11 +206,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     void authLogout(token)
     localStorage.removeItem(STORAGE_KEYS.USER_INFO)
     localStorage.removeItem(STORAGE_KEYS.TOKEN)
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
     localStorage.removeItem(STORAGE_KEYS.EXPIRE)
     setUserInfo(null)
     setToken(null)
-    setRefreshToken(null)
     setExpire(null) // 重置expire状态
     setAdministrator(false)
     // admin 路由退出后跳转首页，非 admin 路由保持在当前页面
@@ -271,7 +258,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         userInfo,
         token,
-        refreshToken,
         expire, // 提供expire字段
         administrator,
         loginFormVisiable,
@@ -280,7 +266,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUserInfo,
         updateUserInfo, // 暴露更新方法
         setToken,
-        setRefreshToken,
         setExpire, // 提供setExpire方法
         setLoginFormVisiable,
         setRegistorFormVisiable,

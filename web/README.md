@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-18.x-61DAFB?style=flat-square&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 
-基于 Next.js 15 + Tauri 的博客前端。
+基于 Next.js 15 的博客前端。
 
 ---
 
@@ -45,9 +45,6 @@ pnpm dev
 # 根目录执行
 pnpm --filter web dev              # 开发服务器
 pnpm --filter web build            # 生产构建
-pnpm --filter web dev:tauri        # Tauri 开发模式
-pnpm --filter web tauri:build      # 构建桌面应用
-pnpm --filter web build:static     # 静态导出
 
 # 或进入 web 目录
 cd web
@@ -72,12 +69,6 @@ pnpm --filter web start
 cd web
 pnpm build
 pnpm start
-```
-
-### 静态导出 (GitHub Pages)
-
-```bash
-pnpm --filter web build:static
 ```
 
 ### Docker 部署
@@ -135,8 +126,6 @@ web/
 │   ├── icon.png
 │   └── og-image.png
 ├── scripts/                        # 构建脚本
-│   ├── build-static.mjs
-│   ├── build-tauri.mjs
 │   └── verify-pwa.cjs
 ├── src/                            # 源码目录
 │   ├── app/                        # Next.js App Router
@@ -256,16 +245,6 @@ web/
 │   ├── test/                       # 测试配置
 │   │   └── setup.ts
 │   └── global.d.ts
-├── src-tauri/                      # Tauri 桌面应用
-│   ├── src/                        # Rust 源码
-│   │   ├── lib.rs
-│   │   └── main.rs
-│   ├── icons/                      # 应用图标
-│   ├── gen/                        # 生成代码
-│   │   ├── android/
-│   │   └── schemas/
-│   ├── Cargo.toml
-│   └── tauri.conf.json
 ├── middleware.ts                   # Next.js 中间件
 ├── next.config.ts                  # Next.js 配置
 ├── tailwind.config.ts              # Tailwind CSS 配置

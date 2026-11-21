@@ -66,7 +66,7 @@ interface DocPageProps {
 // （实测报 `Invalid segment configuration export detected`）。
 export const revalidate = 300
 
-// 静态导出：构建时预生成所有文档页面
+// 构建期预生成文档页参数（新增文档由 ISR 按需生成）
 export async function generateStaticParams() {
   const docs = await getDocsFromBackend()
   return docs.map((d) => ({ id: d.id }))

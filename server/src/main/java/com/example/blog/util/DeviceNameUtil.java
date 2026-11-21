@@ -24,7 +24,6 @@ public final class DeviceNameUtil {
         if (ua.contains("Windows")) return "Windows";
         if (ua.contains("Macintosh")) return "macOS";
         if (ua.contains("iPhone") || ua.contains("iPad")) return "iOS";
-        if (ua.contains("Tauri")) return "Desktop (Tauri)";
         return cut(ua, 60);
     }
 

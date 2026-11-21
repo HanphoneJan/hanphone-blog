@@ -24,18 +24,9 @@ const withSerwist = withSerwistInit({
   additionalPrecacheEntries: [{ url: '/offline', revision }]
 })
 
-const isStaticExport = process.env.STATIC_EXPORT === 'true'
-
 const nextConfig: NextConfig = {
   trailingSlash: true,
   poweredByHeader: false,
-  // 静态导出配置（Tauri / GitHub Pages 使用）
-  ...(isStaticExport && {
-    output: 'export',
-    distDir: 'dist',
-    basePath: process.env.GITHUB_PAGES_BASE_PATH || '',
-    assetPrefix: process.env.GITHUB_PAGES_BASE_PATH || '',
-  }),
   images: {
     unoptimized: true,
   },

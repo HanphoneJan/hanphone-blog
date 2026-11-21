@@ -1,29 +1,11 @@
-import { API_BASE_URL } from '@/lib/api'
 import { STORAGE_KEYS } from '@/lib/constants'
 
 /**
  * 长期登录（Web）。
  *
- * 两种模式：
- * - **BFF（默认，线上）**：登录 / 刷新 / 登出都走同源 `/next-api/auth/*`，refresh token 放在
- *   HttpOnly Cookie 里，JS 读不到；前端只持有 access token。
- * - **直连（Tauri 静态导出）**：没有 Node 路由，直接调后端并把 refresh 存 localStorage。
- *   由构建环境变量 `NEXT_PUBLIC_AUTH_DIRECT=1` 切换。
+ * 登录 / 刷新 / 登出都走同源 `/next-api/auth/*`（BFF）：refresh token 放在 HttpOnly Cookie 里，
+ * JS 读不到；前端只持有 access token。
  */
-export const AUTH_DIRECT = process.env.NEXT_PUBLIC_AUTH_DIRECT === '1'
-
-const RT_KEY = STORAGE_KEYS.REFRESH_TOKEN
-
-function readToken(key: string): string | null {
-  if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(key)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return raw
-  }
-}
 
 function writeToken(key: string, value: string | null) {
   if (typeof window === 'undefined') return
@@ -36,7 +18,6 @@ export function clearLocalAuth() {
   window.localStorage.removeItem(STORAGE_KEYS.TOKEN)
   window.localStorage.removeItem(STORAGE_KEYS.USER_INFO)
   window.localStorage.removeItem(STORAGE_KEYS.EXPIRE)
-  if (AUTH_DIRECT) window.localStorage.removeItem(RT_KEY)
 }
 
 function saveAccess(token: string, expire?: unknown) {
@@ -46,18 +27,8 @@ function saveAccess(token: string, expire?: unknown) {
   }
 }
 
-/** 登录（返回后端原始 Result 结构，refresh 在 BFF 模式下已进 Cookie） */
+/** 登录（返回后端原始 Result 结构，refresh 由 BFF 写进 Cookie） */
 export async function authLogin(body: object) {
-  if (AUTH_DIRECT) {
-    const res = await fetch(`${API_BASE_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    const data = await res.json()
-    if (data?.flag && data?.data?.refreshToken) writeToken(RT_KEY, data.data.refreshToken)
-    return data
-  }
   const res = await fetch('/next-api/auth/login/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -68,16 +39,6 @@ export async function authLogin(body: object) {
 }
 
 export async function authRegister(body: object) {
-  if (AUTH_DIRECT) {
-    const res = await fetch(`${API_BASE_URL}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    const data = await res.json()
-    if (data?.flag && data?.data?.refreshToken) writeToken(RT_KEY, data.data.refreshToken)
-    return data
-  }
   const res = await fetch('/next-api/auth/register/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -87,11 +48,10 @@ export async function authRegister(body: object) {
   return res.json()
 }
 
-/** OAuth 回调：用 access 换会话（BFF 模式把 refresh 写进 Cookie） */
+/** OAuth 回调：用 access 换会话（BFF 把 refresh 写进 Cookie） */
 export async function adoptSession(
   accessToken: string
 ): Promise<{ token: string; expire?: string } | null> {
-  if (AUTH_DIRECT) return null
   try {
     const res = await fetch('/next-api/auth/adopt/', {
       method: 'POST',
@@ -111,22 +71,11 @@ export async function adoptSession(
 
 export async function authLogout(accessToken?: string | null) {
   try {
-    if (AUTH_DIRECT) {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Token: accessToken } : {}),
-        },
-        body: JSON.stringify({ refreshToken: readToken(RT_KEY) }),
-      })
-    } else {
-      await fetch('/next-api/auth/logout/', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      })
-    }
+    await fetch('/next-api/auth/logout/', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    })
   } catch {
     // 本地清理无论如何都要做
   }
@@ -152,24 +101,6 @@ export function refreshAccessToken(): Promise<string | null> {
 
 async function doRefresh(): Promise<string | null> {
   try {
-    if (AUTH_DIRECT) {
-      const refreshToken = readToken(RT_KEY)
-      if (!refreshToken) return null
-      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      })
-      const data = await res.json()
-      if (data?.flag && data?.data?.token) {
-        writeToken(RT_KEY, data.data.refreshToken || refreshToken)
-        saveAccess(data.data.token, data.data.expire)
-        return data.data.token as string
-      }
-      clearLocalAuth()
-      return null
-    }
-
     const res = await fetch('/next-api/auth/refresh/', {
       method: 'POST',
       credentials: 'same-origin',
@@ -210,17 +141,16 @@ function authHeaders(token: string) {
 }
 
 export async function fetchSessions(token: string): Promise<UserSessionInfo[]> {
-  const url = AUTH_DIRECT ? `${API_BASE_URL}/auth/sessions` : '/next-api/auth/sessions/'
-  const res = await fetch(url, { headers: authHeaders(token), cache: 'no-store' })
+  const res = await fetch('/next-api/auth/sessions/', { headers: authHeaders(token), cache: 'no-store' })
   const data = await res.json()
   return (data?.data || []) as UserSessionInfo[]
 }
 
 export async function revokeSession(token: string, sid: string): Promise<boolean> {
-  const url = AUTH_DIRECT
-    ? `${API_BASE_URL}/auth/sessions/${encodeURIComponent(sid)}`
-    : `/next-api/auth/sessions/${encodeURIComponent(sid)}/`
-  const res = await fetch(url, { method: 'DELETE', headers: authHeaders(token) })
+  const res = await fetch(`/next-api/auth/sessions/${encodeURIComponent(sid)}/`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  })
   const data = await res.json()
   return Boolean(data?.flag)
 }

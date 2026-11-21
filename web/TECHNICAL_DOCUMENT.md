@@ -244,7 +244,7 @@ web/src/
   `EssayClient` 的 `hashchange` 定位。
 - **收藏**：`BookmarkButton` 接入博客详情、随笔卡片、文库列表/详情；`/bookmarks/` 按类型分 Tab。
   登录后 `BookmarkContext` 一次拉全集，按钮只读 Context，避免每张卡片发 `status` 请求（N+1）。
-- **静态导出**：`/search` 用 `useSearchParams`，页面必须包 `Suspense`；三个页面均 `noIndex`。
+- **预渲染**：`/search` 用 `useSearchParams`，页面必须包 `Suspense`；三个页面均 `noIndex`。
 
 ## 聊天未读角标与浏览器通知 (contexts/ChatNotifyProvider.tsx)
 
@@ -258,26 +258,11 @@ web/src/
 
 ---
 
-## Tauri 桌面应用
-
-配置位于 `src-tauri/`：
-- `src/main.rs` - Rust 主程序
-- `Cargo.toml` - Rust 依赖
-
-构建命令：
-```bash
-npm run dev:tauri      # 开发模式
-npm run tauri:build    # 生产构建
-```
-
----
-
 ## 技术栈
 
 - **框架**: Next.js 15.x + React 18.x
 - **语言**: TypeScript 5.x
 - **样式**: Tailwind CSS 4.x
 - **UI**: Ant Design 5.x
-- **桌面**: Tauri 2.x
 - **PWA**: Serwist 9.x
 - **测试**: Vitest + @testing-library/react + Playwright

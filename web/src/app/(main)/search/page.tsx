@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   },
 }
 
-// useSearchParams 需要 Suspense 边界（静态导出时服务端先渲染 fallback）
+// useSearchParams 需要 Suspense 边界（预渲染时服务端先渲染 fallback）
 export default function SearchPage() {
   return (
     <Suspense

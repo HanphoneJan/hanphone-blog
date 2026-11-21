@@ -60,16 +60,14 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - **改数据库 → 页面多久生效**：列表页/首页等 11 个页面本来就有 `export const revalidate = 300`（ISR）；**博客详情页 `app/(main)/blog/[id]/page.tsx` 与文库详情 `docs/[id]/page.tsx` 曾漏掉这条**，于是被 Next 当成构建期快照（响应头实测 `cache-control: s-maxage=31536000`、`x-nextjs-prerender: 1`），改完数据库一年都不会变，只能重新构建部署。2026-11 已给两页补 `revalidate = 300`：改完内容最多 5 分钟自动更新。
   - 排查口诀：`curl -sI https://hanphone.cn/blog/1/ | grep -i cache-control` —— `s-maxage=300, stale-while-revalidate=…` 是 ISR 正常；`s-maxage=31536000` 说明 ISR 没生效（检查该路由有没有 `revalidate`）。
   - `revalidate` 必须是**字面量**：写成三元/环境变量表达式会被 Next 判定为「invalid segment configuration export」直接让构建失败。
-  - 静态导出（Tauri 桌面版 `pnpm build:tauri`）不支持 ISR，`scripts/build-tauri.mjs` 会在构建期把它临时改成 `false` 再还原。
   - 详情页正文在**构建期**也会被 `fetch` 写进预渲染产物，所以仍然受下面那条 fetch 缓存影响。
 - **重建前必须删 `web/.next/cache`**：Next 的 `fetch` 默认 `force-cache`，响应存在 `.next/cache/fetch-cache` 里跨构建复用。只跑 `next build` 会把上一次构建拿到的旧正文再塞进产物（这次实测：正文更新后重建，56 个文件里一个 `持续更新版` 都没有，删掉缓存重建才出现）。部署只上传 `.next` 是对的，但**构建前**要清。
-- 同理：`output: 'export'` 与 `pm2` 里的 `next start` 是两套口径，改配置前先确认线上到底是哪种产物。
 - File uploads go to `admin-file` Express service on separate domain (`hanphone.top`)
 - Photo wall has its own Express backend (`photo-wall-server`) on port 4001
 - Backend uses PostgreSQL (primary DB) + Redis (rate limiting, sessions, captcha); hot public reads (tags/types/site-stats) cached in-process via Caffeine (TTL 300s, evicted on writes)
 - JWT-based auth: TokenInterceptor validates tokens on admin endpoints (`/admin/**`); public endpoints use IndexController/UserController etc.
 - **登录用户接口（2026-11）**：`CurrentUserService` 统一解析 `token`（JWT 签名 + `pwdv`），`UserAuthInterceptor` 保护 `/bookmarks/**`、`/notifications/**`（未登录 401）。`DELETE /comments/{id}`、`/essays/comments/{id}` 要求本人或管理员（匿名评论仅管理员），`DELETE /messages/{id}` 仅管理员；评论/随笔评论的身份以 token 为准，**忽略 body 里的 `userId`**（避免冒充触发错误通知）。
-- **长期登录（access + refresh）**：access JWT 30 分钟（`JWT_EXPIRE_TIME=1800000`），refresh 90 天、只存哈希于 `t_user_session`，每次刷新轮换，旧值被重放即吊销整个会话；改密码令 `password_version+1` 并吊销会话（保留当前 sid）。接口 `/auth/{refresh,logout,sessions,adopt}`，Web 用同源 BFF（`/next-api/auth/*`，refresh 在 HttpOnly Cookie），Android/Tauri 直连并本地存 refresh。详见 [docs/auth/README.md](docs/auth/README.md)。chat-server 与 admin-file 只验 access，无需改动。
+- **长期登录（access + refresh）**：access JWT 30 分钟（`JWT_EXPIRE_TIME=1800000`），refresh 90 天、只存哈希于 `t_user_session`，每次刷新轮换，旧值被重放即吊销整个会话；改密码令 `password_version+1` 并吊销会话（保留当前 sid）。接口 `/auth/{refresh,logout,sessions,adopt}`，Web 用同源 BFF（`/next-api/auth/*`，refresh 在 HttpOnly Cookie），Android 直连并本地存 refresh。详见 [docs/auth/README.md](docs/auth/README.md)。chat-server 与 admin-file 只验 access，无需改动。
 - **第三方登录**：网页 GitHub（授权跳转）/ Google（GSI ID Token，服务端用 tokeninfo 验签并核对 aud）；Android 走**系统浏览器 + https 中转页 `/api/oauth/app/return` + `hanphone://oauth/callback` + 一次性 code**（`POST /oauth/app/exchange`，码 2 分钟、单次消费），token 不进 URL；中转页是因为国内浏览器会静默忽略 302→自定义 scheme，App Links 校验通过（`web/public/.well-known/assetlinks.json`，指纹=签名证书）时系统直接开 App。服务端 `web/OAuthController.java` + `service/OAuthExchangeCodeStore.java`，客户端 `android/.../data/auth/OAuthLogin.kt`。Google 服务端出站需代理（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。详见 [docs/auth/README.md](docs/auth/README.md) §3。
 
 ### Frontend Architecture (web/src/)
@@ -80,7 +78,6 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - **Static sub-apps**: Gomoku builds to `web/public/games/` and is served by Next.js rewrites at `/games/`. Photo wall (`apps/photo-wall`) builds to its own `atlas/` and is served **by nginx alias** `/home/hanphone/html/atlas` at `/atlas/` (不在 Next.js / `web/public/` 内托管)
 - **类型闸门**：`next.config.ts` 的 `typescript.ignoreBuildErrors` 已为 `false`；CI 另跑 `pnpm exec tsc --noEmit`。`eslint.ignoreDuringBuilds` 仍为 `true`（历史 ESLint 错误较多，不在本轮范围）。
 - **PWA**: Serwist v9 service worker (`app/sw.ts`) with offline page
-- **Desktop**: Tauri 2 wrapper in `src-tauri/` packages as Windows desktop app
 - **Themes**: 4 themes (light, dark, macaron, cyberpunk) via CSS custom properties + Tailwind variants; theme persisted in cookie set by middleware
 - **Middleware** (`middleware.ts`): Domain redirect (non-www → www), theme cookie, security headers
 
