@@ -4,14 +4,16 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
@@ -30,6 +33,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,6 +65,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.R
@@ -73,7 +80,6 @@ import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
-import com.hanphone.blog.util.resolveImageUrl
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.hanphone.blog.util.emailError
@@ -124,85 +130,89 @@ fun ProfileScreen(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-        // ===== 头部 =====
+        // ===== 身份区 =====
+        // 身份只画一处：头像/昵称统一用 displayName/displayAvatar（服务端资料优先、TokenStore 兜底），
+        // 不再额外放一张「已登录」卡片，避免同一份信息出现两次（旧卡片还读 TokenStore，可能显示旧昵称）。
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             if (token != null) {
-                // 登录：真实头像 + 昵称 + 用户名，点击编辑资料
+                Box(Modifier.clickable { showEditProfile = true }) {
+                    Avatar(url = displayAvatar, name = displayName, size = 76.dp, feature = ImageCaches.Feature.PROFILE)
+                    // 铅笔角标：替代原来那行「点击头像可修改资料」提示
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = "编辑资料",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+                Text(
+                    displayName,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp, start = 24.dp, end = 24.dp)
+                )
+                // 用户名最小高度占位：资料加载出 @用户名 时不再顶动下方内容；heightIn 可随字号放大
                 Box(
-                    Modifier.clickable { showEditProfile = true },
+                    Modifier.heightIn(min = 20.dp).padding(horizontal = 24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Avatar(url = displayAvatar, name = displayName, size = 72.dp, feature = ImageCaches.Feature.PROFILE)
-                }
-                Text(displayName, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp))
-                // 用户名行固定占位：网络资料加载出来后出现 @用户名 时不再顶动下方内容（防抖动）
-                Box(Modifier.height(20.dp), contentAlignment = Alignment.Center) {
                     if (displayUsername.isNotBlank()) {
                         Text("@$displayUsername", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                Text(
-                    "点击头像可修改资料",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 4.dp).clickable { showEditProfile = true }
-                )
+                Row(
+                    Modifier.padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { showEditProfile = true },
+                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp)
+                    ) { Text("编辑资料") }
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                // 先吊销服务端会话（refresh 立刻失效），再清本地
+                                runCatching { vm.logout() }
+                                context.clearAuth()
+                                TokenStore.clear()
+                                // 第一方 WebView（照片墙）把登录态存在自己的 localStorage 里，
+                                // 不清的话退出登录后照片墙仍显示已登录、还能点赞/进管理页
+                                AuthBridge.clearWebStorage()
+                            }
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) { Text("退出登录") }
+                }
             } else {
                 // 未登录：博客图标占位（对齐网站图标，不再用文字「云」）
                 Image(
                     painter = painterResource(R.drawable.ic_blog),
                     contentDescription = "云林有风",
-                    modifier = Modifier.size(72.dp).clip(CircleShape),
+                    modifier = Modifier.size(80.dp).clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
                 Text("云林有风", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp))
                 Text("Hanphone 的个人博客 · 记录与分享", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-
-        // ===== 登录状态 =====
-        if (token == null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("未登录", style = MaterialTheme.typography.titleMedium)
-                        Text("登录后可聊天、点赞、评论", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    TextButton(onClick = onLogin) { Text("登录") }
-                }
-            }
-        } else {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Row(
-                    Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Avatar(url = resolveImageUrl(userAvatar), name = userName ?: "友", size = 48.dp, feature = ImageCaches.Feature.PROFILE)
-                    Column(Modifier.weight(1f)) {
-                        Text(userName ?: "用户", style = MaterialTheme.typography.titleMedium)
-                        Text("已登录", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    OutlinedButton(onClick = {
-                        scope.launch {
-                            // 先吊销服务端会话（refresh 立刻失效），再清本地
-                            runCatching { vm.logout() }
-                            context.clearAuth()
-                            TokenStore.clear()
-                            // 第一方 WebView（照片墙）把登录态存在自己的 localStorage 里，
-                            // 不清的话退出登录后照片墙仍显示已登录、还能点赞/进管理页
-                            AuthBridge.clearWebStorage()
-                        }
-                    }) { Text("退出") }
-                }
+                Text(
+                    "登录后可聊天、点赞、评论",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+                Button(onClick = onLogin, modifier = Modifier.padding(top = 14.dp)) { Text("登录") }
             }
         }
 
