@@ -43,7 +43,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true
   },
   typescript: {
-    ignoreBuildErrors: true
+    // 类型错误必须让构建失败；CI 另有 `tsc --noEmit` 一步，这里作为最后一道闸门。
+    ignoreBuildErrors: false
   },
   experimental: {
     scrollRestoration: false

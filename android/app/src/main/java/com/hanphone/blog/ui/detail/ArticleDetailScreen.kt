@@ -24,6 +24,8 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -40,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +61,7 @@ import coil.compose.AsyncImage
 import com.hanphone.blog.core.draftFlow
 import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.BookmarkStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Blog
 import com.hanphone.blog.data.model.Comment
@@ -102,6 +106,10 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
     val error = vm.error
     val liked = vm.liked
     val likesCount = vm.likesCount
+
+    // 收藏态（进程级集合，跨页面共用）
+    val bookmarkKeys by BookmarkStore.keys.collectAsState()
+    val bookmarked = BookmarkStore.id(BookmarkStore.BLOG, blogId) in bookmarkKeys
 
     // 回复目标（非空=回复该评论）；replyHints 记录「刚发布的回复 → 父昵称」用于展示"回复 @x"
     var replyTarget by remember { mutableStateOf<Comment?>(null) }
@@ -160,6 +168,19 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
             return
         }
         vm.toggleLike(uid)
+    }
+
+    fun doBookmark() {
+        if (TokenStore.userId.value == null) {
+            toast("请先登录")
+            onLogin()
+            return
+        }
+        scope.launch {
+            if (BookmarkStore.toggle(BookmarkStore.BLOG, blogId) == null) {
+                toast("操作失败，请稍后再试")
+            }
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -285,13 +306,26 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                     }
                 },
                 trailing = {
-                    Row(
-                        Modifier.clip(RoundedCornerShape(8.dp)).clickable { share() }.padding(horizontal = 8.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Icon(Icons.Filled.Share, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("分享", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            Modifier.clip(RoundedCornerShape(8.dp)).clickable { doBookmark() }.padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (bookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                                contentDescription = if (bookmarked) "取消收藏" else "收藏",
+                                modifier = Modifier.size(20.dp),
+                                tint = if (bookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(
+                            Modifier.clip(RoundedCornerShape(8.dp)).clickable { share() }.padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(Icons.Filled.Share, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("分享", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             )

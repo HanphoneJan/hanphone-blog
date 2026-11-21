@@ -152,6 +152,14 @@ public class EssayCommentServiceImpl implements EssayCommentService {
     }
 
     @Override
+    public EssayComment findEssayCommentById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return essayCommentRepository.findById(id).orElse(null);
+    }
+
+    @Override
     public void deleteEssayComment(Long id) {
         try {
             // 校验输入参数非空

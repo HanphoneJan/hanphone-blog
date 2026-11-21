@@ -19,7 +19,12 @@ public class SearchResultItem {
     private boolean external;
     private int score;
     private LocalDateTime updateTime;
+    /** 纯文本摘要（Jsoup 去 HTML），用于搜索结果列表与高亮 */
+    private String snippet;
 
+    /**
+     * 兼容旧调用：不带摘要。
+     */
     public SearchResultItem(Long id, String title, String description,
                             ContentType contentType, String url,
                             boolean external, int score) {

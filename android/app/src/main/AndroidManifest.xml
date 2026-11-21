@@ -45,6 +45,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="hanphone" android:host="oauth" />
             </intent-filter>
+            <!-- 站内深链（App Links）：博客/随笔/文库。解析规则见 util/DeepLink.kt。
+                 多个 <data> 在同一 filter 内是「或」关系；autoVerify 复用域名级 assetlinks.json。 -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="hanphone.cn" android:pathPrefix="/blog/" />
+                <data android:scheme="https" android:host="hanphone.cn" android:pathPrefix="/essays" />
+                <data android:scheme="https" android:host="hanphone.cn" android:pathPrefix="/docs" />
+            </intent-filter>
         </activity>
 
         <!-- 应用内更新：把缓存里的 APK 通过 content:// 交给系统安装器 -->

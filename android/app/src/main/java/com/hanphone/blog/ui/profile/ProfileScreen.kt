@@ -20,11 +20,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -65,6 +67,7 @@ import com.hanphone.blog.core.AuthBridge
 import com.hanphone.blog.core.clearAuth
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ImageCaches
+import com.hanphone.blog.data.cache.NotificationBadge
 import com.hanphone.blog.data.model.User
 import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.PullRefresh
@@ -88,6 +91,8 @@ fun ProfileScreen(
     onOpenDocs: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenInsight: () -> Unit,
+    onOpenNotifications: () -> Unit,
+    onOpenBookmarks: () -> Unit,
     onOpenPhotoWall: () -> Unit,
     onOpenAdmin: () -> Unit
 ) {
@@ -96,6 +101,7 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     val stats = vm.stats
     val visits = vm.visits
+    val unreadNotifications by NotificationBadge.unread.collectAsState()
     val token by TokenStore.token.collectAsState()
     val userId by TokenStore.userId.collectAsState()
     val userName by TokenStore.nickname.collectAsState()
@@ -242,6 +248,15 @@ fun ProfileScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Column {
+                MoreRow(
+                    Icons.Filled.Notifications,
+                    "通知",
+                    if (unreadNotifications > 0) "$unreadNotifications 条未读" else "评论与回复提醒",
+                    onOpenNotifications
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                MoreRow(Icons.Filled.Bookmark, "我的收藏", "博客 · 随笔 · 文档", onOpenBookmarks)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.LocalFireDepartment, "热点", "AI 热点 · 模型榜单", onOpenInsight)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Build, "项目", "完整项目 · 工具箱 · 小游戏", onOpenProjects)

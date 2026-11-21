@@ -34,11 +34,14 @@ import {
   Gamepad2,
   Code,
   Music,
-  TrendingUp
+  TrendingUp,
+  Bell,
+  Bookmark
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import RegisterForm from './RegisterForm'
 import LoginForm from './LoginForm'
+import NotificationBell from './NotificationBell'
 import { ENDPOINTS } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeProvider'
@@ -390,6 +393,26 @@ const Header: React.FC = () => {
     setMobileSearchVisible(false)
   }
 
+  // 回车 / 「查看全部结果」：跳到独立搜索结果页（桌面端与移动端共用）
+  const goToSearchPage = (value: string = query) => {
+    const keyword = value.trim()
+    if (!keyword) {
+      setSearching(false)
+      return
+    }
+    setSearching(false)
+    setQuery('')
+    setMobileSearchVisible(false)
+    router.push(`/search/?q=${encodeURIComponent(keyword)}`)
+  }
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      goToSearchPage()
+    }
+  }
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > window.innerHeight * 0.8)
@@ -435,6 +458,19 @@ const Header: React.FC = () => {
   const renderSearchResults = () => {
     if (!searching) return null
 
+    const viewAllRow = (
+      <li
+        onMouseDown={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          goToSearchPage()
+        }}
+        className="px-4 py-2.5 text-center text-xs cursor-pointer text-[rgb(var(--primary))] hover:bg-[rgb(var(--hover))] transition-none"
+      >
+        查看全部结果
+      </li>
+    )
+
     if (searchList.length === 0) {
       return (
         <ul
@@ -447,6 +483,7 @@ const Header: React.FC = () => {
           <li className="px-4 py-3 text-sm text-[rgb(var(--text-muted))] text-center">
             未找到相关内容
           </li>
+          {viewAllRow}
         </ul>
       )
     }
@@ -487,6 +524,7 @@ const Header: React.FC = () => {
             </div>
           </li>
         ))}
+        {viewAllRow}
       </ul>
     )
   }
@@ -583,6 +621,8 @@ const Header: React.FC = () => {
         >
           <ImageIcon className="h-5 w-5 text-[rgb(var(--primary))]" />
         </button>
+        {/* 站内通知铃铛：未登录时内部直接返回 null，不占位 */}
+        <NotificationBell isTransparent={isTransparent} />
         <div
           className="relative flex items-center cursor-pointer"
           onClick={() => setUserOptionVisible(!userOptionVisible)}
@@ -630,6 +670,26 @@ const Header: React.FC = () => {
                   >
                     <MonitorSmartphone className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
                     登录设备
+                  </div>
+                  <div
+                    onClick={() => {
+                      router.push('/notifications/')
+                      setUserOptionVisible(false)
+                    }}
+                    className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                  >
+                    <Bell className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
+                    我的通知
+                  </div>
+                  <div
+                    onClick={() => {
+                      router.push('/bookmarks/')
+                      setUserOptionVisible(false)
+                    }}
+                    className="px-4 py-3 text-sm cursor-pointer transition-none flex items-center text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+                  >
+                    <Bookmark className="w-4 h-4 mr-2 text-[rgb(var(--primary))]" />
+                    我的收藏
                   </div>
                   {administrator && (
                     <div
@@ -920,6 +980,7 @@ const Header: React.FC = () => {
                     type="text"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
                     onFocus={() => setSearching(query.trim() !== '')}
                     onBlur={() => setTimeout(() => setSearching(false), TIME.ANIMATION_DURATION)}
                     placeholder="搜索..."
@@ -976,6 +1037,7 @@ const Header: React.FC = () => {
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 onFocus={() => setSearching(query.trim() !== '')}
                 placeholder="输入关键词搜索..."
                 className="w-full px-4 py-2.5 pl-11 bg-[rgb(var(--card))] border border-[rgb(var(--border))] text-[rgb(var(--text))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] rounded-lg text-base"

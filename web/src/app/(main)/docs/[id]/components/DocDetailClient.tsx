@@ -10,6 +10,7 @@ import type { DocMeta, DocData } from '../../lib/docLoader'
 import { buildDocFileUrl } from '../../lib/docLoader'
 import ModalOverlay from '@/components/shared/ModalOverlay'
 import BgOverlay from '@/app/(main)/components/BgOverlay'
+import BookmarkButton from '@/components/BookmarkButton'
 
 import { Z_INDEX } from '@/lib/constants'
 // 动画变体定义
@@ -560,6 +561,15 @@ export default function DocDetailClient({ docId, docList, initialDoc }: DocDetai
                 <h1 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text))] mb-3 leading-tight">
                   {doc.meta.filename.replace(/\.[^.]+$/, '')}
                 </h1>
+                <div className="mb-3 flex items-center gap-3 text-sm">
+                  <BookmarkButton
+                    type="DOC"
+                    contentKey={currentMeta?.docId || currentMeta?.id || doc.meta.docId || doc.meta.id || null}
+                    showLabel
+                    iconClassName="h-4 w-4"
+                    className="gap-1.5 font-medium"
+                  />
+                </div>
               </motion.header>
 
               {(() => {

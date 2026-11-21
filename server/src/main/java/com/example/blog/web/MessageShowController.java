@@ -5,10 +5,15 @@ import com.example.blog.constants.CommonConstants;
 import com.example.blog.po.Message;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
+import com.example.blog.service.CurrentUser;
+import com.example.blog.service.CurrentUserService;
 import com.example.blog.service.MessageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -16,9 +21,11 @@ import java.util.Map;
 @RestController
 public class MessageShowController {
     private final MessageService messageService;
+    private final CurrentUserService currentUserService;
 
-    public MessageShowController(MessageService messageService) {
+    public MessageShowController(MessageService messageService, CurrentUserService currentUserService) {
         this.messageService = messageService;
+        this.currentUserService = currentUserService;
     }
 
     // 获取留言列表：支持可选分页
@@ -82,14 +89,31 @@ public class MessageShowController {
         }
     }
 
-    // 删除留言：无返回数据，指定 Result<Void>
+    // 删除留言：仅管理员（Message 无作者字段，无法判定本人）
     @DeleteMapping("/messages/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Result<Void>> delete(@PathVariable Long id, HttpServletRequest request) {
+        CurrentUser currentUser = currentUserService.resolve(request);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new Result<>(false, StatusCode.LOGINERROR, "未登录或登录状态已失效，请重新登录", null));
+        }
+        if (!currentUser.admin()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new Result<>(false, StatusCode.ACCESSERROR, "无权删除该留言", null));
+        }
+
+        Message message = messageService.findMessageById(id);
+        if (message == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new Result<>(false, StatusCode.ERROR, "留言不存在", null));
+        }
+
         try {
             messageService.deleteMessage(id);
-            return new Result<>(true, StatusCode.OK, "删除评论成功", null);
+            return ResponseEntity.ok(new Result<>(true, StatusCode.OK, "删除评论成功", null));
         } catch (Exception e) {
-            return new Result<>(false, StatusCode.ERROR, "删除评论失败: " + e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new Result<>(false, StatusCode.ERROR, "删除评论失败: " + e.getMessage(), null));
         }
     }
 }

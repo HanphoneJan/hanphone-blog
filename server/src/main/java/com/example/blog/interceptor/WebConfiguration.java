@@ -18,10 +18,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfiguration implements WebMvcConfigurer {
 
     private final TokenInterceptor tokenInterceptor;
+    private final UserAuthInterceptor userAuthInterceptor;
 
     //构造方法
-    public WebConfiguration(TokenInterceptor tokenInterceptor){
+    public WebConfiguration(TokenInterceptor tokenInterceptor, UserAuthInterceptor userAuthInterceptor){
         this.tokenInterceptor = tokenInterceptor;
+        this.userAuthInterceptor = userAuthInterceptor;
     }
 
     @Override
@@ -51,6 +53,10 @@ public class WebConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(tokenInterceptor)
                 .addPathPatterns("/admin/**")
                 .excludePathPatterns(excludePath);
+
+        // 需要登录（不要求管理员）的接口：收藏、通知
+        registry.addInterceptor(userAuthInterceptor)
+                .addPathPatterns("/bookmarks", "/bookmarks/**", "/notifications", "/notifications/**");
         WebMvcConfigurer.super.addInterceptors(registry);
     }
 

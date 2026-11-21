@@ -9,14 +9,21 @@ import com.example.blog.po.EssayComment;
 import com.example.blog.po.Result;
 import com.example.blog.po.StatusCode;
 import com.example.blog.po.User;
+import com.example.blog.service.CurrentUser;
+import com.example.blog.service.CurrentUserService;
 import com.example.blog.service.EssayCommentService;
 import com.example.blog.service.EssayService;
+import com.example.blog.service.NotificationService;
 import com.example.blog.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,11 +34,16 @@ public class EssayShowController {
     private final EssayService essayService;
     private final UserService userService;
     private final EssayCommentService essayCommentService;
+    private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
 
-    public EssayShowController(EssayService essayService, UserService userService, EssayCommentService essayCommentService) {
+    public EssayShowController(EssayService essayService, UserService userService, EssayCommentService essayCommentService,
+                               CurrentUserService currentUserService, NotificationService notificationService) {
         this.essayService = essayService;
         this.userService = userService;
         this.essayCommentService = essayCommentService;
+        this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/essays")
@@ -94,17 +106,30 @@ public class EssayShowController {
 
     @PostMapping("/essays/{id}/comments")
     @Idempotent
-    public Result<EssayComment> post(@PathVariable Long id, @RequestBody Map<String, Object> para) {
+    public Result<EssayComment> post(@PathVariable Long id, @RequestBody Map<String, Object> para,
+                                     HttpServletRequest request, HttpServletResponse response) {
+        // 随笔评论必须登录；身份以 token 为准，body 的 userId 不再作为身份来源
+        CurrentUser currentUser = currentUserService.resolve(request);
+        if (currentUser == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return new Result<>(false, StatusCode.LOGINERROR, "请先登录后再评论", null);
+        }
+
+        User user = userService.findUserById(currentUser.id());
+        if (user == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return new Result<>(false, StatusCode.LOGINERROR, "登录状态已失效，请重新登录", null);
+        }
+
         String content = (String) para.get("content");
-        Long userId = Long.parseLong(para.get("userId").toString());
         long parentId = CommonConstants.DEFAULT_PARENT_ID;
         if (para.get("parentCommentId") != null) {
             parentId = Long.parseLong(para.get("parentCommentId").toString());
         }
-        User user = userService.findUserById(userId);
         EssayComment essayComment = new EssayComment();
         essayComment.setContent(content);
-        essayComment.setEssay(essayService.getEssayById(id));
+        Essay essay = essayService.getEssayById(id);
+        essayComment.setEssay(essay);
         essayComment.setUser(user);
         essayComment.setAdminComment(UserType.ADMIN.getCode().equals(user.getType()));
         if (parentId != CommonConstants.DEFAULT_PARENT_ID) {
@@ -114,13 +139,41 @@ public class EssayShowController {
         if (newEssayComment.getParentEssayComment() != null) {
             newEssayComment.setParentCommentId(newEssayComment.getParentEssayComment().getId());
         }
+        // 只传 ID：父评论可能是 getReferenceById 的代理，由通知服务在独立事务内加载实体
+        // 通知写入失败不影响评论（service 内部独立事务 + 只记日志）
+        Long notifyParentId = parentId != CommonConstants.DEFAULT_PARENT_ID ? parentId : null;
+        notificationService.onEssayComment(newEssayComment.getId(), essay.getId(), notifyParentId);
         return new Result<>(true, StatusCode.OK, "评论发表成功！", newEssayComment);
     }
 
-    //删除评论
+    //删除评论：本人或管理员
     @DeleteMapping("/essays/comments/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        essayCommentService.deleteEssayComment(id);
-        return new Result<>(true, StatusCode.OK, "删除评论成功", null);
+    public ResponseEntity<Result<Void>> delete(@PathVariable Long id, HttpServletRequest request) {
+        CurrentUser currentUser = currentUserService.resolve(request);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new Result<>(false, StatusCode.LOGINERROR, "未登录或登录状态已失效，请重新登录", null));
+        }
+
+        EssayComment essayComment = essayCommentService.findEssayCommentById(id);
+        if (essayComment == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new Result<>(false, StatusCode.ERROR, "评论不存在", null));
+        }
+
+        Long authorId = essayComment.getUser() != null ? essayComment.getUser().getId() : null;
+        boolean owner = authorId != null && authorId.equals(currentUser.id());
+        if (!owner && !currentUser.admin()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new Result<>(false, StatusCode.ACCESSERROR, "无权删除该评论", null));
+        }
+
+        try {
+            essayCommentService.deleteEssayComment(id);
+            return ResponseEntity.ok(new Result<>(true, StatusCode.OK, "删除评论成功", null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new Result<>(false, StatusCode.ERROR, "删除评论失败", null));
+        }
     }
 }

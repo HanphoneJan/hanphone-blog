@@ -9,11 +9,13 @@ import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.data.cache.MemoryCache
+import com.hanphone.blog.data.cache.NotificationBadge
 import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.User
 import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.data.repo.FileRepository
+import com.hanphone.blog.data.repo.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +32,8 @@ import com.hanphone.blog.util.md5Hex
 class ProfileViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val repo: BlogRepository,
-    private val fileRepo: FileRepository
+    private val fileRepo: FileRepository,
+    private val notificationRepo: NotificationRepository
 ) : ViewModel(), PullRefreshHost {
 
     var stats by mutableStateOf(MemoryCache.siteStats)
@@ -58,6 +61,17 @@ class ProfileViewModel @Inject constructor(
         refresh()
     }
 
+    /** 站内通知未读数：只给「我的 → 通知」入口显示（不并入底部消息红点） */
+    private suspend fun fetchNotificationUnread() {
+        if (TokenStore.userId.value == null) {
+            NotificationBadge.clear()
+            return
+        }
+        runCatching { notificationRepo.unreadCount() }.onSuccess {
+            if (it.flag) NotificationBadge.set(it.data?.count ?: 0L)
+        }
+    }
+
     /** 退出登录：吊销服务端会话（失败无所谓，本地照样清） */
     suspend fun logout() {
         runCatching { repo.logout(TokenStore.refreshToken.value) }
@@ -72,6 +86,7 @@ class ProfileViewModel @Inject constructor(
             if (fromPull) refreshing = true
             // 下拉刷新必须连用户资料一起重拉：头像/昵称是服务端数据，只刷统计会一直显示登录时的旧头像
             if (fromPull) fetchProfile(TokenStore.userId.value)
+            fetchNotificationUnread()
             runCatching { repo.siteStats() }.onSuccess {
                 if (it.flag && it.data != null) {
                     stats = it.data
@@ -92,7 +107,10 @@ class ProfileViewModel @Inject constructor(
 
     /** 拉取当前登录用户资料（登录态变化后由 UI 触发） */
     fun loadProfile(userId: Long?) {
-        viewModelScope.launch { fetchProfile(userId) }
+        viewModelScope.launch {
+            fetchProfile(userId)
+            fetchNotificationUnread()
+        }
     }
 
     private suspend fun fetchProfile(userId: Long?) {

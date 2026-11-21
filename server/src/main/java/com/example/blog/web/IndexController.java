@@ -102,6 +102,7 @@ public class IndexController {
 
     @GetMapping("/search")
     public Result<List<SearchResultItem>> search(@RequestParam String query,
+                                                  @RequestParam(required = false) String type,
                                                   @RequestParam(required = false, defaultValue = "20") int limit) {
         // 防御性编程：限制搜索查询长度，防止超长搜索词导致内存和性能问题
         if (query == null || query.trim().isEmpty()) {
@@ -117,7 +118,11 @@ public class IndexController {
         if (limit > MAX_SEARCH_LIMIT) {
             limit = MAX_SEARCH_LIMIT;
         }
-        return new Result<>(true, StatusCode.OK, "搜索成功", globalSearchService.search(query, limit));
+        try {
+            return new Result<>(true, StatusCode.OK, "搜索成功", globalSearchService.search(query, type, limit));
+        } catch (IllegalArgumentException e) {
+            return new Result<>(false, StatusCode.ERROR, "不支持的搜索类型", List.of());
+        }
     }
 
     @GetMapping("/search/blog")

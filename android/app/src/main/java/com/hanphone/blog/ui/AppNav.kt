@@ -66,6 +66,7 @@ import com.hanphone.blog.core.auth
 import com.hanphone.blog.core.backgroundBlur
 import com.hanphone.blog.core.backgroundPath
 import com.hanphone.blog.core.themeMode
+import com.hanphone.blog.core.DeepLinkBus
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.auth.OAuthLogin
 import com.hanphone.blog.data.chat.ChatSocket
@@ -96,6 +97,7 @@ import com.hanphone.blog.core.clearAuth
 import com.hanphone.blog.data.auth.TokenRefresher
 import com.hanphone.blog.util.Jwt
 import com.hanphone.blog.ui.chat.ChatScreen
+import com.hanphone.blog.ui.bookmark.BookmarksScreen
 import com.hanphone.blog.ui.docs.DocsScreen
 import com.hanphone.blog.ui.docs.DocMarkdownScreen
 import com.hanphone.blog.ui.friendlinks.FriendLinksScreen
@@ -103,6 +105,7 @@ import com.hanphone.blog.ui.hot.HotScreen
 import com.hanphone.blog.ui.login.LoginScreen
 import com.hanphone.blog.ui.login.RegisterScreen
 import com.hanphone.blog.ui.message.MessageScreen
+import com.hanphone.blog.ui.notification.NotificationsScreen
 import com.hanphone.blog.ui.profile.ProfileScreen
 import com.hanphone.blog.ui.projects.ProjectsScreen
 import com.hanphone.blog.ui.search.SearchScreen
@@ -111,6 +114,7 @@ import com.hanphone.blog.ui.settings.DataManagementScreen
 import com.hanphone.blog.ui.settings.SettingsScreen
 import com.hanphone.blog.ui.webview.WebViewScreen
 import com.hanphone.blog.ui.theme.BlogTheme
+import com.hanphone.blog.util.DeepLinkTarget
 import kotlinx.coroutines.flow.first
 import com.hanphone.blog.ui.components.rememberToast
 
@@ -147,6 +151,29 @@ internal fun MainScaffold() {
     val hasUnread = adminUnread.values.any { it > 0 }
     // 键盘弹出时隐藏底部导航栏，让主 Tab（聊天/随笔内嵌等）底部输入能贴齐键盘顶
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
+    // ===== 站内深链（App Links）=====
+    // MainActivity 只投递 URL，这里统一导航：冷启动与 onNewIntent 走同一条路径；
+    // launchSingleTop 保证已经在看同一篇文章时不会叠第二层。
+    val pendingDeepLink by DeepLinkBus.pending.collectAsState()
+    LaunchedEffect(pendingDeepLink) {
+        val target = pendingDeepLink ?: return@LaunchedEffect
+        when (target) {
+            is DeepLinkTarget.Article ->
+                navController.navigate("article/${target.id}") { launchSingleTop = true }
+            is DeepLinkTarget.Essay ->
+                navController.navigate("essay/${target.id}") { launchSingleTop = true }
+            DeepLinkTarget.Docs ->
+                navController.navigate("docs") { launchSingleTop = true }
+            DeepLinkTarget.Essays ->
+                navController.navigate(MainTab.ESSAY.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+        }
+        DeepLinkBus.consume()
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -239,6 +266,8 @@ internal fun MainScaffold() {
                     onOpenDocs = { navController.navigate("docs") },
                     onOpenSettings = { navController.navigate("settings") },
                     onOpenInsight = { navController.navigate("insight") },
+                    onOpenNotifications = { navController.navigate("notifications") },
+                    onOpenBookmarks = { navController.navigate("bookmarks") },
                     onOpenPhotoWall = {
                         navController.navigate(
                             "webview?url=${Uri.encode("https://hanphone.cn/atlas/")}&title=${Uri.encode("照片墙")}"
@@ -266,6 +295,7 @@ internal fun MainScaffold() {
             composable("docs") {
                 DocsScreen(
                     onBack = { navController.popBackStack() },
+                    onLogin = { navController.navigate("login") },
                     onOpenWebView = { url, title ->
                         navController.navigate(
                             "webview?url=${Uri.encode(url)}&title=${Uri.encode(title)}&html=1"
@@ -276,6 +306,23 @@ internal fun MainScaffold() {
                             "doc-md?url=${Uri.encode(url)}&title=${Uri.encode(title)}"
                         )
                     }
+                )
+            }
+            composable("notifications") {
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenArticle = { id -> navController.navigate("article/$id") },
+                    onOpenEssay = { id -> navController.navigate("essay/$id") },
+                    onLogin = { navController.navigate("login") }
+                )
+            }
+            composable("bookmarks") {
+                BookmarksScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenArticle = { id -> navController.navigate("article/$id") },
+                    onOpenEssay = { id -> navController.navigate("essay/$id") },
+                    onOpenDocs = { navController.navigate("docs") },
+                    onLogin = { navController.navigate("login") }
                 )
             }
             composable("insight") {

@@ -191,12 +191,15 @@ data class Doc(
 data class SearchResultItem(
     val id: Long = 0,
     val title: String = "",
-    val description: String = "",
+    /** 服务端 essays/projects 的 description 可能为 JSON null（Moshi 非空字段遇 null 会整页解析失败） */
+    val description: String? = null,
     val contentType: String = "",
     val url: String? = null,
     val external: Boolean = false,
     val score: Int = 0,
-    val updateTime: String? = null
+    val updateTime: String? = null,
+    /** 纯文本摘要（服务端已去 HTML 并截取关键词上下文），可为 null */
+    val snippet: String? = null
 )
 
 /** /site-stats 返回 Map<String,Long> 键与该字段名一致 */
@@ -218,6 +221,60 @@ data class LoginData(
     val refreshExpire: String? = null,
     val sid: String? = null
 )
+
+// ===== 站内通知（/notifications，均需登录）=====
+
+/**
+ * 单条站内通知。
+ * type：BLOG_COMMENT / ESSAY_COMMENT；targetType：BLOG / ESSAY。
+ * `read` 由后端 VO 的 `isRead()` 序列化而来（JSON 字段名就是 `read`）。
+ */
+data class NotificationVO(
+    val id: Long,
+    val type: String = "",
+    val actorId: Long? = null,
+    /** 匿名/空内容时服务端可能返回 null（非空字段遇 JSON null 会让整页解析失败） */
+    val actorName: String? = null,
+    val actorAvatar: String? = null,
+    val targetType: String = "",
+    val targetId: Long = 0,
+    val parentId: Long? = null,
+    /** 评论摘要，服务端可能返回 null */
+    val excerpt: String? = null,
+    val url: String? = null,
+    val read: Boolean = false,
+    val createTime: Date? = null
+)
+
+/** GET /notifications 的 data：分页 + 当前未读数 */
+data class NotificationPage(
+    val items: List<NotificationVO> = emptyList(),
+    val page: Int = 1,
+    val size: Int = 20,
+    val total: Long = 0,
+    /** 当前未读数（跨页都是全量未读，不是本页未读） */
+    val unread: Long = 0
+)
+
+/** GET /notifications/unread-count 的 data */
+data class UnreadCount(val count: Long = 0)
+
+// ===== 收藏（/bookmarks，均需登录）=====
+
+/** 收藏列表条目：BLOG/ESSAY 的 key 是数值 id 字符串，DOC 的 key 是 docId */
+data class BookmarkItem(
+    val type: String = "",
+    val key: String = "",
+    val title: String = "",
+    /** 服务端 description/content 都可能为空/null */
+    val subtitle: String? = null,
+    val cover: String? = null,
+    val url: String? = null,
+    val createdAt: Date? = null
+)
+
+/** 收藏状态（list/status/add/remove 里布尔值的统一包装） */
+data class BookmarkStatus(val bookmarked: Boolean = false)
 
 /** POST /auth/refresh 的返回 */
 data class TokenRefresh(

@@ -152,6 +152,14 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public Comment findCommentById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return commentRepository.findById(id).orElse(null);
+    }
+
+    @Override
     public void deleteComment(Long id) {
         try {
             // 校验输入参数

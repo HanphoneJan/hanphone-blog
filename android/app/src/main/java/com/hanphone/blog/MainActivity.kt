@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.hanphone.blog.core.DeepLinkBus
 import com.hanphone.blog.data.auth.OAuthLogin
 import com.hanphone.blog.data.chat.ChatSocket
 import com.hanphone.blog.data.push.PushRegistrar
@@ -30,15 +31,28 @@ class MainActivity : ComponentActivity() {
         setContent {
             BlogAppRoot()
         }
-        // 冷启动即被授权回跳拉起；savedInstanceState != null 表示重建/进程恢复，不重复兑换
-        if (savedInstanceState == null) handleOAuthIntent(intent)
+        // 冷启动即被授权回跳/深链拉起；savedInstanceState != null 表示重建/进程恢复，不重复处理
+        if (savedInstanceState == null) handleIncomingIntent(intent)
     }
 
     /** 浏览器授权完成后通过 hanphone://oauth/callback 回到 App（Manifest 里 singleTop + intent-filter） */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleOAuthIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    /**
+     * 统一入口：先排除 OAuth 回跳（要走一次性 code 兑换），其余 https 深链交给 DeepLinkBus。
+     * 深链的导航在 AppNav 里做，这里只投递，避免 Activity 持有 NavController。
+     */
+    private fun handleIncomingIntent(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (OAuthLogin.isCallback(uri)) {
+            handleOAuthIntent(intent)
+            return
+        }
+        DeepLinkBus.handle(uri.toString())
     }
 
     private fun handleOAuthIntent(intent: Intent?) {

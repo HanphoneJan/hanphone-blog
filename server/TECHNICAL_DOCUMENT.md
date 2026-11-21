@@ -189,6 +189,8 @@ User (用户)
 | VisitorTrackController | `/visit/track` | 页面访问埋点（POST，公开） |
 | HotShowController | `/hot` | 热点聚合：总览 / 热点流 / 信源状态（公开只读） |
 | ModelShowController | `/hot` | 模型榜单 / 检索 / 对比 / 趋势（公开只读） |
+| NotificationController | `/notifications` | 站内通知：列表 / 未读数 / 已读（需登录） |
+| BookmarkController | `/bookmarks` | 收藏：列表 / 状态 / 添加 / 删除（需登录） |
 
 ### 管理后台接口 (web/admin/)
 
@@ -285,6 +287,48 @@ com.example.blog.hot/
 
 ---
 
+## 站内通知与收藏（2026-11）
+
+### 站内通知
+
+- 表 `t_notification`：`user_id`（收件人）、`type`（`BLOG_COMMENT`/`ESSAY_COMMENT`）、
+  `target_type`+`target_id`（BLOG/ESSAY）、`parent_id`、`actor_*`、`excerpt`、`is_read`、`create_time`；
+  索引 `(user_id, is_read, create_time)`。
+- 触发：`CommentController#post` / `EssayShowController#post` 保存成功后调用
+  `NotificationService.onBlogComment(commentId, blogId, parentId)` /
+  `onEssayComment(commentId, essayId, parentId)`。
+- 收件人：回复 → 父评论作者；父评论匿名/无作者 → 内容作者；顶级 → 内容作者；跳过自己与空收件人；
+  父评论不属于当前内容不通知。
+- **事务**：外层只 catch + log，实体加载与 `Notification` 写入放在
+  `TransactionTemplate(REQUIRES_NEW)` 内；通知失败不会把评论事务标记 rollback-only。
+  只传 ID 是因为父评论常是 `getReferenceById` 代理，事务外访问 `userId/user/essay` 会懒加载异常。
+- 接口：`GET /notifications`、`GET /notifications/unread-count`、
+  `POST /notifications/{id}/read`、`POST /notifications/read-all`；由 `UserAuthInterceptor` 保护。
+- `excerpt` 用 Jsoup 去 HTML 后取前 80 字，纯文本。
+
+### 收藏
+
+- 表 `t_bookmark`：`user_id` + `content_type`（`BLOG/ESSAY/DOC`）+ `content_key`
+  （博客/随笔为数值 ID 字符串，文档为 `docId`），唯一约束 `uk_bookmark_user_type_key`；
+  索引 `(user_id, create_time)`。
+- 接口：`GET /bookmarks?type=`、`GET /bookmarks/status`、`POST /bookmarks`、
+  `DELETE /bookmarks/{type}/{key}`；均需登录，`type=PROJECT` 返回 400。
+- 列表批量回表：博客/随笔 `findAllById`，文档 `findByDocIdIn`；内容删除/未发布直接跳过。
+- 添加重复捕获 `DataIntegrityViolationException` 视为成功；删除不存在也成功（幂等）。
+
+## 全局搜索（2026-11）
+
+- `GlobalSearchServiceImpl` 不再 `findAll(Specification)` 后内存排序，而是每类调用
+  repository 的 `searchTop(keywordPattern, limit)` 原生 SQL：`ILIKE` 匹配 + `CASE` 评分 +
+  `ORDER BY` + `LIMIT`。评分：标题 30、描述/技术栈 20、正文 10。
+- 字段差异：`Doc` 无 `content` 只查 `title/description`；`Project` 的时间列是 `created_time`，
+  且过滤 `type <> 0`；`Essay` 无 `update_time`，按 `create_time` 排序。
+- 返回 `SearchResultItem.snippet`：Jsoup 去 HTML，取关键词前后各 40 字；纯文本，前端按文本高亮。
+- `SearchIndexInitializer`（`ApplicationRunner`）在启动时尽力创建 `pg_trgm` 扩展与 GIN 索引
+  （`t_blog.title/description/content`、`t_essay.title/content`、`t_project.title/content/techs`、
+  `t_doc.title/description`）。每条 DDL 独立 try/catch；无权限只 warn，不影响启动与搜索可用性。
+- 开关：`SEARCH_TRGM_ENABLED`（默认 true）。2 字中文查询可能退化为顺序扫描，但已受 `LIMIT` 限制。
+
 ## 安全设计
 
 ### JWT 认证流程
@@ -312,6 +356,7 @@ com.example.blog.hot/
 - **密码加密**: BCrypt 加密存储 + 密码复杂度校验（长度 >=8，必须包含字母和数字）
 - **验证码限流**: Redis 60 秒内同邮箱不可重复发送 + 邮箱格式/长度校验
 - **Token 验证**: JWT + 拦截器（admin 接口）+ X-Internal-Key（内部 API）
+- **登录用户接口（2026-11）**: `CurrentUserService` 统一解析 `token`（JWT + `pwdv`）；`UserAuthInterceptor` 保护 `/bookmarks/**`、`/notifications/**`。三个删除接口要求本人或管理员：`DELETE /comments/{id}`、`DELETE /essays/comments/{id}`（匿名评论仅管理员），`DELETE /messages/{id}` 仅管理员。评论/随笔评论的身份以 token 为准，忽略 body 的 `userId`；带 token 但校验失败返回 401，触发客户端静默刷新。
 - **SQL 注入**: JPA 参数化查询 & MyBatis-Plus 防注入机制
 - **连接池保护**: HikariCP 最大 100 连接，防止并发耗尽
 - **安全响应头**: X-Content-Type-Options, X-XSS-Protection, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy
@@ -402,6 +447,9 @@ jwt.expiration=604800000
 password.min-length=8
 captcha.rate-limit-seconds=60
 captcha.max-email-length=254
+
+# 全局搜索索引（pg_trgm GIN；无权限可设 false）
+search.trgm.enabled=${SEARCH_TRGM_ENABLED:true}
 ```
 
 ---

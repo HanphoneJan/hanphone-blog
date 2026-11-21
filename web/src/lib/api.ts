@@ -62,6 +62,23 @@ export const ENDPOINTS = {
   DOC_VIEW: (docId: string) => `${API_BASE_URL}/docs/${docId}/view`,
   DOCS_HOT: `${API_BASE_URL}/docs/hot`,
   DOCS_RECOMMENDED: `${API_BASE_URL}/docs/recommended`,
+  // 站内通知（均需登录，apiClient 会自动带 Token）
+  NOTIFICATIONS: {
+    LIST: (page = 1, size = 20) => `${API_BASE_URL}/notifications?page=${page}&size=${size}`,
+    UNREAD_COUNT: `${API_BASE_URL}/notifications/unread-count`,
+    READ: (id: number) => `${API_BASE_URL}/notifications/${id}/read`,
+    READ_ALL: `${API_BASE_URL}/notifications/read-all`
+  },
+  // 收藏（均需登录）
+  BOOKMARKS: {
+    LIST: (type?: BookmarkType) =>
+      `${API_BASE_URL}/bookmarks${type ? `?type=${encodeURIComponent(type)}` : ''}`,
+    STATUS: (type: BookmarkType, key: string) =>
+      `${API_BASE_URL}/bookmarks/status?type=${encodeURIComponent(type)}&key=${encodeURIComponent(key)}`,
+    ADD: `${API_BASE_URL}/bookmarks`,
+    REMOVE: (type: BookmarkType, key: string) =>
+      `${API_BASE_URL}/bookmarks/${encodeURIComponent(type)}/${encodeURIComponent(key)}`
+  },
   // 洞察（热点聚合）
   HOT: {
     OVERVIEW: `${API_BASE_URL}/hot/overview`,
@@ -182,4 +199,96 @@ export const ENDPOINTS = {
     VISITOR_IP_LIST: `${API_BASE_URL}/admin/visitor/ip-list`,
     VISITOR_CLEAR: `${API_BASE_URL}/admin/visitor/clear`
   }
+}
+
+// ==================== 全局搜索 ====================
+export type SearchContentType = 'BLOG' | 'ESSAY' | 'PROJECT' | 'DOC'
+
+export interface SearchResultItem {
+  id: number
+  title: string
+  description?: string
+  contentType: SearchContentType
+  /** 站内相对路径（/blog/1）或项目外链 */
+  url: string
+  external?: boolean
+  score?: number
+  updateTime?: string
+  /** 服务端 Jsoup 去 HTML 后的纯文本摘要 */
+  snippet?: string
+}
+
+/** 构造 `/search` 请求地址；type 省略即「全部」 */
+export function buildSearchUrl(query: string, type?: SearchContentType, limit = 50): string {
+  const params = new URLSearchParams()
+  params.set('query', query)
+  if (type) params.set('type', type)
+  params.set('limit', String(limit))
+  return `${ENDPOINTS.SEARCH}?${params.toString()}`
+}
+
+/** 后端统一响应结构（`Result<T>`） */
+export interface ApiResult<T> {
+  flag: boolean
+  code: number
+  message: string
+  data: T
+}
+
+// ==================== 站内通知 ====================
+
+export type NotificationType = 'BLOG_COMMENT' | 'ESSAY_COMMENT'
+/** 通知指向的内容类型（随笔在新评论区里是 ESSAY） */
+export type NotificationTargetType = 'BLOG' | 'ESSAY'
+
+export interface NotificationItem {
+  id: number
+  /** 通知类型；后端将来新增类型时仍按字符串兼容 */
+  type: NotificationType | (string & {})
+  actorId?: number | null
+  actorName?: string | null
+  actorAvatar?: string | null
+  targetType: NotificationTargetType | (string & {})
+  targetId: number
+  parentId?: number | null
+  /** 服务端 Jsoup 去 HTML 后的纯文本摘要 */
+  excerpt?: string | null
+  /** 站内跳转地址：博客 /blog/{id}/，随笔 /essays/#{id} */
+  url?: string | null
+  read: boolean
+  /** epoch 毫秒（Jackson 默认）或 ISO / 时间字符串 */
+  createTime: number | string
+}
+
+export interface NotificationPage {
+  items: NotificationItem[]
+  page: number
+  size: number
+  total: number
+  unread: number
+}
+
+/** 通知跳转地址：优先用服务端 url，旧数据缺失时按 targetType 拼接 */
+export function notificationUrl(
+  item: Pick<NotificationItem, 'url' | 'targetType' | 'targetId'>
+): string {
+  if (item.url) return item.url
+  return item.targetType === 'ESSAY' ? `/essays/#${item.targetId}` : `/blog/${item.targetId}/`
+}
+
+// ==================== 收藏 ====================
+
+export type BookmarkType = 'BLOG' | 'ESSAY' | 'DOC'
+
+export interface BookmarkItem {
+  type: BookmarkType
+  /** BLOG / ESSAY 为数值 ID 字符串，DOC 为 docId */
+  key: string
+  title: string
+  subtitle?: string | null
+  cover?: string | null
+  /** 站内跳转地址，服务端已拼好 */
+  url: string
+  /** epoch 毫秒或时间字符串 */
+  createdAt: number | string
 }

@@ -23,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,8 +38,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,15 +51,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.BookmarkStore
+import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.RecommendStar
 import com.hanphone.blog.ui.components.AppBackBar
-import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
 import com.hanphone.blog.ui.components.RowListSkeleton
 import com.hanphone.blog.ui.components.SearchField
+import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.util.buildDocFileUrl
+import kotlinx.coroutines.launch
 
 private val TYPE_PILLS = listOf(
     DOC_TYPE_ALL to "全部",
@@ -82,15 +90,34 @@ private fun normalizeDocType(type: String): String = type.removePrefix(".").lowe
 @Composable
 fun DocsScreen(
     onBack: () -> Unit,
+    onLogin: () -> Unit,
     onOpenWebView: (url: String, title: String) -> Unit,
     onOpenMarkdown: (url: String, title: String) -> Unit
 ) {
     val vm: DocsViewModel = hiltViewModel()
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val toast = rememberToast()
+    val bookmarkKeys by BookmarkStore.keys.collectAsState()
 
     // 类型统计（全部/Word/PDF/MD/HTML 各计数）
     val typeStats = remember(vm.docs) { vm.docs.groupingBy { it.fileType }.eachCount() }
+
+    fun toggleBookmark(doc: Doc) {
+        if (TokenStore.userId.value == null) {
+            toast("请先登录")
+            onLogin()
+            return
+        }
+        scope.launch {
+            if (BookmarkStore.toggle(BookmarkStore.DOC, doc.docId) == null) {
+                toast("操作失败，请稍后再试")
+            }
+        }
+    }
+
+    fun isBookmarked(doc: Doc): Boolean = BookmarkStore.id(BookmarkStore.DOC, doc.docId) in bookmarkKeys
 
     fun openDoc(doc: Doc) {
         val url = buildDocFileUrl(doc.docNamespace, doc.filename)
@@ -175,7 +202,12 @@ fun DocsScreen(
                             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 4.dp)) {
                                 items(files, key = { it.path }) { node ->
                                     val doc = node.doc ?: return@items
-                                    FileRow(doc) { openDoc(doc) }
+                                    FileRow(
+                                        doc = doc,
+                                        bookmarked = isBookmarked(doc),
+                                        onToggleBookmark = { toggleBookmark(doc) },
+                                        onClick = { openDoc(doc) }
+                                    )
                                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                                 }
                             }
@@ -197,7 +229,14 @@ fun DocsScreen(
                         }
                         files.forEach { node ->
                             val doc = node.doc ?: return@forEach
-                            item(key = "doc_${doc.docId}") { FileRow(doc) { openDoc(doc) } }
+                            item(key = "doc_${doc.docId}") {
+                                FileRow(
+                                    doc = doc,
+                                    bookmarked = isBookmarked(doc),
+                                    onToggleBookmark = { toggleBookmark(doc) },
+                                    onClick = { openDoc(doc) }
+                                )
+                            }
                             item(key = "doc_div_${doc.docId}") { HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)) }
                         }
                     }
@@ -230,12 +269,17 @@ private fun FolderRow(name: String, fileCount: Int, onClick: () -> Unit) {
     }
 }
 
-/** 文件行：彩色类型徽标 + 名称（含推荐星）+ 日期 → 按类型打开 */
+/** 文件行：彩色类型徽标 + 名称（含推荐星）+ 日期 + 收藏图标 → 按类型打开 */
 @Composable
-private fun FileRow(doc: Doc, onClick: () -> Unit) {
+private fun FileRow(
+    doc: Doc,
+    bookmarked: Boolean,
+    onToggleBookmark: () -> Unit,
+    onClick: () -> Unit
+) {
     val (color, label) = docTypeStyle(doc.fileType)
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(shape = RoundedCornerShape(6.dp), color = color.copy(alpha = 0.12f), contentColor = color, modifier = Modifier.size(34.dp)) {
@@ -264,6 +308,15 @@ private fun FileRow(doc: Doc, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+        // 固定宽度操作位：图标不参与文字测量，标题用 weight(1f, fill=false) 防被挤成竖条（HANDOVER 33）
+        IconButton(onClick = onToggleBookmark, modifier = Modifier.size(40.dp)) {
+            Icon(
+                if (bookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                contentDescription = if (bookmarked) "取消收藏" else "收藏",
+                modifier = Modifier.size(24.dp),
+                tint = if (bookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

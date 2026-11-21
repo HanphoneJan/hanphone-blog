@@ -15,6 +15,7 @@ import ClipboardJS from 'clipboard'
 import { ThumbsUp, Share2, Copy, ChevronLeft, Loader2 } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { BLOG_DETAIL_LABELS } from '@/lib/labels'
+import BookmarkButton from '@/components/BookmarkButton'
 
 import { useBlogDetail, useComments, useToc } from '../hooks'
 import { useScrollSpy } from '../hooks'
@@ -442,6 +443,16 @@ export default function BlogDetailClient({
                     <Copy className="h-5 w-5 transition-transform duration-300 hover:scale-110" />
                     <span className="blog-text-sm font-medium">复制</span>
                   </motion.button>
+
+                  <motion.div variants={actionButtonVariants} className="flex items-center">
+                    <BookmarkButton
+                      type="BLOG"
+                      contentKey={state.blog.id}
+                      showLabel
+                      iconClassName="h-5 w-5"
+                      className="gap-2 blog-text-sm font-medium"
+                    />
+                  </motion.div>
                 </motion.div>
 
                 {/* 评论区域 */}

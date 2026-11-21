@@ -114,6 +114,14 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    public Message findMessageById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return messageRepository.findById(id).orElse(null);
+    }
+
+    @Override
     public Long count() {
         try {
             return messageRepository.count();

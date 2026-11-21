@@ -92,26 +92,44 @@ export default function EssayClient({ initialEssays }: EssayClientProps) {
     setDeleteDialog(prev => ({ ...prev, isOpen: false }))
   }, [])
 
-  // 处理哈希跳转 - 只在初始加载时执行一次
+  // 哈希跳转：/essays/#123 → 定位到对应随笔（扣掉固定 Header 高度）
+  // 抽成函数，供首次数据到达、hashchange、同页深链三种场景复用
+  const scrollToHash = useCallback(
+    (behavior: ScrollBehavior = 'smooth') => {
+      if (typeof window === 'undefined') return false
+      const hash = window.location.hash
+      if (!hash) return false
+      const essayId = parseInt(hash.slice(1), 10)
+      if (isNaN(essayId)) return false
+      const element = document.getElementById(essayId.toString())
+      if (!element) return false
+      const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
+      window.scrollTo({ top: element.offsetTop - headerHeight - 16, behavior })
+      return true
+    },
+    []
+  )
+
+  // 首次数据到达后滚动一次；随笔没加载出来（如深链指向第 2 页）时不标记，后续数据到达会再试
   const hasScrolledToHash = useRef(false)
   useEffect(() => {
-    if (typeof window !== 'undefined' && state.essays.length > 0 && !hasScrolledToHash.current) {
-      const hash = window.location.hash
-      if (hash) {
-        const essayId = parseInt(hash.slice(1))
-        if (!isNaN(essayId)) {
-          const element = document.getElementById(essayId.toString())
-          if (element) {
-            hasScrolledToHash.current = true
-            setTimeout(() => {
-              const headerHeight = document.querySelector('.site-header')?.clientHeight || 56
-              window.scrollTo({ top: element.offsetTop - headerHeight - 16, behavior: 'smooth' })
-            }, 100)
-          }
-        }
-      }
+    if (state.essays.length === 0 || hasScrolledToHash.current) return
+    const timer = window.setTimeout(() => {
+      if (scrollToHash()) hasScrolledToHash.current = true
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [state.essays, scrollToHash])
+
+  // 已在随笔页时再次点击通知/收藏里的 /essays/#id：只改 hash，不会重新挂载，靠这个监听定位
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleHashChange = () => {
+      // 同步写 hash 时页面上可能还没有对应随笔，交给上面的数据到达副作用处理
+      scrollToHash()
     }
-  }, [state.essays])
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [scrollToHash])
 
   // 可见性观察器
   useEffect(() => {
@@ -162,8 +180,10 @@ export default function EssayClient({ initialEssays }: EssayClientProps) {
     // 否则 replaceState 会把路由刚 push 的新页面历史条目改回 /essays#id，
     // 导致导航失败/URL 错乱
     if (!window.location.pathname.startsWith('/essays')) return
-    const targetId = visibleEssayId ?? state.essays[0].id
-    window.history.replaceState({}, '', `#${targetId}`)
+    // 观察器还没报告任何可见随笔时不要改写：深链 /essays/#123 刚进入时
+    // visibleEssayId 仍是 null，此时写入第一篇会立刻覆盖掉目标 hash
+    if (visibleEssayId === null) return
+    window.history.replaceState({}, '', `#${visibleEssayId}`)
   }, [visibleEssayId, state.essays])
 
   return (

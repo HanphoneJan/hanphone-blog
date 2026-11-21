@@ -56,9 +56,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Type check
+        working-directory: ./web
+        run: pnpm exec tsc --noEmit
+
       - name: Run unit tests
         working-directory: ./web
-        run: pnpm test || true
+        run: pnpm test
 
   # ============ Android Build & Unit Tests ============
   android-build:

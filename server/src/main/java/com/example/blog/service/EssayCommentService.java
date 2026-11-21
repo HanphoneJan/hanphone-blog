@@ -19,5 +19,10 @@ public interface EssayCommentService {
 
     EssayComment getEssayCommentById(Long id);
 
+    /**
+     * 按 ID 查询随笔评论（不存在返回 null；用于删除前读取真实作者）
+     */
+    EssayComment findEssayCommentById(Long id);
+
     void deleteEssayComment(Long id);
 }

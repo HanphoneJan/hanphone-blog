@@ -68,6 +68,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - Photo wall has its own Express backend (`photo-wall-server`) on port 4001
 - Backend uses PostgreSQL (primary DB) + Redis (rate limiting, sessions, captcha); hot public reads (tags/types/site-stats) cached in-process via Caffeine (TTL 300s, evicted on writes)
 - JWT-based auth: TokenInterceptor validates tokens on admin endpoints (`/admin/**`); public endpoints use IndexController/UserController etc.
+- **登录用户接口（2026-11）**：`CurrentUserService` 统一解析 `token`（JWT 签名 + `pwdv`），`UserAuthInterceptor` 保护 `/bookmarks/**`、`/notifications/**`（未登录 401）。`DELETE /comments/{id}`、`/essays/comments/{id}` 要求本人或管理员（匿名评论仅管理员），`DELETE /messages/{id}` 仅管理员；评论/随笔评论的身份以 token 为准，**忽略 body 里的 `userId`**（避免冒充触发错误通知）。
 - **长期登录（access + refresh）**：access JWT 30 分钟（`JWT_EXPIRE_TIME=1800000`），refresh 90 天、只存哈希于 `t_user_session`，每次刷新轮换，旧值被重放即吊销整个会话；改密码令 `password_version+1` 并吊销会话（保留当前 sid）。接口 `/auth/{refresh,logout,sessions,adopt}`，Web 用同源 BFF（`/next-api/auth/*`，refresh 在 HttpOnly Cookie），Android/Tauri 直连并本地存 refresh。详见 [docs/auth/README.md](docs/auth/README.md)。chat-server 与 admin-file 只验 access，无需改动。
 - **第三方登录**：网页 GitHub（授权跳转）/ Google（GSI ID Token，服务端用 tokeninfo 验签并核对 aud）；Android 走**系统浏览器 + https 中转页 `/api/oauth/app/return` + `hanphone://oauth/callback` + 一次性 code**（`POST /oauth/app/exchange`，码 2 分钟、单次消费），token 不进 URL；中转页是因为国内浏览器会静默忽略 302→自定义 scheme，App Links 校验通过（`web/public/.well-known/assetlinks.json`，指纹=签名证书）时系统直接开 App。服务端 `web/OAuthController.java` + `service/OAuthExchangeCodeStore.java`，客户端 `android/.../data/auth/OAuthLogin.kt`。Google 服务端出站需代理（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。详见 [docs/auth/README.md](docs/auth/README.md) §3。
 
@@ -75,7 +76,9 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 
 - **App Router**: Pages in `app/(main)/` (public) and `app/admin/` (dashboard)
 - **热点聚合页** `/insight`（「分享」菜单 → 热点聚合）：GitHub / HF / AI 要闻 热点流 + 模型榜单（文本 / 代码 / Agent / Embedding / 生图 / 生视频 / 语音）+ 综合对比（能力雷达 / 价格散点 / 明细表，可导出图片与分享链接）。页面为 `force-dynamic` 按请求渲染，服务端经内网 `API_INTERNAL_BASE_URL` 取数；后台 `/admin/insight`（导航「聚合数据」）可异步触发采集并配置 AI 摘要（URL/Key/Model/自定义 Header）。
+- **站内通知 / 收藏 / 搜索**：`/notifications`（评论/回复通知，顶栏铃铛 + 未读轮询 + 通知页）、`/bookmarks`（博客/随笔/文档收藏，`BookmarkContext` 登录后一次拉取 + 乐观更新）、`/search`（独立结果页，类型筛选 + 服务端纯文本 `snippet` 高亮）。三页均 `noIndex`，`robots.ts` 已 Disallow。
 - **Static sub-apps**: Gomoku builds to `web/public/games/` and is served by Next.js rewrites at `/games/`. Photo wall (`apps/photo-wall`) builds to its own `atlas/` and is served **by nginx alias** `/home/hanphone/html/atlas` at `/atlas/` (不在 Next.js / `web/public/` 内托管)
+- **类型闸门**：`next.config.ts` 的 `typescript.ignoreBuildErrors` 已为 `false`；CI 另跑 `pnpm exec tsc --noEmit`。`eslint.ignoreDuringBuilds` 仍为 `true`（历史 ESLint 错误较多，不在本轮范围）。
 - **PWA**: Serwist v9 service worker (`app/sw.ts`) with offline page
 - **Desktop**: Tauri 2 wrapper in `src-tauri/` packages as Windows desktop app
 - **Themes**: 4 themes (light, dark, macaron, cyberpunk) via CSS custom properties + Tailwind variants; theme persisted in cookie set by middleware
@@ -88,6 +91,8 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - **JWT interceptor**: `TokenInterceptor` protects `/admin/**` routes
 - **Swagger**: SpringDoc OpenAPI 3 at `/swagger-ui/index.html`; public and admin controllers separated
 - **Two query layers**: JPA repositories in `dao/` for most queries, MyBatis-Plus for some complex ones
+- **站内通知与收藏（2026-11）**：`t_notification`（博客/随笔评论回复；收件人=父评论作者，匿名父评论回退内容作者；**独立 `REQUIRES_NEW` 事务**，写失败只记日志，不影响评论）与 `t_bookmark`（唯一约束 `user_id+content_type+content_key`，DOC 的 key 是 `docId`）；接口 `/notifications/*`、`/bookmarks/*`。全局搜索改为 SQL 侧评分 + `LIMIT`，`SearchIndexInitializer` 启动时尽力创建 `pg_trgm` GIN 索引（`SEARCH_TRGM_ENABLED`，无权限/失败只告警，不阻断启动）。
+- **Android 深链（2026-11）**：`https://hanphone.cn/blog/*`、`/essays/*`、`/docs/*` 走 App Links（只注册 `hanphone.cn`；`middleware.ts` 会把其他 host 301 到它）。解析在 `android/.../util/DeepLink.kt`（纯函数 `java.net.URI`，便于 JVM 单测），`MainActivity` → `DeepLinkBus` → `AppNav` 导航。
 - **热点聚合（Insight）**：`hot/` 包，采集器接口 `HotCollector`（热点条目）与 `ModelLeaderboardCollector`（模型榜单），`HotCollectScheduler` 每日 03:30 采集、`HotTriggerService` 提供后台异步手动触发。表：`hot_source` / `hot_item` / `hot_item_snapshot` / `hot_collect_run` / `hot_setting` / `model_entity` / `model_alias` / `model_benchmark` / `model_benchmark_snapshot` / `model_pricing` / `benchmark_meta`。公开接口 `/hot/{overview,feed,sources,leaderboards,benchmarks,models,vendors}`（`models` 支持 `q`/`vendor`/`sort=newest|name|price|context`/`limit`；`vendors` 返回归一后的厂商、重点厂商置顶），管理接口 `/admin/hot/*`（`collect` 异步、`status`、`settings/summary`）。信源：GitHub、Hugging Face（可用 `HF_ENDPOINT` 镜像）、AI 要闻（RSS）、Artificial Analysis、LMArena（可关）、MTEB、SWE-bench、Terminal-Bench、VBench、OpenRouter。厂商归一/重点排序见 `hot/model/VendorRegistry`（合并大小写、连字符、子品牌别名，如 Alibaba/Alibaba-ATH/Qwen、z-ai/Z.ai、Mistral/mistralai）。另：`hot/{leaderboards,models,vendors,models/compare}` 支持 `normalized` 参数（默认 true）——**仅展示层**，关闭则在 web/App 顶部「名称归一」开关处显示信源原始厂商名与名称后缀（实体合并不受影响）。
 
 ### Environment Variables
@@ -96,6 +101,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - 聊天前端构建变量：`apps/chat-client/.env` 需有 `VITE_API_BASE_URL=/chat-api`、`VITE_AUTH_BASE_URL=https://hanphone.cn`（生产）；漏配时产物里会留 `{}.VITE_*`，登录地址变成 `undefined/api/login`，Nginx SPA 兜底返回 200 HTML，所以只报「登录请求失败」、没有 404。
 - 访客地图：腾讯位置 `LOCATION_KEY` 是域名白名单 key，服务端 `fetch` 必须带 `Referer`（`web/src/lib/location.ts` 已处理），否则返回 `status 110` 并回退到默认坐标。
 - Backend env: copy `server/env.example` → `server/.env`
+- 全局搜索索引：`SEARCH_TRGM_ENABLED=true`（默认开）。启动时 `SearchIndexInitializer` 创建 `pg_trgm` 扩展与 GIN 索引；DB 用户无权限时只打 warn，搜索退化为顺序扫描（SQL 仍只回最多 N 行）。
 - Internal service auth: `INTERNAL_API_KEY` in backend `.env` for service-to-service calls (e.g., hanphone-chat → blog API)。**admin-file 也要配同一个 key**（`server_file/.env`）：博客 server 用它以 `x-internal-key` 调文件服务上传/回收文件；缺失时内部认证被禁用，删除文件会静默失败（2026-11 已补上，外链头像转存也依赖它）。
 - FCM 推送（Android 杀进程兜底）：**热点更新由博客 server 直接发送**——`FcmPushService` 自实现 FCM v1 REST（HTTP/1.1 + `FCM_PROXY`，如 mihomo `http://127.0.0.1:7890`；`firebase-admin` messaging 走 HTTP/2 直连、不支持代理，国内服务器必走代理否则 ETIMEDOUT）。热点采集完成后 blog 向 `device_token` 表全部设备广播（`data.type=hot`，通知渠道 `hot_updates`）；设备经 `POST /api/devices` 上报（`token` 头关联用户 / 匿名仅收热点），凭证 `FCM_SERVICE_ACCOUNT`。**过渡兜底**：博客尚无设备 token（App 未升级到上报博客的版本）时经 `CHAT_API_BASE_URL`（默认 `http://127.0.0.1:4010`）调 chat-server `/chat-api/internal/push` 广播（`x-internal-key` = chat↔blog 共享密钥，即 chat-server 的 `BLOG_INTERNAL_KEY` == blog 的 `INTERNAL_API_KEY`；用 `HOT_PUSH_CHAT_FALLBACK=false` 可关）。私信推送仍由 chat-server 发送（同样 `FCM_SERVICE_ACCOUNT`/`FCM_PROXY`），**仅当接收方无在线 socket 时**才推（在线走 socket 通知，天然去重，`data.type=private`），设备上报端点 `POST /chat-api/api/devices`；需放置 `android/app/google-services.json`，**缺失时 FCM 自动禁用、构建仍成功**。
 - Visitor IP geo stats: `GEO_DB_PATH` in backend `.env` points to a **DB-IP City Lite** mmdb file (globally covers IP→country/region; missing file degrades to "unknown region"). Auto-update monthly via `server/scripts/update-dbip.sh` (see `server/DEPLOYMENT.md` §7). Frontend world map displays country names in Chinese via `web/src/lib/countryZh.ts` mapping.
@@ -104,7 +110,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 
 ## CI (GitHub Actions)
 
-Three jobs on push/PR to main: server tests (Maven), web unit tests (Vitest), build verification (Gomoku + Photo Wall + Web). See `.github/workflows/ci.yml`.
+Three jobs on push/PR to main: server tests (Maven), web unit tests (Vitest) + `tsc --noEmit`, build verification (Gomoku + Photo Wall + Web). Web 测试不再 `|| true`，失败会让流水线红。See `.github/workflows/ci.yml`.
 
 ## Key Documentation
 

@@ -14,6 +14,8 @@ import com.hanphone.blog.data.chat.DeviceTokenBody
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Blog
+import com.hanphone.blog.data.model.BookmarkItem
+import com.hanphone.blog.data.model.BookmarkStatus
 import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
@@ -28,12 +30,14 @@ import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.model.ModelBenchmarkRow
 import com.hanphone.blog.data.model.ModelCompare
 import com.hanphone.blog.data.model.ModelLeaderboard
+import com.hanphone.blog.data.model.NotificationPage
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.SearchResultItem
 import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.Type
+import com.hanphone.blog.data.model.UnreadCount
 import com.hanphone.blog.data.model.User
 import com.hanphone.blog.data.model.Vendor
 import kotlinx.coroutines.Dispatchers
@@ -322,6 +326,41 @@ class MessageRepository(private val api: BlogApi = ApiClient.api) {
                 )
             )
         }
+}
+
+/** 站内通知（/notifications，均需登录；Token 头由 ApiClient 拦截器注入） */
+class NotificationRepository(private val api: BlogApi = ApiClient.api) {
+
+    /** page 1 起始，与后端一致 */
+    suspend fun page(page: Int = 1, size: Int = 20): ApiResult<NotificationPage> =
+        withContext(Dispatchers.IO) { api.notifications(page, size) }
+
+    suspend fun unreadCount(): ApiResult<UnreadCount> =
+        withContext(Dispatchers.IO) { api.notificationUnreadCount() }
+
+    suspend fun markRead(id: Long): ApiResult<Any?> =
+        withContext(Dispatchers.IO) { api.markNotificationRead(id) }
+
+    /** 全部已读，返回更新条数 */
+    suspend fun markAllRead(): ApiResult<Int> =
+        withContext(Dispatchers.IO) { api.markAllNotificationsRead() }
+}
+
+/** 收藏（/bookmarks，均需登录；type = BLOG / ESSAY / DOC） */
+class BookmarkRepository(private val api: BlogApi = ApiClient.api) {
+
+    /** type 为 null 时返回全部收藏（顺序由后端按创建时间倒序） */
+    suspend fun list(type: String? = null): ApiResult<List<BookmarkItem>> =
+        withContext(Dispatchers.IO) { api.bookmarks(type) }
+
+    suspend fun status(type: String, key: String): ApiResult<BookmarkStatus> =
+        withContext(Dispatchers.IO) { api.bookmarkStatus(type, key) }
+
+    suspend fun add(type: String, key: String): ApiResult<BookmarkStatus> =
+        withContext(Dispatchers.IO) { api.addBookmark(mapOf("type" to type, "key" to key)) }
+
+    suspend fun remove(type: String, key: String): ApiResult<BookmarkStatus> =
+        withContext(Dispatchers.IO) { api.removeBookmark(type, key) }
 }
 
 /** 文件服务（admin-file 上传） */

@@ -121,8 +121,16 @@ fun SearchScreen(
                                 }
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                    if (!item.description.isNullOrBlank()) {
-                                        Text(item.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    // 摘要优先用服务端的纯文本 snippet（关键词上下文），没给再回退 description
+                                    val summary = item.snippet?.takeIf { it.isNotBlank() } ?: item.description
+                                    if (!summary.isNullOrBlank()) {
+                                        Text(
+                                            summary,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 2,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
                                     }
                                 }
                             }

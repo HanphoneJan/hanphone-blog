@@ -27,6 +27,25 @@ public interface BlogRepository extends JpaRepository<Blog, Long>, JpaSpecificat
     @EntityGraph(attributePaths = {"type", "user"})
     List<Blog> findAll(Specification<Blog> spec);
 
+    /**
+     * 全局搜索：SQL 侧完成 ILIKE 匹配、评分、排序与 LIMIT，避免全量取回内存排序。
+     * 评分口径：标题命中 30、描述命中 20、正文命中 10（与 GlobalSearchServiceImpl 保持一致）。
+     * 参数 kw 由调用方传入 {@code %keyword%}。
+     */
+    @Query(value = """
+            SELECT b.*
+            FROM t_blog b
+            WHERE b.published = true
+              AND (b.title ILIKE :kw OR b.description ILIKE :kw OR b.content ILIKE :kw)
+            ORDER BY
+              (CASE WHEN b.title ILIKE :kw THEN 30 ELSE 0 END
+               + CASE WHEN b.description ILIKE :kw THEN 20 ELSE 0 END
+               + CASE WHEN b.content ILIKE :kw THEN 10 ELSE 0 END) DESC,
+              COALESCE(b.update_time, b.create_time) DESC NULLS LAST
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Blog> searchTop(@Param("kw") String keywordPattern, @Param("limit") int limit);
+
     @Query("select b from Blog b where b.recommend = true")
     List<Blog> findTop(Pageable pageable);
 

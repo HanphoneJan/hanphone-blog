@@ -120,6 +120,9 @@ web/src/
 | `/terms` | terms/page.tsx | 用户协议 |
 | `/error` | error/page.tsx | 错误页面 |
 | `/insight` | insight/page.tsx | 热点聚合（热点流 / 模型榜单 / 模型对比） |
+| `/search` | search/page.tsx | 全局搜索结果页（类型筛选、snippet 高亮；noIndex） |
+| `/notifications` | notifications/page.tsx | 站内通知（评论/回复；需登录；noIndex） |
+| `/bookmarks` | bookmarks/page.tsx | 我的收藏（博客/随笔/文档；需登录；noIndex） |
 
 ### 管理后台 (app/admin/)
 
@@ -182,6 +185,13 @@ web/src/
 
 用户登录状态全局管理。
 
+### BookmarkContext (contexts/BookmarkContext.tsx)
+
+收藏状态（只存 `Set<"BLOG:12">` 这样的 key 集合，不存标题/封面）。登录后只拉一次
+`GET /bookmarks`；`add/remove/toggle` 先乐观更新、失败回滚；401 后停止请求，退出登录清空。
+放在 `(main)/layout.tsx` 的 `ChatNotifyProvider` 内层，保证 Header 与所有页面都能用。
+收藏列表页自己拉 `/bookmarks?type=` 取元数据。
+
 ---
 
 ## 自定义 Hooks (hooks/)
@@ -222,6 +232,19 @@ web/src/
 - 页面标题统一由 `createMetadata(title, desc, { path, keywords })` 生成，形如 `{title} | 云林有风 | 寒枫的博客`。
 
 ---
+
+## 搜索 / 站内通知 / 收藏（2026-11）
+
+- **搜索**：Header 下拉仍只展示前 10 条；回车或「查看全部结果」进入 `/search/?q=…&type=…`。
+  结果来自 `GET /api/search`，服务端返回 `snippet`（Jsoup 去 HTML 的纯文本）；前端用 React 片段包
+  `<mark>` 高亮，**不用 `dangerouslySetInnerHTML`**。类型：博客/随笔/项目/文档。
+- **站内通知**：`NotificationBell` 在 Header（未登录不渲染），每 60s + focus 拉
+  `/notifications/unread-count`；点开才拉最近 6 条。`/notifications/` 支持全部/未读筛选、分页、
+  全部已读。点条目先 `POST /{id}/read` 再跳 `url`；随笔目标 `/essays/#id` 依赖
+  `EssayClient` 的 `hashchange` 定位。
+- **收藏**：`BookmarkButton` 接入博客详情、随笔卡片、文库列表/详情；`/bookmarks/` 按类型分 Tab。
+  登录后 `BookmarkContext` 一次拉全集，按钮只读 Context，避免每张卡片发 `status` 请求（N+1）。
+- **静态导出**：`/search` 用 `useSearchParams`，页面必须包 `Suspense`；三个页面均 `noIndex`。
 
 ## 聊天未读角标与浏览器通知 (contexts/ChatNotifyProvider.tsx)
 

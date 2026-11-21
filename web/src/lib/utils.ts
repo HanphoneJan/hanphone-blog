@@ -62,3 +62,9 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+/** 判断请求错误是否为 401（轮询类请求遇到 401 应停止，避免无休止重试） */
+export function isUnauthorizedError(error: unknown): boolean {
+  const status = (error as { response?: { status?: number } } | null | undefined)?.response?.status;
+  return status === 401;
+}

@@ -4,10 +4,12 @@ import com.hanphone.blog.data.api.ApiClient
 import com.hanphone.blog.data.api.BlogApi
 import com.hanphone.blog.data.repo.AdminRepository
 import com.hanphone.blog.data.repo.BlogRepository
+import com.hanphone.blog.data.repo.BookmarkRepository
 import com.hanphone.blog.data.repo.EssayRepository
 import com.hanphone.blog.data.repo.FileRepository
 import com.hanphone.blog.data.repo.HotRepository
 import com.hanphone.blog.data.repo.MessageRepository
+import com.hanphone.blog.data.repo.NotificationRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,6 +47,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideHotRepository(api: BlogApi): HotRepository = HotRepository(api)
+
+    @Provides
+    @Singleton
+    fun provideNotificationRepository(api: BlogApi): NotificationRepository = NotificationRepository(api)
+
+    @Provides
+    @Singleton
+    fun provideBookmarkRepository(api: BlogApi): BookmarkRepository = BookmarkRepository(api)
 
     @Provides
     @Singleton

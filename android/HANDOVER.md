@@ -11,7 +11,8 @@
 博客「云林有风」的 Android 原生客户端。Kotlin + Jetpack Compose (Material 3)，对接博客 REST API 与 hanphone-chat 实时聊天。后端代码零改动。
 
 - 导航：**底部 4 Tab**：首页 / 随笔 / 消息 / 我的
-- 子页：文章详情、随笔详情、搜索、留言板、友链、设置（设置→外观/数据管理 为二级子页）、登录、注册
+- 子页：文章详情、随笔详情、搜索、留言板、友链、**站内通知、我的收藏**、设置（设置→外观/数据管理 为二级子页）、登录、注册
+- 深链（2026-11）：App Links 覆盖 `https://hanphone.cn/blog/*`、`/essays/*`、`/docs/*`（只注册 `hanphone.cn`）
 - 聊天：原生 Socket.IO（**非 WebView**），复用博客 JWT
 
 ## 2. 代码地图（`app/src/main/java/com/hanphone/blog/`）
@@ -56,6 +57,12 @@ ui/
   webview/WebViewScreen.kt      通用 WebView（项目链接 loadUrl / 文库 HTML 文档 fetch+loadDataWithBaseURL；
                                进度条/返回/浏览器外开；主框架加载失败显示「重试/在浏览器打开」错误层）
   core/AuthBridge.kt            第一方 WebView 页（照片墙 hanphone.cn/atlas）登录态注入 + 登出清理
+  core/DeepLinkBus.kt           深链中转（StateFlow；MainActivity 投递，AppNav 消费）
+  util/DeepLink.kt              深链解析纯函数（java.net.URI，JVM 单测可跑）
+  data/cache/BookmarkStore.kt   收藏 key 集合（进程级 StateFlow，登录 refresh / 退出 clear）
+  data/cache/NotificationBadge.kt 站内通知未读数（只给「我的 → 通知」入口）
+  ui/notification/              NotificationsScreen + ViewModel（列表/分页/已读）
+  ui/bookmark/                  BookmarksScreen + ViewModel（博客/随笔/文档 Tabs）
   profile/ProfileScreen.kt + ProfileViewModel.kt
   components/           ArticleCard/Avatar/Skeleton(骨架屏)/Loading/Error/Empty/BottomActionItem
                       SearchField（40dp 紧凑搜索胶囊，替代 M3 OutlinedTextField 56dp）/详情底部栏=细分割线+单行图标文字
@@ -151,6 +158,35 @@ ui/
 
 编辑页的数据交接：管理端没有「按 id 取单条」的接口（`/essays/{id}` 只返回已发布），
 列表把完整对象塞进 `AdminEditBus`，编辑页直接读；进程被回收后退化为翻页查找（最多 10 页）。
+
+## 3.8 站内通知 / 收藏 / 深链（2026-11）
+
+### 站内通知
+
+- 接口：`GET /notifications?page=&size=`（page 1 起始，`data={items,page,size,total,unread}`）、
+  `GET /notifications/unread-count`、`POST /notifications/{id}/read`、`POST /notifications/read-all`。
+- 入口：「我的 → 更多 → 通知」，副标题显示未读数；未读数存 `NotificationBadge`，不并入底部「消息」红点。
+- 页面：`ui/notification/NotificationsScreen.kt` + `NotificationsViewModel.kt`；点条目标记已读后按
+  `targetType` 打开 `article/{id}` / `essay/{id}`；「全部已读」在顶部。
+- 通知由服务端在评论/回复成功后写入；客户端不做本地推送、不做轮询。
+
+### 收藏
+
+- 接口：`GET /bookmarks?type=`、`GET /bookmarks/status`、`POST /bookmarks`、`DELETE /bookmarks/{type}/{key}`。
+- `BookmarkStore` 只存 `Set<"BLOG:12">`；登录后 `refresh()` 一次拉全集，切换乐观更新、失败回滚；
+  退出登录 `clear()`。文章详情、随笔详情、文库列表行都用它显示收藏态。
+- 入口：「我的 → 更多 → 我的收藏」，`ui/bookmark/BookmarksScreen.kt` 按博客/随笔/文档分 Tab；
+  文档本轮点击回到文库列表（不直接打开具体文件）。
+
+### 深链
+
+- Manifest 在 `MainActivity` 注册 `autoVerify` 的 `hanphone.cn` App Links：`/blog/`、`/essays`、`/docs`。
+  只注册非 www 域（`web/middleware.ts` 会把其他 host 301 到 `hanphone.cn`）。
+- `MainActivity.handleIncomingIntent` 先排除 OAuth 回跳，再 `DeepLinkBus.handle(uri.toString())`；
+  `AppNav` 收集 `pending` 后导航并 `consume()`。冷启动与 `onNewIntent` 共用同一条路径。
+- `DeepLink.parse(raw: String?)` 必须保持纯函数（`java.net.URI`），**不要改成 `android.net.Uri`**，
+  否则 JVM 单测会报 `Method parse not mocked`。
+- `/essays/#123` 走 fragment；`/docs/*` 只到文库列表（本轮不做具体文件）。
 
 ## 4. 信息架构与每屏要点（含用户明确要求）
 
@@ -408,6 +444,22 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     其余弹窗（标签/分类表单、后台删除二次确认）补了 `verticalScroll`，键盘顶起来也不会裁掉输入框。
     上限用屏幕高度算（`minOf(480.dp, screenHeightDp * 0.62f)`），矮屏也不会顶到按钮。
 
+35. **通知/收藏接口的 JSON 可空字段别写成非空（2026-11）**：服务端 `NotificationVO.actorName/excerpt`、
+    `BookmarkItem.subtitle` 在匿名/空内容时可能是 JSON `null`。Moshi + `KotlinJsonAdapterFactory` 遇到
+    「非空 Kotlin 字段 + 显式 null」会抛 `JsonDataException`，表现为整个列表页空白。模型里一律用
+    `String? = null`，UI 再 `?: "有人"` / `?: ""` 兜底。`createTime/createdAt` 是 Date（毫秒或字符串），
+    用全局 `BlogDateAdapter` 解析。
+36. **深链解析必须用 `java.net.URI`，不能用 `android.net.Uri`（2026-11）**：本地 JVM 单测里
+    `android.net.Uri.parse` 是 stub，会直接抛 `Method parse not mocked`。`util/DeepLink.kt` 的
+    `parse(raw: String?)` 保持纯函数；`MainActivity` 只传 `intent.data?.toString()`。
+37. **App Links 只注册 `hanphone.cn`**：`web/middleware.ts` 会把所有非 `PRIMARY_DOMAIN` 的 host 301 到
+    `hanphone.cn`，注册 `www` 会导致校验失败。`assetlinks.json` 是域名级文件，新增 `/blog`、`/essays`、
+    `/docs` 路径不需要改它。验证：`adb shell pm get-app-links com.hanphone.blog`，改签名后要
+    `pm verify-app-links --re-verify`。`/essays` 的 id 在 fragment（`#123`），解析时同时看 path 与 fragment。
+38. **收藏态是进程级单例 `BookmarkStore`**：登录后由 `BlogAppRoot` 的 `LaunchedEffect(token)` 调
+    `refresh()`，退出登录 `clear()`；页面只 `collectAsState()` 读 keys，不要每页各拉一次 `/bookmarks/status`
+    （会 N+1）。新增收藏入口时用 `BookmarkStore.id(TYPE, key)` 拼 key，别各写一份格式。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
@@ -421,6 +473,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ **v1.2.0 应用内更新**：设置 → 检查更新 →「立即更新」在 App 内下载 APK（进度/取消，应用级协程），完成后经 `FileProvider` 调起系统安装器；首次引导授权「安装未知应用」，授权返回自动继续。不再跳浏览器。
 - ✅ **v1.3.0 启动时检查更新**：冷启动自动查 GitHub Release（每进程一次、失败静默），设「启动时检查更新」开关默认开、可在设置页关闭；更新弹窗上提到根界面（`ui/components/UpdateDialogs.kt`），手动/启动共用，下载不再随设置页销毁中断。
 - ✅ **第三方登录（GitHub / Google）**：登录页「GitHub 登录 / Google 登录」→ 系统浏览器授权 → `hanphone://oauth/callback`（只带一次性 code）→ `POST /oauth/app/exchange` → 与密码登录共用 `core/LoginSession.applyLogin`。服务端 `state=app` 分支 + `OAuthExchangeCodeStore`（32 字节、单次、2 分钟）。网页上 GitHub 注册的账号（`gh_<id>`，无密码）终于能在 App 里登录。Google 需服务端能出站（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。
+- ✅ **v1.3.2 站内通知 + 收藏 + 深链（2026-11）**：「我的 → 通知」评论/回复通知（未读角标、全部已读）、「我的 → 收藏」博客/随笔/文档（`BookmarkStore` 进程级状态 + 乐观更新）、详情/随笔/文库收藏按钮；`https://hanphone.cn/{blog,essays,docs}` App Links（`DeepLinkBus` + 纯函数解析 + 单测）。收藏文档本轮点击回文库列表。小版本发布，versionCode 26 / versionName 1.3.2；Release 包用 debug 密钥签名，可直接覆盖 1.3.1。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 

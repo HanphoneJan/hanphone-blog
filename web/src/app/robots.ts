@@ -13,6 +13,9 @@ export default function robots(): MetadataRoute.Robots {
           '/next-api/',
           '/_next/',
           '/private/',
+          '/search/',
+          '/bookmarks/',
+          '/notifications/',
         ],
       },
       {

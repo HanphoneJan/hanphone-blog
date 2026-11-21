@@ -18,6 +18,11 @@ public interface MessageService {
 
     Message getMessageById(Long id);
 
+    /**
+     * 按 ID 查询留言（不存在返回 null；用于删除前判断 404）
+     */
+    Message findMessageById(Long id);
+
     List<String> messageCountByMonth();
 
     Long count();

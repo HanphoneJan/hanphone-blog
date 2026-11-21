@@ -9,6 +9,10 @@ import com.hanphone.blog.data.chat.DeviceTokenBody
 import com.hanphone.blog.data.model.ApiResult
 import com.hanphone.blog.data.model.BenchmarkMeta
 import com.hanphone.blog.data.model.Blog
+import com.hanphone.blog.data.model.BookmarkItem
+import com.hanphone.blog.data.model.BookmarkStatus
+import com.hanphone.blog.data.model.NotificationPage
+import com.hanphone.blog.data.model.UnreadCount
 import com.hanphone.blog.data.model.Comment
 import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
@@ -34,6 +38,7 @@ import com.hanphone.blog.data.model.Type
 import com.hanphone.blog.data.model.Vendor
 import kotlin.jvm.JvmSuppressWildcards
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -234,6 +239,45 @@ interface BlogApi {
         @Header("X-Request-Id") requestId: String?,
         @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): ApiResult<Message>
+
+    // ===== 站内通知（均需登录；Token 头由拦截器注入）=====
+    /** page 1 起始；返回 items + 当前全量未读数 */
+    @GET("notifications")
+    suspend fun notifications(
+        @Query("page") page: Int,
+        @Query("size") size: Int = 20
+    ): ApiResult<NotificationPage>
+
+    @GET("notifications/unread-count")
+    suspend fun notificationUnreadCount(): ApiResult<UnreadCount>
+
+    /** 单条标记已读（校验归属；非本人 403） */
+    @POST("notifications/{id}/read")
+    suspend fun markNotificationRead(@Path("id") id: Long): ApiResult<Any?>
+
+    /** 全部标记已读，data = 更新条数 */
+    @POST("notifications/read-all")
+    suspend fun markAllNotificationsRead(): ApiResult<Int>
+
+    // ===== 收藏（均需登录；type = BLOG / ESSAY / DOC）=====
+    @GET("bookmarks")
+    suspend fun bookmarks(@Query("type") type: String? = null): ApiResult<List<BookmarkItem>>
+
+    @GET("bookmarks/status")
+    suspend fun bookmarkStatus(
+        @Query("type") type: String,
+        @Query("key") key: String
+    ): ApiResult<BookmarkStatus>
+
+    @POST("bookmarks")
+    suspend fun addBookmark(@Body body: Map<String, String>): ApiResult<BookmarkStatus>
+
+    /** 取消收藏（幂等；不存在也返回成功） */
+    @DELETE("bookmarks/{type}/{key}")
+    suspend fun removeBookmark(
+        @Path("type") type: String,
+        @Path("key") key: String
+    ): ApiResult<BookmarkStatus>
 
     // ===== 热点聚合（洞察 /hot/*，公开只读）=====
     @GET("hot/overview")

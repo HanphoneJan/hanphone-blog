@@ -19,5 +19,10 @@ public interface CommentService {
 
     Comment getCommentById(Long id);
 
+    /**
+     * 按 ID 查询评论（不存在返回 null；用于删除前读取真实作者，避免懒加载代理）
+     */
+    Comment findCommentById(Long id);
+
     void deleteComment(Long id);
 }

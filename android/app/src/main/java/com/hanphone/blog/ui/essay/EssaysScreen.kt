@@ -24,6 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Email
@@ -46,6 +48,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,6 +75,7 @@ import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.core.draftFlow
 import com.hanphone.blog.core.saveDraft
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.BookmarkStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayComment
@@ -479,6 +483,10 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
     var showCommentDialog by remember { mutableStateOf(false) }
     var replyTarget by remember { mutableStateOf<EssayComment?>(null) }
 
+    val bookmarkKeys by BookmarkStore.keys.collectAsState()
+    val bookmarked = BookmarkStore.id(BookmarkStore.ESSAY, essayId) in bookmarkKeys
+    val scope = rememberCoroutineScope()
+
     val toast = rememberToast()
 
     fun share() {
@@ -494,6 +502,15 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
         val uid = TokenStore.userId.value
         if (uid == null) { toast("请先登录"); onLogin(); return }
         vm.toggleLike(uid)
+    }
+
+    fun doBookmark() {
+        if (TokenStore.userId.value == null) { toast("请先登录"); onLogin(); return }
+        scope.launch {
+            if (BookmarkStore.toggle(BookmarkStore.ESSAY, essayId) == null) {
+                toast("操作失败，请稍后再试")
+            }
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -587,6 +604,12 @@ fun EssayDetailScreen(essayId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                                     if (TokenStore.userId.value != null) showCommentDialog = true
                                     else { toast("请先登录"); onLogin() }
                                 }
+                            )
+                            BottomActionItem(
+                                icon = if (bookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                                label = "收藏",
+                                tint = if (bookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                onClick = { doBookmark() }
                             )
                             BottomActionItem(
                                 icon = Icons.Filled.Share,

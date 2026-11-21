@@ -70,6 +70,8 @@ import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.auth.OAuthLogin
 import com.hanphone.blog.data.chat.ChatSocket
 import com.hanphone.blog.data.push.PushRegistrar
+import com.hanphone.blog.data.cache.BookmarkStore
+import com.hanphone.blog.data.cache.NotificationBadge
 import com.hanphone.blog.data.repo.BlogRepository
 import com.hanphone.blog.data.update.AppUpdateManager
 import com.hanphone.blog.ui.components.UpdateDialogs
@@ -186,6 +188,16 @@ fun BlogAppRoot() {
     LaunchedEffect(token) {
         val t = token
         if (t != null) ChatSocket.connect(t) else ChatSocket.disconnect()
+    }
+
+    // 收藏状态与通知未读数跟随登录态：登录后拉一次全量收藏，退出登录清空
+    LaunchedEffect(token) {
+        if (token == null) {
+            BookmarkStore.clear()
+            NotificationBadge.clear()
+        } else {
+            BookmarkStore.refresh()
+        }
     }
 
     // 通知权限（Android 13+）：启动即请求（热点更新推送对未登录用户也生效；拒绝也不影响功能）

@@ -23,6 +23,7 @@ import type { DocMeta } from '../lib/docLoader'
 import { buildDocFileUrl } from '../lib/docLoader'
 import DocsFilter from './DocsFilter'
 import ModalOverlay from '@/components/shared/ModalOverlay'
+import BookmarkButton from '@/components/BookmarkButton'
 
 // 动画变体定义
 const sidebarVariants: Variants = {
@@ -614,7 +615,7 @@ export default function DocsClient({ initialDocs }: { initialDocs: DocMeta[] }) 
                 <span className="flex-1">名称</span>
                 <span className="hidden sm:block w-14 text-center">类型</span>
                 <span className="hidden md:block w-24 text-right">日期</span>
-                <span className="w-8" />
+                <span className="w-12" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -863,6 +864,18 @@ function FileRow({ node }: { node: TreeNode }) {
       <span className="hidden md:inline text-xs text-[rgb(var(--text-muted))/0.4] tabular-nums w-24 text-right shrink-0">
         {doc.createTime}
       </span>
+      {/* 收藏：固定宽图标，不挤压文件名；拦住点击避免触发整行跳转 */}
+      <div
+        className="shrink-0 flex items-center"
+        onClick={e => e.stopPropagation()}
+      >
+        <BookmarkButton
+          type="DOC"
+          contentKey={doc.docId || doc.id}
+          iconClassName="w-3.5 h-3.5"
+          className="p-1 rounded hover:bg-[rgb(var(--border)/0.4)]"
+        />
+      </div>
       <div className="shrink-0">
         <DocAction doc={doc} />
       </div>

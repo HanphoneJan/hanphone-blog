@@ -6,6 +6,7 @@ import { User, Clock, Heart, MessageCircle, ArrowBigUpDash } from 'lucide-react'
 import { FileGallery } from './FileGallery'
 import { CommentList } from './CommentList'
 import EmojiPicker from '@/components/shared/EmojiPicker'
+import BookmarkButton from '@/components/BookmarkButton'
 import type { Essay, UserInfo } from '../types'
 import { formatDate } from '../utils'
 
@@ -115,25 +116,34 @@ export function EssayCard({
             isMobile ? 'pt-1 pb-2' : 'pt-2 mb-2'
           }`}
         >
-          <button
-            onClick={() => onToggleLike(essay.id)}
-            disabled={!userInfo}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all ${
-              !userInfo
-                ? 'text-[rgb(var(--muted-foreground)/0.6)] cursor-not-allowed'
-                : essay.isLiked
-                  ? 'bg-red-50 hover:bg-red-100'
-                  : 'text-[rgb(var(--muted-foreground))] hover:bg-[rgb(var(--muted)/0.8)] hover:text-[rgb(var(--muted-foreground)/0.8)]'
-            }`}
-            style={essay.isLiked && userInfo ? { color: '#ef4444' } : undefined}
-          >
-            {essay.isLiked ? (
-              <Heart className="h-4 w-4" style={{ fill: '#ef4444', color: '#ef4444' }} />
-            ) : (
-              <Heart className="h-4 w-4" />
-            )}
-            <span>{essay.likeCount}</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onToggleLike(essay.id)}
+              disabled={!userInfo}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all ${
+                !userInfo
+                  ? 'text-[rgb(var(--muted-foreground)/0.6)] cursor-not-allowed'
+                  : essay.isLiked
+                    ? 'bg-red-50 hover:bg-red-100'
+                    : 'text-[rgb(var(--muted-foreground))] hover:bg-[rgb(var(--muted)/0.8)] hover:text-[rgb(var(--muted-foreground)/0.8)]'
+              }`}
+              style={essay.isLiked && userInfo ? { color: '#ef4444' } : undefined}
+            >
+              {essay.isLiked ? (
+                <Heart className="h-4 w-4" style={{ fill: '#ef4444', color: '#ef4444' }} />
+              ) : (
+                <Heart className="h-4 w-4" />
+              )}
+              <span>{essay.likeCount}</span>
+            </button>
+
+            <BookmarkButton
+              type="ESSAY"
+              contentKey={essay.id}
+              iconClassName="h-4 w-4"
+              className="gap-1.5 px-3 py-1.5 rounded-full text-sm hover:bg-[rgb(var(--muted)/0.8)]"
+            />
+          </div>
 
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-[rgb(var(--muted-foreground))] hover:bg-[rgb(var(--muted)/0.8)] hover:text-[rgb(var(--muted-foreground)/0.8)] transition-all">
             <MessageCircle className="h-4 w-4" />
