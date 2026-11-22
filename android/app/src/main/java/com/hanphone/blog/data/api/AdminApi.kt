@@ -14,6 +14,9 @@ import com.hanphone.blog.data.model.Doc
 import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.HotSourceStatus
+import com.hanphone.blog.data.model.McpKeyCreated
+import com.hanphone.blog.data.model.McpKeySummary
+import com.hanphone.blog.data.model.PersonInfo
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.Tag
@@ -233,6 +236,40 @@ interface AdminApi {
 
     @DELETE("admin/users/{id}")
     suspend fun deleteUser(@Path("id") id: Long): ApiResult<Any?>
+
+    /** 设置头像：body { pic_url, user_id }，返回更新后的用户 */
+    @POST("admin/setAvatar")
+    suspend fun setAvatar(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<User>
+
+    // ===== 个人中心（关于页的展示条目 + MCP 密钥）=====
+    @GET("admin/personInfos")
+    suspend fun personInfos(): ApiResult<List<PersonInfo>>
+
+    /** body { personInfo: {...} }；有 id 为更新，无 id 为新增 */
+    @POST("admin/personInfo")
+    suspend fun savePersonInfo(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<Any?>
+
+    @DELETE("admin/personInfo/{id}")
+    suspend fun deletePersonInfo(@Path("id") id: Long): ApiResult<Any?>
+
+    @GET("admin/mcp-keys")
+    suspend fun mcpKeys(): ApiResult<List<McpKeySummary>>
+
+    @POST("admin/mcp-keys")
+    suspend fun createMcpKey(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<McpKeyCreated>
+
+    @DELETE("admin/mcp-keys/{id}")
+    suspend fun deleteMcpKey(@Path("id") id: Long): ApiResult<Any?>
+
+    @POST("admin/mcp-keys/{id}/toggle")
+    suspend fun toggleMcpKey(
+        @Path("id") id: Long,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): ApiResult<Any?>
+
+    /** 轮转：旧钥立即失效，新明文只在响应里出现一次 */
+    @POST("admin/mcp-keys/{id}/regenerate")
+    suspend fun regenerateMcpKey(@Path("id") id: Long): ApiResult<McpKeyCreated>
 
     // ===== 聚合数据 =====
     @POST("admin/hot/collect")

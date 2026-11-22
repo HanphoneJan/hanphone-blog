@@ -89,6 +89,7 @@ import com.hanphone.blog.ui.admin.AdminFilesScreen
 import com.hanphone.blog.ui.admin.AdminFriendLinksScreen
 import com.hanphone.blog.ui.admin.AdminHomeScreen
 import com.hanphone.blog.ui.admin.AdminInsightScreen
+import com.hanphone.blog.ui.admin.AdminPersonalScreen
 import com.hanphone.blog.ui.admin.AdminProjectsScreen
 import com.hanphone.blog.ui.admin.AdminTagsScreen
 import com.hanphone.blog.ui.admin.AdminTypesScreen
@@ -427,13 +428,7 @@ internal fun MainScaffold() {
                     onOpenProjects = { navController.navigate("admin/projects") },
                     onOpenDocs = { navController.navigate("admin/docs") },
                     onOpenFiles = { navController.navigate("admin/files") },
-                    onOpenPersonal = {
-                        // WebView 试验：个人中心是多 Tab 的复杂页面（技能/作品/爱好/评价/MCP 密钥），
-                        // 原生重写成本高；登录态由 AuthBridge 注入了 token/userInfo/expire。
-                        navController.navigate(
-                            "webview?url=${Uri.encode("https://hanphone.cn/admin/personal/")}&title=${Uri.encode("个人中心")}"
-                        )
-                    },
+                    onOpenPersonal = { navController.navigate("admin/personal") },
                     onOpenUsers = { navController.navigate("admin/users") },
                     onOpenInsight = { navController.navigate("admin/insight") }
                 )
@@ -496,6 +491,13 @@ internal fun MainScaffold() {
             }
             composable("admin/docs") {
                 AdminDocsScreen(onBack = { navController.popBackStack() })
+            }
+            composable("admin/personal") {
+                AdminPersonalScreen(
+                    onBack = { navController.popBackStack() },
+                    // 改密码会吊销全部会话（含本机），直接回到「我的」未登录态
+                    onLoggedOut = { navController.popBackStack("profile", inclusive = false) }
+                )
             }
             composable("admin/files") {
                 AdminFilesScreen(

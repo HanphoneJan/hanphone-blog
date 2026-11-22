@@ -133,3 +133,41 @@ data class AdminRebuildChange(
     val keptName: String = "",
     val removed: List<String> = emptyList()
 )
+
+/**
+ * 个人中心展示条目（/admin/personInfos）。
+ *
+ * 同一张表服务「关于页」的四个板块：`category` = skill / work / hobby / evaluation，
+ * `rank` 升序排列（同 rank 按 id）。
+ */
+data class PersonInfo(
+    val id: Long? = null,
+    val category: String = "",
+    /** 库里 name/rank 均可为 null，写成非空会让 Moshi 整包解析失败（HANDOVER 坑 35） */
+    val name: String? = null,
+    val description: String? = null,
+    @com.squareup.moshi.Json(name = "pic_url") val picUrl: String? = null,
+    val url: String? = null,
+    @com.squareup.moshi.Json(name = "icon_src") val iconSrc: String? = null,
+    val rank: Long? = null
+)
+
+/** MCP 密钥摘要：列表接口不返回明文 key（服务端 @JsonIgnore） */
+data class McpKeySummary(
+    val id: Long = 0,
+    val name: String = "",
+    val prefix: String = "",
+    val active: Boolean = false,
+    val createTime: Date? = null,
+    val updateTime: Date? = null,
+    val lastUsedAt: Date? = null
+)
+
+/** 创建 / 轮转 MCP 密钥的响应：`key` 为完整明文，只在这一次响应里出现 */
+data class McpKeyCreated(
+    val id: Long = 0,
+    val name: String = "",
+    val prefix: String = "",
+    val key: String? = null,
+    val active: Boolean = true
+)

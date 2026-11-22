@@ -24,6 +24,9 @@ import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayFileUrl
 import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.HotSourceStatus
+import com.hanphone.blog.data.model.McpKeyCreated
+import com.hanphone.blog.data.model.McpKeySummary
+import com.hanphone.blog.data.model.PersonInfo
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.Tag
@@ -345,6 +348,51 @@ class AdminRepository(
 
     suspend fun deleteUser(id: Long): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.deleteUser(id) }
+
+    /** 设置当前管理员头像（后台个人中心） */
+    suspend fun setAvatar(userId: Long, url: String): ApiResult<User> = withContext(Dispatchers.IO) {
+        api.setAvatar(mapOf("pic_url" to url, "user_id" to userId))
+    }
+
+    // ===== 个人中心（关于页展示条目）=====
+    suspend fun personInfos(): ApiResult<List<PersonInfo>> =
+        withContext(Dispatchers.IO) { api.personInfos() }
+
+    /** item.id 为 null 表示新增；后端 body 是 { personInfo: {...} } */
+    suspend fun savePersonInfo(item: PersonInfo): ApiResult<Any?> = withContext(Dispatchers.IO) {
+        // 与网页保存的字段形状保持一致：可选字段传空串而不是 null。
+        // 库里这些列是 NOT NULL，传 null 会 500（v1.7 真机实测）。
+        val fields = mutableMapOf<String, Any?>(
+            "category" to item.category,
+            "name" to item.name,
+            "description" to item.description.orEmpty(),
+            "pic_url" to item.picUrl.orEmpty(),
+            "url" to item.url.orEmpty(),
+            "icon_src" to item.iconSrc.orEmpty(),
+            "rank" to item.rank
+        )
+        if (item.id != null) fields["id"] = item.id
+        api.savePersonInfo(mapOf("personInfo" to fields))
+    }
+
+    suspend fun deletePersonInfo(id: Long): ApiResult<Any?> =
+        withContext(Dispatchers.IO) { api.deletePersonInfo(id) }
+
+    // ===== MCP 密钥 =====
+    suspend fun mcpKeys(): ApiResult<List<McpKeySummary>> =
+        withContext(Dispatchers.IO) { api.mcpKeys() }
+
+    suspend fun createMcpKey(name: String): ApiResult<McpKeyCreated> =
+        withContext(Dispatchers.IO) { api.createMcpKey(mapOf("name" to name)) }
+
+    suspend fun deleteMcpKey(id: Long): ApiResult<Any?> =
+        withContext(Dispatchers.IO) { api.deleteMcpKey(id) }
+
+    suspend fun toggleMcpKey(id: Long, active: Boolean): ApiResult<Any?> =
+        withContext(Dispatchers.IO) { api.toggleMcpKey(id, mapOf("active" to active)) }
+
+    suspend fun regenerateMcpKey(id: Long): ApiResult<McpKeyCreated> =
+        withContext(Dispatchers.IO) { api.regenerateMcpKey(id) }
 
     // ===== 聚合数据 =====
     suspend fun collectHot(): ApiResult<Map<String, Any?>> =
