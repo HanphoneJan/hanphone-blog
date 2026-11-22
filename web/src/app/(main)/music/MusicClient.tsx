@@ -94,6 +94,9 @@ export default function MusicClient() {
   const [lyrics, setLyrics] = useState<LyricLine[]>([])
   const [playMode, setPlayMode] = useState<PlayMode>('list')
   const [shuffledOrder, setShuffledOrder] = useState<number[]>([])
+  /** 播放速度（0.5x ~ 2.0x），切歌/刷新后保持 */
+  const [playRate, setPlayRate] = useState(1)
+  const [showRate, setShowRate] = useState(false)
 
   const rafTimeRef = useRef(0)
   const rafActiveRef = useRef(false)
@@ -106,6 +109,7 @@ export default function MusicClient() {
   const scrollCancelRef = useRef<(() => void) | null>(null)
   const userScrollingRef = useRef(false)
   const userScrollTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const playRateRef = useRef(1)
 
   const handleUserScroll = () => {
     userScrollingRef.current = true
@@ -202,6 +206,8 @@ export default function MusicClient() {
         return
       }
       audioRef.current.src = url
+      audioRef.current.playbackRate = playRateRef.current
+      audioRef.current.defaultPlaybackRate = playRateRef.current
       audioRef.current
         .play()
         .then(() => setPlaying(true))
@@ -229,6 +235,8 @@ export default function MusicClient() {
         const url = await getSongUrl(song)
         if (url) {
           audioRef.current.src = url
+          audioRef.current.playbackRate = playRateRef.current
+          audioRef.current.defaultPlaybackRate = playRateRef.current
           audioRef.current.load()
         }
       }
@@ -289,11 +297,15 @@ export default function MusicClient() {
             currentTime: number
             volume: number
             playMode: PlayMode
+            playRate?: number
           }
           const idx = songs.findIndex(s => s.id === state.songId)
           if (idx >= 0) {
             if (typeof state.volume === 'number') setVolume(state.volume)
             if (state.playMode) setPlayMode(state.playMode)
+            if (typeof state.playRate === 'number' && state.playRate >= 0.5 && state.playRate <= 2) {
+              setPlayRate(state.playRate)
+            }
             if (typeof state.currentTime === 'number' && state.currentTime > 0) {
               seekOnLoad.current = state.currentTime
             }
@@ -415,6 +427,16 @@ export default function MusicClient() {
     if (audioRef.current) audioRef.current.volume = volume
   }, [volume])
 
+  // 播放速度：同时写 defaultPlaybackRate，换源加载后浏览器才不会重置回 1x
+  useEffect(() => {
+    playRateRef.current = playRate
+    const audio = audioRef.current
+    if (audio) {
+      audio.playbackRate = playRate
+      audio.defaultPlaybackRate = playRate
+    }
+  }, [playRate])
+
   // 保存播放状态
   useEffect(() => {
     const save = () => {
@@ -427,14 +449,15 @@ export default function MusicClient() {
             songId: song.id,
             currentTime: audioRef.current?.currentTime || 0,
             volume,
-            playMode
+            playMode,
+            playRate
           })
         )
       } catch { /* ignore */ }
     }
     window.addEventListener('beforeunload', save)
     return () => window.removeEventListener('beforeunload', save)
-  }, [songs, currentIndex, volume, playMode])
+  }, [songs, currentIndex, volume, playMode, playRate])
 
   // 进度条拖拽
   const getSeekRatio = useCallback((clientX: number) => {
@@ -499,6 +522,7 @@ export default function MusicClient() {
     const m = Math.floor(s / 60)
     return `${m}:${Math.floor(s % 60).toString().padStart(2, '0')}`
   }
+  const fmtRate = (rate: number) => `${Number.isInteger(rate) ? rate.toFixed(1) : rate}×`
 
   const modeIcons: Record<PlayMode, { icon: typeof Repeat; label: string }> = {
     list: { icon: Repeat, label: '列表循环' },
@@ -818,6 +842,35 @@ export default function MusicClient() {
               </div>
 
               <div className="flex items-center">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowRate(!showRate)}
+                    className="p-2 text-xs font-medium tabular-nums text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] transition-colors"
+                    title="播放速度"
+                  >
+                    {fmtRate(playRate)}
+                  </button>
+                  {showRate && (
+                    <div className="absolute bottom-full right-0 mb-2 py-1 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] shadow-lg z-30 min-w-[112px]">
+                      {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
+                        <button
+                          key={rate}
+                          onClick={() => {
+                            setPlayRate(rate)
+                            setShowRate(false)
+                          }}
+                          className={`w-full text-left px-3 py-1.5 text-xs tabular-nums transition-colors ${
+                            rate === playRate
+                              ? 'text-[rgb(var(--primary))] font-semibold'
+                              : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]'
+                          }`}
+                        >
+                          {fmtRate(rate)}{rate === 1 ? '（默认）' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowPlaylist(!showPlaylist)}
                   className="p-2 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] transition-colors lg:hidden"
