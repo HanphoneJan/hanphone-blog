@@ -106,9 +106,12 @@ import com.hanphone.blog.ui.friendlinks.ApplyFriendLinkScreen
 import com.hanphone.blog.ui.friendlinks.FriendLinksScreen
 import com.hanphone.blog.ui.hot.HotScreen
 import com.hanphone.blog.ui.login.ForgotPasswordScreen
+import com.hanphone.blog.ui.legal.PrivacyPolicyScreen
+import com.hanphone.blog.ui.legal.TermsScreen
 import com.hanphone.blog.ui.login.LoginScreen
 import com.hanphone.blog.ui.login.RegisterScreen
 import com.hanphone.blog.ui.message.MessageScreen
+import com.hanphone.blog.ui.music.MusicScreen
 import com.hanphone.blog.ui.notification.NotificationsScreen
 import com.hanphone.blog.ui.profile.ProfileScreen
 import com.hanphone.blog.ui.projects.ProjectsScreen
@@ -269,11 +272,7 @@ internal fun MainScaffold() {
                     onOpenFriendLinks = { navController.navigate("friendlinks") },
                     onOpenProjects = { navController.navigate("projects") },
                     onOpenDocs = { navController.navigate("docs") },
-                    onOpenMusic = {
-                        navController.navigate(
-                            "webview?url=${Uri.encode("https://hanphone.cn/music/")}&title=${Uri.encode("音乐库")}"
-                        )
-                    },
+                    onOpenMusic = { navController.navigate("music") },
                     onOpenSettings = { navController.navigate("settings") },
                     onOpenInsight = { navController.navigate("insight") },
                     onOpenNotifications = { navController.navigate("notifications") },
@@ -297,6 +296,9 @@ internal fun MainScaffold() {
             }
             composable("friendlinks/apply") {
                 ApplyFriendLinkScreen(onBack = { navController.popBackStack() })
+            }
+            composable("music") {
+                MusicScreen(onBack = { navController.popBackStack() })
             }
             composable("projects") {
                 ProjectsScreen(
@@ -385,12 +387,20 @@ internal fun MainScaffold() {
                     onOpenAppearance = { navController.navigate("settings/appearance") },
                     onOpenData = { navController.navigate("settings/data") },
                     onOpenSessions = { navController.navigate("settings/sessions") },
+                    onOpenPrivacy = { navController.navigate("legal/privacy") },
+                    onOpenTerms = { navController.navigate("legal/terms") },
                     onOpenWeb = { url, title ->
                         navController.navigate(
                             "webview?url=${Uri.encode(url)}&title=${Uri.encode(title)}"
                         )
                     }
                 )
+            }
+            composable("legal/privacy") {
+                PrivacyPolicyScreen(onBack = { navController.popBackStack() })
+            }
+            composable("legal/terms") {
+                TermsScreen(onBack = { navController.popBackStack() })
             }
             composable("settings/appearance") {
                 AppearanceScreen(onBack = { navController.popBackStack() })

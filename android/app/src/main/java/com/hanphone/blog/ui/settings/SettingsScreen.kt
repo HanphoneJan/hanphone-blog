@@ -75,7 +75,10 @@ fun SettingsScreen(
     onOpenAppearance: () -> Unit,
     onOpenData: () -> Unit,
     onOpenSessions: () -> Unit,
-    // 关于区的信息页在 App 内通用 WebView 打开（不跳系统浏览器），由 AppNav 接管路由
+    // 隐私政策 / 服务条款是 App 原生页面（内容随版本走，不依赖网页）
+    onOpenPrivacy: () -> Unit,
+    onOpenTerms: () -> Unit,
+    // 「关于本站」仍是网页，App 内通用 WebView 打开
     onOpenWeb: (url: String, title: String) -> Unit
 ) {
     val context = LocalContext.current
@@ -179,9 +182,9 @@ fun SettingsScreen(
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     AboutLinkRow("作者 GitHub", "HanphoneJan") { uriHandler.openUri("https://github.com/HanphoneJan") }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    AboutLinkRow("隐私政策") { onOpenWeb("https://hanphone.cn/privacy/", "隐私政策") }
+                    AboutLinkRow("隐私政策") { onOpenPrivacy() }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                    AboutLinkRow("服务条款") { onOpenWeb("https://hanphone.cn/terms/", "服务条款") }
+                    AboutLinkRow("服务条款") { onOpenTerms() }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     AboutLinkRow("关于本站") { onOpenWeb("https://hanphone.cn/about/", "关于本站") }
                 }

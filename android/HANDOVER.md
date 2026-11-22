@@ -11,7 +11,7 @@
 博客「云林有风」的 Android 原生客户端。Kotlin + Jetpack Compose (Material 3)，对接博客 REST API 与 hanphone-chat 实时聊天。后端代码零改动。
 
 - 导航：**底部 4 Tab**：首页 / 随笔 / 消息 / 我的
-- 子页：文章详情、随笔详情、搜索、留言板、友链（含**申请友链**）、**站内通知、我的收藏**、设置（设置→外观/数据管理/**登录设备** 为二级子页）、登录、注册、**忘记密码**、**音乐库/隐私政策/服务条款/关于本站（WebView）**
+- 子页：文章详情、随笔详情、搜索、留言板、友链（含**申请友链**）、**站内通知、我的收藏**、设置（设置→外观/数据管理/**登录设备** 为二级子页）、登录、注册、**忘记密码**、**音乐库（原生播放器）**、**隐私政策/服务条款（原生）**、关于本站（WebView）
 - 深链（2026-11）：App Links 覆盖 `https://hanphone.cn/blog/*`、`/essays/*`、`/docs/*`（只注册 `hanphone.cn`）
 - 聊天：原生 Socket.IO（**非 WebView**），复用博客 JWT
 
@@ -56,7 +56,7 @@ ui/
   docs/DocMarkdownScreen.kt                     文库 MD 预览（拉文件服务原文 → Markdown 渲染）
   webview/WebViewScreen.kt      通用 WebView（项目链接 loadUrl / 文库 HTML 文档 fetch+loadDataWithBaseURL；
                                进度条/返回/浏览器外开；主框架加载失败显示「重试/在浏览器打开」错误层）
-  core/AuthBridge.kt            第一方 WebView 页（照片墙 / 后台管理页）登录态注入 + 登出清理
+  core/AuthBridge.kt            第一方 WebView 页（照片墙等）登录态注入 + 登出清理
   core/WebViewFixes.kt          第一方页面视口单位修正（WebView 里 vh/dvh 恒为 0 → 样式表内换算成 px）
   core/DeepLinkBus.kt           深链中转（StateFlow；MainActivity 投递，AppNav 消费）
   util/DeepLink.kt              深链解析纯函数（java.net.URI，JVM 单测可跑）
@@ -248,7 +248,12 @@ ui/
 - **旧包会被 Service Worker「钉死」（照片墙改动不生效/仍闪空态的真正原因）**：`vite-plugin-pwa` 默认生成 `NavigationRoute`，**匹配所有导航且忽略查询串**，始终返回预缓存里的 `index.html`；旧 SW 没换掉之前，App 一直跑旧 `Atlas.vue`。加上 nginx 未给 `sw.js`/`index.html` 配 `Cache-Control`（被 Cloudflare 按 4h 缓存），发版后旧包可能维持很久。已在 `apps/photo-wall/vite.config.ts` 去掉 `NavigationRoute`、入口 html 不预缓存、导航改 `NetworkFirst`（`atlas-pages`）；SW 文件名带构建版本 + 注册代码内联 `index.html`，绕过 Cloudflare 对 `sw.js`/`registerSW.js` 的 4h 缓存。**排查「网页改了 App 里没变化」先想到旧 SW**。详见 `docs/photo-wall-image-optimization.md`。
 - 「项目」= 独立页：类型筛选 chips（全部/完整项目/工具箱/小游戏/小练习）+ 分组卡片（完整项目=大卡片、其余=双列网格；推荐角标、技术栈标签），数据来自 `GET /projects`（推荐在前、type 分组，与 web ProjectClient 一致）；点击卡片用 **WebView** 内开项目链接（`ui/webview/WebViewScreen.kt`：JS 开启、加载进度条、系统返回先回退 WebView 历史、右上角菜单可在浏览器打开）。
 - 「文库」= 独立页：数据来自 `GET /docs`，按 `docNamespace` 构建文件夹树（`blog/docs/子目录` → 顶层文件夹，对齐 web DocLoader）；文件夹浏览 + 面包屑、名称/路径搜索、类型筛选 pills（Word/PDF/MD/HTML 带计数，对齐 web DocsFilter）；文件行 = 彩色类型徽标 + 名称 + 推荐星 + 日期；打开文件：**HTML → WebView**、**MD → 应用内 Markdown 预览**（`DocMarkdownScreen`，文件服务原文去 frontmatter 后渲染）、**PDF/DOCX → 系统打开/下载**；文件 URL = `https://hanphone.top/{docNamespace}/{文件名}` 逐段 URI 编码（`util/buildDocFileUrl`），打开即上报浏览量 `POST /docs/{docId}/view`。
-- 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **登录设备**（仅登录后显示，→子页：`GET /auth/sessions` 当前设备/活跃/已失效 + IP/时间 + 下线二次确认；下线的若是本机则本地立即退出）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **启动时检查更新开关**（默认开）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub + **隐私政策 / 服务条款 / 关于本站**，后三项走 App 内 WebView）。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
+- **音乐库（原生，替代 WebView）**：`ui/music/MusicScreen.kt` + `MusicViewModel`。歌单来自站点 BFF
+  `/next-api/music?server=netease&type=playlist&id=2093306814`，按 id 取播放地址与歌词；
+  系统 `MediaPlayer` 播放（**必须带浏览器 User-Agent，网易云 CDN 对 stagefright UA 返回 403**，见坑 45），
+  进度 500ms 轮询、歌词按时间高亮并自动滚动（翻译合并显示）；支持列表循环 / 单曲循环 / 随机、
+  上一首/下一首、拖动进度、底部歌单弹层；**离开页面即释放播放器**（不做后台播放与通知栏控制，与网页行为一致）。
+- 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **登录设备**（仅登录后显示，→子页：`GET /auth/sessions` 当前设备/活跃/已失效 + IP/时间 + 下线二次确认；下线的若是本机则本地立即退出）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **启动时检查更新开关**（默认开）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub + **隐私政策 / 服务条款**（原生页面，内容随 App 版本）+ **关于本站**（App 内 WebView））。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
 - **资料编辑**（「我的」点头像，对齐网页 UserInfoForm）：昵称 + 头像 + **邮箱**（改邮箱需向新邮箱发通用验证码 `scene=general`，非管理员必填；管理员免验证码）+ **新密码**（可选，≥6 位含字母数字，`md5` 传输）。保存走 `POST /user/current/update`（body 根级带 `captcha`），后端 `UserServiceImpl.updateCurrentUser` 会对 `user.password` 做 bcrypt。
 - 「设置 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + 单行简介 + 链接行（**访问博客网站 hanphone.cn / 作者 GitHub**），点击走系统浏览器。版本号只在「检查更新」区显示一次（不重复）。
 - **检查更新**（设置→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较 `isNewerVersion(tag, BuildConfig.VERSION_NAME)`，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 立即更新/稍后」，无新版 toast「已是最新版本」。**「立即更新」在 App 内下载**（`data/update/AppUpdateManager`：应用级协程 + OkHttp 流式下载，弹窗显示百分比与大小、可取消；离开设置页不中断），完成后用 `FileProvider` + `ACTION_VIEW` 调起**系统安装器**（仍会有系统安装确认，这是 Android 安全要求，不再跳浏览器）。首次需要「安装未知应用」授权：`REQUEST_INSTALL_PACKAGES` + 授权页返回后自动继续；部分厂商（realme/OPPO）还会多加风险提示与锁屏密码确认。API 与下载链在**直连网络可用**。⚠️ 因为是语义化比较，**同版本号重新发布 APK 不会让已装用户收到更新提示**——要让用户升级必须同时抬 `versionCode`。
@@ -522,6 +527,12 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     `KotlinJsonAdapterFactory` 下抛 `JsonDataException`，整个列表变空（坑 35 的又一例）。
     已按可空建模，UI 用 `orEmpty()` / `?: 0` 兜底。
 
+45. **网易云 CDN 会拒绝 MediaPlayer 默认 UA（403）**：`MediaPlayer.setDataSource(url)` 发出的
+    `stagefright/1.2 (Linux;Android …)` 会被 `*.music.126.net` 直接 403，表现为 `NuCachedSource2: source
+    returned error -1`、`prepareAsync` 永不回调、页面一直转圈。修复：用
+    `setDataSource(context, Uri.parse(url), mapOf("User-Agent" to <Chrome UA>, "Referer" to "https://music.163.com/"))`。
+    排查方法：`curl -A "stagefright/1.2 …" <音频地址>` 对比 `-A "Mozilla/5.0 …"` 的状态码。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
@@ -543,9 +554,11 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
   （移植 web `parseApplyText`，JSON/YAML/中文键值对，纯函数 + 8 个 JVM 单测）；登录页**忘记密码**（邮箱验证码 60s +
   新密码，md5 在仓库层，`flag && code==200` 才算成功，成功不自动登录）；设置页**登录设备**（`/auth/sessions`
   列表 + 下线二次确认 + 本机下线即本地退出）；文章详情底部**相关推荐**（random 优先、recommend 回退，3 条）；
-  搜索**类型筛选**（服务端 `type=`，缓存键带类型）；设置页**隐私政策/服务条款/关于本站**、我的页**音乐库**（App 内 WebView）；
+  搜索**类型筛选**（服务端 `type=`，缓存键带类型）；设置页**隐私政策/服务条款**（原生页面）、我的页**音乐库**（原生播放器）；
   后台**文件管理原生页**（admin-file 浏览/上传/新建目录/删除）；后台**个人中心 WebView**（登录态 + expire + userInfo.email
   注入、系统文件选择器、`vh` 修正，见坑 39/40）。**未发版**：版本号保持 1.3.4 / 28，等用户明确指定版本号后才升。
+- ✅ **音乐库与隐私/服务条款改原生（未发布）**：音乐库用系统 MediaPlayer 播放网易云歌单（浏览器 UA 绕过 CDN 403），
+  隐私政策/服务条款改写为 App 版本的原生页面（不再依赖网页，内容随版本走）。
 - ✅ **个人中心改原生（未发布）**：后台「个人中心」从 WebView 换成原生页（信息/技能/爱好/作品/评价/MCP 密钥 6 板块）。
   信息板块改昵称/邮箱/头像（相册上传）并可改密码（服务端吊销全部会话，成功后本地退出）；四类条目共用一张表，
   支持增删改 + rank 排序；密钥支持创建/轮转（明文只弹一次、可复制）/启停/删除。顺带定位并修复

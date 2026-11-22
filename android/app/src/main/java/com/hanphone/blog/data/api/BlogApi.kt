@@ -28,6 +28,9 @@ import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.model.ModelBenchmarkRow
 import com.hanphone.blog.data.model.ModelCompare
 import com.hanphone.blog.data.model.ModelLeaderboard
+import com.hanphone.blog.data.model.MusicLyric
+import com.hanphone.blog.data.model.MusicSongUrl
+import com.hanphone.blog.data.model.MusicTrack
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.data.model.SearchResultItem
@@ -311,6 +314,31 @@ interface BlogApi {
         @Path("type") type: String,
         @Path("key") key: String
     ): ApiResult<BookmarkStatus>
+
+    // ===== 音乐库（Next BFF，公开只读；绝对路径不带 /api 前缀）=====
+    /** 歌单：返回曲目数组（url 为空，需要再按 id 取） */
+    @GET("https://hanphone.cn/next-api/music")
+    suspend fun musicPlaylist(
+        @Query("server") server: String = "netease",
+        @Query("type") type: String = "playlist",
+        @Query("id") id: String
+    ): List<MusicTrack>
+
+    /** 单曲播放地址 */
+    @GET("https://hanphone.cn/next-api/music")
+    suspend fun musicSongUrl(
+        @Query("server") server: String = "netease",
+        @Query("type") type: String = "song",
+        @Query("id") id: String
+    ): MusicSongUrl
+
+    /** 歌词（含翻译） */
+    @GET("https://hanphone.cn/next-api/music")
+    suspend fun musicLyric(
+        @Query("server") server: String = "netease",
+        @Query("type") type: String = "lrc",
+        @Query("id") id: String
+    ): MusicLyric
 
     // ===== 热点聚合（洞察 /hot/*，公开只读）=====
     @GET("hot/overview")

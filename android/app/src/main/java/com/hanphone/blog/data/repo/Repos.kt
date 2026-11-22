@@ -31,6 +31,9 @@ import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.model.ModelBenchmarkRow
 import com.hanphone.blog.data.model.ModelCompare
 import com.hanphone.blog.data.model.ModelLeaderboard
+import com.hanphone.blog.data.model.MusicLyric
+import com.hanphone.blog.data.model.MusicSongUrl
+import com.hanphone.blog.data.model.MusicTrack
 import com.hanphone.blog.data.model.NotificationPage
 import com.hanphone.blog.data.model.PageResult
 import com.hanphone.blog.data.model.Project
@@ -436,6 +439,35 @@ class FileRepository(private val api: FileApi = ApiClient.fileApi) {
         val body = file.asRequestBody(mediaType)
         val part = MultipartBody.Part.createFormData("avatar", file.name, body)
         api.uploadAvatar(part)
+    }
+}
+
+/** 音乐库（Next BFF /next-api/music，公开只读）。失败由 ViewModel try/catch */
+class MusicRepository(private val api: BlogApi = ApiClient.api) {
+
+    /** 歌单 id 与网页版保持一致（网易云歌单 2093306814） */
+    companion object {
+        const val PLAYLIST_ID = "2093306814"
+        const val COVER_BASE = "https://hanphone.cn/next-api/music"
+    }
+
+    suspend fun playlist(id: String = PLAYLIST_ID): List<MusicTrack> =
+        withContext(Dispatchers.IO) { api.musicPlaylist(id = id) }
+
+    suspend fun songUrl(id: String): String? =
+        withContext(Dispatchers.IO) { api.musicSongUrl(id = id).url?.takeIf { it.isNotBlank() } }
+
+    suspend fun lyric(id: String): MusicLyric =
+        withContext(Dispatchers.IO) { api.musicLyric(id = id) }
+
+    /** 封面地址：优先直接用曲目里的 http(s) 地址，否则走 BFF 的 pic 代理 */
+    fun coverUrl(track: MusicTrack): String {
+        val pic = track.pic
+        if (pic.startsWith("http://") || pic.startsWith("https://")) {
+            return pic.replaceFirst("http://", "https://")
+        }
+        val id = pic.ifBlank { track.id }
+        return "$COVER_BASE?server=netease&type=pic&id=$id"
     }
 }
 

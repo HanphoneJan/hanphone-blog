@@ -22,7 +22,8 @@ object ImageCaches {
         FRIEND("friend", "友链"),
         MESSAGE("message", "留言板"),
         CHAT("chat", "消息/聊天"),
-        PROFILE("profile", "我的")
+        PROFILE("profile", "我的"),
+        MUSIC("music", "音乐库")
     }
 
     private lateinit var app: Context

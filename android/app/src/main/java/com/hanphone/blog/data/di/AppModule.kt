@@ -9,6 +9,7 @@ import com.hanphone.blog.data.repo.EssayRepository
 import com.hanphone.blog.data.repo.FileRepository
 import com.hanphone.blog.data.repo.HotRepository
 import com.hanphone.blog.data.repo.MessageRepository
+import com.hanphone.blog.data.repo.MusicRepository
 import com.hanphone.blog.data.repo.NotificationRepository
 import dagger.Module
 import dagger.Provides
@@ -47,6 +48,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideHotRepository(api: BlogApi): HotRepository = HotRepository(api)
+
+    @Provides
+    @Singleton
+    fun provideMusicRepository(api: BlogApi): MusicRepository = MusicRepository(api)
 
     @Provides
     @Singleton
