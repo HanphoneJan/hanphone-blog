@@ -165,7 +165,8 @@ fun BlogAppRoot() {
                 avatar = auth.avatar,
                 userType = auth.userType,
                 username = auth.username,
-                refreshToken = auth.refreshToken
+                refreshToken = auth.refreshToken,
+                email = auth.email
             )
         )
         if (Jwt.isExpired(auth.token, skewSeconds = 120)) {

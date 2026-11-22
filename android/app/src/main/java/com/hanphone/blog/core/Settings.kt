@@ -50,6 +50,7 @@ private val KEY_AUTH_AVATAR = stringPreferencesKey("auth_avatar")
 private val KEY_USER_TYPE = stringPreferencesKey("auth_user_type")
 private val KEY_AUTH_USERNAME = stringPreferencesKey("auth_username")
 private val KEY_REFRESH_TOKEN = stringPreferencesKey("auth_refresh_token")
+private val KEY_AUTH_EMAIL = stringPreferencesKey("auth_email")
 
 data class AuthData(
     val token: String? = null,
@@ -66,7 +67,9 @@ data class AuthData(
      */
     val username: String? = null,
     /** 长期登录用的 refresh token（access 过期时换取新 token） */
-    val refreshToken: String? = null
+    val refreshToken: String? = null,
+    /** 邮箱（后台 WebView 注入 userInfo 用；App 自身不展示） */
+    val email: String? = null
 )
 
 val Context.auth: Flow<AuthData> get() = dataStore.data.map {
@@ -77,7 +80,8 @@ val Context.auth: Flow<AuthData> get() = dataStore.data.map {
         avatar = it[KEY_AUTH_AVATAR].nullIfBlank(),
         userType = it[KEY_USER_TYPE].nullIfBlank(),
         username = it[KEY_AUTH_USERNAME].nullIfBlank(),
-        refreshToken = it[KEY_REFRESH_TOKEN].nullIfBlank()
+        refreshToken = it[KEY_REFRESH_TOKEN].nullIfBlank(),
+        email = it[KEY_AUTH_EMAIL].nullIfBlank()
     )
 }
 
@@ -89,6 +93,7 @@ suspend fun Context.saveAuth(auth: AuthData) = dataStore.edit {
     it[KEY_USER_TYPE] = auth.userType ?: ""
     it[KEY_AUTH_USERNAME] = auth.username ?: ""
     it[KEY_REFRESH_TOKEN] = auth.refreshToken ?: ""
+    it[KEY_AUTH_EMAIL] = auth.email ?: ""
 }
 
 suspend fun Context.clearAuth() = dataStore.edit {
@@ -99,6 +104,7 @@ suspend fun Context.clearAuth() = dataStore.edit {
     it.remove(KEY_USER_TYPE)
     it.remove(KEY_AUTH_USERNAME)
     it.remove(KEY_REFRESH_TOKEN)
+    it.remove(KEY_AUTH_EMAIL)
 }
 
 // ===== 个性化：自定义背景图 + 模糊 =====

@@ -1,12 +1,17 @@
 package com.hanphone.blog.ui.webview
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.BackHandler
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +57,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.hanphone.blog.BuildConfig
 import com.hanphone.blog.core.AuthBridge
 import com.hanphone.blog.core.AuthData
+import com.hanphone.blog.core.WebViewFixes
 import com.hanphone.blog.core.auth
 import com.hanphone.blog.data.cache.ContentStore
 import com.hanphone.blog.ui.components.AppBackBar
@@ -91,6 +97,19 @@ fun WebViewScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var loadFailed by remember { mutableStateOf(false) }
 
+    // 网页里的 <input type="file">（后台头像/文件上传）需要宿主接住 onShowFileChooser，
+    // 否则点击「上传」毫无反应。用系统文件选择器，结果解析成 Uri 数组回给网页。
+    var pendingFileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+    val fileChooserLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val callback = pendingFileCallback
+        pendingFileCallback = null
+        callback?.onReceiveValue(
+            WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+        )
+    }
+
     fun handleBack() {
         val wv = webView
         if (wv != null && wv.canGoBack()) wv.goBack() else onBack()
@@ -122,6 +141,11 @@ fun WebViewScreen(
     // 所以「先注入后加载」的顺序成立。
     LaunchedEffect(wv, authResolved, currentAuth.token, currentAuth.userId) {
         if (wv != null && authResolved) AuthBridge.install(wv, currentAuth)
+    }
+
+    // 视口高度修正（WebView 的 100vh 会算成 0，后台页 h-screen 容器整页不可见）
+    LaunchedEffect(wv, authResolved) {
+        if (wv != null && authResolved) WebViewFixes.install(wv)
     }
 
     // App 登录/退出后，已打开的 WebView 会重新挂一次脚本，
@@ -224,6 +248,28 @@ fun WebViewScreen(
                         webChromeClient = object : WebChromeClient() {
                             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                                 progress = newProgress
+                            }
+
+                            /** 后台页的头像 / 文件上传：把网页的文件选择请求转给系统选择器 */
+                            override fun onShowFileChooser(
+                                view: WebView?,
+                                filePathCallback: ValueCallback<Array<Uri>>?,
+                                fileChooserParams: FileChooserParams?
+                            ): Boolean {
+                                pendingFileCallback?.onReceiveValue(null)
+                                pendingFileCallback = filePathCallback
+                                return try {
+                                    val intent = fileChooserParams?.createIntent()
+                                        ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                                            addCategory(Intent.CATEGORY_OPENABLE)
+                                            type = "*/*"
+                                        }
+                                    fileChooserLauncher.launch(intent)
+                                    true
+                                } catch (e: Exception) {
+                                    pendingFileCallback = null
+                                    false
+                                }
                             }
                         }
                     }.also { webView = it }

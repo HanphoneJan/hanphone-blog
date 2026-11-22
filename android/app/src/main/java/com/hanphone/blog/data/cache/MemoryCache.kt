@@ -85,31 +85,40 @@ object MemoryCache {
         searchInFlight = null
     }
 
-    // ===== 搜索结果缓存（query → 结果，5 分钟有效，防重复搜索重复请求）=====
+    // ===== 搜索结果缓存（query+type → 结果，5 分钟有效，防重复搜索重复请求）=====
+    // 键必须带类型：「全部」的结果与「博客」的结果是两份数据，共用键会把前者当后者返回。
     private const val SEARCH_TTL = 5 * 60_000L
     private val searchCache = mutableMapOf<String, Pair<Long, List<SearchResultItem>>>()
     private var searchInFlight: String? = null
 
-    fun searchResult(query: String): List<SearchResultItem>? =
-        searchCache[query]?.takeIf { System.currentTimeMillis() - it.first < SEARCH_TTL }?.second
+    /** 搜索缓存键：关键词 + 类型（null = 全部） */
+    fun searchKey(query: String, type: String?): String = "$query|${type ?: "ALL"}"
 
-    fun putSearchResult(query: String, results: List<SearchResultItem>) {
-        searchCache[query] = System.currentTimeMillis() to results
+    fun searchResult(query: String, type: String? = null): List<SearchResultItem>? =
+        searchCache[searchKey(query, type)]
+            ?.takeIf { System.currentTimeMillis() - it.first < SEARCH_TTL }
+            ?.second
+
+    fun putSearchResult(query: String, type: String? = null, results: List<SearchResultItem>) {
+        searchCache[searchKey(query, type)] = System.currentTimeMillis() to results
     }
 
-    /** 下拉刷新：作废该词的缓存，强制走网络 */
-    fun invalidateSearch(query: String) {
-        searchCache.remove(query)
+    /** 下拉刷新：按同一规则作废该词+该类型的缓存，强制走网络 */
+    fun invalidateSearch(query: String, type: String? = null) {
+        searchCache.remove(searchKey(query, type))
     }
 
-    /** 同词请求去重：已在飞行中的搜索词返回 true（VM 侧短路） */
-    fun beginSearch(query: String): Boolean {
-        if (searchInFlight == query) return false
-        searchInFlight = query
+    /** 同词同类型请求去重：已在飞行中返回 false（VM 侧短路） */
+    fun beginSearch(key: String): Boolean {
+        if (searchInFlight == key) return false
+        searchInFlight = key
         return true
     }
 
-    fun endSearch() { searchInFlight = null }
+    /** 只清自己那条在飞标记（旧请求被取消时不能顺手清掉新请求的标记） */
+    fun endSearch(key: String) {
+        if (searchInFlight == key) searchInFlight = null
+    }
 
     // ===== 详情缓存（LRU，最多 12 篇） =====
     private const val MAX_DETAILS = 12

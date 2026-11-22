@@ -134,7 +134,7 @@ class ProfileViewModel @Inject constructor(
      */
     private fun syncSession(data: User) {
         if (TokenStore.token.value == null) return
-        TokenStore.updateProfile(data.nickname, data.avatar, data.type)
+        TokenStore.updateProfile(data.nickname, data.avatar, data.type, data.email)
     }
 
     /**

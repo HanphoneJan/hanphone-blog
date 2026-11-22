@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -56,6 +57,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.hanphone.blog.core.draftFlow
@@ -75,6 +77,7 @@ import com.hanphone.blog.ui.components.CommentInputBar
 import com.hanphone.blog.ui.components.DetailSkeleton
 import com.hanphone.blog.ui.components.ErrorBox
 import com.hanphone.blog.ui.components.PullRefresh
+import com.hanphone.blog.ui.components.SectionTitle
 import com.hanphone.blog.ui.components.hideKeyboard
 import com.hanphone.blog.util.formatDate
 import com.hanphone.blog.util.formatDateTime
@@ -86,7 +89,12 @@ import kotlinx.coroutines.launch
 /** 文章详情：正文 + 底部操作栏（点赞/评论/分享）+ 评论区 + 匿名发评论 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
+fun ArticleDetailScreen(
+    blogId: Long,
+    onBack: () -> Unit,
+    onLogin: () -> Unit,
+    onOpenBlog: (Long) -> Unit = {}
+) {
     val context = LocalContext.current
     val vm: ArticleDetailViewModel = hiltViewModel()
     val listState = rememberLazyListState()
@@ -102,6 +110,7 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
     } }
     val blog = vm.blog
     val comments = vm.comments
+    val relatedBlogs = vm.related
     val loading = vm.loading
     val error = vm.error
     val liked = vm.liked
@@ -260,6 +269,27 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                             )
                         }
                     }
+                    // 相关推荐：紧凑列表（细分割线分隔），无数据时整块隐藏
+                    if (relatedBlogs.isNotEmpty()) {
+                        item {
+                            HorizontalDivider(
+                                Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                            )
+                        }
+                        item {
+                            SectionTitle("相关推荐", Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                        }
+                        itemsIndexed(relatedBlogs, key = { _, item -> "related_${item.id}" }) { index, item ->
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+                                )
+                            }
+                            RelatedArticleRow(blog = item, onClick = { onOpenBlog(item.id) })
+                        }
+                    }
                 }
 
                 // 目录悬浮按钮（对齐 web 版目录导航）
@@ -360,6 +390,64 @@ fun ArticleDetailScreen(blogId: Long, onBack: () -> Unit, onLogin: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RelatedArticleRow(blog: Blog, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 文字用 weight(fill = false)：不能被右侧缩略图/箭头挤成一条竖杠
+        Column(
+            Modifier.weight(1f, fill = false),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                blog.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            val meta = listOfNotNull(
+                blog.type?.name?.takeIf { it.isNotBlank() },
+                formatDate(blog.createTime).takeIf { it.isNotBlank() },
+                if (blog.views > 0) "${blog.views} 阅读" else null
+            ).joinToString(" · ")
+            if (meta.isNotEmpty()) {
+                Text(
+                    meta,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        val cover = blog.firstPicture?.let { resolveImageUrl(it) }
+        if (cover != null) {
+            // 列表图走缩略尺寸即可（56dp 圆角方块）
+            AsyncImage(
+                model = cover,
+                imageLoader = ImageCaches.loader(ImageCaches.Feature.BLOG),
+                contentDescription = null,
+                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Icon(
+                Icons.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.outline
+            )
         }
     }
 }

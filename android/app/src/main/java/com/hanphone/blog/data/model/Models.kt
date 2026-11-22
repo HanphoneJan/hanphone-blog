@@ -224,6 +224,29 @@ data class LoginData(
     val sid: String? = null
 )
 
+/**
+ * 一台登录设备（一条服务端会话，GET auth/sessions 的 data 元素）。
+ *
+ * 字符串字段一律可空：服务端 deviceName / userAgent / ip / revokedReason
+ * 在旧会话上可能是 JSON null，写成非空会让 Moshi 抛 JsonDataException、整页空白。
+ * createdAt / lastUsedAt / expiresAt 为 Date（毫秒或字符串），走全局日期适配器。
+ */
+data class LoginSession(
+    val sid: String = "",
+    val deviceName: String? = null,
+    val userAgent: String? = null,
+    val ip: String? = null,
+    val createdAt: Date? = null,
+    val lastUsedAt: Date? = null,
+    val expiresAt: Date? = null,
+    val revoked: Boolean = false,
+    val revokedReason: String? = null,
+    /** 未吊销且未过期（服务端按当前时间判定） */
+    val active: Boolean = false,
+    /** 本次请求所用 Token 对应的会话（即「本机」） */
+    val current: Boolean = false
+)
+
 // ===== 站内通知（/notifications，均需登录）=====
 
 /**

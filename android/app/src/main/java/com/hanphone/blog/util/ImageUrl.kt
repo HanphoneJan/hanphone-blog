@@ -29,3 +29,15 @@ fun buildDocFileUrl(docNamespace: String, filename: String): String {
     val segments = (ns.split('/') + actual).filter { it.isNotBlank() }
     return "$PICTURE_BASE_URL/${segments.joinToString("/") { Uri.encode(it) }}"
 }
+
+/**
+ * 文件服务里任意路径的访问 URL：`https://hanphone.top/{namespace}/{name}`。
+ *
+ * 与 [buildDocFileUrl] 的区别：namespace 为空时落在**根目录**（不补 blog/docs 默认值），
+ * 供后台「文件管理」按当前目录拼链接用；逐段编码、保留 `/`。
+ */
+fun buildFileServiceUrl(namespace: String?, name: String): String {
+    val ns = namespace?.trim('/').orEmpty()
+    val segments = (ns.split('/') + name.trim('/')).filter { it.isNotBlank() }
+    return "$PICTURE_BASE_URL/${segments.joinToString("/") { Uri.encode(it) }}"
+}

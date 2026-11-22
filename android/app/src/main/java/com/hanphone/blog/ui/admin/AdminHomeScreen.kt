@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.People
@@ -41,6 +43,8 @@ fun AdminHomeScreen(
     onOpenFriendLinks: () -> Unit,
     onOpenProjects: () -> Unit,
     onOpenDocs: () -> Unit,
+    onOpenFiles: () -> Unit,
+    onOpenPersonal: () -> Unit,
     onOpenUsers: () -> Unit,
     onOpenInsight: () -> Unit
 ) {
@@ -76,6 +80,22 @@ fun AdminHomeScreen(
             AdminEntry(Icons.Filled.TravelExplore, "访客明细", "UV / PV · IP 归属地 · 清理", onOpenVisitors)
             AdminDivider()
             AdminEntry(Icons.Filled.LocalFireDepartment, "聚合数据", "立即采集热点与模型榜单", onOpenInsight)
+            AdminDivider()
+            AdminEntry(
+                Icons.Filled.FolderOpen,
+                "文件管理",
+                "浏览 · 上传 · 删除（admin-file）",
+                onOpenFiles,
+                tint = Color(0xFFE0A02C)
+            )
+            AdminDivider()
+            AdminEntry(
+                Icons.Filled.AccountCircle,
+                "个人中心",
+                "站点资料 · 技能 · 作品 · MCP 密钥",
+                onOpenPersonal,
+                tint = Color(0xFF2C7BE5)
+            )
             AdminDivider()
             AdminEntry(
                 Icons.Filled.People,

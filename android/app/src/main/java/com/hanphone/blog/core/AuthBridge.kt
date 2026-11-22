@@ -4,6 +4,7 @@ import android.webkit.WebStorage
 import android.webkit.WebView
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.hanphone.blog.util.Jwt
 import org.json.JSONObject
 
 /**
@@ -69,11 +70,29 @@ object AuthBridge {
             put("username", auth.username ?: auth.nickname ?: "")
             put("nickname", auth.nickname ?: "")
             put("avatar", auth.avatar ?: "")
+            // 后台个人中心会把 userInfo.email 回填到表单，缺失时保存可能把邮箱清空
+            put("email", auth.email ?: "")
         }
 
+        // Next 的 UserContext 会读 `expire` 判登录态（缺失=过期=未登录），
+        // 所以这里必须把 JWT 的 exp 一起注入，否则后台页会显示未登录。
+        // 网页存的是 JSON 字符串（读的时候 JSON.parse），所以用 quote 包一层。
+        val expireIso = Jwt.expireIso(token)
+
+        // 网页存 token 用的是 JSON.stringify(token)（值本身带引号），读的时候 JSON.parse；
+        // 所以注入的 JS 字符串字面量要再包一层 JSON 编码，否则 localStorage 里是不带引号的裸值，
+        // Next 的 UserContext JSON.parse 会直接抛错（表现为后台页白屏）。
+        val tokenJsonLiteral = JSONObject.quote(JSONObject.quote(token))
+        val expireJsonLiteral = expireIso?.let { JSONObject.quote(JSONObject.quote(it)) }
+
         return buildString {
-            append("try{localStorage.setItem('").append(LS_TOKEN).append("',").append(JSONObject.quote(token)).append(");}catch(e){};")
-            append("try{localStorage.removeItem('").append(LS_EXPIRE).append("');}catch(e){};")
+            append("try{localStorage.setItem('").append(LS_TOKEN).append("',").append(tokenJsonLiteral).append(");}catch(e){};")
+            if (expireJsonLiteral != null) {
+                append("try{localStorage.setItem('").append(LS_EXPIRE).append("',")
+                    .append(expireJsonLiteral).append(");}catch(e){};")
+            } else {
+                append("try{localStorage.removeItem('").append(LS_EXPIRE).append("');}catch(e){};")
+            }
             append("try{localStorage.setItem('").append(LS_USER_INFO).append("',")
                 .append(JSONObject.quote(userInfo.toString())).append(");}catch(e){};")
         }

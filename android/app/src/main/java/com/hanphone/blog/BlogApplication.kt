@@ -37,7 +37,8 @@ class BlogApplication : Application() {
                         avatar = snapshot.avatar,
                         userType = snapshot.userType,
                         username = snapshot.username,
-                        refreshToken = snapshot.refreshToken
+                        refreshToken = snapshot.refreshToken,
+                        email = snapshot.email
                     )
                 )
             }

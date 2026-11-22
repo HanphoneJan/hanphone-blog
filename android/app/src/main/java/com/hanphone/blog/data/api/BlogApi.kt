@@ -23,6 +23,7 @@ import com.hanphone.blog.data.model.HotOverview
 import com.hanphone.blog.data.model.HotSourceStatus
 import com.hanphone.blog.data.model.LeaderboardTrend
 import com.hanphone.blog.data.model.LoginData
+import com.hanphone.blog.data.model.LoginSession
 import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.model.ModelBenchmarkRow
 import com.hanphone.blog.data.model.ModelCompare
@@ -73,6 +74,17 @@ interface BlogApi {
         @Query("size") size: Int
     ): ApiResult<PageResult<Blog>>
 
+    /** 首页「推荐」位的文章（后台标记 recommend 的，数量有限） */
+    @GET("getRecommendBlogList")
+    suspend fun recommendBlogs(): ApiResult<List<Blog>>
+
+    /** 随机若干篇（服务端 size 1~10，默认 3），可排除当前文章 */
+    @GET("blogs/random")
+    suspend fun randomBlogs(
+        @Query("excludeId") excludeId: Long?,
+        @Query("size") size: Int = 3
+    ): ApiResult<List<Blog>>
+
     @GET("getFullTypeList")
     suspend fun fullTypeList(): ApiResult<List<Type>>
 
@@ -98,9 +110,11 @@ interface BlogApi {
         @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): ApiResult<FriendLink>
 
+    /** 全局搜索：type 为 BLOG/ESSAY/PROJECT/DOC，null = 全部（服务端过滤，非法值后端返回「不支持的搜索类型」） */
     @GET("search")
     suspend fun search(
         @Query("query") query: String,
+        @Query("type") type: String? = null,
         @Query("limit") limit: Int = 20
     ): ApiResult<List<SearchResultItem>>
 
@@ -175,6 +189,14 @@ interface BlogApi {
 
     @POST("auth/logout")
     suspend fun logout(@Body body: Map<String, String>): ApiResult<Any?>
+
+    /** 登录设备列表（Token 头由 ApiClient 拦截器注入；current 由服务端按 token 里的 sid 判定） */
+    @GET("auth/sessions")
+    suspend fun sessions(): ApiResult<List<LoginSession>>
+
+    /** 下线指定设备（只能操作自己的会话） */
+    @DELETE("auth/sessions/{sid}")
+    suspend fun revokeSession(@Path("sid") sid: String): ApiResult<Any?>
 
     // ===== 注册（邮箱验证码）=====
     @POST("user/sendCaptcha")

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Notifications
@@ -85,7 +86,7 @@ import com.hanphone.blog.util.emailError
 import com.hanphone.blog.util.isValidEmail
 import com.hanphone.blog.util.passwordError
 
-/** 我的：概览页（登录态/统计）+ 更多入口（项目/文库/留言板/友链/设置）；关于信息已移入设置页 */
+/** 我的：概览页（登录态/统计）+ 更多入口（项目/文库/音乐库/照片墙/留言板/友链/设置）；关于信息已移入设置页 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -94,6 +95,7 @@ fun ProfileScreen(
     onOpenFriendLinks: () -> Unit,
     onOpenProjects: () -> Unit,
     onOpenDocs: () -> Unit,
+    onOpenMusic: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenInsight: () -> Unit,
     onOpenNotifications: () -> Unit,
@@ -251,6 +253,8 @@ fun ProfileScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.List, "文库", "文件 · 教程 · 参考资料", onOpenDocs)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                MoreRow(Icons.Filled.LibraryMusic, "音乐库", "歌单 · 在线收听", onOpenMusic)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.PhotoLibrary, "照片墙", "云林有风的影像记录", onOpenPhotoWall)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Email, "留言板", "给博主留言", onOpenMessage)
@@ -274,7 +278,7 @@ fun ProfileScreen(
             onDismiss = { showEditProfile = false },
             onSaved = { user ->
                 // 同步更新登录态（TokenStore 统一落盘，不再手工拼 DataStore 对象）
-                TokenStore.updateProfile(user.nickname, user.avatar, userType)
+                TokenStore.updateProfile(user.nickname, user.avatar, userType, user.email)
             }
         )
     }

@@ -3,6 +3,8 @@ package com.hanphone.blog.data.repo
 import com.hanphone.blog.data.api.AdminApi
 import com.hanphone.blog.data.api.AdminFileApi
 import com.hanphone.blog.data.api.ApiClient
+import com.hanphone.blog.data.api.FilesResult
+import com.hanphone.blog.data.api.SimpleFileResult
 import com.hanphone.blog.data.api.UploadBatchItem
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.model.AdminMonthly
@@ -446,6 +448,36 @@ class AdminRepository(
             )
         )
     }
+
+    // ===== 文件管理（admin-file 目录浏览）=====
+    /** 目录列表：namespace 为空返回根目录下的命名空间列表 */
+    suspend fun files(namespace: String?): FilesResult = withContext(Dispatchers.IO) {
+        fileApi.files(TokenStore.token.value, namespace?.takeIf { it.isNotBlank() })
+    }
+
+    /**
+     * 删除目录项。
+     *
+     * 目录必须 `recursive=true`（服务端对非空目录会返回 400），namespace 为空时按根目录处理
+     * ——根级条目就是整个命名空间，删掉等于清空该目录。
+     */
+    suspend fun deleteFileEntry(
+        name: String,
+        namespace: String?,
+        recursive: Boolean = false
+    ): SimpleFileResult = withContext(Dispatchers.IO) {
+        val body = mutableMapOf<String, Any?>("name" to name, "recursive" to recursive)
+        if (!namespace.isNullOrBlank()) body["namespace"] = namespace
+        fileApi.delete(TokenStore.token.value, body)
+    }
+
+    /** 新建目录；parentNamespace 为空 = 根目录 */
+    suspend fun createDirectory(name: String, parentNamespace: String?): SimpleFileResult =
+        withContext(Dispatchers.IO) {
+            val body = mutableMapOf<String, Any?>("name" to name)
+            if (!parentNamespace.isNullOrBlank()) body["parentNamespace"] = parentNamespace
+            fileApi.createDirectory(TokenStore.token.value, body)
+        }
 
     /** `https://hanphone.top/blog/essay/xx/a.jpg` → ("blog/essay/xx", "a.jpg") */
     private fun parseFileUrl(url: String): Pair<String, String>? {

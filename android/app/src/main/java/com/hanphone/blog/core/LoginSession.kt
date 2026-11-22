@@ -24,7 +24,8 @@ suspend fun Context.applyLogin(data: LoginData) {
             avatar = user.avatar,
             userType = user.type,
             username = user.username,
-            refreshToken = data.refreshToken
+            refreshToken = data.refreshToken,
+            email = user.email
         )
     )
 }

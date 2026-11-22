@@ -26,6 +26,7 @@ import com.hanphone.blog.data.model.HotOverview
 import com.hanphone.blog.data.model.HotSourceStatus
 import com.hanphone.blog.data.model.LeaderboardTrend
 import com.hanphone.blog.data.model.LoginData
+import com.hanphone.blog.data.model.LoginSession
 import com.hanphone.blog.data.model.Message
 import com.hanphone.blog.data.model.ModelBenchmarkRow
 import com.hanphone.blog.data.model.ModelCompare
@@ -58,6 +59,14 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
 
     suspend fun blog(id: Long): ApiResult<Blog> =
         withContext(Dispatchers.IO) { api.blog(id) }
+
+    /** 推荐位文章（详情页底部「相关推荐」的回退来源） */
+    suspend fun recommendBlogs(): ApiResult<List<Blog>> =
+        withContext(Dispatchers.IO) { api.recommendBlogs() }
+
+    /** 随机文章（详情页底部「相关推荐」优先来源；excludeId 排除当前文章） */
+    suspend fun randomBlogs(excludeId: Long?, size: Int = 3): ApiResult<List<Blog>> =
+        withContext(Dispatchers.IO) { api.randomBlogs(excludeId, size) }
 
     /** page 统一使用 1 起始，内部转成 Spring 的 0 起始 */
     suspend fun blogsByType(typeId: Long, page: Int = 1, size: Int = PAGE_SIZE): ApiResult<PageResult<Blog>> =
@@ -119,8 +128,9 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
         )
     }
 
-    suspend fun search(query: String, limit: Int = 20): ApiResult<List<SearchResultItem>> =
-        withContext(Dispatchers.IO) { api.search(query, limit) }
+    /** 全局搜索；type = null 为全部，类型过滤由服务端完成 */
+    suspend fun search(query: String, type: String? = null, limit: Int = 20): ApiResult<List<SearchResultItem>> =
+        withContext(Dispatchers.IO) { api.search(query, type, limit) }
 
     /** 全部公开项目（type 可为 null 拉全量，前端分组筛选） */
     suspend fun projects(type: Int? = null): ApiResult<List<Project>> =
@@ -193,6 +203,14 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
         withContext(Dispatchers.IO) {
             api.logout(mapOf("refreshToken" to (refreshToken ?: "")))
         }
+
+    /** 当前账号的登录设备列表（需登录；Token 由拦截器注入） */
+    suspend fun sessions(): ApiResult<List<LoginSession>> =
+        withContext(Dispatchers.IO) { api.sessions() }
+
+    /** 下线指定设备；下线的若是本机，页面还要走本地退出清理 */
+    suspend fun revokeSession(sid: String): ApiResult<Any?> =
+        withContext(Dispatchers.IO) { api.revokeSession(sid) }
 
     /** 登录：入参是明文密码，这里统一做 md5（后端存的是 bcrypt(md5)） */
     suspend fun login(username: String, password: String): ApiResult<LoginData> =

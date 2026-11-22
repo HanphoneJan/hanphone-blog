@@ -73,7 +73,10 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenAppearance: () -> Unit,
-    onOpenData: () -> Unit
+    onOpenData: () -> Unit,
+    onOpenSessions: () -> Unit,
+    // 关于区的信息页在 App 内通用 WebView 打开（不跳系统浏览器），由 AppNav 接管路由
+    onOpenWeb: (url: String, title: String) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -130,6 +133,11 @@ fun SettingsScreen(
                     SettingsRow("外观", "主题 · 背景 · 模糊", onOpenAppearance)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     SettingsRow("数据管理", "各页缓存占用与清理", onOpenData)
+                    // 登录设备：未登录时不显示（连同下面的分隔线一起省略）
+                    if (token != null) {
+                        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                        SettingsRow("登录设备", "查看并下线其他设备", onOpenSessions)
+                    }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     SettingsRow("检查更新", if (checking) "检查中…" else "当前 v${BuildConfig.VERSION_NAME}", onClick = ::checkUpdate)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -170,6 +178,12 @@ fun SettingsScreen(
                     AboutLinkRow("访问博客网站", "hanphone.cn") { uriHandler.openUri("https://hanphone.cn") }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     AboutLinkRow("作者 GitHub", "HanphoneJan") { uriHandler.openUri("https://github.com/HanphoneJan") }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    AboutLinkRow("隐私政策") { onOpenWeb("https://hanphone.cn/privacy/", "隐私政策") }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    AboutLinkRow("服务条款") { onOpenWeb("https://hanphone.cn/terms/", "服务条款") }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    AboutLinkRow("关于本站") { onOpenWeb("https://hanphone.cn/about/", "关于本站") }
                 }
             }
 
@@ -256,16 +270,18 @@ private fun SettingsSwitchRow(
     }
 }
 
-/** 关于区链接行：标题 + 副标题 + 箭头，点击外部打开 */
+/** 关于区链接行：标题 + 副标题（可省略）+ 箭头，点击外部打开 */
 @Composable
-private fun AboutLinkRow(title: String, subtitle: String, onClick: () -> Unit) {
+private fun AboutLinkRow(title: String, subtitle: String = "", onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        if (subtitle.isNotBlank()) {
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        }
         Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline)
     }
 }

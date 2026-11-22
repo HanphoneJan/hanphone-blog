@@ -4,11 +4,13 @@ import com.squareup.moshi.Json
 import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Query
+import java.util.Date
 
 /**
  * 后台文件服务（admin-file，独立域名 https://hanphone.top/）。
@@ -43,6 +45,24 @@ interface AdminFileApi {
     /** 删除本站物理文件（未入库就移除的附件）；缩略图/HLS 派生资源由服务端级联回收 */
     @DELETE("delete")
     suspend fun delete(
+        @Header("Token") token: String?,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): SimpleFileResult
+
+    /**
+     * 目录列表。
+     * namespace 为空 = 根目录，返回的是各命名空间（目录）本身；
+     * 传 namespace 则返回该目录下的 items。
+     */
+    @GET("files")
+    suspend fun files(
+        @Header("Token") token: String?,
+        @Query("namespace") namespace: String?
+    ): FilesResult
+
+    /** 新建目录；parentNamespace 为空 = 建在根目录下 */
+    @POST("directory")
+    suspend fun createDirectory(
         @Header("Token") token: String?,
         @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): SimpleFileResult
@@ -82,4 +102,31 @@ data class SimpleFileResult(
     val code: Int = 0,
     val message: String = "",
     val error: String? = null
+)
+
+/**
+ * `GET /files` 的结果。
+ *
+ * 成功时 `code=200`，失败时服务端返回 `{ error: ... }`（可能带 4xx/5xx 状态码，
+ * 那种情况 Retrofit 会抛 HttpException，由 ViewModel 统一转成提示）。
+ * `mtime/birthtime` 是服务端 `JSON.stringify(Date)` 出来的 ISO 字符串，
+ * 全局 Date 适配器解析失败只会得到 null，不影响列表展示。
+ */
+data class FilesResult(
+    val code: Int = 0,
+    val message: String = "",
+    val items: List<FileEntry> = emptyList(),
+    val error: String? = null
+)
+
+/** 一个文件/目录条目（根目录下的条目 type="namespace"、isDirectory=true） */
+data class FileEntry(
+    val name: String = "",
+    val isDirectory: Boolean = false,
+    val size: Long = 0,
+    val mtime: Date? = null,
+    val birthtime: Date? = null,
+    val category: String? = null,
+    val namespace: String? = null,
+    val type: String? = null
 )

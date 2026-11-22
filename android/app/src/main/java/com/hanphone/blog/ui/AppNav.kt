@@ -85,6 +85,7 @@ import com.hanphone.blog.ui.admin.AdminDashboardScreen
 import com.hanphone.blog.ui.admin.AdminDocsScreen
 import com.hanphone.blog.ui.admin.AdminEssayEditScreen
 import com.hanphone.blog.ui.admin.AdminEssaysScreen
+import com.hanphone.blog.ui.admin.AdminFilesScreen
 import com.hanphone.blog.ui.admin.AdminFriendLinksScreen
 import com.hanphone.blog.ui.admin.AdminHomeScreen
 import com.hanphone.blog.ui.admin.AdminInsightScreen
@@ -114,6 +115,7 @@ import com.hanphone.blog.ui.search.SearchScreen
 import com.hanphone.blog.ui.settings.AppearanceScreen
 import com.hanphone.blog.ui.settings.DataManagementScreen
 import com.hanphone.blog.ui.settings.SettingsScreen
+import com.hanphone.blog.ui.settings.SessionsScreen
 import com.hanphone.blog.ui.webview.WebViewScreen
 import com.hanphone.blog.ui.theme.BlogTheme
 import com.hanphone.blog.util.DeepLinkTarget
@@ -266,6 +268,11 @@ internal fun MainScaffold() {
                     onOpenFriendLinks = { navController.navigate("friendlinks") },
                     onOpenProjects = { navController.navigate("projects") },
                     onOpenDocs = { navController.navigate("docs") },
+                    onOpenMusic = {
+                        navController.navigate(
+                            "webview?url=${Uri.encode("https://hanphone.cn/music/")}&title=${Uri.encode("音乐库")}"
+                        )
+                    },
                     onOpenSettings = { navController.navigate("settings") },
                     onOpenInsight = { navController.navigate("insight") },
                     onOpenNotifications = { navController.navigate("notifications") },
@@ -375,7 +382,13 @@ internal fun MainScaffold() {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onOpenAppearance = { navController.navigate("settings/appearance") },
-                    onOpenData = { navController.navigate("settings/data") }
+                    onOpenData = { navController.navigate("settings/data") },
+                    onOpenSessions = { navController.navigate("settings/sessions") },
+                    onOpenWeb = { url, title ->
+                        navController.navigate(
+                            "webview?url=${Uri.encode(url)}&title=${Uri.encode(title)}"
+                        )
+                    }
                 )
             }
             composable("settings/appearance") {
@@ -383,6 +396,19 @@ internal fun MainScaffold() {
             }
             composable("settings/data") {
                 DataManagementScreen(onBack = { navController.popBackStack() })
+            }
+            composable("settings/sessions") {
+                SessionsScreen(
+                    onBack = { navController.popBackStack() },
+                    onLoggedOut = {
+                        // 栈是 我的 → 设置 → 登录设备；退出后要落在「我的」Tab，
+                        // 所以连「设置」一起收掉（只 pop 一层会停在设置页，那里还有登录相关入口）。
+                        // 兜底：万一「设置」不在栈上，直接回到「我的」。
+                        if (!navController.popBackStack("settings", inclusive = true)) {
+                            navController.popBackStack(MainTab.PROFILE.route, inclusive = false)
+                        }
+                    }
+                )
             }
 
 
@@ -400,6 +426,14 @@ internal fun MainScaffold() {
                     onOpenFriendLinks = { navController.navigate("admin/friendlinks") },
                     onOpenProjects = { navController.navigate("admin/projects") },
                     onOpenDocs = { navController.navigate("admin/docs") },
+                    onOpenFiles = { navController.navigate("admin/files") },
+                    onOpenPersonal = {
+                        // WebView 试验：个人中心是多 Tab 的复杂页面（技能/作品/爱好/评价/MCP 密钥），
+                        // 原生重写成本高；登录态由 AuthBridge 注入了 token/userInfo/expire。
+                        navController.navigate(
+                            "webview?url=${Uri.encode("https://hanphone.cn/admin/personal/")}&title=${Uri.encode("个人中心")}"
+                        )
+                    },
                     onOpenUsers = { navController.navigate("admin/users") },
                     onOpenInsight = { navController.navigate("admin/insight") }
                 )
@@ -463,6 +497,19 @@ internal fun MainScaffold() {
             composable("admin/docs") {
                 AdminDocsScreen(onBack = { navController.popBackStack() })
             }
+            composable("admin/files") {
+                AdminFilesScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenUrl = { url, title ->
+                        // 文本类文件服务端发的是 attachment，直接 loadUrl 会被当下载而白屏；
+                        // 走 html=1 让通用 WebView 先 fetch 原文再渲染（与文库预览同一机制）
+                        val asHtml = if (isTextLikeFileUrl(url)) "1" else "0"
+                        navController.navigate(
+                            "webview?url=${Uri.encode(url)}&title=${Uri.encode(title)}&html=$asHtml"
+                        )
+                    }
+                )
+            }
             composable("admin/users") {
                 AdminUsersScreen(onBack = { navController.popBackStack() })
             }
@@ -503,7 +550,12 @@ internal fun MainScaffold() {
                 ArticleDetailScreen(
                     blogId = entry.arguments?.getLong("blogId") ?: 0L,
                     onBack = { navController.popBackStack() },
-                    onLogin = { navController.navigate("login") }
+                    onLogin = { navController.navigate("login") },
+                    // 相关推荐跳转：直接推入新文章（launchSingleTop 对同 destination 不同参数
+                    // 在某些 Navigation 版本上会被判定为重复而不入栈，这里用默认入栈保证能点开）
+                    onOpenBlog = { id ->
+                        navController.navigate("article/$id")
+                    }
                 )
             }
             composable(
@@ -518,4 +570,19 @@ internal fun MainScaffold() {
             }
         }
     }
+}
+
+/**
+ * 文件服务里「服务端按 attachment 返回、WebView 直接 loadUrl 会白屏」的文本类扩展名。
+ * 命中时通用 WebView 走 html=1（先 fetch 原文再 loadDataWithBaseURL 渲染）。
+ */
+private val TEXT_LIKE_FILE_EXTENSIONS = listOf(
+    ".md", ".markdown", ".txt", ".json", ".jsonl", ".xml", ".csv",
+    ".yml", ".yaml", ".toml", ".ini", ".log", ".html", ".htm",
+    ".css", ".js", ".ts", ".kt", ".java", ".py", ".sh"
+)
+
+private fun isTextLikeFileUrl(url: String): Boolean {
+    val path = url.substringBefore('?').substringBefore('#').lowercase()
+    return TEXT_LIKE_FILE_EXTENSIONS.any { path.endsWith(it) }
 }
