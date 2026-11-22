@@ -11,7 +11,7 @@
 博客「云林有风」的 Android 原生客户端。Kotlin + Jetpack Compose (Material 3)，对接博客 REST API 与 hanphone-chat 实时聊天。后端代码零改动。
 
 - 导航：**底部 4 Tab**：首页 / 随笔 / 消息 / 我的
-- 子页：文章详情、随笔详情、搜索、留言板、友链、**站内通知、我的收藏**、设置（设置→外观/数据管理 为二级子页）、登录、注册
+- 子页：文章详情、随笔详情、搜索、留言板、友链（含**申请友链**）、**站内通知、我的收藏**、设置（设置→外观/数据管理/**登录设备** 为二级子页）、登录、注册、**忘记密码**、**音乐库/隐私政策/服务条款/关于本站（WebView）**
 - 深链（2026-11）：App Links 覆盖 `https://hanphone.cn/blog/*`、`/essays/*`、`/docs/*`（只注册 `hanphone.cn`）
 - 聊天：原生 Socket.IO（**非 WebView**），复用博客 JWT
 
@@ -56,7 +56,8 @@ ui/
   docs/DocMarkdownScreen.kt                     文库 MD 预览（拉文件服务原文 → Markdown 渲染）
   webview/WebViewScreen.kt      通用 WebView（项目链接 loadUrl / 文库 HTML 文档 fetch+loadDataWithBaseURL；
                                进度条/返回/浏览器外开；主框架加载失败显示「重试/在浏览器打开」错误层）
-  core/AuthBridge.kt            第一方 WebView 页（照片墙 hanphone.cn/atlas）登录态注入 + 登出清理
+  core/AuthBridge.kt            第一方 WebView 页（照片墙 / 后台管理页）登录态注入 + 登出清理
+  core/WebViewFixes.kt          第一方页面视口单位修正（WebView 里 vh/dvh 恒为 0 → 样式表内换算成 px）
   core/DeepLinkBus.kt           深链中转（StateFlow；MainActivity 投递，AppNav 消费）
   util/DeepLink.kt              深链解析纯函数（java.net.URI，JVM 单测可跑）
   data/cache/BookmarkStore.kt   收藏 key 集合（进程级 StateFlow，登录 refresh / 退出 clear）
@@ -64,6 +65,10 @@ ui/
   ui/notification/              NotificationsScreen + ViewModel（列表/分页/已读）
   ui/bookmark/                  BookmarksScreen + ViewModel（博客/随笔/文档 Tabs）
   profile/ProfileScreen.kt + ProfileViewModel.kt
+  friendlinks/ApplyFriendLinkScreen.kt          申请友链（表单 / 文本粘贴，幂等 X-Request-Id）
+  login/ForgotPasswordScreen.kt                 忘记密码（邮箱验证码 + 新密码）
+  settings/SessionsScreen.kt + SessionsViewModel.kt  登录设备（列表 / 下线 / 本机退出）
+  admin/AdminFilesScreen.kt + AdminFilesViewModel.kt 文件管理（浏览 / 上传 / 新建目录 / 删除，admin-file）
   components/           ArticleCard/Avatar/Skeleton(骨架屏)/Loading/Error/Empty/BottomActionItem
                       SearchField（40dp 紧凑搜索胶囊，替代 M3 OutlinedTextField 56dp）/详情底部栏=细分割线+单行图标文字
   theme/                Material3 Light/Dark 双主题
@@ -147,6 +152,8 @@ ui/
 | 友链/项目/文库 | `/admin/friendLink(s)`、`/admin/project(s)`、`/admin/doc(s)` | 文库新增 = 先传文件再登记 Doc（docId 前端生成） |
 | 用户 | `/admin/users` · `/admin/user` · `/admin/user/resetPassword` | **完整管理**：改资料（昵称/邮箱/头像）、设/取消管理员、重置密码、删除；id=1 与自己不可降级/删除（对齐网页后台） |
 | 聚合数据 | `/admin/hot/{status,collect,sources,runs/page,models/rebuild-normalization,settings/summary}` | 对标网页 `/admin/insight`：采集状态 + 信源健康度、采集记录（方式/结果/近 7·30 天/关键词 + 分页）、AI 摘要（启用/保存/测试）、模型归一重建（预演/执行）；采集为异步任务，触发后每 3 秒轮询直到结束 |
+| 文件管理 | admin-file `GET /files`、`POST /directory`、`POST /upload/batch`、`DELETE /delete`（base `hanphone.top`，手带 Token） | **原生**（不用 WebView）：根命名空间列表 → 逐级浏览、面包屑、系统返回逐级回退；上传走系统文件选择器（原片不压缩）、新建文件夹、删除（目录 recursive + 二次确认）；文件预览复用通用 WebView（文本类自动 `html=1` 规避 attachment 白屏） |
+| 个人中心 | WebView `https://hanphone.cn/admin/personal/` | 多 Tab 复杂页（技能/爱好/作品/评价/MCP 密钥）原生重写成本过高，走 **WebView + 登录态注入**；依赖 §7 坑 39/40（expire 注入、userInfo.email、vh 修正、文件选择器），缺一不可 |
 
 附件上传（随笔/封面/文库）：`AdminFileApi`（base `https://hanphone.top/`，**手动带 Token**）→
 `POST /upload` 或 `/upload/batch`，`namespace=blog/essay/{标题}` / `blog/blogs` / `blog/docs`。
@@ -214,8 +221,22 @@ ui/
 - **本地缓存**：聊天室历史（`chat_public.json`）+ 私信会话（`chat_private_{admin|u{id}}.json`）+ **私信用户列表**（`chat_users.json`，管理员收件箱秒显）存 ContentStore；进入消息页先秒显缓存，socket 连接在后台刷新（`ChatSocket.restoreMessages` + 写缓存节流 5s、断线强制落盘）。**首进不再全屏「连接中」**，仅顶部细横幅提示。
 - **notification toast 过滤**：服务端每次连接都会发 `notification:"认证成功，已连接到聊天服务器"`（server.ts:519），已在 `ChatSocket` 源头过滤（`startsWith("认证成功")` 不进入 notice），避免每次进消息页/重连都弹认证成功 toast；其余错误/操作类 notification 仍会保留提示。
 
+### 搜索（类型筛选，v1.6）
+
+- 搜索框下方 `FilterChip`：全部 / 博客 / 随笔 / 项目 / 文档 → `/search?type=BLOG|ESSAY|PROJECT|DOC`（**服务端过滤**）。
+- 缓存键必须是「关键词 + 类型」（`MemoryCache.searchKey`）；只按关键词缓存会让「全部」的结果冒充「博客」。
+- 切换类型立即重搜（跳过 350ms 防抖，但走同一套取消/去重）；空结果文案按类型区分。
+
+### 文章详情（相关推荐，v1.6）
+
+- 正文与评论之后追加「相关推荐」3 条（紧凑行 + 56dp 缩略图），数据优先 `/blogs/random?excludeId=&size=3`，
+  失败或为空回退 `/getRecommendBlogList`；排除当前文章、未发布、空标题，去重后取 3 条；空则整块隐藏。
+- 推荐不写磁盘缓存（每次随机才有意义）；快速切文章用 `relatedJob.cancel()` 防串页。
+- ⚠️ **跳转不要加 `launchSingleTop`**：Navigation 对「同 destination、不同参数」也会判为已在栈顶而不入栈，
+  表现为「点推荐毫无反应」（v1.6 实测）。直接 `navigate("article/$id")`。
+
 ### 我的 / 设置
-- 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（热点聚合/项目/文库/照片墙/留言板/友链/设置）**；关于信息已移入设置页。
+- 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（通知/收藏/热点聚合/项目/文库/音乐库/照片墙/留言板/友链/设置）**；关于信息已移入设置页。
 - **热点页（入口「我的 → 更多 → 热点」，页面标题也已是「热点」，不再叫「热点聚合」）**：原生页 `ui/hot/`（对标 web `/insight`）。三视图：**热点**（分类 chips 全部/GitHub 热门/HF 趋势/AI 要闻 + 中文优先卡片，点击开链接）、**榜单**（模态 chips，**高密度行**：排名/变化 + 模型 + 厂商·价格·上下文 + 各榜单分数，细分割线分隔 + Canvas 手绘近 30 天折线趋势；**排名=排序位置**，无排名时用序号兜底；**每个模态独立 `LazyListState`**，切换领域从头开始、不带着旧滚动位置跳到同名模型）、**对比**（紧凑工具栏 + 底部弹层选择器 **按榜单 / 按公司 / 搜索**，可选模型全部来自 `/hot/leaderboards` 与 `/hot/models`，最多 6 个；**默认选六家代表厂商各自最强**：DeepSeek/Z.ai(Kimi 之外)/Kimi/Anthropic/OpenAI/Google（取自文本榜 AA 智能指数排序）；「指标 × 模型」逐行高亮最优值、只显示至少一个模型有分的口径；分享走系统 Intent → `hanphone.cn/insight/?view=compare&models=...`）。顶部有**「名称归一」开关（默认开）**：关闭时厂商名与模型行变体/日期后缀按信源原始展示（`Alibaba-ATH`、`z-ai`、`claude-opus-4-5-20251101`），实体合并不受影响。公开接口 `/hot/*`（无需登录），三层缓存（`hot_*.json`）并入数据管理「热点聚合（洞察）」分项。
 - **设置 → 检查更新**：弹窗的 Release 说明用 `MarkdownContent` 渲染（原先是纯文本，Markdown 不显示）；正文高亮/标题正常。
 - ⚠️ **不再使用写死的「精选代表模型」**：web/App 的选择器都改为从榜单实时构建（按榜单/按公司/搜索）。后端 `FeaturedModelRegistry` 与 `/hot/models/featured` 已**彻底删除**（`FeaturedGroupVO`/`FeaturedModelVO` 一并移除）。
@@ -226,7 +247,7 @@ ui/
 - **旧包会被 Service Worker「钉死」（照片墙改动不生效/仍闪空态的真正原因）**：`vite-plugin-pwa` 默认生成 `NavigationRoute`，**匹配所有导航且忽略查询串**，始终返回预缓存里的 `index.html`；旧 SW 没换掉之前，App 一直跑旧 `Atlas.vue`。加上 nginx 未给 `sw.js`/`index.html` 配 `Cache-Control`（被 Cloudflare 按 4h 缓存），发版后旧包可能维持很久。已在 `apps/photo-wall/vite.config.ts` 去掉 `NavigationRoute`、入口 html 不预缓存、导航改 `NetworkFirst`（`atlas-pages`）；SW 文件名带构建版本 + 注册代码内联 `index.html`，绕过 Cloudflare 对 `sw.js`/`registerSW.js` 的 4h 缓存。**排查「网页改了 App 里没变化」先想到旧 SW**。详见 `docs/photo-wall-image-optimization.md`。
 - 「项目」= 独立页：类型筛选 chips（全部/完整项目/工具箱/小游戏/小练习）+ 分组卡片（完整项目=大卡片、其余=双列网格；推荐角标、技术栈标签），数据来自 `GET /projects`（推荐在前、type 分组，与 web ProjectClient 一致）；点击卡片用 **WebView** 内开项目链接（`ui/webview/WebViewScreen.kt`：JS 开启、加载进度条、系统返回先回退 WebView 历史、右上角菜单可在浏览器打开）。
 - 「文库」= 独立页：数据来自 `GET /docs`，按 `docNamespace` 构建文件夹树（`blog/docs/子目录` → 顶层文件夹，对齐 web DocLoader）；文件夹浏览 + 面包屑、名称/路径搜索、类型筛选 pills（Word/PDF/MD/HTML 带计数，对齐 web DocsFilter）；文件行 = 彩色类型徽标 + 名称 + 推荐星 + 日期；打开文件：**HTML → WebView**、**MD → 应用内 Markdown 预览**（`DocMarkdownScreen`，文件服务原文去 frontmatter 后渲染）、**PDF/DOCX → 系统打开/下载**；文件 URL = `https://hanphone.top/{docNamespace}/{文件名}` 逐段 URI 编码（`util/buildDocFileUrl`），打开即上报浏览量 `POST /docs/{docId}/view`。
-- 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **启动时检查更新开关**（默认开）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub 链接）。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
+- 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **登录设备**（仅登录后显示，→子页：`GET /auth/sessions` 当前设备/活跃/已失效 + IP/时间 + 下线二次确认；下线的若是本机则本地立即退出）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **启动时检查更新开关**（默认开）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub + **隐私政策 / 服务条款 / 关于本站**，后三项走 App 内 WebView）。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
 - **资料编辑**（「我的」点头像，对齐网页 UserInfoForm）：昵称 + 头像 + **邮箱**（改邮箱需向新邮箱发通用验证码 `scene=general`，非管理员必填；管理员免验证码）+ **新密码**（可选，≥6 位含字母数字，`md5` 传输）。保存走 `POST /user/current/update`（body 根级带 `captcha`），后端 `UserServiceImpl.updateCurrentUser` 会对 `user.password` 做 bcrypt。
 - 「设置 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + 单行简介 + 链接行（**访问博客网站 hanphone.cn / 作者 GitHub**），点击走系统浏览器。版本号只在「检查更新」区显示一次（不重复）。
 - **检查更新**（设置→检查更新）：读 `https://api.github.com/repos/HanphoneJan/hanphone-blog/releases/latest`（tag 语义化比较 `isNewerVersion(tag, BuildConfig.VERSION_NAME)`，取 .apk 资产 URL），有新版弹「发现新版本 vX + Release 说明 + 立即更新/稍后」，无新版 toast「已是最新版本」。**「立即更新」在 App 内下载**（`data/update/AppUpdateManager`：应用级协程 + OkHttp 流式下载，弹窗显示百分比与大小、可取消；离开设置页不中断），完成后用 `FileProvider` + `ACTION_VIEW` 调起**系统安装器**（仍会有系统安装确认，这是 Android 安全要求，不再跳浏览器）。首次需要「安装未知应用」授权：`REQUEST_INSTALL_PACKAGES` + 授权页返回后自动继续；部分厂商（realme/OPPO）还会多加风险提示与锁屏密码确认。API 与下载链在**直连网络可用**。⚠️ 因为是语义化比较，**同版本号重新发布 APK 不会让已装用户收到更新提示**——要让用户升级必须同时抬 `versionCode`。
@@ -460,6 +481,31 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     `refresh()`，退出登录 `clear()`；页面只 `collectAsState()` 读 keys，不要每页各拉一次 `/bookmarks/status`
     （会 N+1）。新增收藏入口时用 `BookmarkStore.id(TYPE, key)` 拼 key，别各写一份格式。
 
+39. **WebView 里 `vh`/`dvh` 恒为 0（v1.6 后台页白屏的根因，比坑 16 更彻底）**：
+    同一台机器实测 `window.innerHeight = 772`，但 `100vh`、`80vh`、`100dvh` 全部算成 **0**（只有 `100%` 正常）。
+    后台个人中心外层是 `h-screen` + `overflow-hidden` → 高度 0、整页裁掉：DOM 与文字颜色都正常，
+    Chrome 自己的截图也是空白，很容易误判成「登录态没注入」。同理头像弹窗 `max-h-[80vh]` 变 0，只剩标题和按钮。
+    本项目页面不能改（约束只改 android/），解法在 `core/WebViewFixes.kt`：文档就绪后遍历**同源样式表**，
+    把声明值里的 `vh/dvh/svh/lvh` 按 `innerHeight` 换算成 px 写回（记录原值，旋转/resize 重算），只对第一方 origin 生效。
+    不要用「只覆盖 `.h-screen`」那种单类补丁——弹窗的 `max-h-[*]` 还是会坏。
+40. **React/Next 后台页走 WebView 的登录态与上传（v1.6 实测通过）**：
+    - 网页存 token/expire 用的是 `JSON.stringify(...)`（localStorage 里的值**本身带双引号**），读时 `JSON.parse`。
+      注入脚本必须把值再 JSON 编码一层（`JSONObject.quote(JSONObject.quote(v))`），否则裸值让 UserContext 抛
+      `Unexpected non-whitespace character after JSON at position 4` → 显示未登录/白屏。
+    - `userInfo` 存的是**对象 JSON 原文**（`{"id":...}`，不要再包引号），且要带 `email`：
+      后台个人中心会把 `userInfo.email` 回填表单，缺失时点「保存修改」会把邮箱清空（服务端 updateUser 对空串照写）。
+    - `expire` 从 JWT 的 `exp` 生成 ISO-8601（`Jwt.expireIso`），缺失会被 `isTokenExpired` 判为过期。
+    - `<input type=file>`（头像/作品图上传）必须在 `WebChromeClient.onShowFileChooser` 接住并转给系统选择器，
+      否则点击「选择图片」毫无反应；`ActivityResultContracts.StartActivityForResult` + `FileChooserParams.parseResult`。
+    - 局限：网页的 refresh 走 HttpOnly Cookie（App 没有），access 30 分钟后页面内请求会 401 并跳 `/login`；
+      App 自己的 token 刷新不会自动重载已打开的 WebView，需要退出重进该页。
+41. **`launchSingleTop = true` 对「同 destination、不同参数」不会入栈（v1.6 实测）**：
+    相关推荐 `navigate("article/$id") { launchSingleTop = true }` 点了没反应（当前就在 `article/{blogId}`）。
+    同 destination 的跳转不要加 `launchSingleTop`，否则参数换了也被当成「已在栈顶」。
+42. **友链申请（`POST /friendLinks/apply`）的两个约束**：免登录但 `@Idempotent`，`X-Request-Id` **失败重试必须复用、
+    成功后才换新**；文本粘贴模式（`applyText` 非空）时服务端不校验 name/url，App 也不该强制。后台解析原文时
+    `applyText` 要随编辑一起回传，否则改一次资料就把申请原文弄丢。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
@@ -476,7 +522,16 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ **v1.3.2 站内通知 + 收藏 + 深链（2026-11）**：「我的 → 通知」评论/回复通知（未读角标、全部已读）、「我的 → 收藏」博客/随笔/文档（`BookmarkStore` 进程级状态 + 乐观更新）、详情/随笔/文库收藏按钮；`https://hanphone.cn/{blog,essays,docs}` App Links（`DeepLinkBus` + 纯函数解析 + 单测）。收藏文档本轮点击回文库列表。小版本发布，versionCode 26 / versionName 1.3.2；Release 包用 debug 密钥签名，可直接覆盖 1.3.1。
 - ✅ **v1.3.3「我的」页身份区重做（2026-11）**：登录后头像/昵称只出现一次（原来顶部大头像 + 「已登录」卡片各画一遍，且卡片读 TokenStore、头部读服务端资料，可能同时显示新旧昵称）；头像右下铅笔角标替代「点击头像可修改资料」，编辑/退出收进头像下方动作行；未登录态改为品牌头图 + 实心「登录」按钮，去掉「未登录」卡片。versionCode 27 / versionName 1.3.3。
 - ✅ **v1.3.4 退出登录收进设置页（2026-11）**：「我的」页头部删掉动作行（「编辑资料」按钮与点头像重复），只留头像 + 铅笔角标（补读屏语义）；退出登录移到设置页底部（低强调的描边按钮 + 退出图标），点击后二次确认，确认后吊销会话 → 清 DataStore/内存/照片墙 WebView 登录态 → 返回「我的」未登录态。versionCode 28 / versionName 1.3.4。
-- ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
+- ✅ **v1.6.0（2026-11，versionCode 31）补齐网页有、App 缺的功能**：
+  前台**申请友链**（表单/文本粘贴、幂等请求、入口在友链页顶栏）；后台友链**申请原文**展示 + 解析文本填表/直接保存
+  （移植 web `parseApplyText`，JSON/YAML/中文键值对，纯函数 + 8 个 JVM 单测）；登录页**忘记密码**（邮箱验证码 60s +
+  新密码，md5 在仓库层，`flag && code==200` 才算成功，成功不自动登录）；设置页**登录设备**（`/auth/sessions`
+  列表 + 下线二次确认 + 本机下线即本地退出）；文章详情底部**相关推荐**（random 优先、recommend 回退，3 条）；
+  搜索**类型筛选**（服务端 `type=`，缓存键带类型）；设置页**隐私政策/服务条款/关于本站**、我的页**音乐库**（App 内 WebView）；
+  后台**文件管理原生页**（admin-file 浏览/上传/新建目录/删除）；后台**个人中心 WebView**（登录态 + expire + userInfo.email
+  注入、系统文件选择器、`vh` 修正，见坑 39/40）。版本号跳过 1.4/1.5 直接发 1.6.0（三批功能一次发布）。
+- ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）；个人中心若要求更好体验，可把「基本信息」
+  原生重写（技能/作品等仍在 WebView）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
 
 ## 10. 关键技术决策（本次重构后）
