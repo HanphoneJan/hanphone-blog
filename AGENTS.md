@@ -24,6 +24,11 @@ cd server && mvn spring-boot:run   # Spring Boot dev (port 8090)
 cd server && mvn test              # Java unit tests
 cd server && mvn clean package -DskipTests  # Build JAR
 
+# === Android (android/) ===
+cd android && ./gradlew :app:assembleDebug       # debug APK
+cd android && ./gradlew :app:testDebugUnitTest   # JVM 单测（30 例）
+cd android && ./gradlew :app:assembleRelease     # release APK（debug 密钥签名）
+
 # === Sub-apps ===
 pnpm build:gomoku                  # Build gomoku game (Uni-app → web/public/games/gomoku/)
 pnpm build:photo-wall              # Build photo wall (Vite → apps/photo-wall/atlas/；生产由 nginx alias /home/hanphone/html/atlas 托管)
@@ -52,7 +57,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 | `atlas`             | `apps/photo-wall/`   | Vue 3 + Vite + Element Plus + Pinia                     |
 | `chat-client`       | `apps/chat-client/`  | React 18 + Vite + shadcn/ui + socket.io-client（聊天站，nginx `/chat/` 托管，base `/chat/`） |
 | `chat-server`       | `chat-server/`       | Express 4 + socket.io + PostgreSQL（聊天/私信实时服务，`/chat-api`，独立 pm2/DB） |
-| `android`           | `android/`           | Kotlin 2.0 + Jetpack Compose (M3) + Retrofit            |
+| `android`           | `android/`           | Kotlin 2.4 + Jetpack Compose (M3) + Retrofit            |
 
 ### Data Flow
 

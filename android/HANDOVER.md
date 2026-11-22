@@ -70,6 +70,8 @@ ui/
   settings/SessionsScreen.kt + SessionsViewModel.kt  登录设备（列表 / 下线 / 本机退出）
   admin/AdminFilesScreen.kt + AdminFilesViewModel.kt 文件管理（浏览 / 上传 / 新建目录 / 删除，admin-file）
   admin/AdminPersonalScreen.kt + AdminPersonalViewModel.kt 个人中心（信息/技能/爱好/作品/评价/MCP 密钥，原生）
+  music/MusicScreen.kt + MusicViewModel.kt     音乐库原生播放器（歌单/歌词/进度/倍速）
+  legal/LegalScreen.kt                         隐私政策 / 服务条款（App 版本，原生）
   components/           ArticleCard/Avatar/Skeleton(骨架屏)/Loading/Error/Empty/BottomActionItem
                       SearchField（40dp 紧凑搜索胶囊，替代 M3 OutlinedTextField 56dp）/详情底部栏=细分割线+单行图标文字
   theme/                Material3 Light/Dark 双主题
@@ -222,19 +224,19 @@ ui/
 - **本地缓存**：聊天室历史（`chat_public.json`）+ 私信会话（`chat_private_{admin|u{id}}.json`）+ **私信用户列表**（`chat_users.json`，管理员收件箱秒显）存 ContentStore；进入消息页先秒显缓存，socket 连接在后台刷新（`ChatSocket.restoreMessages` + 写缓存节流 5s、断线强制落盘）。**首进不再全屏「连接中」**，仅顶部细横幅提示。
 - **notification toast 过滤**：服务端每次连接都会发 `notification:"认证成功，已连接到聊天服务器"`（server.ts:519），已在 `ChatSocket` 源头过滤（`startsWith("认证成功")` 不进入 notice），避免每次进消息页/重连都弹认证成功 toast；其余错误/操作类 notification 仍会保留提示。
 
-### 搜索（类型筛选，v1.6）
+### 搜索（类型筛选，2026-11）
 
 - 搜索框下方 `FilterChip`：全部 / 博客 / 随笔 / 项目 / 文档 → `/search?type=BLOG|ESSAY|PROJECT|DOC`（**服务端过滤**）。
 - 缓存键必须是「关键词 + 类型」（`MemoryCache.searchKey`）；只按关键词缓存会让「全部」的结果冒充「博客」。
 - 切换类型立即重搜（跳过 350ms 防抖，但走同一套取消/去重）；空结果文案按类型区分。
 
-### 文章详情（相关推荐，v1.6）
+### 文章详情（相关推荐，2026-11）
 
 - 正文与评论之后追加「相关推荐」3 条（紧凑行 + 56dp 缩略图），数据优先 `/blogs/random?excludeId=&size=3`，
   失败或为空回退 `/getRecommendBlogList`；排除当前文章、未发布、空标题，去重后取 3 条；空则整块隐藏。
 - 推荐不写磁盘缓存（每次随机才有意义）；快速切文章用 `relatedJob.cancel()` 防串页。
 - ⚠️ **跳转不要加 `launchSingleTop`**：Navigation 对「同 destination、不同参数」也会判为已在栈顶而不入栈，
-  表现为「点推荐毫无反应」（v1.6 实测）。直接 `navigate("article/$id")`。
+  表现为「点推荐毫无反应」（2026-11 实测）。直接 `navigate("article/$id")`。
 
 ### 我的 / 设置
 - 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（通知/收藏/热点聚合/项目/文库/音乐库/照片墙/留言板/友链/设置）**；关于信息已移入设置页。
@@ -488,14 +490,14 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     `refresh()`，退出登录 `clear()`；页面只 `collectAsState()` 读 keys，不要每页各拉一次 `/bookmarks/status`
     （会 N+1）。新增收藏入口时用 `BookmarkStore.id(TYPE, key)` 拼 key，别各写一份格式。
 
-39. **WebView 里 `vh`/`dvh` 恒为 0（v1.6 后台页白屏的根因，比坑 16 更彻底）**：
+39. **WebView 里 `vh`/`dvh` 恒为 0（后台页白屏的根因，比坑 16 更彻底，2026-11 实测）**：
     同一台机器实测 `window.innerHeight = 772`，但 `100vh`、`80vh`、`100dvh` 全部算成 **0**（只有 `100%` 正常）。
     后台个人中心外层是 `h-screen` + `overflow-hidden` → 高度 0、整页裁掉：DOM 与文字颜色都正常，
     Chrome 自己的截图也是空白，很容易误判成「登录态没注入」。同理头像弹窗 `max-h-[80vh]` 变 0，只剩标题和按钮。
     本项目页面不能改（约束只改 android/），解法在 `core/WebViewFixes.kt`：文档就绪后遍历**同源样式表**，
     把声明值里的 `vh/dvh/svh/lvh` 按 `innerHeight` 换算成 px 写回（记录原值，旋转/resize 重算），只对第一方 origin 生效。
     不要用「只覆盖 `.h-screen`」那种单类补丁——弹窗的 `max-h-[*]` 还是会坏。
-40. **React/Next 后台页走 WebView 的登录态与上传（v1.6 实测通过）**：
+40. **React/Next 后台页走 WebView 的登录态与上传（2026-11 实测通过）**：
     - 网页存 token/expire 用的是 `JSON.stringify(...)`（localStorage 里的值**本身带双引号**），读时 `JSON.parse`。
       注入脚本必须把值再 JSON 编码一层（`JSONObject.quote(JSONObject.quote(v))`），否则裸值让 UserContext 抛
       `Unexpected non-whitespace character after JSON at position 4` → 显示未登录/白屏。
@@ -506,7 +508,7 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
       否则点击「选择图片」毫无反应；`ActivityResultContracts.StartActivityForResult` + `FileChooserParams.parseResult`。
     - 局限：网页的 refresh 走 HttpOnly Cookie（App 没有），access 30 分钟后页面内请求会 401 并跳 `/login`；
       App 自己的 token 刷新不会自动重载已打开的 WebView，需要退出重进该页。
-41. **`launchSingleTop = true` 对「同 destination、不同参数」不会入栈（v1.6 实测）**：
+41. **`launchSingleTop = true` 对「同 destination、不同参数」不会入栈（2026-11 实测）**：
     相关推荐 `navigate("article/$id") { launchSingleTop = true }` 点了没反应（当前就在 `article/{blogId}`）。
     同 destination 的跳转不要加 `launchSingleTop`，否则参数换了也被当成「已在栈顶」。
 42. **友链申请（`POST /friendLinks/apply`）的两个约束**：免登录但 `@Idempotent`，`X-Request-Id` **失败重试必须复用、
@@ -556,17 +558,16 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
   新密码，md5 在仓库层，`flag && code==200` 才算成功，成功不自动登录）；设置页**登录设备**（`/auth/sessions`
   列表 + 下线二次确认 + 本机下线即本地退出）；文章详情底部**相关推荐**（random 优先、recommend 回退，3 条）；
   搜索**类型筛选**（服务端 `type=`，缓存键带类型）；设置页**隐私政策/服务条款**（原生页面）、我的页**音乐库**（原生播放器）；
-  后台**文件管理原生页**（admin-file 浏览/上传/新建目录/删除）；后台**个人中心 WebView**（登录态 + expire + userInfo.email
-  注入、系统文件选择器、`vh` 修正，见坑 39/40）。**未发版**：版本号保持 1.3.4 / 28，等用户明确指定版本号后才升。
+  后台**文件管理原生页**（admin-file 浏览/上传/新建目录/删除）。**未发版**：版本号保持 1.3.4 / 28，
+  等用户明确指定版本号后才升。
 - ✅ **音乐库与隐私/服务条款改原生（未发布）**：音乐库用系统 MediaPlayer 播放网易云歌单（浏览器 UA 绕过 CDN 403），
   隐私政策/服务条款改写为 App 版本的原生页面（不再依赖网页，内容随版本走）。
 - ✅ **个人中心改原生（未发布）**：后台「个人中心」从 WebView 换成原生页（信息/技能/爱好/作品/评价/MCP 密钥 6 板块）。
   信息板块改昵称/邮箱/头像（相册上传）并可改密码（服务端吊销全部会话，成功后本地退出）；四类条目共用一张表，
   支持增删改 + rank 排序；密钥支持创建/轮转（明文只弹一次、可复制）/启停/删除。顺带定位并修复
   `personal_info` 序列与 `max(id)` 不同步导致的新增 500（坑 43）。
-- ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）；个人中心若要求更好体验，可把「基本信息」
-  原生重写（技能/作品等仍在 WebView）。
-- 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
+- ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
+- 技术债：私信 AI（toAi）未做；首页分页仍是手写（客户端排序 + 多筛选源与 Paging 3 模型冲突，暂保留）。
 
 ## 10. 关键技术决策（本次重构后）
 

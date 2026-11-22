@@ -138,6 +138,11 @@ web/
 │   │   │   ├── hooks/              # 主页自定义 Hooks
 │   │   │   ├── links/              # 友链页面
 │   │   │   ├── messages/           # 留言板
+│   │   │   ├── music/              # 音乐库（歌单/歌词/倍速）
+│   │   │   ├── insight/            # 热点聚合（热点/模型榜单/对比）
+│   │   │   ├── search/             # 全局搜索结果页
+│   │   │   ├── notifications/      # 站内通知
+│   │   │   ├── bookmarks/          # 我的收藏
 │   │   │   ├── projects/           # 项目展示
 │   │   │   ├── privacy/            # 隐私政策
 │   │   │   ├── rss/                # RSS 订阅

@@ -19,17 +19,20 @@ hanphone-blog/
 │       └── constants/                   # 常量类测试
 │           └── ConstantsTest.java
 │
-└── web/                             # Next.js 前端
-    ├── src/
-    │   ├── test/
-    │   │   └── setup.ts                 # 测试环境配置
-    │   ├── lib/__tests__/
-    │   │   └── utils.test.ts            # 工具函数测试
-    │   └── components/__tests__/
-    │       └── Button.test.tsx          # 组件测试
-    │
-    └── e2e/                           # E2E 测试（暂未配置）
-
+├── web/                             # Next.js 前端
+│   ├── src/
+│   │   ├── test/setup.ts              # 测试环境配置
+│   │   └── **/__tests__/              # 组件 / 工具 / 页面测试（Vitest）
+│   └── e2e/                           # E2E 测试（暂未配置）
+│
+├── android/                         # Kotlin 客户端（JVM 单测）
+│   └── app/src/test/java/com/hanphone/blog/
+│       ├── BasicsTest.kt              # 版本比较 / 表单校验
+│       ├── DeepLinkTest.kt            # 深链解析
+│       ├── ParseApplyTextTest.kt       # 友链申请文本解析
+│       ├── AdminFilesJsonTest.kt       # 文件列表 JSON 解析
+│       └── LrcTest.kt                  # 歌词解析与当前行定位
+│
 └── admin-file/                       # 文件服务 (Express.js)
     └── server.js                     # 主服务（目前未配置独立测试套件）
 ```
@@ -113,7 +116,8 @@ pnpm --filter web test:coverage
 
 ### Android 测试
 
-纯逻辑（版本比较、表单校验等）用 JUnit 4 单元测试，位于 `android/app/src/test/`：
+纯逻辑（版本比较、表单校验、深链、友链文本解析、歌词解析等）用 JUnit 4 单元测试，
+位于 `android/app/src/test/`，目前 5 个类共 30 个用例：
 
 ```bash
 cd android

@@ -115,6 +115,7 @@ web/src/
 | `/links` | links/page.tsx | 友情链接 |
 | `/rss` | rss/page.tsx | RSS 订阅 |
 | `/messages` | messages/page.tsx | 留言板 |
+| `/music` | music/page.tsx | 音乐库（网易云歌单 / 歌词 / 倍速） |
 | `/projects` | projects/page.tsx | 项目展示 |
 | `/privacy` | privacy/page.tsx | 隐私政策 |
 | `/terms` | terms/page.tsx | 用户协议 |
@@ -245,6 +246,14 @@ web/src/
 - **收藏**：`BookmarkButton` 接入博客详情、随笔卡片、文库列表/详情；`/bookmarks/` 按类型分 Tab。
   登录后 `BookmarkContext` 一次拉全集，按钮只读 Context，避免每张卡片发 `status` 请求（N+1）。
 - **预渲染**：`/search` 用 `useSearchParams`，页面必须包 `Suspense`；三个页面均 `noIndex`。
+
+## 音乐库（app/(main)/music）
+
+- 数据：站点 BFF `/next-api/music`（`type=playlist|song|lrc|pic`，网易云歌单 `2093306814`），
+  服务端带加密 Cookie 换取播放地址，客户端只负责展示与播放。
+- 播放：原生 `HTMLAudioElement`；进度条/音量/循环模式/播放列表均在底部控制条。
+- 倍速：`0.5×–2.0×` 六档，写 `playbackRate` 与 `defaultPlaybackRate`（换源不被重置），
+  随 `music_player_state` 存 localStorage，刷新恢复。
 
 ## 聊天未读角标与浏览器通知 (contexts/ChatNotifyProvider.tsx)
 

@@ -50,7 +50,7 @@
 - **前端主站**: Next.js 15 + React 18 + TypeScript + Tailwind CSS
 - **照片墙**: Vue 3 + Vite + Element Plus + Pinia
 - **聊天前端**: React 18 + Vite + shadcn/ui（`apps/chat-client`，`/chat/` 托管）
-- **Android 客户端**: Kotlin 2.0 + Jetpack Compose (M3)（`android/`）
+- **Android 客户端**: Kotlin 2.4 + Jetpack Compose (M3)（`android/`）
 - **后端**: Spring Boot 3.2.12 + Java 17 + JPA + MyBatis Plus 3.5.9 + PostgreSQL + Redis（统一认证）
 - **文件服务**: Express.js 5 + Multer + JWT（独立文件存储服务）
 - **照片墙后端**: Express.js 5 + PostgreSQL（照片墙专属业务）
