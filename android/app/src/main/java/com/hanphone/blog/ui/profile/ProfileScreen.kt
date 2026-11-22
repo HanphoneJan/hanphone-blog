@@ -62,6 +62,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -82,7 +83,7 @@ import com.hanphone.blog.util.emailError
 import com.hanphone.blog.util.isValidEmail
 import com.hanphone.blog.util.passwordError
 
-/** 我的：身份区 + 账号相关入口（通知/收藏/友链/设置/管理）。
+/** 我的：身份区 + 站点统计 + 账号相关入口（通知/收藏/友链/设置/管理）。
  *  热点、项目、文库、音乐库、照片墙、留言板等内容型入口已迁到首页宫格，
  *  **不要在这里再放一份**（两处都有等于两处都找不到）。 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +97,8 @@ fun ProfileScreen(
     onOpenAdmin: () -> Unit
 ) {
     val vm: ProfileViewModel = hiltViewModel()
+    val stats = vm.stats
+    val visits = vm.visits
     val unreadNotifications by NotificationBadge.unread.collectAsState()
     val token by TokenStore.token.collectAsState()
     val userId by TokenStore.userId.collectAsState()
@@ -186,6 +189,28 @@ fun ProfileScreen(
             }
         }
 
+        // ===== 站点统计 =====
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    StatItem((stats?.blogCount ?: 0).toString(), "博客")
+                    StatItem((stats?.essayCount ?: 0).toString(), "随笔")
+                    StatItem((stats?.projectCount ?: 0).toString(), "项目")
+                    StatItem((stats?.messageCount ?: 0).toString(), "留言")
+                    StatItem((stats?.docCount ?: 0).toString(), "文档")
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("累计访问量", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text((visits ?: 0).toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
         // ===== 账号相关入口 =====
         // 只有「跟着账号走」的才留在这一页：通知、收藏、友链、设置。
         // 内容/工具型入口（热点/项目/文库/音乐库/照片墙/留言板）在首页宫格。
@@ -251,6 +276,14 @@ private fun MoreRow(icon: ImageVector, title: String, desc: String, onClick: () 
         Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 12.dp).weight(1f))
         Text(desc, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
         Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(start = 4.dp))
+    }
+}
+
+@Composable
+private fun StatItem(value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

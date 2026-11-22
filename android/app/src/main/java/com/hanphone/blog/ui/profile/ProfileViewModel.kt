@@ -7,7 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.auth.TokenStore
+import com.hanphone.blog.data.cache.ContentStore
+import com.hanphone.blog.data.cache.MemoryCache
 import com.hanphone.blog.data.cache.NotificationBadge
+import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.data.model.User
 import com.hanphone.blog.ui.components.PullRefreshHost
 import com.hanphone.blog.data.repo.BlogRepository
@@ -23,8 +26,7 @@ import javax.inject.Inject
 import com.hanphone.blog.util.md5Hex
 
 /**
- * 我的页：登录用户资料（展示/编辑）+ 站内通知未读数。
- * 站点统计与累计访问量已迁到首页（HomeViewModel），本页只保留账号相关内容。
+ * 我的页：站点统计 + 累计访问量（缓存秒显 + 下拉刷新）+ 登录用户资料（展示/编辑）+ 站内通知未读数。
  */
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -34,6 +36,10 @@ class ProfileViewModel @Inject constructor(
     private val notificationRepo: NotificationRepository
 ) : ViewModel(), PullRefreshHost {
 
+    var stats by mutableStateOf(MemoryCache.siteStats)
+        private set
+    var visits by mutableStateOf(MemoryCache.visitCount)
+        private set
     override var refreshing by mutableStateOf(false)
         private set
 
@@ -44,7 +50,14 @@ class ProfileViewModel @Inject constructor(
         private set
 
     init {
-        // 首次加载（登录态资料由 UI 的 LaunchedEffect 触发）
+        // 冷启动：先读磁盘缓存展示，再静默刷新
+        viewModelScope.launch {
+            val s = ContentStore.readSiteStats()
+            if (s != null && stats == null) stats = s
+            val v = ContentStore.readVisitCount()
+            if (v != null && visits == null) visits = v
+        }
+        // 首次加载统计数据
         refresh()
     }
 
@@ -69,6 +82,20 @@ class ProfileViewModel @Inject constructor(
             // 下拉刷新必须连用户资料一起重拉：头像/昵称是服务端数据，只刷统计会一直显示登录时的旧头像
             if (fromPull) fetchProfile(TokenStore.userId.value)
             fetchNotificationUnread()
+            runCatching { repo.siteStats() }.onSuccess {
+                if (it.flag && it.data != null) {
+                    stats = it.data
+                    MemoryCache.siteStats = it.data
+                    ContentStore.writeSiteStats(it.data)
+                }
+            }
+            runCatching { repo.visitCount() }.onSuccess {
+                if (it.flag && it.data != null) {
+                    visits = it.data
+                    MemoryCache.visitCount = it.data
+                    ContentStore.writeVisitCount(it.data)
+                }
+            }
             refreshing = false
         }
     }
