@@ -191,14 +191,17 @@ fun SettingsScreen(
             }
 
             // ===== 退出登录（仅登录后显示）=====
-            // 低强调的描边按钮：不跟设置项抢注意力，误触也有二次确认兜底。
+            // 低强调的中性描边按钮：退出登录不是危险操作（不删数据），不用红色警示；
+            // 误触仍有二次确认兜底。
             if (token != null) {
                 OutlinedButton(
                     onClick = { showLogoutConfirm = true },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Logout,
@@ -221,7 +224,6 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(
                     enabled = !vm.loggingOut,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     onClick = { vm.logout() }
                 ) { Text(if (vm.loggingOut) "退出中…" else "退出登录") }
             },
