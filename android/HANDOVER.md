@@ -538,46 +538,24 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 
 ## 8. 路线图
 
-- ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
-- ✅ 项目页 + 文库页（WebView 内开 HTML、fetch+loadDataWithBaseURL 渲染）、通用 WebView、文档/项目/文库/聊天(Chat 历史+私信+用户列表) 本地缓存、数据管理（分项清除 + Coil 图片缓存）、账号编辑（邮箱+验证码+管理员免验、密码 md5）、体验打磨（去认证成功 toast、@用户名防抖、随笔秒显、下拉圈圈门控）、版本 v1.0.0、App 图标与 PWA maskable 图标一致（ic_launcher_fg 复刻 WebAPK 52% 比例 + ic_blog 占位）。
-- ✅ 随笔图片缩略图（九宫格走 `displayUrl()`，详情页走 `originalUrl()`；21 张图 74.65 MB → 0.75 MB，100×）、修掉 `urlType != "video"` 大小写导致视频被当图片加载的 bug。详见 `docs/photo-wall-image-optimization.md`。
-- ✅ 第一方 WebView（照片墙）登录态打通：`core/AuthBridge.kt` 在文档开始时把 App 的 DataStore 登录态注入页面 localStorage（仅 `hanphone.cn` 白名单），登出时同步清理；`AuthData` 补 `username` 字段。
-- ✅ 热点聚合页（`ui/hot/`，对标 web `/insight`）：热点流 / 高密度模型榜单（Canvas 手绘近 30 天折线）/ 综合对比（底部弹层选择器：按榜单·按公司·搜索，结果优先布局 + 分享链接）；入口「我的 → 更多」，三层缓存 + 数据管理分项。对比选择器与 web 均已弃用写死的 featured，改由榜单实时构建。**v1.0.1** 发布：页面更名「热点」、榜单名次=排序位置、切换领域重置滚动、默认对比六家代表厂商、更新弹窗 Markdown 渲染。**v1.0.2**（`hanphone-1.0.2-android.apk`，versionCode 16）补充顶部**「名称归一」开关（默认开）**——关闭时厂商名与模型行变体/日期后缀按信源原始展示（`anthropic`、`Alibaba-ATH`、`z-ai`），实体合并不受影响；后端支持 `normalized` 参数（仅展示层）。后端榜单改用 AA 代码指数排序 + 模型名归一（变体后缀）+ LMArena 经服务器代理采集（见 server 文档）。**未做**雷达图与价格散点（App 无图表库，按规矩不擅自引入重依赖）。
-- ✅ **后台管理（v1.1）**：App 内管理中心（我的 → 管理，仅 `userType=1`）——站点概览（Vico 折线 + 标签/分类/访客区域分布）、访客明细（UV/PV + IP 归属地搜索排序分页 + 清理）、随笔增删改（图片压缩 + 批量上传 + 发布/推荐/删除）、博客 Markdown 编辑（richeditor 富文本 / 源码双模式，封面/分类/标签）、评论管理、标签/分类/友链/项目/文库维护、聚合数据（采集轮询 + 信源健康度 + 采集记录筛选分页 + AI 摘要配置 + 模型归一重建）、用户管理（编辑资料/管理员权限/重置密码/删除）。后端零改动；工具链随之升到 Kotlin 2.4.21 / AGP 9.5.1 / compileSdk 37（详见 §2 代码地图与 §3.7）。
-- ✅ **v1.3.0 启动时检查更新 + 用户管理**：冷启动自动查 GitHub Release（每进程一次、失败静默），设「启动时检查更新」开关默认开；更新弹窗上提到根界面（`ui/components/UpdateDialogs.kt`）并收紧正文高度（≤320dp / 屏高 45%，长说明仍可滚动）。管理中心「用户」从只读列表改为完整管理：资料（昵称/邮箱/头像，改邮箱二次确认）、管理员开关、重置密码（md5→bcrypt，成功后该用户全端下线）、删除；服务端 `updateUser` 顺带修掉「管理端保存把 passwordVersion 归零 / isOnline 写成 false」的隐患。
-- ✅ **v1.3.1 头像刷新修复**：「我的」下拉刷新原来只刷站点统计，不重拉用户资料，换了头像（或服务端把 Google 头像转存本站后）刷新也不会变；现在下拉会连 `/user/current` 一起重拉，并把服务端昵称/头像/类型同步回 `TokenStore` + DataStore，冷启动和其他页面不再用登录当时的旧头像（被墙的 googleusercontent 链接）。
-- ✅ **v1.2.0 应用内更新**：设置 → 检查更新 →「立即更新」在 App 内下载 APK（进度/取消，应用级协程），完成后经 `FileProvider` 调起系统安装器；首次引导授权「安装未知应用」，授权返回自动继续。不再跳浏览器。
-- ✅ **v1.3.0 启动时检查更新**：冷启动自动查 GitHub Release（每进程一次、失败静默），设「启动时检查更新」开关默认开、可在设置页关闭；更新弹窗上提到根界面（`ui/components/UpdateDialogs.kt`），手动/启动共用，下载不再随设置页销毁中断。
-- ✅ **第三方登录（GitHub / Google）**：登录页「GitHub 登录 / Google 登录」→ 系统浏览器授权 → `hanphone://oauth/callback`（只带一次性 code）→ `POST /oauth/app/exchange` → 与密码登录共用 `core/LoginSession.applyLogin`。服务端 `state=app` 分支 + `OAuthExchangeCodeStore`（32 字节、单次、2 分钟）。网页上 GitHub 注册的账号（`gh_<id>`，无密码）终于能在 App 里登录。Google 需服务端能出站（`GOOGLE_OAUTH_PROXY_*`，留空回退 `HOT_PROXY`）。
-- ✅ **v1.3.2 站内通知 + 收藏 + 深链（2026-11）**：「我的 → 通知」评论/回复通知（未读角标、全部已读）、「我的 → 收藏」博客/随笔/文档（`BookmarkStore` 进程级状态 + 乐观更新）、详情/随笔/文库收藏按钮；`https://hanphone.cn/{blog,essays,docs}` App Links（`DeepLinkBus` + 纯函数解析 + 单测）。收藏文档本轮点击回文库列表。小版本发布，versionCode 26 / versionName 1.3.2；Release 包用 debug 密钥签名，可直接覆盖 1.3.1。
-- ✅ **v1.3.3「我的」页身份区重做（2026-11）**：登录后头像/昵称只出现一次（原来顶部大头像 + 「已登录」卡片各画一遍，且卡片读 TokenStore、头部读服务端资料，可能同时显示新旧昵称）；头像右下铅笔角标替代「点击头像可修改资料」，编辑/退出收进头像下方动作行；未登录态改为品牌头图 + 实心「登录」按钮，去掉「未登录」卡片。versionCode 27 / versionName 1.3.3。
-- ✅ **v1.3.4 退出登录收进设置页（2026-11）**：「我的」页头部删掉动作行（「编辑资料」按钮与点头像重复），只留头像 + 铅笔角标（补读屏语义）；退出登录移到设置页底部（低强调的描边按钮 + 退出图标），点击后二次确认，确认后吊销会话 → 清 DataStore/内存/照片墙 WebView 登录态 → 返回「我的」未登录态。versionCode 28 / versionName 1.3.4。
-- ✅ **补齐网页有、App 缺的功能（未发布，版本号仍为 1.3.4）**：
-  前台**申请友链**（表单/文本粘贴、幂等请求、入口在友链页顶栏）；后台友链**申请原文**展示 + 解析文本填表/直接保存
-  （移植 web `parseApplyText`，JSON/YAML/中文键值对，纯函数 + 8 个 JVM 单测）；登录页**忘记密码**（邮箱验证码 60s +
-  新密码，md5 在仓库层，`flag && code==200` 才算成功，成功不自动登录）；设置页**登录设备**（`/auth/sessions`
-  列表 + 下线二次确认 + 本机下线即本地退出）；文章详情底部**相关推荐**（random 优先、recommend 回退，3 条）；
-  搜索**类型筛选**（服务端 `type=`，缓存键带类型）；设置页**隐私政策/服务条款**（原生页面）、我的页**音乐库**（原生播放器）；
-  后台**文件管理原生页**（admin-file 浏览/上传/新建目录/删除）。**未发版**：版本号保持 1.3.4 / 28，
-  等用户明确指定版本号后才升。
-- ✅ **音乐库与隐私/服务条款改原生（未发布）**：音乐库用系统 MediaPlayer 播放网易云歌单（浏览器 UA 绕过 CDN 403），
-  隐私政策/服务条款改写为 App 版本的原生页面（不再依赖网页，内容随版本走）。
-- ✅ **个人中心改原生（未发布）**：后台「个人中心」从 WebView 换成原生页（信息/技能/爱好/作品/评价/MCP 密钥 6 板块）。
-  信息板块改昵称/邮箱/头像（相册上传）并可改密码（服务端吊销全部会话，成功后本地退出）；四类条目共用一张表，
-  支持增删改 + rank 排序；密钥支持创建/轮转（明文只弹一次、可复制）/启停/删除。顺带定位并修复
-  `personal_info` 序列与 `max(id)` 不同步导致的新增 500（坑 43）。
-- ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）。
-- 技术债：私信 AI（toAi）未做；首页分页仍是手写（客户端排序 + 多筛选源与 Paging 3 模型冲突，暂保留）。
+- ✅ **已发布（v1.0 – v1.3.4）**：4 Tab 信息架构、登录(md5)/注册/第三方登录/长期登录、点赞评论、
+  随笔朋友圈+回复、搜索、归档并入首页、消息 Hub、留言板、友链、设置、双主题+自定义背景、骨架屏、
+  三层缓存、Paging 3、项目/文库/热点、站内通知/收藏/深链、应用内更新、启动检查更新、用户管理、
+  头像刷新、退出登录收进设置页。
+- ✅ **已完成、未发版（版本号仍 1.3.4 / 28）**：申请友链、后台友链原文解析、忘记密码、登录设备、
+  相关推荐、搜索类型筛选；隐私政策/服务条款、音乐库（原生播放器、进度气泡、倍速）改原生；
+  后台文件管理与个人中心改原生；操作栏按钮去重。
+- ⏭ 待办：S5 release 签名 + R8（需补 Moshi 反射 proguard）；私信 AI（toAi）；首页分页改 Paging 3。
 
 ## 10. 关键技术决策（本次重构后）
 
 1. **DI**：Hilt（@HiltAndroidApp/@AndroidEntryPoint/@HiltViewModel）；详情页 id 走 `SavedStateHandle["blogId"/"essayId"]`，不再手写 factory/key。
 2. **JSON**：Moshi + KotlinJsonAdapterFactory（非空字段缺失直接抛错，替代 Gson 的静默塞 null）；Date 兼容适配器在 `ApiClient.BlogDateAdapter`（毫秒数字/ISO/普通日期）；模型注解用 `@Json(name=...)`（原 Gson @SerializedName 已迁移）。
 3. **分页**：随笔列表用 Paging 3（`EssayPagingSource`，key=1 起始页码，`paging-compose` 的 collectAsLazyPagingItems + itemKey + loadState 驱动骨架/页脚/重试）。**冷启动缓存**：第一页成功即写 `MemoryCache.essayMoments` + `ContentStore.writeEssayFirstPage`，进入列表页时 Paging 首屏未到前先用缓存秒显（`EssayListViewModel.coldFeed`），数据到达后键一致无缝替换——不再进场闪骨架屏。
-3a. **缓存层扩展（加载体验专项）**：ContentStore 新增 types/tags/archive、essay_comments_{id}、article_{id}(+_comments)、essay_{id}、doc_{hash}(文库 MD/HTML 原文 24h TTL)、enrich_attempts(友链补全节流)，均并入数据管理分项清除；MemoryCache 新增 homeTypes/homeTags/archiveBlogs + 搜索结果缓存(5min/同词去重)。消息页私信历史与管理员用户列表状态迁入 ChatSocket 单例（REST 私信 30s/用户列表 60s 节流，Tab 切换/进出会话不再重建丢态、不重复拉）。首页 selectedYear 入 VM、loadLatest generation 防筛选竞态；搜索输入即搜+350ms 防抖（对齐 web）；留言板发送后本地回显 addMessageLocal（对齐 web ADD_MESSAGE）；文章/随笔详情正文+评论与文库原文落盘冷启动秒显。
-4. **Markdown**：mikepenz/multiplatform-markdown-renderer 0.31.0（m3 + coil2 + **code 高亮模块**）。`Markdown.kt` 只是薄封装：预处理（HTML 实体解码 + 相对 URL 绝对化）→ `Markdown(...)`。代码高亮 = `markdownComponents(codeFence/codeBlock → MarkdownHighlightedCodeFence/Block)`，Atom 主题随深浅色（`surface.luminance()` 判断）；表格列宽 `markdownDimens(tableCellWidth = 220.dp)` 让宽表自动进入横向滚动（库内建，列少时会 fillMaxWidth 不滚）。typography 必须覆盖：库默认 h1=displayLarge(57sp) 巨大，已按 web blog.css 收敛为 26/22/19/17sp。
-5. **文章详情导航**：正文按块级切分渲染（`splitMarkdownBlocks`），标题块 itemIndex 即锚点；TOC 入口 = 详情页右下角 SmallFloatingActionButton → ModalBottomSheet 列表 → `animateScrollToItem(blockIndex + 1)`（+1 跳过头部 item）。顶部 LinearProgressIndicator 显示阅读进度（firstVisibleItemIndex 占比）。
-4. **部署 hanphone-chat**：本机 `ssh blog` 免密（公钥已装）；源码在仓库 **`chat-server/`**（原 `~/server_chat/src`），pm2 进程名 `hanphone-chat-server`（跑 dist，改完需 `pnpm --filter chat-server build` 再 `pm2 restart hanphone-chat-server`）。协议变更先看仓库 **`docs/chat/android-protocol.md`**。
+4. **缓存层扩展（加载体验专项）**：ContentStore 新增 types/tags/archive、essay_comments_{id}、article_{id}(+_comments)、essay_{id}、doc_{hash}(文库 MD/HTML 原文 24h TTL)、enrich_attempts(友链补全节流)，均并入数据管理分项清除；MemoryCache 新增 homeTypes/homeTags/archiveBlogs + 搜索结果缓存(5min/同词去重)。消息页私信历史与管理员用户列表状态迁入 ChatSocket 单例（REST 私信 30s/用户列表 60s 节流，Tab 切换/进出会话不再重建丢态、不重复拉）。首页 selectedYear 入 VM、loadLatest generation 防筛选竞态；搜索输入即搜+350ms 防抖（对齐 web）；留言板发送后本地回显 addMessageLocal（对齐 web ADD_MESSAGE）；文章/随笔详情正文+评论与文库原文落盘冷启动秒显。
+5. **Markdown**：mikepenz/multiplatform-markdown-renderer 0.31.0（m3 + coil2 + **code 高亮模块**）。`Markdown.kt` 只是薄封装：预处理（HTML 实体解码 + 相对 URL 绝对化）→ `Markdown(...)`。代码高亮 = `markdownComponents(codeFence/codeBlock → MarkdownHighlightedCodeFence/Block)`，Atom 主题随深浅色（`surface.luminance()` 判断）；表格列宽 `markdownDimens(tableCellWidth = 220.dp)` 让宽表自动进入横向滚动（库内建，列少时会 fillMaxWidth 不滚）。typography 必须覆盖：库默认 h1=displayLarge(57sp) 巨大，已按 web blog.css 收敛为 26/22/19/17sp。
+6. **文章详情导航**：正文按块级切分渲染（`splitMarkdownBlocks`），标题块 itemIndex 即锚点；TOC 入口 = 详情页右下角 SmallFloatingActionButton → ModalBottomSheet 列表 → `animateScrollToItem(blockIndex + 1)`（+1 跳过头部 item）。顶部 LinearProgressIndicator 显示阅读进度（firstVisibleItemIndex 占比）。
+7. **部署 hanphone-chat**：本机 `ssh blog` 免密（公钥已装）；源码在仓库 **`chat-server/`**（原 `~/server_chat/src`），pm2 进程名 `hanphone-chat-server`（跑 dist，改完需 `pnpm --filter chat-server build` 再 `pm2 restart hanphone-chat-server`）。协议变更先看仓库 **`docs/chat/android-protocol.md`**。
 
 ## 9. 给新 AI 的规矩（Rulebook）
 
