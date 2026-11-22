@@ -70,13 +70,7 @@ class HomeViewModel @Inject constructor(
     var archiveError by mutableStateOf<String?>(null)
         private set
 
-    // ===== 首页顶部「站点名片」与「最近随笔」=====
-    // 统计从「我的」迁到首页：同一份数据（MemoryCache + ContentStore），冷启动先显缓存再刷新。
-    var stats by mutableStateOf(MemoryCache.siteStats)
-        private set
-    var visits by mutableStateOf(MemoryCache.visitCount)
-        private set
-
+    // ===== 首页「最近随笔」=====
     /** 首页「最近随笔」预览：为空或请求失败时整块隐藏，不占用首页、不报错 */
     var recentEssays by mutableStateOf<List<Essay>>(emptyList())
         private set
@@ -123,14 +117,7 @@ class HomeViewModel @Inject constructor(
         }
         // 首次加载文章列表
         viewModelScope.launch { loadLatest(reset = true) }
-        // 站点统计 / 最近随笔：独立协程，不阻塞文章列表首屏；失败静默
-        viewModelScope.launch {
-            val s = ContentStore.readSiteStats()
-            if (s != null && stats == null) stats = s
-            val v = ContentStore.readVisitCount()
-            if (v != null && visits == null) visits = v
-        }
-        viewModelScope.launch { fetchStats() }
+        // 最近随笔：独立协程，不阻塞文章列表首屏；失败静默
         viewModelScope.launch { fetchRecentEssays() }
     }
 
@@ -174,8 +161,7 @@ class HomeViewModel @Inject constructor(
     fun refresh(fromPull: Boolean = false) {
         viewModelScope.launch {
             if (mode == "archive") loadArchive(fromPull) else loadLatest(reset = true, fromPull = fromPull)
-            // 顺手刷新名片统计与最近随笔（下拉用于「看看有没有新东西」）
-            fetchStats()
+            // 顺手刷新「最近随笔」（下拉用于「看看有没有新东西」）
             fetchRecentEssays()
         }
     }
@@ -232,24 +218,6 @@ class HomeViewModel @Inject constructor(
         }
         archiveLoading = false
         isRefreshing = false
-    }
-
-    /** 站点统计 + 累计访问量（首页名片；失败保留旧值，不弹错） */
-    private suspend fun fetchStats() {
-        runCatching { repo.siteStats() }.onSuccess {
-            if (it.flag && it.data != null) {
-                stats = it.data
-                MemoryCache.siteStats = it.data
-                ContentStore.writeSiteStats(it.data)
-            }
-        }
-        runCatching { repo.visitCount() }.onSuccess {
-            if (it.flag && it.data != null) {
-                visits = it.data
-                MemoryCache.visitCount = it.data
-                ContentStore.writeVisitCount(it.data)
-            }
-        }
     }
 
     /**

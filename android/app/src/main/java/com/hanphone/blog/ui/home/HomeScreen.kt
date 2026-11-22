@@ -223,11 +223,8 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 // 首页顶部区块只在「未筛选的最新视图」出现：
-                                // 筛选结果应直接给出结果，不被名片/宫格/随笔顶掉首屏。
+                                // 筛选结果应直接给出结果，不被宫格/随笔顶掉首屏。
                                 if (!hasFilter) {
-                                    item(key = "home-welcome") {
-                                        HomeWelcome(vm.stats, vm.visits)
-                                    }
                                     item(key = "home-entries") {
                                         HomeEntryGrid(
                                             onOpen = { entry ->

@@ -1,6 +1,5 @@
 package com.hanphone.blog.ui.home
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,16 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.hanphone.blog.R
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.model.Essay
-import com.hanphone.blog.data.model.SiteStats
 import com.hanphone.blog.ui.components.SectionTitle
 import com.hanphone.blog.util.formatDate
 import com.hanphone.blog.util.resolveImageUrl
@@ -57,8 +52,7 @@ import com.hanphone.blog.util.resolveImageUrl
 /**
  * 首页 = 站点入口页。
  *
- * 结构：站点名片（身份 + 统计）→ 功能宫格（热点/项目/文库/音乐库/照片墙/留言板）
- * → 最近随笔横向预览 → 最新文章列表。
+ * 结构：功能宫格（热点/项目/文库/音乐库/照片墙/留言板）→ 最近随笔横向预览 → 最新文章列表。
  *
  * 这些内容型入口原先堆在「我的」页，导致账号页变成功能总目录——现已迁到首页，
  * **不要在「我的」再放一份**（两处都有等于两处都找不到）。
@@ -72,59 +66,6 @@ enum class HomeEntry(val label: String, val icon: ImageVector) {
     MUSIC("音乐库", Icons.Filled.LibraryMusic),
     PHOTO("照片墙", Icons.Filled.PhotoLibrary),
     MESSAGE("留言板", Icons.Filled.Email)
-}
-
-/** 站点名片：站点头像（网站 PWA 图标）+ 名称 + 一句简介 + 博客/随笔/文档/访问统计 */
-@Composable
-fun HomeWelcome(stats: SiteStats?, visits: Long?, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(R.drawable.ic_blog),
-                contentDescription = "云林有风",
-                modifier = Modifier.size(48.dp).clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-            Column(
-                Modifier.padding(start = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    "云林有风",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    "Hanphone 的个人博客 · 记录与分享",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-        // 统计未到（首次冷启动且无缓存）时整行不占位，避免闪一串 0
-        if (stats != null || visits != null) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                MiniStat((stats?.blogCount ?: 0).toString(), "博客")
-                MiniStat((stats?.essayCount ?: 0).toString(), "随笔")
-                MiniStat((stats?.docCount ?: 0).toString(), "文档")
-                MiniStat((visits ?: 0).toString(), "访问")
-            }
-        }
-    }
-}
-
-@Composable
-private fun MiniStat(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
 }
 
 /** 功能宫格：3 列 2 行（图标 + 4 字以内标签），点击进入对应页面 */
