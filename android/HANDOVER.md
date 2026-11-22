@@ -69,6 +69,7 @@ ui/
   login/ForgotPasswordScreen.kt                 忘记密码（邮箱验证码 + 新密码）
   settings/SessionsScreen.kt + SessionsViewModel.kt  登录设备（列表 / 下线 / 本机退出）
   admin/AdminFilesScreen.kt + AdminFilesViewModel.kt 文件管理（浏览 / 上传 / 新建目录 / 删除，admin-file）
+  admin/AdminPersonalScreen.kt + AdminPersonalViewModel.kt 个人中心（信息/技能/爱好/作品/评价/MCP 密钥，原生）
   components/           ArticleCard/Avatar/Skeleton(骨架屏)/Loading/Error/Empty/BottomActionItem
                       SearchField（40dp 紧凑搜索胶囊，替代 M3 OutlinedTextField 56dp）/详情底部栏=细分割线+单行图标文字
   theme/                Material3 Light/Dark 双主题
@@ -153,7 +154,7 @@ ui/
 | 用户 | `/admin/users` · `/admin/user` · `/admin/user/resetPassword` | **完整管理**：改资料（昵称/邮箱/头像）、设/取消管理员、重置密码、删除；id=1 与自己不可降级/删除（对齐网页后台） |
 | 聚合数据 | `/admin/hot/{status,collect,sources,runs/page,models/rebuild-normalization,settings/summary}` | 对标网页 `/admin/insight`：采集状态 + 信源健康度、采集记录（方式/结果/近 7·30 天/关键词 + 分页）、AI 摘要（启用/保存/测试）、模型归一重建（预演/执行）；采集为异步任务，触发后每 3 秒轮询直到结束 |
 | 文件管理 | admin-file `GET /files`、`POST /directory`、`POST /upload/batch`、`DELETE /delete`（base `hanphone.top`，手带 Token） | **原生**（不用 WebView）：根命名空间列表 → 逐级浏览、面包屑、系统返回逐级回退；上传走系统文件选择器（原片不压缩）、新建文件夹、删除（目录 recursive + 二次确认）；文件预览复用通用 WebView（文本类自动 `html=1` 规避 attachment 白屏） |
-| 个人中心 | WebView `https://hanphone.cn/admin/personal/` | 多 Tab 复杂页（技能/爱好/作品/评价/MCP 密钥）原生重写成本过高，走 **WebView + 登录态注入**；依赖 §7 坑 39/40（expire 注入、userInfo.email、vh 修正、文件选择器），缺一不可 |
+| 个人中心 | `/admin/personInfos`、`/admin/personInfo`、`DELETE /admin/personInfo/{id}`、`/admin/mcp-keys`（列表/创建/删除/启停/轮转）、`/admin/user`、`/admin/setAvatar` | **原生**（从 WebView 改回）：信息（昵称/邮箱/头像/改密）+ 技能/爱好/作品/评价（同一张 `personal_info` 表按 category 分）+ MCP 密钥（创建/轮转后明文只弹一次，可复制）。原先的 WebView 版与坑 39/40 仅作为「以后要再嵌后台页」的备查 |
 
 附件上传（随笔/封面/文库）：`AdminFileApi`（base `https://hanphone.top/`，**手动带 Token**）→
 `POST /upload` 或 `/upload/batch`，`namespace=blog/essay/{标题}` / `blog/blogs` / `blog/docs`。
@@ -506,6 +507,21 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     成功后才换新**；文本粘贴模式（`applyText` 非空）时服务端不校验 name/url，App 也不该强制。后台解析原文时
     `applyText` 要随编辑一起回传，否则改一次资料就把申请原文弄丢。
 
+43. **`personal_info` 的自增序列与 Hibernate 缓存（2026-11 真机 + 生产日志定位）**：
+    后台个人中心「新增」一直 500，日志是 `duplicate key value violates unique constraint "personal_info_pkey"`，
+    Detail 里的 id 是 5、6 这种小数字。原因有两层：
+    - 表被手工导入/迁移过，`max(id)=57`，但自增序列还在 11；
+    - Hibernate 6 对 `@GeneratedValue` 用**池化序列**（一次 `nextval` 预留一批 id 放内存），
+      所以只 `setval` 数据库不会立刻生效——应用内存里那批 1..50 仍会继续发，直到耗尽才重新取。
+      该服务以 root 运行、我们无权重启时，可以连续调用新增接口把缓存批次消耗掉（失败请求也消耗 id），
+      越过现存 max(id) 后即成功；随后再 `setval` 到 `max(id)` 保证重启后仍正确。
+    - 修复语句：`select setval('personal_info_id_seq', (select max(id) from personal_info));`
+      （identity 列用的是 `personal_info_id_seq`；另有一个同名 `personal_info_seq`，别只改它）。
+    以后遇到「某个新增接口突然 500、其他增删改都正常」，先查该表序列与 `max(id)`。
+44. **`PersonInfo` 的 name/rank 在库里可为 null**：模型写成非空 `String`/`Long` 会让 Moshi 在
+    `KotlinJsonAdapterFactory` 下抛 `JsonDataException`，整个列表变空（坑 35 的又一例）。
+    已按可空建模，UI 用 `orEmpty()` / `?: 0` 兜底。
+
 ## 8. 路线图
 
 - ✅ 已完成：信息架构(4Tab)、登录(md5)/注册、点赞评论、随笔朋友圈+评论回复、搜索、归档并首页、筛选面板（覆盖式/遮罩/非卡片）、消息 Hub（聊天室/私信+管理员分流）、留言板、友链、设置页、双主题、自定义背景+模糊、头像上传、网站图标、骨架屏、三层缓存、心跳修复、ViewModel+Hilt、Moshi、随笔 Paging 3 + 冷启动缓存、私信本地通知。
@@ -522,14 +538,18 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
 - ✅ **v1.3.2 站内通知 + 收藏 + 深链（2026-11）**：「我的 → 通知」评论/回复通知（未读角标、全部已读）、「我的 → 收藏」博客/随笔/文档（`BookmarkStore` 进程级状态 + 乐观更新）、详情/随笔/文库收藏按钮；`https://hanphone.cn/{blog,essays,docs}` App Links（`DeepLinkBus` + 纯函数解析 + 单测）。收藏文档本轮点击回文库列表。小版本发布，versionCode 26 / versionName 1.3.2；Release 包用 debug 密钥签名，可直接覆盖 1.3.1。
 - ✅ **v1.3.3「我的」页身份区重做（2026-11）**：登录后头像/昵称只出现一次（原来顶部大头像 + 「已登录」卡片各画一遍，且卡片读 TokenStore、头部读服务端资料，可能同时显示新旧昵称）；头像右下铅笔角标替代「点击头像可修改资料」，编辑/退出收进头像下方动作行；未登录态改为品牌头图 + 实心「登录」按钮，去掉「未登录」卡片。versionCode 27 / versionName 1.3.3。
 - ✅ **v1.3.4 退出登录收进设置页（2026-11）**：「我的」页头部删掉动作行（「编辑资料」按钮与点头像重复），只留头像 + 铅笔角标（补读屏语义）；退出登录移到设置页底部（低强调的描边按钮 + 退出图标），点击后二次确认，确认后吊销会话 → 清 DataStore/内存/照片墙 WebView 登录态 → 返回「我的」未登录态。versionCode 28 / versionName 1.3.4。
-- ✅ **v1.6.0（2026-11，versionCode 31）补齐网页有、App 缺的功能**：
+- ✅ **补齐网页有、App 缺的功能（未发布，版本号仍为 1.3.4）**：
   前台**申请友链**（表单/文本粘贴、幂等请求、入口在友链页顶栏）；后台友链**申请原文**展示 + 解析文本填表/直接保存
   （移植 web `parseApplyText`，JSON/YAML/中文键值对，纯函数 + 8 个 JVM 单测）；登录页**忘记密码**（邮箱验证码 60s +
   新密码，md5 在仓库层，`flag && code==200` 才算成功，成功不自动登录）；设置页**登录设备**（`/auth/sessions`
   列表 + 下线二次确认 + 本机下线即本地退出）；文章详情底部**相关推荐**（random 优先、recommend 回退，3 条）；
   搜索**类型筛选**（服务端 `type=`，缓存键带类型）；设置页**隐私政策/服务条款/关于本站**、我的页**音乐库**（App 内 WebView）；
   后台**文件管理原生页**（admin-file 浏览/上传/新建目录/删除）；后台**个人中心 WebView**（登录态 + expire + userInfo.email
-  注入、系统文件选择器、`vh` 修正，见坑 39/40）。版本号跳过 1.4/1.5 直接发 1.6.0（三批功能一次发布）。
+  注入、系统文件选择器、`vh` 修正，见坑 39/40）。**未发版**：版本号保持 1.3.4 / 28，等用户明确指定版本号后才升。
+- ✅ **个人中心改原生（未发布）**：后台「个人中心」从 WebView 换成原生页（信息/技能/爱好/作品/评价/MCP 密钥 6 板块）。
+  信息板块改昵称/邮箱/头像（相册上传）并可改密码（服务端吊销全部会话，成功后本地退出）；四类条目共用一张表，
+  支持增删改 + rank 排序；密钥支持创建/轮转（明文只弹一次、可复制）/启停/删除。顺带定位并修复
+  `personal_info` 序列与 `max(id)` 不同步导致的新增 500（坑 43）。
 - ⏭ 下一步候选：S5 release 签名 + R8（启用混淆需补 Moshi 反射 proguard 规则）；个人中心若要求更好体验，可把「基本信息」
   原生重写（技能/作品等仍在 WebView）。
 - 技术债：Markdown 渲染器可换成熟库；私信 AI（toAi）未做；首页分页仍是手写（客户端排序+多筛选源与 Paging 3 模型冲突，暂保留）。
