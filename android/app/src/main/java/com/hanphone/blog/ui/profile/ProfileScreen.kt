@@ -23,15 +23,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -66,7 +60,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -89,26 +82,20 @@ import com.hanphone.blog.util.emailError
 import com.hanphone.blog.util.isValidEmail
 import com.hanphone.blog.util.passwordError
 
-/** 我的：概览页（登录态/统计）+ 更多入口（项目/文库/音乐库/照片墙/留言板/友链/设置）；关于信息已移入设置页 */
+/** 我的：身份区 + 账号相关入口（通知/收藏/友链/设置/管理）。
+ *  热点、项目、文库、音乐库、照片墙、留言板等内容型入口已迁到首页宫格，
+ *  **不要在这里再放一份**（两处都有等于两处都找不到）。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onLogin: () -> Unit,
-    onOpenMessage: () -> Unit,
     onOpenFriendLinks: () -> Unit,
-    onOpenProjects: () -> Unit,
-    onOpenDocs: () -> Unit,
-    onOpenMusic: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenInsight: () -> Unit,
     onOpenNotifications: () -> Unit,
     onOpenBookmarks: () -> Unit,
-    onOpenPhotoWall: () -> Unit,
     onOpenAdmin: () -> Unit
 ) {
     val vm: ProfileViewModel = hiltViewModel()
-    val stats = vm.stats
-    val visits = vm.visits
     val unreadNotifications by NotificationBadge.unread.collectAsState()
     val token by TokenStore.token.collectAsState()
     val userId by TokenStore.userId.collectAsState()
@@ -199,42 +186,9 @@ fun ProfileScreen(
             }
         }
 
-        // ===== 站点统计 =====
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    StatItem((stats?.blogCount ?: 0).toString(), "博客")
-                    StatItem((stats?.essayCount ?: 0).toString(), "随笔")
-                    StatItem((stats?.projectCount ?: 0).toString(), "项目")
-                    StatItem((stats?.messageCount ?: 0).toString(), "留言")
-                    StatItem((stats?.docCount ?: 0).toString(), "文档")
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("累计访问量", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text((visits ?: 0).toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-
-        // ===== 管理入口（仅管理员）=====
-        if (userType == "1") {
-            SectionTitle("管理")
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                MoreRow(Icons.Filled.AdminPanelSettings, "管理中心", "随笔 · 博客 · 评论 · 站点概览", onOpenAdmin)
-            }
-        }
-
-        // ===== 更多功能入口 =====
-        SectionTitle("更多")
+        // ===== 账号相关入口 =====
+        // 只有「跟着账号走」的才留在这一页：通知、收藏、友链、设置。
+        // 内容/工具型入口（热点/项目/文库/音乐库/照片墙/留言板）在首页宫格。
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -250,21 +204,21 @@ fun ProfileScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Bookmark, "我的收藏", "博客 · 随笔 · 文档", onOpenBookmarks)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                MoreRow(Icons.Filled.LocalFireDepartment, "热点", "AI 热点 · 模型榜单", onOpenInsight)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                MoreRow(Icons.Filled.Build, "项目", "完整项目 · 工具箱 · 小游戏", onOpenProjects)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                MoreRow(Icons.Filled.List, "文库", "文件 · 教程 · 参考资料", onOpenDocs)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                MoreRow(Icons.Filled.LibraryMusic, "音乐库", "歌单 · 在线收听", onOpenMusic)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                MoreRow(Icons.Filled.PhotoLibrary, "照片墙", "云林有风的影像记录", onOpenPhotoWall)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                MoreRow(Icons.Filled.Email, "留言板", "给博主留言", onOpenMessage)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Share, "友链", "小伙伴的博客", onOpenFriendLinks)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Settings, "设置", "账号 · 外观 · 缓存 · 更新", onOpenSettings)
+            }
+        }
+
+        // ===== 管理入口（仅管理员）=====
+        if (userType == "1") {
+            SectionTitle("管理")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                MoreRow(Icons.Filled.AdminPanelSettings, "管理中心", "随笔 · 博客 · 评论 · 站点概览", onOpenAdmin)
             }
         }
         } // Column
@@ -297,14 +251,6 @@ private fun MoreRow(icon: ImageVector, title: String, desc: String, onClick: () 
         Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 12.dp).weight(1f))
         Text(desc, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
         Icon(Icons.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(start = 4.dp))
-    }
-}
-
-@Composable
-private fun StatItem(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

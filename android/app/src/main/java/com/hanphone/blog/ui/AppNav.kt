@@ -253,7 +253,25 @@ internal fun MainScaffold() {
             composable(MainTab.HOME.route) {
                 HomeScreen(
                     onOpenBlog = { id -> navController.navigate("article/$id") },
-                    onSearch = { navController.navigate("search") }
+                    onSearch = { navController.navigate("search") },
+                    onOpenEssay = { id -> navController.navigate("essay/$id") },
+                    onOpenEssayTab = {
+                        navController.navigate(MainTab.ESSAY.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onOpenInsight = { navController.navigate("insight") },
+                    onOpenProjects = { navController.navigate("projects") },
+                    onOpenDocs = { navController.navigate("docs") },
+                    onOpenMusic = { navController.navigate("music") },
+                    onOpenPhotoWall = {
+                        navController.navigate(
+                            "webview?url=${Uri.encode("https://hanphone.cn/atlas/")}&title=${Uri.encode("照片墙")}"
+                        )
+                    },
+                    onOpenMessage = { navController.navigate("messages") }
                 )
             }
             composable(MainTab.ESSAY.route) {
@@ -268,20 +286,10 @@ internal fun MainScaffold() {
             composable(MainTab.PROFILE.route) {
                 ProfileScreen(
                     onLogin = { navController.navigate("login") },
-                    onOpenMessage = { navController.navigate("messages") },
                     onOpenFriendLinks = { navController.navigate("friendlinks") },
-                    onOpenProjects = { navController.navigate("projects") },
-                    onOpenDocs = { navController.navigate("docs") },
-                    onOpenMusic = { navController.navigate("music") },
                     onOpenSettings = { navController.navigate("settings") },
-                    onOpenInsight = { navController.navigate("insight") },
                     onOpenNotifications = { navController.navigate("notifications") },
                     onOpenBookmarks = { navController.navigate("bookmarks") },
-                    onOpenPhotoWall = {
-                        navController.navigate(
-                            "webview?url=${Uri.encode("https://hanphone.cn/atlas/")}&title=${Uri.encode("照片墙")}"
-                        )
-                    },
                     onOpenAdmin = { navController.navigate("admin") }
                 )
             }

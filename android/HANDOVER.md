@@ -175,7 +175,7 @@ ui/
 
 - 接口：`GET /notifications?page=&size=`（page 1 起始，`data={items,page,size,total,unread}`）、
   `GET /notifications/unread-count`、`POST /notifications/{id}/read`、`POST /notifications/read-all`。
-- 入口：「我的 → 更多 → 通知」，副标题显示未读数；未读数存 `NotificationBadge`，不并入底部「消息」红点。
+- 入口：「我的 → 通知」，副标题显示未读数；未读数存 `NotificationBadge`，不并入底部「消息」红点。
 - 页面：`ui/notification/NotificationsScreen.kt` + `NotificationsViewModel.kt`；点条目标记已读后按
   `targetType` 打开 `article/{id}` / `essay/{id}`；「全部已读」在顶部。
 - 通知由服务端在评论/回复成功后写入；客户端不做本地推送、不做轮询。
@@ -185,7 +185,7 @@ ui/
 - 接口：`GET /bookmarks?type=`、`GET /bookmarks/status`、`POST /bookmarks`、`DELETE /bookmarks/{type}/{key}`。
 - `BookmarkStore` 只存 `Set<"BLOG:12">`；登录后 `refresh()` 一次拉全集，切换乐观更新、失败回滚；
   退出登录 `clear()`。文章详情、随笔详情、文库列表行都用它显示收藏态。
-- 入口：「我的 → 更多 → 我的收藏」，`ui/bookmark/BookmarksScreen.kt` 按博客/随笔/文档分 Tab；
+- 入口：「我的 → 我的收藏」，`ui/bookmark/BookmarksScreen.kt` 按博客/随笔/文档分 Tab；
   文档本轮点击回到文库列表（不直接打开具体文件）。
 
 ### 深链
@@ -201,6 +201,11 @@ ui/
 ## 4. 信息架构与每屏要点（含用户明确要求）
 
 ### 首页
+- **首页 = 站点入口页**（2026-11 改版）：搜索栏固定在顶部，内容区自上而下 = **站点名片 → 功能宫格 → 最近随笔 → 最新文章**（`ui/home/HomeSections.kt`）。
+  - 站点名片 `HomeWelcome`：网站图标（`R.drawable.ic_blog`）+「云林有风」+ 一句简介 + 博客/随笔/文档/访问**四项统计**（原「我的」页统计卡迁到这里；`/site/stats` + `/visit/count`，冷启动先读 `site_stats.json`，失败保留旧值且不弹错）。
+  - 功能宫格 `HomeEntryGrid`：3 列 2 行 = 热点 / 项目 / 文库 / 音乐库 / 照片墙 / 留言板。**这些入口原先堆在「我的」，已迁到首页，不要再放回「我的」**。
+  - 最近随笔 `RecentEssaysSection`：横向 4 张预览卡（220×208 固定尺寸保证等高；有图先显示一张 `displayUrl()` 缩略图），右侧「全部 ›」切随笔 Tab；数据 `EssayRepository.essays(1, 6)` 过滤后取 4，**为空或失败整块隐藏**。
+  - 三段顶部区块**只在「最新视图 + 无筛选」时显示**：有分类/标签/年份筛选或切归档视图时直接给结果列表（否则名片/宫格会顶掉结果首屏）。
 - 顶部 = 搜索单元（搜索 + 右侧漏斗 IconButton）；**无独立分类栏**——分类已并入筛选面板。
 - **已选筛选行**：有激活筛选（分类/标签/年份）时漏斗按钮**主色高亮 + 右上圆点**，搜索栏下方横排**InputChips**（`分类:xx ✕` / `标签:xx ✕` / `xxxx年 ✕`，可单个移除）+「清除」SuggestionChip（无筛选时不占位）。
 - 点漏斗 → **筛选面板从搜索栏下方向下展开**（AnimatedVisibility expandVertically），是**覆盖层**（`zIndex`、`offset(58.dp)`，放在内容 Box 之外）——**不参与布局、不顶动内容**。
@@ -239,12 +244,12 @@ ui/
   表现为「点推荐毫无反应」（2026-11 实测）。直接 `navigate("article/$id")`。
 
 ### 我的 / 设置
-- 「我的」= 概览：头部、登录态卡、站点统计、**更多入口（通知/收藏/热点聚合/项目/文库/音乐库/照片墙/留言板/友链/设置）**；关于信息已移入设置页。
-- **热点页（入口「我的 → 更多 → 热点」，页面标题也已是「热点」，不再叫「热点聚合」）**：原生页 `ui/hot/`（对标 web `/insight`）。三视图：**热点**（分类 chips 全部/GitHub 热门/HF 趋势/AI 要闻 + 中文优先卡片，点击开链接）、**榜单**（模态 chips，**高密度行**：排名/变化 + 模型 + 厂商·价格·上下文 + 各榜单分数，细分割线分隔 + Canvas 手绘近 30 天折线趋势；**排名=排序位置**，无排名时用序号兜底；**每个模态独立 `LazyListState`**，切换领域从头开始、不带着旧滚动位置跳到同名模型）、**对比**（紧凑工具栏 + 底部弹层选择器 **按榜单 / 按公司 / 搜索**，可选模型全部来自 `/hot/leaderboards` 与 `/hot/models`，最多 6 个；**默认选六家代表厂商各自最强**：DeepSeek/Z.ai(Kimi 之外)/Kimi/Anthropic/OpenAI/Google（取自文本榜 AA 智能指数排序）；「指标 × 模型」逐行高亮最优值、只显示至少一个模型有分的口径；分享走系统 Intent → `hanphone.cn/insight/?view=compare&models=...`）。顶部有**「名称归一」开关（默认开）**：关闭时厂商名与模型行变体/日期后缀按信源原始展示（`Alibaba-ATH`、`z-ai`、`claude-opus-4-5-20251101`），实体合并不受影响。公开接口 `/hot/*`（无需登录），三层缓存（`hot_*.json`）并入数据管理「热点聚合（洞察）」分项。
+- 「我的」= **账号页**（2026-11 瘦身）：身份区（头像→编辑资料）+ 账号相关入口 **通知 / 我的收藏 / 友链 / 设置** + 管理员「管理中心」。**内容/工具型入口（热点/项目/文库/音乐库/照片墙/留言板）已迁到首页宫格，这里不要再加回来**；站点统计也随迁到首页名片（`ProfileViewModel` 不再拉 `/site/stats`）。退出登录在「设置」页底部的账号区。
+- **热点页（入口「首页 → 宫格 → 热点」，页面标题也是「热点」）**：原生页 `ui/hot/`（对标 web `/insight`）。三视图：**热点**（分类 chips 全部/GitHub 热门/HF 趋势/AI 要闻 + 中文优先卡片，点击开链接）、**榜单**（模态 chips，**高密度行**：排名/变化 + 模型 + 厂商·价格·上下文 + 各榜单分数，细分割线分隔 + Canvas 手绘近 30 天折线趋势；**排名=排序位置**，无排名时用序号兜底；**每个模态独立 `LazyListState`**，切换领域从头开始、不带着旧滚动位置跳到同名模型）、**对比**（紧凑工具栏 + 底部弹层选择器 **按榜单 / 按公司 / 搜索**，可选模型全部来自 `/hot/leaderboards` 与 `/hot/models`，最多 6 个；**默认选六家代表厂商各自最强**：DeepSeek/Z.ai(Kimi 之外)/Kimi/Anthropic/OpenAI/Google（取自文本榜 AA 智能指数排序）；「指标 × 模型」逐行高亮最优值、只显示至少一个模型有分的口径；分享走系统 Intent → `hanphone.cn/insight/?view=compare&models=...`）。顶部有**「名称归一」开关（默认开）**：关闭时厂商名与模型行变体/日期后缀按信源原始展示（`Alibaba-ATH`、`z-ai`、`claude-opus-4-5-20251101`），实体合并不受影响。公开接口 `/hot/*`（无需登录），三层缓存（`hot_*.json`）并入数据管理「热点聚合（洞察）」分项。
 - **设置 → 检查更新**：弹窗的 Release 说明用 `MarkdownContent` 渲染（原先是纯文本，Markdown 不显示）；正文高亮/标题正常。
 - ⚠️ **不再使用写死的「精选代表模型」**：web/App 的选择器都改为从榜单实时构建（按榜单/按公司/搜索）。后端 `FeaturedModelRegistry` 与 `/hot/models/featured` 已**彻底删除**（`FeaturedGroupVO`/`FeaturedModelVO` 一并移除）。
 - **厂商归一（后端 `hot/model/VendorRegistry`）**：`/hot/vendors` 返回归一后的公司（大小写/连字符/子品牌别名合并，如 Alibaba/Alibaba-ATH/Qwen → Alibaba、z-ai/Z.ai/Z-AI → Z.ai、Mistral/mistralai、SpaceXAI/x-ai → xAI、`~` 前缀剥离）；**重点厂商置顶**：Anthropic、DeepSeek、OpenAI、Kimi、Alibaba、Z.ai、Google、Xiaomi、ByteDance。`/hot/models?vendor=&sort=newest|name|price|context&limit=` 支持按公司/关键词取模型并排序（默认越新越前）；模型行的 `vendor` 也已归一显示。
-- **照片墙入口**（「我的」→ 更多）：用通用 WebView 打开 `https://hanphone.cn/atlas/`（nginx alias 托管，页面自带瀑布流/便利贴/时间线展示与筛选），路由复用 `webview?url=...`（`App.kt` 的 `onOpenPhotoWall`）。登录态由 `core/AuthBridge.kt` 注入，与 App 共用（详见坑点 15）。
+- **照片墙入口**（首页宫格「照片墙」）：用通用 WebView 打开 `https://hanphone.cn/atlas/`（nginx alias 托管，页面自带瀑布流/便利贴/时间线展示与筛选），路由复用 `webview?url=...`（`AppNav.kt` 的 `HomeScreen.onOpenPhotoWall`）。登录态由 `core/AuthBridge.kt` 注入，与 App 共用（详见坑点 15）。
 - **照片墙页面有独立加载态**：`Atlas.vue` 早期只有空态没有加载态，`atlasData` 初始 `[]` 导致接口返回前先闪「没有符合筛选条件的照片」。App 里必现——每次进入都是全新页面实例，而 WebView 的 `sessionStorage.atlasWelcomeShown` 会持久化，第二次起欢迎页被跳过，没有东西遮挡这段空窗（`/show` 冷启动实测约 2.3s）。已加 `isLoading`（初值 `true`，只在 `finally` 置 `false`）。**WebView 侧改这类「异步数据 vs 空态」时注意同样的坑**。
 - **为什么 App 里没有开场动画**：照片墙的欢迎页由 `sessionStorage.atlasWelcomeShown` 控制，`domStorageEnabled = true` 让它在 WebView 里**跨会话持久化**，所以第二次起直接跳过欢迎页（用户希望保持这个行为）。首次安装/清数据后仍会看到 3s 欢迎页。
 - **旧包会被 Service Worker「钉死」（照片墙改动不生效/仍闪空态的真正原因）**：`vite-plugin-pwa` 默认生成 `NavigationRoute`，**匹配所有导航且忽略查询串**，始终返回预缓存里的 `index.html`；旧 SW 没换掉之前，App 一直跑旧 `Atlas.vue`。加上 nginx 未给 `sw.js`/`index.html` 配 `Cache-Control`（被 Cloudflare 按 4h 缓存），发版后旧包可能维持很久。已在 `apps/photo-wall/vite.config.ts` 去掉 `NavigationRoute`、入口 html 不预缓存、导航改 `NetworkFirst`（`atlas-pages`）；SW 文件名带构建版本 + 注册代码内联 `index.html`，绕过 Cloudflare 对 `sw.js`/`registerSW.js` 的 4h 缓存。**排查「网页改了 App 里没变化」先想到旧 SW**。详见 `docs/photo-wall-image-optimization.md`。

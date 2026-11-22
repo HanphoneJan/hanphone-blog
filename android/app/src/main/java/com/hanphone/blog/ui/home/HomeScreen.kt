@@ -63,17 +63,29 @@ import com.hanphone.blog.ui.components.EmptyBox
 import com.hanphone.blog.ui.components.ErrorBox
 import com.hanphone.blog.ui.components.ListFooter
 import com.hanphone.blog.ui.components.RowListSkeleton
+import com.hanphone.blog.ui.components.SectionTitle
 import com.hanphone.blog.util.formatDate
 import com.hanphone.blog.util.parseHexColor
 
 /**
- * 首页：搜索栏 + 已选筛选 chips + 内容区；筛选面板为【覆盖层】，
- * 叠加在内容之上弹出（不参与布局，不影响内容位置）。
- * 原单行分类栏已并入筛选面板，首页仅保留「已选筛选」chips（可单删/清除）。
+ * 首页：站点名片 + 功能宫格 + 最近随笔 + 搜索栏/筛选 + 文章列表。
+ * 筛选面板为【覆盖层】，叠加在内容之上弹出（不参与布局，不影响内容位置）。
+ * 有激活筛选或切到「归档」视图时只显示结果列表，不显示首页顶部区块。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
+fun HomeScreen(
+    onOpenBlog: (Long) -> Unit,
+    onSearch: () -> Unit,
+    onOpenEssay: (Long) -> Unit,
+    onOpenEssayTab: () -> Unit,
+    onOpenInsight: () -> Unit,
+    onOpenProjects: () -> Unit,
+    onOpenDocs: () -> Unit,
+    onOpenMusic: () -> Unit,
+    onOpenPhotoWall: () -> Unit,
+    onOpenMessage: () -> Unit
+) {
     val vm: HomeViewModel = hiltViewModel()
     val listState = rememberLazyListState()
 
@@ -207,9 +219,42 @@ fun HomeScreen(onOpenBlog: (Long) -> Unit, onSearch: () -> Unit) {
                             else -> LazyColumn(
                                 state = listState,
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
+                                // 首页顶部区块只在「未筛选的最新视图」出现：
+                                // 筛选结果应直接给出结果，不被名片/宫格/随笔顶掉首屏。
+                                if (!hasFilter) {
+                                    item(key = "home-welcome") {
+                                        HomeWelcome(vm.stats, vm.visits)
+                                    }
+                                    item(key = "home-entries") {
+                                        HomeEntryGrid(
+                                            onOpen = { entry ->
+                                                when (entry) {
+                                                    HomeEntry.HOT -> onOpenInsight()
+                                                    HomeEntry.PROJECTS -> onOpenProjects()
+                                                    HomeEntry.DOCS -> onOpenDocs()
+                                                    HomeEntry.MUSIC -> onOpenMusic()
+                                                    HomeEntry.PHOTO -> onOpenPhotoWall()
+                                                    HomeEntry.MESSAGE -> onOpenMessage()
+                                                }
+                                            }
+                                        )
+                                    }
+                                    if (vm.recentEssays.isNotEmpty()) {
+                                        item(key = "home-essays") {
+                                            RecentEssaysSection(
+                                                essays = vm.recentEssays,
+                                                onOpenEssay = onOpenEssay,
+                                                onOpenAll = onOpenEssayTab
+                                            )
+                                        }
+                                    }
+                                    item(key = "home-latest-title") {
+                                        SectionTitle("最新文章", Modifier.padding(top = 2.dp))
+                                    }
+                                }
                                 items(visible, key = { it.id }) { blog ->
                                     ArticleCard(blog = blog, onClick = { onOpenBlog(blog.id) })
                                 }
