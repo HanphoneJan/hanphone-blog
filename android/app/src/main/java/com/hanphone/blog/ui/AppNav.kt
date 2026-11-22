@@ -100,8 +100,10 @@ import com.hanphone.blog.ui.chat.ChatScreen
 import com.hanphone.blog.ui.bookmark.BookmarksScreen
 import com.hanphone.blog.ui.docs.DocsScreen
 import com.hanphone.blog.ui.docs.DocMarkdownScreen
+import com.hanphone.blog.ui.friendlinks.ApplyFriendLinkScreen
 import com.hanphone.blog.ui.friendlinks.FriendLinksScreen
 import com.hanphone.blog.ui.hot.HotScreen
+import com.hanphone.blog.ui.login.ForgotPasswordScreen
 import com.hanphone.blog.ui.login.LoginScreen
 import com.hanphone.blog.ui.login.RegisterScreen
 import com.hanphone.blog.ui.message.MessageScreen
@@ -280,7 +282,13 @@ internal fun MainScaffold() {
                 MessageScreen(onBack = { navController.popBackStack() })
             }
             composable("friendlinks") {
-                FriendLinksScreen(onBack = { navController.popBackStack() })
+                FriendLinksScreen(
+                    onBack = { navController.popBackStack() },
+                    onApply = { navController.navigate("friendlinks/apply") }
+                )
+            }
+            composable("friendlinks/apply") {
+                ApplyFriendLinkScreen(onBack = { navController.popBackStack() })
             }
             composable("projects") {
                 ProjectsScreen(
@@ -472,7 +480,14 @@ internal fun MainScaffold() {
                 LoginScreen(
                     onBack = { navController.popBackStack() },
                     onSuccess = { navController.popBackStack() },
-                    onRegister = { navController.navigate("register") }
+                    onRegister = { navController.navigate("register") },
+                    onForgotPassword = { navController.navigate("forgot-password") }
+                )
+            }
+            composable("forgot-password") {
+                ForgotPasswordScreen(
+                    onBack = { navController.popBackStack() },
+                    onDone = { navController.popBackStack() }
                 )
             }
             composable("register") {

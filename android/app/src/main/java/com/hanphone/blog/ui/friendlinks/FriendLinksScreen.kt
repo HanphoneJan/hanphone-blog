@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +56,7 @@ private val LINK_TYPE_LABELS = listOf(
 /** 友链（独立页）：从「我的」进入；类型筛选 + 按类型分组，朋友优先、推荐置顶 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FriendLinksScreen(onBack: () -> Unit) {
+fun FriendLinksScreen(onBack: () -> Unit, onApply: () -> Unit) {
     val vm: FriendLinksViewModel = hiltViewModel()
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
@@ -63,7 +64,9 @@ fun FriendLinksScreen(onBack: () -> Unit) {
     val filtered = vm.filtered
 
     Column(Modifier.fillMaxSize()) {
-        AppBackBar(title = "友链", onBack = onBack)
+        AppBackBar(title = "友链", onBack = onBack) {
+            TextButton(onClick = onApply) { Text("申请友链") }
+        }
 
         // 类型筛选（全部 / 朋友 / 工具 / 博客 / 资源）
         Row(

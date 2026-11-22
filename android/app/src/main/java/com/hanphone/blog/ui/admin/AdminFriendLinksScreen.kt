@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -33,6 +36,8 @@ import com.hanphone.blog.data.model.FriendLink
 import com.hanphone.blog.data.model.Project
 import com.hanphone.blog.ui.components.ToastMessage
 import com.hanphone.blog.ui.components.Avatar
+import com.hanphone.blog.ui.components.rememberToast
+import com.hanphone.blog.util.parseApplyText
 
 /** 友链审核/维护 */
 @Composable
@@ -64,6 +69,7 @@ fun AdminFriendLinksScreen(
                 onEdit = { editing = link },
                 onTogglePublished = { vm.togglePublished(link) },
                 onToggleRecommend = { vm.toggleRecommend(link) },
+                onParseText = { vm.parseAndApply(link) },
                 onDelete = { pendingDelete = link }
             )
         }
@@ -95,6 +101,7 @@ private fun FriendLinkRow(
     onEdit: () -> Unit,
     onTogglePublished: () -> Unit,
     onToggleRecommend: () -> Unit,
+    onParseText: () -> Unit,
     onDelete: () -> Unit
 ) {
     Row(
@@ -129,6 +136,18 @@ private fun FriendLinkRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            // 申请原文只露一行摘要（详情在编辑弹窗里）；单行省略，不会把右侧菜单挤掉
+            val applyPreview = remember(link.applyText) { link.applyText?.let { previewOf(it) } }
+            if (!applyPreview.isNullOrBlank()) {
+                Text(
+                    "申请原文：$applyPreview",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             MetaFlow(modifier = Modifier.padding(top = 3.dp)) {
                 AdminBadge(
                     if (link.published == true) "已上线" else "待审核",
@@ -137,20 +156,33 @@ private fun FriendLinkRow(
             }
         }
         AdminRowMenu(
-            listOf(
-                AdminMenuAction(
-                    label = if (link.published == true) "下线" else "上线",
-                    onClick = onTogglePublished
-                ),
-                AdminMenuAction(
-                    label = if (link.recommend) "取消推荐" else "设为推荐",
-                    onClick = onToggleRecommend
-                ),
-                AdminMenuAction(label = "编辑", onClick = onEdit),
-                AdminMenuAction(label = "删除", onClick = onDelete, destructive = true)
-            )
+            buildList {
+                add(
+                    AdminMenuAction(
+                        label = if (link.published == true) "下线" else "上线",
+                        onClick = onTogglePublished
+                    )
+                )
+                add(
+                    AdminMenuAction(
+                        label = if (link.recommend) "取消推荐" else "设为推荐",
+                        onClick = onToggleRecommend
+                    )
+                )
+                if (!link.applyText.isNullOrBlank()) {
+                    add(AdminMenuAction(label = "解析文本", onClick = onParseText))
+                }
+                add(AdminMenuAction(label = "编辑", onClick = onEdit))
+                add(AdminMenuAction(label = "删除", onClick = onDelete, destructive = true))
+            }
         )
     }
+}
+
+/** 申请原文的行内摘要：压平换行后取前 40 字 */
+private fun previewOf(text: String): String {
+    val flat = text.trim().replace(Regex("\\s+"), " ")
+    return if (flat.length > 40) flat.take(40) + "…" else flat
 }
 
 /** 行内元信息（徽标）容器：空间不够时换行，而不是把后面的徽标压成一条竖线 */
@@ -174,13 +206,45 @@ private fun FriendLinkDialog(
     onDismiss: () -> Unit,
     onSave: (FriendLink) -> Unit
 ) {
+    val toast = rememberToast()
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var url by remember { mutableStateOf(initial?.url.orEmpty()) }
+    var linkUrl by remember { mutableStateOf(initial?.linkUrl.orEmpty()) }
     var description by remember { mutableStateOf(initial?.description.orEmpty()) }
     var avatar by remember { mutableStateOf(initial?.avatar.orEmpty()) }
+    var siteshot by remember { mutableStateOf(initial?.siteshot.orEmpty()) }
+    var rss by remember { mutableStateOf(initial?.rss.orEmpty()) }
+    var color by remember { mutableStateOf(initial?.color.orEmpty()) }
     var nickname by remember { mutableStateOf(initial?.nickname.orEmpty()) }
     var published by remember { mutableStateOf(initial?.published == true) }
     var recommend by remember { mutableStateOf(initial?.recommend ?: false) }
+
+    val applyText = initial?.applyText
+
+    // 解析申请原文 → 覆盖当前表单（用户随后还能手改）
+    fun applyParsedToForm() {
+        val text = applyText ?: return
+        val parsed = try {
+            parseApplyText(text)
+        } catch (e: Exception) {
+            toast("解析失败")
+            return
+        }
+        if (parsed.isEmpty) {
+            toast("未能从文本中解析出有效字段")
+            return
+        }
+        parsed.name?.let { name = it }
+        parsed.url?.let { url = it }
+        parsed.linkUrl?.let { linkUrl = it }
+        parsed.description?.let { description = it }
+        parsed.avatar?.let { avatar = it }
+        parsed.siteshot?.let { siteshot = it }
+        parsed.rss?.let { rss = it }
+        parsed.nickname?.let { nickname = it }
+        parsed.color?.let { color = it }
+        toast("已填入解析结果，请核对后保存")
+    }
 
     AdminFormDialog(
         title = if (initial == null) "新增友链" else "编辑友链",
@@ -190,20 +254,59 @@ private fun FriendLinkDialog(
                 (initial ?: FriendLink(id = 0)).copy(
                     name = name.trim(),
                     url = url.trim(),
+                    linkUrl = linkUrl.trim().ifBlank { null },
                     description = description.trim(),
                     avatar = avatar.trim().ifBlank { null },
+                    siteshot = siteshot.trim().ifBlank { null },
+                    rss = rss.trim().ifBlank { null },
+                    color = color.trim().ifBlank { null },
                     nickname = nickname.trim().ifBlank { null },
                     published = published,
-                    recommend = recommend
+                    recommend = recommend,
+                    // 编辑不能把申请原文弄丢
+                    applyText = initial?.applyText
                 )
             )
         }
     ) {
+        if (!applyText.isNullOrBlank()) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Text(
+                        "申请原文",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        applyText,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        // 顺序：heightIn 当视口、verticalScroll 在内（反过来滚不动）
+                        modifier = Modifier
+                            .padding(top = 6.dp)
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                    )
+                    TextButton(onClick = { applyParsedToForm() }) {
+                        Text("解析文本填入表单")
+                    }
+                }
+            }
+        }
         AdminField(name, { name = it }, "名称")
         AdminField(url, { url = it }, "链接", placeholder = "https://")
+        AdminField(linkUrl, { linkUrl = it }, "回访链接", placeholder = "可留空")
         AdminField(description, { description = it }, "简介", singleLine = false, minLines = 2)
         AdminField(avatar, { avatar = it }, "头像 URL", placeholder = "可留空")
+        AdminField(siteshot, { siteshot = it }, "截图 URL", placeholder = "可留空")
+        AdminField(rss, { rss = it }, "RSS 地址", placeholder = "可留空")
         AdminField(nickname, { nickname = it }, "站长昵称", placeholder = "可留空")
+        AdminField(color, { color = it }, "主题颜色", placeholder = "可留空，如 #1890ff")
         AdminSwitchRow("上线（审核通过）", published, { published = it })
         AdminSwitchRow("推荐", recommend, { recommend = it })
     }

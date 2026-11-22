@@ -84,6 +84,41 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
     suspend fun friendLinks(): ApiResult<List<FriendLink>> =
         withContext(Dispatchers.IO) { api.friendLinks() }
 
+    /**
+     * 申请友链（免登录）。requestId 用于 @Idempotent：失败重试必须复用同一个 id，
+     * 成功后才换新，调用方负责。
+     */
+    suspend fun applyFriendLink(
+        requestId: String,
+        name: String,
+        url: String,
+        description: String,
+        avatar: String? = null,
+        siteshot: String? = null,
+        rss: String? = null,
+        nickname: String? = null,
+        color: String? = null,
+        applyText: String? = null
+    ): ApiResult<FriendLink> = withContext(Dispatchers.IO) {
+        api.applyFriendLink(
+            requestId = requestId,
+            body = buildMap {
+                put("name", name)
+                put("url", url)
+                put("description", description)
+                put("type", "friend")
+                put("recommend", false)
+                put("published", false)
+                put("avatar", avatar)
+                put("siteshot", siteshot)
+                put("rss", rss)
+                put("nickname", nickname)
+                put("color", color)
+                if (applyText != null) put("applyText", applyText)
+            }
+        )
+    }
+
     suspend fun search(query: String, limit: Int = 20): ApiResult<List<SearchResultItem>> =
         withContext(Dispatchers.IO) { api.search(query, limit) }
 
@@ -195,6 +230,18 @@ class BlogRepository(private val api: BlogApi = ApiClient.api) {
     /** 通用邮箱验证码（scene 默认 general：改邮箱/重置密码等） */
     suspend fun sendGeneralCaptcha(email: String): ApiResult<Any?> =
         withContext(Dispatchers.IO) { api.sendCaptcha(mapOf("email" to email)) }
+
+    /** 重置密码：明文密码在仓库层统一 md5（后端存 bcrypt(md5)） */
+    suspend fun resetPassword(email: String, captcha: String, newPassword: String): ApiResult<Any?> =
+        withContext(Dispatchers.IO) {
+            api.resetPassword(
+                mapOf(
+                    "email" to email,
+                    "captcha" to captcha,
+                    "newPassword" to md5Hex(newPassword)
+                )
+            )
+        }
 
     /** 私信：拉取与管理员的历史记录（需 Bearer token） */
     suspend fun adminMessages(token: String): ChatMessagesResponse =

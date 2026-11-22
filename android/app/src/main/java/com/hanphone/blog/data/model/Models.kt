@@ -149,7 +149,9 @@ data class FriendLink(
     @Json(name = "linkUrl") val linkUrl: String? = null,
     @Json(name = "siteshot") val siteshot: String? = null,
     val rss: String? = null,
-    val nickname: String? = null
+    val nickname: String? = null,
+    /** 文本粘贴模式下用户粘贴的原文（服务端列 apply_text），表单模式为 null */
+    val applyText: String? = null
 )
 
 /**

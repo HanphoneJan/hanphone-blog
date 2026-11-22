@@ -91,6 +91,13 @@ interface BlogApi {
     @GET("friendLinks")
     suspend fun friendLinks(): ApiResult<List<FriendLink>>
 
+    /** 前台申请友链（免登录，@Idempotent 需 X-Request-Id；带 applyText 时后端不强制 name/url） */
+    @POST("friendLinks/apply")
+    suspend fun applyFriendLink(
+        @Header("X-Request-Id") requestId: String?,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): ApiResult<FriendLink>
+
     @GET("search")
     suspend fun search(
         @Query("query") query: String,
@@ -172,6 +179,10 @@ interface BlogApi {
     // ===== 注册（邮箱验证码）=====
     @POST("user/sendCaptcha")
     suspend fun sendCaptcha(@Body body: Map<String, String>): ApiResult<Any?>
+
+    /** 忘记密码：邮箱验证码重置（newPassword 由仓库层做 md5） */
+    @POST("user/resetPassword")
+    suspend fun resetPassword(@Body body: Map<String, String>): ApiResult<Any?>
 
     @POST("register")
     suspend fun register(@Body body: Map<String, @JvmSuppressWildcards Any?>): ApiResult<LoginData>

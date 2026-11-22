@@ -23,6 +23,7 @@ import com.hanphone.blog.util.MediaPicker
 import com.hanphone.blog.util.adminMessage
 import com.hanphone.blog.util.decoded
 import com.hanphone.blog.util.normalized
+import com.hanphone.blog.util.parseApplyText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -54,6 +55,48 @@ class AdminFriendLinksViewModel @Inject constructor(
             if (err != null) return@launch notify(err)
             done()
             refresh()
+        }
+    }
+
+    /**
+     * 解析申请原文并回填到该友链（对齐网页端 applyParsedData）：
+     * 解析出的字段非空才覆盖，空值保留原值；type/published/recommend/applyText 不动。
+     */
+    fun parseAndApply(link: FriendLink) {
+        val text = link.applyText
+        if (text.isNullOrBlank()) {
+            notify("没有可解析的申请文本")
+            return
+        }
+
+        val parsed = try {
+            parseApplyText(text)
+        } catch (e: Exception) {
+            notify("解析失败")
+            return
+        }
+        if (parsed.isEmpty) {
+            notify("未能从文本中解析出有效字段")
+            return
+        }
+
+        val merged = link.copy(
+            name = parsed.name ?: link.name,
+            description = parsed.description ?: link.description,
+            url = parsed.url ?: link.url,
+            linkUrl = parsed.linkUrl ?: link.linkUrl,
+            avatar = parsed.avatar ?: link.avatar,
+            siteshot = parsed.siteshot ?: link.siteshot,
+            rss = parsed.rss ?: link.rss,
+            nickname = parsed.nickname ?: link.nickname,
+            color = parsed.color ?: link.color
+        )
+
+        viewModelScope.launch {
+            val err = adminOp("保存失败") { repo.saveFriendLink(merged.decoded()) }
+            if (err != null) return@launch notify(err)
+            items = items.map { if (it.id == merged.id) merged.decoded() else it }
+            notify("解析成功，已填入友链信息")
         }
     }
 

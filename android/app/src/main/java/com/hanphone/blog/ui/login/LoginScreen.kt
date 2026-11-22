@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -65,7 +66,12 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Unit) {
+fun LoginScreen(
+    onBack: () -> Unit,
+    onSuccess: () -> Unit,
+    onRegister: () -> Unit,
+    onForgotPassword: () -> Unit
+) {
     val context = LocalContext.current
     val repo = remember { BlogRepository() }
     val scope = rememberCoroutineScope()
@@ -153,10 +159,19 @@ fun LoginScreen(onBack: () -> Unit, onSuccess: () -> Unit, onRegister: () -> Uni
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                     textStyle = MaterialTheme.typography.bodyMedium
                 )
+                // 忘记密码入口：右对齐紧跟密码框，不把登录按钮顶开
+                TextButton(
+                    onClick = onForgotPassword,
+                    enabled = !loading,
+                    modifier = Modifier.align(Alignment.End),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text("忘记密码？", style = MaterialTheme.typography.bodySmall)
+                }
                 Button(
                     onClick = { doLogin() },
                     enabled = !loading,
-                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                 ) {
                     Text(if (loading) "登录中…" else "登录")
                 }
