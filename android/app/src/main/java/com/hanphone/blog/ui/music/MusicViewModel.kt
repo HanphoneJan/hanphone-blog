@@ -59,6 +59,9 @@ class MusicViewModel @Inject constructor(
         private set
     var durationMs by mutableIntStateOf(0)
         private set
+    /** 缓冲百分比（0..100）：进度条上的浅色缓冲段 */
+    var bufferPercent by mutableIntStateOf(0)
+        private set
     var lyrics by mutableStateOf<List<LyricLine>>(emptyList())
         private set
     var mode by mutableStateOf(PlayMode.LIST)
@@ -125,6 +128,7 @@ class MusicViewModel @Inject constructor(
         currentIndex = safe
         positionMs = 0
         durationMs = 0
+        bufferPercent = 0
         lyrics = emptyList()
         error = null
         playWhenReady = autoPlay
@@ -230,6 +234,9 @@ class MusicViewModel @Inject constructor(
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build()
             )
+            setOnBufferingUpdateListener { _, percent ->
+                bufferPercent = percent.coerceIn(0, 100)
+            }
             setOnPreparedListener { mp ->
                 prepared = true
                 preparing = false
@@ -256,6 +263,7 @@ class MusicViewModel @Inject constructor(
                 preparing = false
                 playing = false
                 playWhenReady = false
+                bufferPercent = 0
                 error = "音频播放失败，请换一首"
                 true
             }
