@@ -72,11 +72,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    /** 退出登录：吊销服务端会话（失败无所谓，本地照样清） */
-    suspend fun logout() {
-        runCatching { repo.logout(TokenStore.refreshToken.value) }
-    }
-
     override fun refresh() {
         refresh(fromPull = true)
     }

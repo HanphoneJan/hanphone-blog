@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,7 +33,6 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,7 +40,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,6 +60,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -70,8 +71,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.hanphone.blog.R
-import com.hanphone.blog.core.AuthBridge
-import com.hanphone.blog.core.clearAuth
 import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.cache.NotificationBadge
@@ -103,8 +102,6 @@ fun ProfileScreen(
     onOpenAdmin: () -> Unit
 ) {
     val vm: ProfileViewModel = hiltViewModel()
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val scope = rememberCoroutineScope()
     val stats = vm.stats
     val visits = vm.visits
     val unreadNotifications by NotificationBadge.unread.collectAsState()
@@ -117,8 +114,6 @@ fun ProfileScreen(
 
     // 登录态变化时拉取完整资料（头像/昵称/用户名）
     LaunchedEffect(userId) { vm.loadProfile(userId) }
-
-    val toast = rememberToast()
 
     // 展示优先级：网络资料 > 本地登录态缓存
     val displayName = vm.profile?.nickname?.takeIf { it.isNotBlank() } ?: (userName ?: "云林访客")
@@ -135,7 +130,14 @@ fun ProfileScreen(
         // 不再额外放一张「已登录」卡片，避免同一份信息出现两次（旧卡片还读 TokenStore，可能显示旧昵称）。
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             if (token != null) {
-                Box(Modifier.clickable { showEditProfile = true }) {
+                Box(
+                    Modifier
+                        .clickable { showEditProfile = true }
+                        .semantics {
+                            contentDescription = "编辑资料"
+                            role = Role.Button
+                        }
+                ) {
                     Avatar(url = displayAvatar, name = displayName, size = 76.dp, feature = ImageCaches.Feature.PROFILE)
                     // 铅笔角标：替代原来那行「点击头像可修改资料」提示
                     Box(
@@ -149,7 +151,7 @@ fun ProfileScreen(
                     ) {
                         Icon(
                             Icons.Filled.Edit,
-                            contentDescription = "编辑资料",
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(12.dp)
                         )
@@ -171,30 +173,6 @@ fun ProfileScreen(
                     if (displayUsername.isNotBlank()) {
                         Text("@$displayUsername", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                }
-                Row(
-                    Modifier.padding(top = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = { showEditProfile = true },
-                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp)
-                    ) { Text("编辑资料") }
-                    TextButton(
-                        onClick = {
-                            scope.launch {
-                                // 先吊销服务端会话（refresh 立刻失效），再清本地
-                                runCatching { vm.logout() }
-                                context.clearAuth()
-                                TokenStore.clear()
-                                // 第一方 WebView（照片墙）把登录态存在自己的 localStorage 里，
-                                // 不清的话退出登录后照片墙仍显示已登录、还能点赞/进管理页
-                                AuthBridge.clearWebStorage()
-                            }
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) { Text("退出登录") }
                 }
             } else {
                 // 未登录：博客图标占位（对齐网站图标，不再用文字「云」）
@@ -279,7 +257,7 @@ fun ProfileScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 MoreRow(Icons.Filled.Share, "友链", "小伙伴的博客", onOpenFriendLinks)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                MoreRow(Icons.Filled.Settings, "设置", "外观 · 缓存 · 更新", onOpenSettings)
+                MoreRow(Icons.Filled.Settings, "设置", "账号 · 外观 · 缓存 · 更新", onOpenSettings)
             }
         }
         } // Column

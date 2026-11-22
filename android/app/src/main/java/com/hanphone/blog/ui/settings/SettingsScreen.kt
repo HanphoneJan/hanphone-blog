@@ -1,29 +1,39 @@
 package com.hanphone.blog.ui.settings
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,16 +53,18 @@ import com.hanphone.blog.BuildConfig
 import com.hanphone.blog.R
 import com.hanphone.blog.core.autoCheckUpdate
 import com.hanphone.blog.core.setAutoCheckUpdate
+import com.hanphone.blog.data.auth.TokenStore
 import com.hanphone.blog.data.update.AppUpdateManager
 import com.hanphone.blog.ui.components.rememberToast
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.SectionTitle
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 
 /**
  * 设置页：入口列表（外观 / 数据管理 / 检查更新 + 启动检查开关）+ App 关于。
  * 功能详情拆分到独立子页（AppearanceScreen / DataManagementScreen），避免设置页过长。
- * 账号区并入「我的」页（去重）；版本号只在「检查更新」入口显示一次。
+ * 编辑资料留在「我的」页（点头像）；退出登录收在本页底部的账号区，二次确认后执行。
  * 更新弹窗（发现新版 / 下载进度 / 安装）挂在 App 根界面（ui/components/UpdateDialogs.kt），
  * 这里只负责发起检查和展示开关。
  */
@@ -68,6 +80,21 @@ fun SettingsScreen(
     val uriHandler = LocalUriHandler.current
 
     val toast = rememberToast()
+
+    // ===== 账号 =====
+    val vm: SettingsViewModel = hiltViewModel()
+    val token by TokenStore.token.collectAsState()
+    var showLogoutConfirm by remember { mutableStateOf(false) }
+
+    // 退出完成：收起弹窗并返回「我的」（此时已是未登录态，反馈最直接）
+    LaunchedEffect(vm.loggedOut) {
+        if (vm.loggedOut) {
+            vm.consumeLoggedOut()
+            showLogoutConfirm = false
+            toast("已退出登录")
+            onBack()
+        }
+    }
 
     // ===== 检查更新（GitHub Release）=====
     var checking by remember { mutableStateOf(false) }
@@ -145,7 +172,49 @@ fun SettingsScreen(
                     AboutLinkRow("作者 GitHub", "HanphoneJan") { uriHandler.openUri("https://github.com/HanphoneJan") }
                 }
             }
+
+            // ===== 退出登录（仅登录后显示）=====
+            // 低强调的描边按钮：不跟设置项抢注意力，误触也有二次确认兜底。
+            if (token != null) {
+                OutlinedButton(
+                    onClick = { showLogoutConfirm = true },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("退出登录")
+                }
+            }
         }
+    }
+
+    // ===== 退出登录二次确认 =====
+    if (showLogoutConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!vm.loggingOut) showLogoutConfirm = false },
+            title = { Text("退出登录？") },
+            text = { Text("退出后需要重新登录才能聊天、评论，并同步收藏与通知。") },
+            confirmButton = {
+                TextButton(
+                    enabled = !vm.loggingOut,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    onClick = { vm.logout() }
+                ) { Text(if (vm.loggingOut) "退出中…" else "退出登录") }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !vm.loggingOut,
+                    onClick = { showLogoutConfirm = false }
+                ) { Text("取消") }
+            }
+        )
     }
 }
 
