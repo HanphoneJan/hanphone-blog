@@ -1,11 +1,17 @@
 package com.hanphone.blog.ui.admin
 
+import android.content.Context
+import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.hanphone.blog.data.model.Tag
 import com.hanphone.blog.data.model.TagBlogCount
 import com.hanphone.blog.data.model.Type
 import com.hanphone.blog.data.repo.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -46,13 +52,33 @@ class AdminTagsViewModel @Inject constructor(
 /** 分类：增删改（分类色由后端固定为 blue，分类图可上传） */
 @HiltViewModel
 class AdminTypesViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val repo: AdminRepository
 ) : AdminListViewModel<Type>(paged = false) {
 
     init { start() }
 
+    /** 分类图上传中（由页面上的 [AdminImageField] 显示转圈） */
+    var uploadingPic by mutableStateOf(false)
+        private set
+
     override suspend fun fetchPage(page: Int, keyword: String): AdminPage<Type> =
         AdminPage(repo.fullTypes().data.orEmpty())
+
+    /** 相册选图 → 上传，成功后把 URL 回给表单；失败提示并回 null */
+    fun uploadTypeImage(uri: Uri, onDone: (String?) -> Unit) {
+        if (uploadingPic) return
+        viewModelScope.launch {
+            uploadingPic = true
+            try {
+                val url = repo.uploadImage(appContext, uri, "blog/type")
+                if (url == null) notify("分类图上传失败")
+                onDone(url)
+            } finally {
+                uploadingPic = false
+            }
+        }
+    }
 
     fun save(id: Long?, name: String, picUrl: String?, done: () -> Unit) {
         if (name.isBlank()) {

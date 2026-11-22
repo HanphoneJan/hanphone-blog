@@ -30,10 +30,16 @@ const {
   resolveMediaPath,
 } = require('./lib/video');
 const app = express();
+
+// 部署在 nginx 之后：让 req.ip 取 X-Forwarded-For 里的真实客户端 IP。
+// 否则 express-rate-limit 会把所有请求都算成 nginx 的来源 IP，
+// 匿名上传（/upload/avatar、/upload/public-image）的「每 IP」限流会变成全站共享额度。
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 4000;
 const baseUploadDir = path.join(__dirname, "uploads");
 const tempUploadDir = path.join(baseUploadDir, "temp"); // 定义临时目录
 const avatarUploadDir = path.join(baseUploadDir, "blog", "avatars"); // 头像上传目录
+const publicImageUploadDir = path.join(baseUploadDir, "blog", "public"); // 匿名公开图片目录（友链申请等）
 
 // 【修复 1】temp 孤儿文件清理：启动时清一次 + 每 6 小时清一次，删除超过 24 小时未移动的文件
 const TEMP_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h
@@ -343,19 +349,32 @@ async function ensureDirectoryExists(dirPath) {
   }
 }
 
-// 初始化基础、临时和头像上传目录
+// 初始化基础、临时、头像和匿名公开图片上传目录
 Promise.all([
   ensureDirectoryExists(baseUploadDir),
   ensureDirectoryExists(tempUploadDir),
   ensureDirectoryExists(avatarUploadDir),
+  ensureDirectoryExists(publicImageUploadDir),
 ])
-  .then(() => logger.info(`基础、临时和头像上传目录准备就绪`))
+  .then(() => logger.info(`基础、临时、头像和匿名公开图片上传目录准备就绪`))
   .catch((err) => logger.error("初始化目录失败:", { error: err.message, stack: err.stack }));
 
 // 头像上传速率限制器（每IP每小时最多5次上传）
 const avatarUploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1小时
   max: 5, // 最多5次请求
+  message: {
+    error: "上传频率过高，请稍后再试",
+    retryAfter: "3600"
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// 匿名公开图片上传速率限制器（每IP每小时最多10次：一次友链申请需要头像 + 站点截图）
+const publicImageUploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1小时
+  max: 10, // 最多10次请求
   message: {
     error: "上传频率过高，请稍后再试",
     retryAfter: "3600"
@@ -589,6 +608,45 @@ const uploadAvatar = multer({
   fileFilter: avatarFileFilter,
 });
 
+// 匿名公开图片上传配置（仅限图片，大小限制10MB；只写入固定的 blog/public 目录）
+const publicImageStorage = multer.diskStorage({
+  destination: async function (req, file, cb) {
+    try {
+      await ensureDirectoryExists(publicImageUploadDir);
+      cb(null, publicImageUploadDir);
+    } catch (err) {
+      logger.error("设置公开图片存储目录失败:", { error: err.message, stack: err.stack });
+      cb(err);
+    }
+  },
+  filename: async function (req, file, cb) {
+    try {
+      const originalName = fixFileNameEncoding(file.originalname);
+      const ext = path.extname(originalName).toLowerCase();
+      // 匿名字段：只保留 ASCII 安全字符，避免路径穿越和怪异文件名
+      const safeBase = path.basename(originalName, path.extname(originalName))
+        .replace(/[^a-zA-Z0-9_-]/g, "_") || "image";
+      let name = `${safeBase}${ext}`;
+      // 同名文件已存在时加时间戳，避免直接覆盖他人上传的图片
+      if (await fileExists(path.join(publicImageUploadDir, name))) {
+        name = `${safeBase}-${Date.now()}${ext}`;
+      }
+      cb(null, name);
+    } catch (err) {
+      logger.error("生成公开图片文件名时出错:", { error: err.message, stack: err.stack });
+      cb(null, `public-image-${Date.now()}${path.extname(file.originalname)}`);
+    }
+  },
+});
+
+const uploadPublicImage = multer({
+  storage: publicImageStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: avatarFileFilter,
+});
+
 
 // 辅助函数：从 Authorization header 中提取 token
 const extractToken = (authHeader) => {
@@ -627,7 +685,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   // 检查是否是公开接口（不需要认证）
-  const publicPaths = ['/upload/avatar'];
+  const publicPaths = ['/upload/avatar', '/upload/public-image'];
   if (publicPaths.includes(req.path)) {
     return next(); // 跳过认证
   }
@@ -1040,6 +1098,52 @@ app.post("/upload/avatar", avatarUploadLimiter, uploadAvatar.single("avatar"), a
     res.status(500).json({ error: "头像上传失败" });
   }
 });
+
+// 公共图片上传接口：给未登录场景用（如「申请友链」的头像与站点截图）。
+// 无鉴权 + 每IP每小时限流 10 次 + 仅图片 ≤10MB；固定写入 blog/public，
+// 不接受客户端传 namespace/category，避免匿名用户往任意目录写文件。
+// 字段名 file；返回结构与 /upload/avatar 保持一致。
+app.post(
+  "/upload/public-image",
+  publicImageUploadLimiter,
+  uploadPublicImage.single("file"),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "没有文件被上传" });
+    }
+
+    try {
+      // 文件名与冲突处理都在 multer storage 里完成（落盘即最终名），这里不再重命名，
+      // 否则会把刚写好的同名文件误判成冲突、给每个文件都加时间戳。
+      const fixedName = fixFileNameEncoding(req.file.originalname);
+      const finalFilename = req.file.filename;
+      const encodedFilename = encodeURIComponent(finalFilename);
+
+      res.json({
+        code: 200,
+        message: "上传成功",
+        url: `https://hanphone.top/blog/public/${encodedFilename}`,
+        filename: finalFilename,
+        originalName: fixedName,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+    } catch (err) {
+      logger.error("处理公开图片上传时出错:", {
+        error: err.message,
+        stack: err.stack,
+        filename: req.file?.filename,
+      });
+      // 清理可能残留的半截文件
+      if (req.file && req.file.path) {
+        await fs
+          .unlink(req.file.path)
+          .catch((e) => logger.error("删除公开图片文件失败:", { error: e.message }));
+      }
+      res.status(500).json({ error: "图片上传失败" });
+    }
+  }
+);
 
 /**
  * @swagger
@@ -1898,6 +2002,9 @@ app.use((err, req, res, next) => {
     // 根据请求路径返回不同的错误信息
     if (req.path === "/upload/avatar") {
       return res.status(413).json({ error: "头像文件大小超过限制（最大5MB）" });
+    }
+    if (req.path === "/upload/public-image") {
+      return res.status(413).json({ error: "图片大小超过限制（最大10MB）" });
     }
     return res.status(413).json({ error: "文件大小超过限制（最大1GB）" });
   }

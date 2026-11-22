@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
@@ -66,6 +67,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +84,7 @@ import com.hanphone.blog.ui.components.Avatar
 import com.hanphone.blog.ui.components.SectionTitle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.hanphone.blog.util.UrlRules
 import com.hanphone.blog.util.emailError
 import com.hanphone.blog.util.isValidEmail
 import com.hanphone.blog.util.passwordError
@@ -321,6 +324,11 @@ private fun ProfileEditDialog(
     val scope = rememberCoroutineScope()
     var nickname by remember { mutableStateOf(current?.nickname ?: fallbackName) }
     var avatarUrl by remember { mutableStateOf(current?.avatar ?: fallbackAvatar ?: "") }
+    // 输入框保留用户正在敲的原文；只有完整合法的 http(s) 地址才写进 avatarUrl（预览/保存用），
+    // 避免半截地址把头像预览打空、或被当成头像提交。
+    var avatarInput by remember { mutableStateOf(avatarUrl) }
+    // 已有头像可能是站内相对路径，别一打开就报「地址无效」；只有用户改过才校验
+    var avatarTouched by remember { mutableStateOf(false) }
     val currentEmail = current?.email?.trim().orEmpty()
     var email by remember { mutableStateOf(currentEmail) }
     var captcha by remember { mutableStateOf("") }
@@ -363,6 +371,8 @@ private fun ProfileEditDialog(
                 uploading = false
                 if (url != null) {
                     avatarUrl = url
+                    avatarInput = url
+                    avatarTouched = false
                 } else {
                     toast("头像上传失败")
                 }
@@ -390,7 +400,30 @@ private fun ProfileEditDialog(
                     Avatar(url = avatarUrl.ifBlank { null }, name = nickname.ifBlank { "友" }, size = 72.dp, feature = ImageCaches.Feature.PROFILE)
                     if (uploading) CircularProgressIndicator(Modifier.size(72.dp))
                 }
-                Text("点击头像更换（自动上传）", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                Text("点击头像从相册更换，或直接填头像地址", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+
+                val avatarInvalid = avatarTouched && avatarInput.isNotBlank() && !UrlRules.isHttpUrl(avatarInput)
+                OutlinedTextField(
+                    value = avatarInput,
+                    onValueChange = {
+                        avatarTouched = true
+                        avatarInput = it
+                        avatarUrl = when {
+                            it.isBlank() -> ""
+                            UrlRules.isHttpUrl(it) -> UrlRules.normalize(it)
+                            else -> avatarUrl
+                        }
+                    },
+                    label = { Text("头像 URL（可选）") },
+                    placeholder = { Text("https://example.com/avatar.jpg") },
+                    singleLine = true,
+                    isError = avatarInvalid,
+                    supportingText = if (avatarInvalid) {
+                        { Text("需为 http:// 或 https:// 开头的完整地址") }
+                    } else null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 OutlinedTextField(
                     value = nickname,

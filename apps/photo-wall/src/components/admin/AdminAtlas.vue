@@ -452,7 +452,7 @@
     <!-- 上传向导 - 全新设计 -->
     <el-dialog
       v-model="uploadWizardOpen"
-      :title="uploadStep === 0 ? '选择照片' : uploadStep === 1 ? '编辑信息' : '上传进度'"
+      :title="uploadStep === 0 ? (uploadSource === 'link' ? '添加外链照片' : '选择照片') : uploadStep === 1 ? '编辑信息' : '上传进度'"
       width="800px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -476,58 +476,100 @@
 
       <!-- 步骤1: 选择照片 -->
       <div v-if="uploadStep === 0" class="wizard-step step-select">
-        <!-- 上传区域 -->
-        <div class="upload-dropzone" @click="triggerFileInput" @drop.prevent="handleFileDrop" @dragover.prevent>
-          <input
-            ref="fileInputRef"
-            type="file"
-            multiple
-            accept="image/*"
-            style="display: none"
-            @change="handleFileSelect"
-          />
-          <div class="dropzone-content">
-            <div class="upload-icon-wrapper">
-              <el-icon :size="56" class="upload-icon"><Upload /></el-icon>
-            </div>
-            <h3 class="upload-title">点击或拖拽上传照片</h3>
-            <p class="upload-desc">支持 JPG、PNG、WebP 格式</p>
-            <p class="upload-limit">最多可上传 100 张照片</p>
-          </div>
+        <!-- 来源切换：本地文件 / 外链 -->
+        <div class="source-switch">
+          <button
+            type="button"
+            class="source-chip"
+            :class="{ active: uploadSource === 'local' }"
+            @click="uploadSource = 'local'"
+          >
+            <el-icon><Picture /></el-icon>
+            本地文件
+          </button>
+          <button
+            type="button"
+            class="source-chip"
+            :class="{ active: uploadSource === 'link' }"
+            @click="uploadSource = 'link'"
+          >
+            <el-icon><Link /></el-icon>
+            从链接添加
+          </button>
         </div>
 
-        <!-- 已选照片预览 -->
-        <div v-if="uploadFiles.length > 0" class="selected-photos">
-          <div class="photos-header">
-            <span class="photos-count">已选择 {{ uploadFiles.length }} 张照片</span>
-            <el-button type="danger" text size="small" @click="clearAllFiles">
-              <el-icon><Delete /></el-icon>清空
-            </el-button>
+        <template v-if="uploadSource === 'local'">
+          <!-- 上传区域 -->
+          <div class="upload-dropzone" @click="triggerFileInput" @drop.prevent="handleFileDrop" @dragover.prevent>
+            <input
+              ref="fileInputRef"
+              type="file"
+              multiple
+              accept="image/*"
+              style="display: none"
+              @change="handleFileSelect"
+            />
+            <div class="dropzone-content">
+              <div class="upload-icon-wrapper">
+                <el-icon :size="56" class="upload-icon"><Upload /></el-icon>
+              </div>
+              <h3 class="upload-title">点击或拖拽上传照片</h3>
+              <p class="upload-desc">支持 JPG、PNG、WebP 格式</p>
+              <p class="upload-limit">最多可上传 100 张照片</p>
+            </div>
           </div>
-          <div class="photos-grid">
-            <div
-              v-for="(file, index) in uploadFiles"
-              :key="file.uid"
-              class="photo-card"
-              draggable="true"
-              @dragstart="handleDragStart($event, index)"
-              @dragover.prevent
-              @drop="handleDrop($event, index)"
-            >
-              <img :src="file.url || file.preview" />
-              <div class="photo-overlay">
-                <span class="photo-number">{{ index + 1 }}</span>
-                <el-button class="delete-photo-btn" circle size="small" @click.stop="removeUploadFile(index)">
-                  <el-icon><Close /></el-icon>
-                </el-button>
+
+          <!-- 已选照片预览 -->
+          <div v-if="uploadFiles.length > 0" class="selected-photos">
+            <div class="photos-header">
+              <span class="photos-count">已选择 {{ uploadFiles.length }} 张照片</span>
+              <el-button type="danger" text size="small" @click="clearAllFiles">
+                <el-icon><Delete /></el-icon>清空
+              </el-button>
+            </div>
+            <div class="photos-grid">
+              <div
+                v-for="(file, index) in uploadFiles"
+                :key="file.uid"
+                class="photo-card"
+                draggable="true"
+                @dragstart="handleDragStart($event, index)"
+                @dragover.prevent
+                @drop="handleDrop($event, index)"
+              >
+                <img :src="file.url || file.preview" />
+                <div class="photo-overlay">
+                  <span class="photo-number">{{ index + 1 }}</span>
+                  <el-button class="delete-photo-btn" circle size="small" @click.stop="removeUploadFile(index)">
+                    <el-icon><Close /></el-icon>
+                  </el-button>
+                </div>
+              </div>
+              <!-- 添加更多按钮 -->
+              <div class="photo-card add-more" @click="triggerFileInput">
+                <el-icon :size="32"><Plus /></el-icon>
               </div>
             </div>
-            <!-- 添加更多按钮 -->
-            <div class="photo-card add-more" @click="triggerFileInput">
-              <el-icon :size="32"><Plus /></el-icon>
-            </div>
+            <p class="drag-tip">💡 拖拽照片可调整顺序</p>
           </div>
-          <p class="drag-tip">💡 拖拽照片可调整顺序</p>
+        </template>
+
+        <!-- 外链图片：每行一个 URL，不做下载，直接把地址登记到照片墙 -->
+        <div v-if="uploadSource === 'link'" class="link-input-panel">
+          <el-input
+            v-model="linkInput"
+            type="textarea"
+            :rows="8"
+            resize="none"
+            placeholder="每行一个图片链接，例如：&#10;https://example.com/a.jpg&#10;https://example.com/b.png"
+          />
+          <p class="link-hint">仅支持 http/https 链接，外链照片不会生成本地缩略图，列表页将直接加载原图。</p>
+          <div class="link-summary">
+            <span>识别到 {{ parsedLinkUrls.length }} 个有效链接</span>
+            <span v-if="invalidLinkCount > 0" class="link-invalid">
+              另有 {{ invalidLinkCount }} 行不是有效链接，提交时会自动跳过
+            </span>
+          </div>
         </div>
       </div>
 
@@ -583,7 +625,7 @@
         </div>
 
         <!-- 单张编辑 -->
-        <div class="individual-edit">
+        <div v-if="uploadFiles.length > 0" class="individual-edit">
           <h4 class="form-section-title">
             <el-icon><Collection /></el-icon>
             单独编辑（可选）
@@ -655,7 +697,7 @@
             v-if="uploadStep < 2"
             type="primary"
             @click="nextUploadStep"
-            :disabled="uploadStep === 0 && uploadFiles.length === 0"
+            :disabled="uploadStep === 0 && !canProceedStep0"
             class="next-btn"
           >
             {{ uploadStep === 1 ? '开始上传' : '下一步' }}
@@ -709,7 +751,7 @@ import api from '@/api/interceptor';
 import { parse as exifrParse } from 'exifr';
 import { 
   Picture, Plus, Edit, Delete, Search, Close, Check, 
-  Grid, List, Sort, InfoFilled, Star, Upload, User,
+  Grid, List, Sort, InfoFilled, Star, Upload, User, Link,
   Document, Collection, ArrowLeft, ArrowRight, CircleCheckFilled,
   CircleCloseFilled, Loading, RefreshRight
 } from '@element-plus/icons-vue';
@@ -780,6 +822,8 @@ const tagInputRef = ref();
 // 上传向导
 const uploadWizardOpen = ref(false);
 const uploadStep = ref(0);
+const uploadSource = ref<'local' | 'link'>('local');
+const linkInput = ref('');
 const uploadFiles = ref<any[]>([]);
 const uploadProgress = ref(0);
 const uploadStatus = ref('');
@@ -880,6 +924,38 @@ const isAllSelected = computed(() => {
   return filteredPhotos.value.length > 0 && 
     filteredPhotos.value.every(p => selectedPhotos.value.has(p.id));
 });
+
+// ===== 上传来源：本地文件 / 外链 =====
+/** 逐行解析外链输入，只接受 http(s)，非法行单独收集用于提示 */
+const parseLinkLines = (text: string) => {
+  const urls: string[] = [];
+  const invalid: string[] = [];
+  text.split(/\r?\n/).forEach(line => {
+    const raw = line.trim();
+    if (!raw) return;
+    try {
+      const url = new URL(raw);
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        urls.push(url.toString());
+      } else {
+        invalid.push(raw);
+      }
+    } catch {
+      invalid.push(raw);
+    }
+  });
+  return { urls, invalid };
+};
+
+const parsedLinks = computed(() => parseLinkLines(linkInput.value));
+const parsedLinkUrls = computed(() => parsedLinks.value.urls);
+const invalidLinkCount = computed(() => parsedLinks.value.invalid.length);
+
+const canProceedStep0 = computed(() =>
+  uploadSource.value === 'local'
+    ? uploadFiles.value.length > 0
+    : parsedLinkUrls.value.length > 0
+);
 
 // 方法
 const loadPhotos = async () => {
@@ -1125,6 +1201,8 @@ const confirmDelete = async (photo: Photo) => {
 const openUploadWizard = () => {
   uploadWizardOpen.value = true;
   uploadStep.value = 0;
+  uploadSource.value = 'local';
+  linkInput.value = '';
   uploadFiles.value = [];
   uploadProgress.value = 0;
   uploadStatus.value = '';
@@ -1248,6 +1326,18 @@ const handleDrop = (e: DragEvent, targetIndex: number) => {
 };
 
 const nextUploadStep = async () => {
+  if (uploadStep.value === 0 && uploadSource.value === 'link') {
+    if (parsedLinkUrls.value.length === 0) {
+      ElMessage.error('请至少填写一个有效的图片链接（http/https）');
+      return;
+    }
+    if (invalidLinkCount.value > 0) {
+      ElMessage.warning(`已跳过 ${invalidLinkCount.value} 行无效链接，仅支持 http/https`);
+    }
+    uploadStep.value = 1;
+    return;
+  }
+
   if (uploadStep.value === 1) {
     // 开始上传
     uploadStep.value = 2;
@@ -1258,6 +1348,11 @@ const nextUploadStep = async () => {
 };
 
 const startUpload = async () => {
+  if (uploadSource.value === 'link') {
+    await startLinkUpload();
+    return;
+  }
+
   uploadStatusText.value = '正在上传文件...';
   
   try {
@@ -1312,6 +1407,61 @@ const startUpload = async () => {
     uploadStatus.value = 'exception';
     uploadStatusText.value = '上传失败: ' + e.message;
     ElMessage.error('上传失败');
+  }
+};
+
+/**
+ * 「从链接添加」：不做下载/转存，只把外链地址登记到照片墙。
+ * 服务端 /upload 支持 urls 传纯字符串数组；外链没有 thumb_path/width/height，
+ * 列表页会回退原图（已知且可接受）。
+ */
+const startLinkUpload = async () => {
+  const { urls, invalid } = parseLinkLines(linkInput.value);
+
+  if (invalid.length > 0) {
+    ElMessage.warning(`已跳过 ${invalid.length} 行无效链接，仅支持 http/https`);
+  }
+  if (urls.length === 0) {
+    uploadStatus.value = 'exception';
+    uploadStatusText.value = '没有可添加的图片链接';
+    ElMessage.error('请至少填写一个有效的图片链接');
+    return;
+  }
+
+  uploadStatusText.value = '正在添加外链照片...';
+  let failed = 0;
+
+  for (let i = 0; i < urls.length; i++) {
+    const data = {
+      title: `${batchUploadForm.value.titlePrefix || '照片'} ${i + 1}`,
+      author: batchUploadForm.value.author || '佚名',
+      description: batchUploadForm.value.description || '无',
+      userId: userStore.userId,
+      urls: [urls[i]],
+      tags: batchUploadForm.value.tags,
+      takenTime: null
+    };
+
+    try {
+      const res = await api.post(ENDPOINTS.UPLOAD, data);
+      // 服务端单条失败时仍返回 2xx（overallStatus=0），这里单独计数
+      if (res.data?.overallStatus !== undefined && res.data.overallStatus !== 830) {
+        failed++;
+      }
+    } catch (e) {
+      failed++;
+    }
+    uploadProgress.value = Math.round(((i + 1) / urls.length) * 100);
+  }
+
+  if (failed > 0) {
+    uploadStatus.value = 'exception';
+    uploadStatusText.value = `${urls.length - failed} 条添加成功，${failed} 条失败`;
+    ElMessage.warning(uploadStatusText.value);
+  } else {
+    uploadStatus.value = 'success';
+    uploadStatusText.value = `已添加 ${urls.length} 张外链照片`;
+    ElMessage.success('添加成功');
   }
 };
 
@@ -2093,6 +2243,62 @@ watch(searchQuery, () => {
   gap: 20px;
 }
 
+/* 来源切换：本地文件 / 外链 */
+.source-switch {
+  display: flex;
+  gap: 8px;
+}
+
+.source-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #dcdfe6;
+  border-radius: 20px;
+  background: white;
+  font-size: 14px;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.source-chip:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.source-chip.active {
+  background: #ecf5ff;
+  border-color: #409eff;
+  color: #409eff;
+}
+
+/* 外链录入 */
+.link-input-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.link-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #909399;
+}
+
+.link-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.link-invalid {
+  color: #e6a23c;
+}
+
 /* 上传拖拽区 */
 .upload-dropzone {
   border: 2px dashed #dcdfe6;
@@ -2692,6 +2898,23 @@ watch(searchQuery, () => {
   background: #333;
   border-color: #444;
   color: #b0b3b8;
+}
+
+.dark .source-chip {
+  background: #333;
+  border-color: #444;
+  color: #b0b3b8;
+}
+
+.dark .source-chip.active {
+  background: rgba(64, 158, 255, 0.15);
+  border-color: #409eff;
+  color: #79bbff;
+}
+
+.dark .link-hint,
+.dark .link-summary {
+  color: #909399;
 }
 
 .dark .detail-panel {

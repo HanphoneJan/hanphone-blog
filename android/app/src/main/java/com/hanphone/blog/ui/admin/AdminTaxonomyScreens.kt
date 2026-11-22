@@ -128,6 +128,15 @@ fun AdminTypesScreen(
     var name by remember { mutableStateOf("") }
     var picUrl by remember { mutableStateOf("") }
 
+    // 分类图：相册选图后交给 ViewModel 上传，成功回填 URL
+    val picPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            vm.uploadTypeImage(uri) { url ->
+                if (url != null) picUrl = url
+            }
+        }
+    }
+
     ToastMessage(vm.message, vm::consumeMessage)
 
     AdminScaffold(
@@ -176,11 +185,13 @@ fun AdminTypesScreen(
             }
         ) {
             AdminField(name, { name = it }, "分类名")
-            AdminField(
-                picUrl,
-                { picUrl = it },
-                "分类图 URL",
-                placeholder = "可留空；也可直接粘贴图片地址"
+            AdminImageField(
+                value = picUrl,
+                onValueChange = { picUrl = it },
+                label = "分类图",
+                uploading = vm.uploadingPic,
+                onPick = { picPicker.launch("image/*") },
+                aspectRatio = 16f / 9f
             )
         }
     }

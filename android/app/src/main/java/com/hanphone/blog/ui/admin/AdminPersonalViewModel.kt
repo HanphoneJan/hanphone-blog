@@ -71,6 +71,10 @@ class AdminPersonalViewModel @Inject constructor(
     var uploading by mutableStateOf(false)
         private set
 
+    /** 技能/爱好/作品条目的配图上传中（与头像上传互不影响） */
+    var uploadingPic by mutableStateOf(false)
+        private set
+
     var message by mutableStateOf<String?>(null)
         private set
     var items by mutableStateOf<List<PersonInfo>>(emptyList())
@@ -168,6 +172,21 @@ class AdminPersonalViewModel @Inject constructor(
             } finally {
                 MediaPicker.cleanup(temp)
                 uploading = false
+            }
+        }
+    }
+
+    /** 条目配图（作品封面 / 爱好配图）：相册选图 → 上传，成功后回填 URL */
+    fun uploadPersonImage(uri: Uri, onDone: (String?) -> Unit) {
+        if (uploadingPic) return
+        viewModelScope.launch {
+            uploadingPic = true
+            try {
+                val url = repo.uploadImage(appContext, uri, "blog/personal")
+                if (url == null) message = "配图上传失败"
+                onDone(url)
+            } finally {
+                uploadingPic = false
             }
         }
     }

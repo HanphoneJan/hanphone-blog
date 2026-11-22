@@ -74,6 +74,8 @@ class AdminBlogEditViewModel @Inject constructor(
         private set
     var uploadingCover by mutableStateOf(false)
         private set
+    var uploadingContentImage by mutableStateOf(false)
+        private set
     var message by mutableStateOf<String?>(null)
         private set
     var saved by mutableStateOf(false)
@@ -140,6 +142,8 @@ class AdminBlogEditViewModel @Inject constructor(
     fun updateTitle(v: String) { title = v }
     fun updateDescription(v: String) { description = v }
     fun updateContent(v: String) { content = v }
+    /** 封面 URL 手填/清除（`AdminImageField` 的回调，空串表示没有封面） */
+    fun updateCoverUrl(v: String) { firstPicture = v.trim().takeIf { it.isNotBlank() } }
     fun updateFlag(v: String) { flag = v }
     fun updateCommentabled(v: Boolean) { commentabled = v }
     fun updatePublished(v: Boolean) { published = v }
@@ -168,6 +172,30 @@ class AdminBlogEditViewModel @Inject constructor(
             } finally {
                 MediaPicker.cleanup(temp)
                 uploadingCover = false
+            }
+        }
+    }
+
+    /**
+     * 正文插图：压缩后上传到 `blog/blogs`，成功回传 URL 由 Screen 插入光标处。
+     * 失败只提示、不回传（`onDone(null)`），编辑器内容保持不变。
+     */
+    fun uploadContentImage(uri: Uri, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            uploadingContentImage = true
+            try {
+                val url = repo.uploadImage(appContext, uri, "blog/blogs")
+                if (url != null) {
+                    onDone(url)
+                } else {
+                    message = "图片上传失败"
+                    onDone(null)
+                }
+            } catch (e: Exception) {
+                message = e.adminMessage("图片上传失败")
+                onDone(null)
+            } finally {
+                uploadingContentImage = false
             }
         }
     }

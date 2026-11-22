@@ -61,12 +61,20 @@ async function upload(req, res) {
       const url = typeof asset === 'string' ? asset : asset.url;
       const result = { url: url };
       try {
-        // 验证URL格式
+        // 验证URL格式与协议：只允许 http/https，挡住 javascript: / data: / file: 等
+        let parsedUrl;
         try {
-          new URL(url);
+          parsedUrl = new URL(url);
         } catch (e) {
           result.status = 0;
           result.message = '无效的URL格式';
+          uploadResults.push(result);
+          continue;
+        }
+
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+          result.status = 0;
+          result.message = '仅支持 http(s) 图片地址';
           uploadResults.push(result);
           continue;
         }

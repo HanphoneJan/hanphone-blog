@@ -80,7 +80,6 @@ export default function ProfilePage() {
     setLoading: setPersonalLoading,
     handleUserInfoChange,
     changeUserInfo,
-    handleFileUpload,
     setAvatar
   } = usePersonal()
 
@@ -150,6 +149,14 @@ export default function ProfilePage() {
       }))
     }
   }
+
+  // 图片字段（ImageField 直接回传地址）
+  const handlePicUrlChange = (url: string) => {
+    setFormData(prev => ({ ...prev, pic_url: url }))
+  }
+
+  // ImageField 只接受 http(s) 地址；usePersonal 的默认头像是站内占位图，不能回填进输入框
+  const avatarFieldValue = /^https?:\/\//i.test(imageUrl) ? imageUrl : ''
 
   // 打开编辑对话框
   const openEditDialog = (section: SectionType, item?: ItemType, index?: number) => {
@@ -493,12 +500,12 @@ export default function ProfilePage() {
 
                 <div className="px-5 py-4 overflow-y-auto flex-1">
                   {activeSection === 'avatar' ? (
-                    <AvatarUpload imageUrl={imageUrl} onFileUpload={handleFileUpload} />
+                    <AvatarUpload value={avatarFieldValue} onChange={setImageUrl} disabled={personalLoading} />
                   ) : (
                     <>
                       {activeSection === 'skills' && <SkillForm formData={formData} onChange={handleInputChange} />}
-                      {activeSection === 'works' && <WorkForm formData={formData} onChange={handleInputChange} />}
-                      {activeSection === 'hobbys' && <HobbyForm formData={formData} onChange={handleInputChange} />}
+                      {activeSection === 'works' && <WorkForm formData={formData} onChange={handleInputChange} onPicUrlChange={handlePicUrlChange} />}
+                      {activeSection === 'hobbys' && <HobbyForm formData={formData} onChange={handleInputChange} onPicUrlChange={handlePicUrlChange} />}
                       {activeSection === 'evaluations' && <EvaluationForm formData={formData} onChange={handleInputChange} />}
                     </>
                   )}

@@ -3,12 +3,19 @@
 import { useState, useCallback } from "react";
 import Compressor from "compressorjs";
 import apiClient from "@/lib/utils";
+import { ENDPOINTS } from "@/lib/api";
 
 interface UseImageUploadOptions {
   compress?: boolean;
   maxWidth?: number;
   maxHeight?: number;
   quality?: number;
+  /**
+   * 上传目录，例如 `blog/blogs`、`blog/friendlink`。
+   * 留空则由文件服务按文件类型自动归档。
+   */
+  namespace?: string;
+  /** 覆盖上传地址；默认走 admin-file 的 `/upload`（需要登录 Token） */
   uploadUrl?: string;
 }
 
@@ -22,10 +29,27 @@ interface UseImageUploadReturn {
   resetError: () => void;
 }
 
+/** 压缩后的 Blob 没有有意义的文件名，按 MIME 还原扩展名，保留原文件名主干 */
+function namedImageFile(blob: Blob, original: File): File {
+  const type = blob.type || original.type || 'image/jpeg'
+  const extByType: Record<string, string> = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'image/avif': '.avif',
+    'image/svg+xml': '.svg',
+  }
+  const ext = extByType[type.split(';')[0]] || '.jpg'
+  const base = original.name.replace(/\.[^.]+$/, '') || 'image'
+  return new File([blob], `${base}${ext}`, { type, lastModified: Date.now() })
+}
+
 /**
- * 图片上传Hook
- * @param options 上传配置
- * @returns 上传状态和操作
+ * 图片上传 Hook：压缩 + 上传到 admin-file，返回图片 URL。
+ *
+ * 注意：这里用 `apiClient`（axios 实例），请求拦截器会自动带上 `Token`，
+ * 所以只能用于已登录的后台页面；未登录场景（如前台申请友链）请走公开上传接口。
  */
 export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUploadReturn {
   const {
@@ -33,7 +57,8 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     maxWidth = 1920,
     maxHeight = 1080,
     quality = 0.8,
-    uploadUrl = "/api/upload",
+    namespace,
+    uploadUrl = ENDPOINTS.FILE.UPLOAD,
   } = options;
 
   const [uploading, setUploading] = useState(false);
@@ -55,7 +80,9 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         maxWidth,
         maxHeight,
         success(result) {
-          resolve(result as File);
+          // Compressor 给的是无名字的 Blob，直接 append 到 FormData 会变成 "blob"，
+          // 文件服务里全是 blob.jpg。这里用原文件名 + 实际 MIME 重新包一层。
+          resolve(namedImageFile(result as Blob, file));
         },
         error(err) {
           reject(err);
@@ -83,6 +110,9 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
       // 创建FormData
       const formData = new FormData();
       formData.append("file", compressedFile);
+      if (namespace) {
+        formData.append("namespace", namespace);
+      }
 
       // 上传
       const response = await apiClient.post(uploadUrl, formData, {
@@ -97,7 +127,10 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         },
       });
 
-      const imageUrl = response.data.url;
+      const imageUrl: string | undefined = response.data?.url;
+      if (!imageUrl) {
+        throw new Error("上传接口未返回图片地址");
+      }
       onSuccess?.(imageUrl);
       return imageUrl;
     } catch (err) {
@@ -108,7 +141,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     } finally {
       setUploading(false);
     }
-  }, [compressImage, uploadUrl]);
+  }, [compressImage, namespace, uploadUrl]);
 
   /**
    * 批量上传图片
@@ -120,7 +153,6 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
   ): Promise<string[]> => {
     setUploading(true);
     setUploadProgress(0);
-    setError(null);
 
     try {
       const urls: string[] = [];

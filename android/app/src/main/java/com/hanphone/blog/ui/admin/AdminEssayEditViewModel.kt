@@ -14,6 +14,7 @@ import com.hanphone.blog.data.model.Essay
 import com.hanphone.blog.data.model.EssayFileUrl
 import com.hanphone.blog.data.repo.AdminRepository
 import com.hanphone.blog.util.MediaPicker
+import com.hanphone.blog.util.UrlRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
@@ -146,6 +147,34 @@ class AdminEssayEditViewModel @Inject constructor(
                 uploadingLabel = null
             }
         }
+    }
+
+    /**
+     * 手填外链附件（图片 / 视频 / 文件都收）。
+     *
+     * 外链不归后端管：**不进 `unsavedUrls`**，移除时不能顺手去删别人的文件；
+     * 也拿不到宽高与缩略图，九宫格会回退原图。
+     *
+     * @return 是否已添加（UI 据此决定是否清空输入框）
+     */
+    fun addAttachmentUrl(raw: String): Boolean {
+        if (!UrlRules.isHttpUrl(raw)) {
+            message = "请输入 http:// 或 https:// 开头的地址"
+            return false
+        }
+        val url = UrlRules.normalize(raw)
+        if (files.any { it.url == url }) {
+            message = "该地址已添加"
+            return false
+        }
+        files = files + EssayFileUrl(
+            url = url,
+            urlType = UrlRules.mediaKindOf(url),
+            width = null,
+            height = null,
+            thumbPath = null
+        )
+        return true
     }
 
     fun removeAttachment(index: Int) {

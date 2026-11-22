@@ -16,7 +16,6 @@ interface ProjectListProps {
   stats: ProjectStatsType
   updateRecommendLoading: number | null
   updatePublishedLoading: number | null
-  imageUploadRef: React.RefObject<HTMLInputElement | null>
   onFilterChange: (name: keyof ProjectFilters, value: any) => void
   onResetFilters: () => void
   onEditTitle: (projectId: number | null) => void
@@ -33,7 +32,6 @@ interface ProjectListProps {
   onCancelEditUrl: (projectId: number | null) => void
   onLocalInputChange: (projectId: number, field: string, value: string) => void
   onTypeChange: (projectId: number | null, type: number) => void
-  onImageFileChange: (e: React.ChangeEvent<HTMLInputElement>, projectId: number | null) => void
   onShowTagInput: (projectId: number | null) => void
   onConfirmTagInput: (project: Project) => void
   onRemoveTag: (index: number, project: Project) => void
@@ -51,7 +49,6 @@ export const ProjectList = ({
   stats,
   updateRecommendLoading,
   updatePublishedLoading,
-  imageUploadRef,
   onFilterChange,
   onResetFilters,
   onEditTitle,
@@ -68,7 +65,6 @@ export const ProjectList = ({
   onCancelEditUrl,
   onLocalInputChange,
   onTypeChange,
-  onImageFileChange,
   onShowTagInput,
   onConfirmTagInput,
   onRemoveTag,
@@ -188,7 +184,6 @@ export const ProjectList = ({
                 localValues={localInputValues[projectId] || {}}
                 updateRecommendLoading={updateRecommendLoading === project.id}
                 updatePublishedLoading={updatePublishedLoading === project.id}
-                imageUploadRef={imageUploadRef}
                 onEditTitle={onEditTitle}
                 onSaveTitle={onSaveTitle}
                 onCancelEditTitle={onCancelEditTitle}
@@ -203,7 +198,6 @@ export const ProjectList = ({
                 onCancelEditUrl={onCancelEditUrl}
                 onLocalInputChange={onLocalInputChange}
                 onTypeChange={onTypeChange}
-                onImageFileChange={onImageFileChange}
                 onShowTagInput={onShowTagInput}
                 onConfirmTagInput={onConfirmTagInput}
                 onRemoveTag={onRemoveTag}

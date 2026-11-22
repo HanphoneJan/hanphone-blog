@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import Image from 'next/image'
-import { X, Plus, Trash2, Loader2 } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import { authRegister } from '@/lib/authApi'
 import { useUser } from '@/contexts/UserContext'
 import { useTheme } from '@/contexts/ThemeProvider'
 import { alertSuccess, alertError } from '@/lib/Alert'
 import ModalOverlay from '@/components/shared/ModalOverlay'
+import { ImageField } from '@/components/shared'
 import md5 from 'md5'
 import Compressor from 'compressorjs' // 引入compressorjs
 import { TIME, VALIDATION, IMAGE, Z_INDEX, USER_TYPE, API_CODE, STORAGE_KEYS } from '@/lib/constants'
@@ -53,6 +53,29 @@ interface RegisterFormProps {
   onClose: () => void
 }
 
+// 压缩头像（与原先注册页行为一致：统一转 JPEG、限制尺寸、保留原文件名）
+function compressAvatar(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
+    new Compressor(file, {
+      quality: IMAGE.COMPRESS_QUALITY,
+      maxWidth: IMAGE.MAX_WIDTH,
+      maxHeight: IMAGE.MAX_HEIGHT,
+      mimeType: IMAGE.DEFAULT_MIME_TYPE,
+      convertSize: IMAGE.CONVERT_SIZE,
+      success: compressedResult => {
+        resolve(
+          new File([compressedResult], `${originalName}.${IMAGE.DEFAULT_EXTENSION}`, {
+            type: IMAGE.DEFAULT_MIME_TYPE,
+            lastModified: Date.now()
+          })
+        )
+      },
+      error: () => reject(new Error(AUTH_LABELS.AVATAR_COMPRESS_FAIL))
+    })
+  })
+}
+
 const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
   const { setUserInfo, setToken } = useUser()
   const { theme } = useTheme()
@@ -67,7 +90,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
   const [countdown, setCountdown] = useState(0)
   const [avatarUrl, setAvatarUrl] = useState('')
   const [uploading, setUploading] = useState(false)
-  const uploadRef = useRef<HTMLInputElement>(null) // 上传input的ref
 
   // 验证码倒计时
   useEffect(() => {
@@ -175,60 +197,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
-
-    const file = e.target.files[0]
-    // 保存原始文件名（不含扩展名）和扩展名
-    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
-    const fileExtension = IMAGE.DEFAULT_EXTENSION
-    const newFileName = `${originalName}.${fileExtension}`
-
-    // 使用Compressor压缩图片
-    new Compressor(file, {
-      quality: IMAGE.COMPRESS_QUALITY,
-      maxWidth: IMAGE.MAX_WIDTH,
-      maxHeight: IMAGE.MAX_HEIGHT,
-      mimeType: IMAGE.DEFAULT_MIME_TYPE,
-      convertSize: IMAGE.CONVERT_SIZE,
-      success: async compressedResult => {
-        try {
-          setUploading(true)
-
-          // 将压缩后的blob转换为File对象，并保持原始文件名（修改扩展名为jpeg）
-          const compressedFile = new File([compressedResult], newFileName, {
-            type: IMAGE.DEFAULT_MIME_TYPE,
-            lastModified: Date.now()
-          })
-
-          const formData = new FormData()
-          formData.append('avatar', compressedFile) // 使用带有原始文件名的压缩文件
-          const data = await fetchData(ENDPOINTS.FILE.AVATAR_UPLOAD, 'POST', formData)
-          if (data?.url) {
-            setAvatarUrl(data?.url)
-            alertSuccess(AUTH_LABELS.AVATAR_UPLOAD_SUCCESS)
-          } else {
-            alertError(AUTH_LABELS.AVATAR_UPLOAD_FAIL)
-          }
-        } catch (error) {
-          console.log('上传失败:', error)
-          alertError(AUTH_LABELS.AVATAR_UPLOAD_FAIL)
-        } finally {
-          setUploading(false)
-          if (uploadRef.current) uploadRef.current.value = ''
-        }
-      },
-      error: err => {
-        console.error('图片压缩失败:', err)
-        alertError(AUTH_LABELS.AVATAR_COMPRESS_FAIL)
-        setUploading(false)
-        if (uploadRef.current) uploadRef.current.value = ''
+  // 注册时还没有登录态：头像仍走公开接口 ENDPOINTS.FILE.AVATAR_UPLOAD
+  // （不要把 ImageField 默认的登录态上传用在这里）
+  const uploadAvatar = async (file: File): Promise<string> => {
+    setUploading(true)
+    try {
+      const compressedFile = await compressAvatar(file)
+      const formData = new FormData()
+      formData.append('avatar', compressedFile)
+      const data = await fetchData(ENDPOINTS.FILE.AVATAR_UPLOAD, 'POST', formData)
+      if (!data?.url) {
+        throw new Error(AUTH_LABELS.AVATAR_UPLOAD_FAIL)
       }
-    })
-  }
-
-  const handleRemoveAvatar = () => {
-    setAvatarUrl('')
+      alertSuccess(AUTH_LABELS.AVATAR_UPLOAD_SUCCESS)
+      return data.url as string
+    } finally {
+      setUploading(false)
+    }
   }
 
   const getCaptcha = async () => {
@@ -464,59 +449,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ visible, onClose }) => {
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-[rgb(var(--text))] mb-2">
-              头像
-            </label>
-            <div className="relative">
-              <input
-                ref={uploadRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                disabled={uploading}
-                className="hidden"
-                id="avatar-upload"
-              />
-
-              <label
-                htmlFor="avatar-upload"
-                className={`cursor-pointer ${uploading ? 'opacity-70' : ''}`}
-              >
-                {avatarUrl ? (
-                  <div className="relative w-24 h-24 rounded-md overflow-hidden border border-[rgb(var(--border))]">
-                    <Image
-                      src={avatarUrl}
-                      alt="用户头像"
-                      width={IMAGE.AVATAR_SIZE}
-                      height={IMAGE.AVATAR_SIZE}
-                      className="object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={e => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleRemoveAvatar()
-                      }}
-                      className="absolute top-0 right-0 bg-black/50 text-white p-1 hover:bg-black/70 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 rounded-md border-2 border-dashed flex flex-col items-center justify-center transition-colors border-[rgb(var(--border)/0.4)] text-[rgb(var(--text-muted))] hover:border-[rgb(var(--primary))] hover:text-[rgb(var(--primary))]">
-                    <Plus className="h-6 w-6 mb-1" />
-                    <span className="text-xs">上传头像</span>
-                  </div>
-                )}
-              </label>
-
-              {uploading && (
-                <div className="absolute top-0 left-0 w-full h-full bg-[rgb(var(--bg)/0.7)] flex items-center justify-center rounded-md">
-                  <Loader2 className="h-5 w-5 animate-spin text-[rgb(var(--primary))]" />
-                </div>
-              )}
-            </div>
+            <ImageField
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              label="头像"
+              round
+              previewSize={96}
+              uploadText="上传头像"
+              uploader={uploadAvatar}
+            />
             <p className="mt-1 text-xs text-[rgb(var(--text-muted))]">
               图片将自动压缩为JPEG格式，最大尺寸{IMAGE.MAX_WIDTH}x{IMAGE.MAX_HEIGHT}px，保持原始文件名
             </p>

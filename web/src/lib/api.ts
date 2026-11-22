@@ -50,7 +50,9 @@ export const ENDPOINTS = {
     GET_FILE: `${PICTURE_BASE_URL}/file/`,
     GET_FILES: `${PICTURE_BASE_URL}/files/`,
     DIRECTORY: `${PICTURE_BASE_URL}/directory/`,
-    AVATAR_UPLOAD: `${PICTURE_BASE_URL}/upload/avatar`
+    AVATAR_UPLOAD: `${PICTURE_BASE_URL}/upload/avatar`,
+    /** 公开图片上传（未登录可用，仅图片，限流更严） */
+    PUBLIC_IMAGE_UPLOAD: `${PICTURE_BASE_URL}/upload/public-image`
   },
   CHAT: {
     POST_PRIVATE_MESSAGES: `${NEXT_API_BASE_URL}/postPrivateMessages`,

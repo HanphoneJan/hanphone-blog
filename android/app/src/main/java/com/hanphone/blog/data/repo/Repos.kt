@@ -440,6 +440,20 @@ class FileRepository(private val api: FileApi = ApiClient.fileApi) {
         val part = MultipartBody.Part.createFormData("avatar", file.name, body)
         api.uploadAvatar(part)
     }
+
+    /**
+     * 公开图片上传（申请友链等未登录入口）：字段名必须是 `file`。
+     * 只返回可用 URL；HTTP 失败或响应没有 url 都按失败处理（null）。
+     */
+    suspend fun uploadPublicImage(file: File): String? = withContext(Dispatchers.IO) {
+        val mediaType = "image/*".toMediaType()
+        val body = file.asRequestBody(mediaType)
+        val part = MultipartBody.Part.createFormData("file", file.name, body)
+        runCatching {
+            // 失败时服务端不会带 url；不额外依赖 code 约定（不同上传接口有过 200/其他码混用）
+            api.uploadPublicImage(part).url?.takeIf { it.isNotBlank() }
+        }.getOrNull()
+    }
 }
 
 /** 音乐库（Next BFF /next-api/music，公开只读）。失败由 ViewModel try/catch */

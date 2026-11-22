@@ -14,7 +14,6 @@ interface ListTabProps {
   updateRecommendLoading: number | null
   updatePublishedLoading: number | null
   parsingLoading: number | null
-  imageUploadRef: React.RefObject<HTMLInputElement | null>
   stats: { total: number; published: number; pending: number }
   onFilterChange: (name: keyof FilterState, value: string) => void
   onResetFilters: () => void
@@ -48,7 +47,6 @@ interface ListTabProps {
   onCancelEditLinkUrl: (id: number | null) => void
   onTypeChange: (id: number | null, type: string) => void
   onLocalInputChange: (id: number, field: string, value: string) => void
-  onImageFileChange: (e: React.ChangeEvent<HTMLInputElement>, id: number | null) => void
   onToggleRecommend: (link: FriendLink) => void
   onTogglePublished: (link: FriendLink) => void
   onParseApplyText: (link: FriendLink) => void
@@ -65,7 +63,6 @@ export function ListTab({
   updateRecommendLoading,
   updatePublishedLoading,
   parsingLoading,
-  imageUploadRef,
   stats,
   onFilterChange,
   onResetFilters,
@@ -99,7 +96,6 @@ export function ListTab({
   onCancelEditLinkUrl,
   onTypeChange,
   onLocalInputChange,
-  onImageFileChange,
   onToggleRecommend,
   onTogglePublished,
   onParseApplyText,
@@ -132,7 +128,6 @@ export function ListTab({
         updateRecommendLoading={updateRecommendLoading}
         updatePublishedLoading={updatePublishedLoading}
         parsingLoading={parsingLoading}
-        imageUploadRef={imageUploadRef}
         onEditName={onEditName}
         onSaveName={onSaveName}
         onCancelEditName={onCancelEditName}
@@ -162,7 +157,6 @@ export function ListTab({
         onCancelEditLinkUrl={onCancelEditLinkUrl}
         onTypeChange={onTypeChange}
         onLocalInputChange={onLocalInputChange}
-        onImageFileChange={onImageFileChange}
         onToggleRecommend={onToggleRecommend}
         onTogglePublished={onTogglePublished}
         onParseApplyText={onParseApplyText}

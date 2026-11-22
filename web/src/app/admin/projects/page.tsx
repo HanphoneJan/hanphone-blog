@@ -86,13 +86,9 @@ const ProjectManagement = () => {
     formData,
     dialogImageUrl,
     loading: formLoading,
-    uploadRef,
-    imageUploadRef,
     handleInputChange,
-    handleFileChange,
-    handleImageFileChange,
-    handleRemoveImage,
-    publishProject
+    publishProject,
+    setDialogImageUrl
   } = useProjectForm(() => {
     setActiveTab('list')
     getProjectList()
@@ -186,10 +182,8 @@ const ProjectManagement = () => {
               formData={formData}
               dialogImageUrl={dialogImageUrl}
               loading={formLoading}
-              uploadRef={uploadRef}
               onInputChange={handleInputChange}
-              onFileChange={handleFileChange}
-              onRemoveImage={handleRemoveImage}
+              onImageUrlChange={setDialogImageUrl}
               onSubmit={publishProject}
             />
           </motion.div>
@@ -215,7 +209,6 @@ const ProjectManagement = () => {
               stats={stats}
               updateRecommendLoading={updateRecommendLoading}
               updatePublishedLoading={updatePublishedLoading}
-              imageUploadRef={imageUploadRef}
               onFilterChange={handleFilterChange}
               onResetFilters={resetFilters}
               onEditTitle={handleEditTitle}
@@ -232,7 +225,6 @@ const ProjectManagement = () => {
               onCancelEditUrl={handleCancelEditUrl}
               onLocalInputChange={handleLocalInputChange}
               onTypeChange={handleTypeChange}
-              onImageFileChange={handleImageFileChange}
               onShowTagInput={showTagInput}
               onConfirmTagInput={confirmTagInput}
               onRemoveTag={removeTag}

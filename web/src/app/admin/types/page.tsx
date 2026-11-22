@@ -1,14 +1,12 @@
 'use client'
 import Image from 'next/image'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus,
   Edit,
   Trash2,
   Loader2,
-  Upload as UploadIcon,
-  X,
   Search
 } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
@@ -17,11 +15,10 @@ import { showAlert } from '@/lib/Alert'
 import { ADMIN_TYPE_LABELS, COMMON_LABELS, ADMIN_SYNC_DELETE_IMAGE_LABELS } from '@/lib/labels'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { SyncDeleteImageToggle } from '@/components/shared/SyncDeleteImageToggle'
+import { ImageField } from '@/components/shared/ImageField'
 import { useSyncDeleteImage, withSyncDeleteImage } from '@/lib/syncDeleteImage'
-import { PicResponse } from '@/types/response'
-import Compressor from 'compressorjs'
 
-import {  API_CODE , IMAGE } from '@/lib/constants'
+import {  API_CODE  } from '@/lib/constants'
 // 动画变体定义
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -66,13 +63,6 @@ interface Category {
   blogs: { id: number }[]
 }
 
-// 定义上传文件类型
-interface UploadFile {
-  uid: string
-  name: string
-  url: string
-}
-
 // API调用函数（与标签管理保持一致）
 const fetchData = async (url: string, method: string = 'GET', data?: unknown) => {
   try {
@@ -96,16 +86,11 @@ export default function CategoryManagement() {
   const [filteredCategoryList, setFilteredCategoryList] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [previewVisible, setPreviewVisible] = useState(false)
-  const [previewImage, setPreviewImage] = useState('')
-  const [fileList, setFileList] = useState<UploadFile[]>([])
   const [currentCategory, setCurrentCategory] = useState<Partial<Category> | null>(null)
   const [formName, setFormName] = useState('')
   const [formPicUrl, setFormPicUrl] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
-  const [uploading, setUploading] = useState(false) // 新增上传状态
   const [searchKeyword, setSearchKeyword] = useState('')
-  const uploadRef = useRef<HTMLInputElement>(null) // 上传input的ref
   // 删除时是否同步删除分类图
   const { syncDeleteImage, setSyncDeleteImage } = useSyncDeleteImage()
 
@@ -152,88 +137,6 @@ export default function CategoryManagement() {
     }
   }, [searchKeyword, categoryList])
 
-  // 处理图片预览
-  const handlePreview = (file: UploadFile) => {
-    setPreviewImage(file.url || '')
-    setPreviewVisible(true)
-  }
-
-  // 处理图片移除
-  const handleRemove = () => {
-    setFileList([])
-    setPreviewImage('')
-    setFormPicUrl('')
-  }
-
-  // 处理图片上传成功
-  const handleUploadSuccess = (data: PicResponse) => {
-    if (data.code === API_CODE.SUCCESS) {
-      // 修改：检查code而不是status
-      const url = data.url
-      // 更新文件列表确保图片回显
-      setFileList([{ uid: Date.now().toString(), name: 'category-image', url }])
-      setPreviewImage(url)
-      setFormPicUrl(url)
-    } else {
-      showAlert(data.message || ADMIN_TYPE_LABELS.UPLOAD_FAIL)
-    }
-  }
-
-  // 处理文件选择和压缩
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
-
-    const file = e.target.files[0]
-    // 保存原始文件名（不含扩展名）和扩展名
-    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
-    const fileExtension = 'jpeg' // 统一使用jpeg扩展名
-    const newFileName = `${originalName}.${fileExtension}`
-
-    // 使用Compressor压缩图片
-    new Compressor(file, {
-      quality: 0.8, // 压缩质量，0-1之间
-      maxWidth: IMAGE.MAX_WIDTH,
-      maxHeight: IMAGE.MAX_HEIGHT,
-      mimeType: 'image/jpeg', // 确保MIME类型正确
-      convertSize: 102400, // 小于100KB的图片也进行转换
-      success: async compressedResult => {
-        try {
-          setUploading(true)
-
-          // 将压缩后的blob转换为File对象，并保持原始文件名（修改扩展名为jpeg）
-          const compressedFile = new File([compressedResult], newFileName, {
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          })
-
-          const formData = new FormData()
-          formData.append('namespace', 'blog/type')
-          formData.append('file', compressedFile) // 使用带有原始文件名的压缩文件
-
-          const response = await apiClient({
-            url: ENDPOINTS.FILE.UPLOAD,
-            method: 'POST',
-            data: formData
-          })
-          const data = response.data
-          handleUploadSuccess(data)
-        } catch (error) {
-          console.error('上传失败:', error)
-          showAlert(ADMIN_TYPE_LABELS.UPLOAD_FAIL)
-        } finally {
-          setUploading(false)
-          if (uploadRef.current) uploadRef.current.value = ''
-        }
-      },
-      error: err => {
-        console.error('图片压缩失败:', err)
-        showAlert(ADMIN_TYPE_LABELS.IMAGE_COMPRESS_FAIL)
-        setUploading(false)
-        if (uploadRef.current) uploadRef.current.value = ''
-      }
-    })
-  }
-
   // 打开新增/编辑对话框
   const handleOpenDialog = (category?: Category) => {
     setIsDialogOpen(true)
@@ -241,18 +144,10 @@ export default function CategoryManagement() {
       setCurrentCategory(category)
       setFormName(category.name)
       setFormPicUrl(category.pic_url)
-      setFileList(
-        category.pic_url
-          ? [{ uid: category.id.toString(), name: 'category-image', url: category.pic_url }]
-          : []
-      )
-      setPreviewImage(category.pic_url || '')
     } else {
       setCurrentCategory(null)
       setFormName('')
       setFormPicUrl('')
-      setFileList([])
-      setPreviewImage('')
     }
   }
 
@@ -528,66 +423,15 @@ export default function CategoryManagement() {
                 />
               </div>
 
-              {/* 图片上传区域 */}
-              <div>
-                <label className="block text-sm text-[rgb(var(--text))] mb-2">封面图片</label>
-                <div className="border-2 border-dashed border-[rgb(var(--border))] rounded-lg p-4 hover:border-[rgb(var(--primary))] transition-colors relative">
-                  {fileList.length > 0 ? (
-                    <div className="relative">
-                      <Image
-                        src={fileList[0].url}
-                        alt="预览"
-                        width={300}
-                        height={200}
-                        className="h-40 w-full object-cover rounded-md"
-                      />
-                      <button
-                        onClick={handleRemove}
-                        className="absolute top-2 right-2 bg-[rgb(var(--overlay))]/50 p-1 rounded-full text-white hover:bg-[rgb(var(--overlay))]/70 transition-colors"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handlePreview(fileList[0])}
-                        className="absolute bottom-2 right-2 bg-[rgb(var(--primary))]/80 p-1 rounded-full text-white hover:bg-[rgb(var(--primary))] transition-colors"
-                      >
-                        <UploadIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <label
-                        htmlFor="category-upload"
-                        className={`flex flex-col items-center justify-center cursor-pointer text-[rgb(var(--text-muted))] hover:text-[rgb(var(--primary))] ${
-                          uploading ? 'opacity-70' : ''
-                        }`}
-                      >
-                        <UploadIcon className="h-10 w-10 mb-2" />
-                        <span className="text-sm">点击上传图片</span>
-                      </label>
-                      <input
-                        ref={uploadRef}
-                        id="category-upload"
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        disabled={uploading}
-                      />
-                    </>
-                  )}
-
-                  {/* 上传加载指示器 */}
-                  {uploading && (
-                    <div className="absolute inset-0 bg-[rgb(var(--bg))]/70 flex items-center justify-center rounded-md">
-                      <Loader2 className="h-5 w-5 animate-spin text-[rgb(var(--primary))]" />
-                    </div>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-[rgb(var(--text-muted))]">
-                  图片将自动压缩为JPEG格式，最大尺寸1200x1200px，保持原始文件名
-                </p>
-              </div>
+              {/* 图片区域：上传 + 手填 URL */}
+              <ImageField
+                value={formPicUrl}
+                onChange={setFormPicUrl}
+                namespace="blog/type"
+                label="分类封面"
+                aspectRatio={16 / 9}
+                hint="上传本地图片或填入图片地址，二者选其一即可。"
+              />
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -603,10 +447,10 @@ export default function CategoryManagement() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSaveCategory}
-                disabled={loading || uploading}
+                disabled={loading}
                 className="px-3 sm:px-4 py-2 rounded-md bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))] transition-colors flex items-center gap-2 text-sm"
               >
-                {(loading || uploading) && <Loader2 className="h-4 w-4 animate-spin" />}
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 提交
               </motion.button>
             </div>
@@ -614,27 +458,6 @@ export default function CategoryManagement() {
         </motion.div>
       )}
       </AnimatePresence>
-
-      {/* 图片预览对话框 */}
-      {previewVisible && (
-        <div className="fixed inset-0 bg-[rgb(var(--overlay))]/50 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-2xl w-full">
-            <button
-              onClick={() => setPreviewVisible(false)}
-              className="absolute -top-10 right-0 text-white hover:text-[rgb(var(--text-muted))] transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            <Image
-              src={previewImage}
-              alt="预览"
-              width={800}
-              height={600}
-              className="max-h-[80vh] w-full object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
 
       {/* 删除确认弹窗 */}
       <ConfirmDialog

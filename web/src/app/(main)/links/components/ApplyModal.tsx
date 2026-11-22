@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Link2, User, Image, Rss, Palette, FileText, Send, Loader2, Check, Copy } from 'lucide-react'
+import { X, Link2, User, Rss, Palette, FileText, Send, Loader2, Check, Copy } from 'lucide-react'
 import { ENDPOINTS } from '@/lib/api'
 import { SITE_URL } from '@/lib/seo-config'
 import { useRequestId } from '@/lib/requestId'
+import { ImageField } from '@/components/shared'
+import { uploadPublicImage } from '@/lib/publicUpload'
 
 import { API_CODE } from '@/lib/constants'
 interface ApplyModalProps {
@@ -397,35 +399,26 @@ export default function ApplyModal({ isOpen, onClose, defaultTab = 'copy' }: App
                 />
               </div>
 
-              {/* 头像 URL */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-bold mb-2">
-                  <Image className="w-4 h-4" />
-                  头像地址
-                </label>
-                <input
-                  type="text"
-                  value={formData.avatar}
-                  onChange={e => handleChange('avatar', e.target.value)}
-                  placeholder="https://example.com/avatar.png"
-                  className="w-full px-3 py-2 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] focus:outline-none focus:border-[rgb(var(--primary))]"
-                />
-              </div>
+              {/* 头像 */}
+              <ImageField
+                value={formData.avatar}
+                onChange={url => handleChange('avatar', url)}
+                label="头像"
+                round
+                previewSize={96}
+                uploadText="上传头像"
+                uploader={uploadPublicImage}
+              />
 
               {/* 站点截图 */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-bold mb-2">
-                  <Image className="w-4 h-4" />
-                  站点截图
-                </label>
-                <input
-                  type="text"
-                  value={formData.siteshot}
-                  onChange={e => handleChange('siteshot', e.target.value)}
-                  placeholder="https://example.com/screenshot.png"
-                  className="w-full px-3 py-2 border-2 border-[rgb(var(--text))] bg-[rgb(var(--bg))] focus:outline-none focus:border-[rgb(var(--primary))]"
-                />
-              </div>
+              <ImageField
+                value={formData.siteshot}
+                onChange={url => handleChange('siteshot', url)}
+                label="站点截图"
+                aspectRatio={16 / 9}
+                previewSize={220}
+                uploader={uploadPublicImage}
+              />
 
               {/* RSS */}
               <div>

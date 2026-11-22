@@ -21,12 +21,12 @@ import {
   ChevronDown,
   ChevronUp,
   Edit,
-  Upload,
   Eye,
   EyeOff
 } from 'lucide-react'
 import { showAlert } from '@/lib/Alert'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { ImageField } from '@/components/shared'
 import {  VALIDATION, ASSETS , API_CODE } from '@/lib/constants'
 import { ADMIN_USER_LABELS } from '@/lib/labels'
 import md5 from 'md5'
@@ -175,7 +175,6 @@ export default function UserManagementPage() {
     avatar: '',
     password: ''
   })
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   // 切换用户详情展开状态
@@ -297,37 +296,6 @@ export default function UserManagementPage() {
       password: ''
     })
     setShowPassword(false)
-  }
-
-  // 上传头像
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
-
-    const file = e.target.files[0]
-    setUploadingAvatar(true)
-
-    try {
-      const formDataUpload = new FormData()
-      formDataUpload.append('avatar', file)
-
-      const response = await fetch(ENDPOINTS.FILE.AVATAR_UPLOAD, {
-        method: 'POST',
-        body: formDataUpload
-      })
-
-      const data = await response.json()
-      if (data?.url) {
-        setEditFormData(prev => ({ ...prev, avatar: data.url }))
-        showAlert(ADMIN_USER_LABELS.AVATAR_UPLOAD_SUCCESS)
-      } else {
-        showAlert(ADMIN_USER_LABELS.AVATAR_UPLOAD_FAIL)
-      }
-    } catch (error) {
-      console.error('上传头像失败:', error)
-      showAlert(ADMIN_USER_LABELS.AVATAR_UPLOAD_FAIL)
-    } finally {
-      setUploadingAvatar(false)
-    }
   }
 
   // 更新用户信息
@@ -912,57 +880,16 @@ export default function UserManagementPage() {
 
               {/* 头像 */}
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--text))] mb-2">
-                  头像
-                </label>
-                <div className="flex items-center gap-4">
-                  {/* 当前头像预览 */}
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden border border-[rgb(var(--border))] shrink-0">
-                    <Image
-                      src={editFormData.avatar || ASSETS.DEFAULT_AVATAR}
-                      alt="用户头像"
-                      fill
-                      className="object-cover"
-                    />
-                    {uploadingAvatar && (
-                      <div className="absolute inset-0 bg-[rgb(var(--overlay))]/50 flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-white" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 上传按钮 */}
-                  <div className="flex-1">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                      disabled={uploadingAvatar}
-                      className="hidden"
-                      id="avatar-upload-edit"
-                    />
-                    <label
-                      htmlFor="avatar-upload-edit"
-                      className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                        uploadingAvatar
-                          ? 'bg-[rgb(var(--muted))] text-[rgb(var(--text-muted))] cursor-not-allowed'
-                          : 'bg-[rgb(var(--hover))] text-[rgb(var(--text))] hover:bg-[rgb(var(--muted))]'
-                      }`}
-                    >
-                      {uploadingAvatar ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>上传中...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4" />
-                          <span>更换头像</span>
-                        </>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                <ImageField
+                  value={editFormData.avatar}
+                  onChange={url => setEditFormData(prev => ({ ...prev, avatar: url }))}
+                  label="头像"
+                  namespace="blog/user"
+                  round
+                  previewSize={96}
+                  uploadText="更换头像"
+                  disabled={loading}
+                />
               </div>
             </div>
 
@@ -979,7 +906,7 @@ export default function UserManagementPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={updateUser}
-                disabled={loading || uploadingAvatar}
+                disabled={loading}
                 className="px-4 py-2 rounded-md bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))] transition-colors flex items-center gap-2 text-sm"
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}

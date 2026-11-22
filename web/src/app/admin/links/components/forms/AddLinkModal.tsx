@@ -10,6 +10,7 @@ import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
 import { parseApplyText } from '../../utils/parseApplyText'
 import ModalOverlay from '@/components/shared/ModalOverlay'
+import { ImageField } from '@/components/shared'
 import { LINK_TYPES } from '../../types'
 import type { FriendLink } from '../../types'
 
@@ -332,31 +333,28 @@ export function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) 
                 </div>
               </div>
 
-              {/* 头像 URL */}
+              {/* 头像 */}
               <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-sm text-[rgb(var(--text))]">
-                  头像地址
-                </label>
-                <input
-                  type="text"
+                <ImageField
                   value={formData.avatar}
-                  onChange={e => handleChange('avatar', e.target.value)}
-                  placeholder="https://example.com/avatar.png"
-                  className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-sm text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all"
+                  onChange={url => handleChange('avatar', url)}
+                  label="头像"
+                  namespace="blog/friendlink"
+                  round
+                  previewSize={96}
+                  uploadText="上传头像"
                 />
               </div>
 
               {/* 站点截图 */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-sm text-[rgb(var(--text))]">
-                  站点截图
-                </label>
-                <input
-                  type="text"
+              <div className="space-y-1.5 md:col-span-2">
+                <ImageField
                   value={formData.siteshot}
-                  onChange={e => handleChange('siteshot', e.target.value)}
-                  placeholder="https://example.com/screenshot.png"
-                  className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-sm text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all"
+                  onChange={url => handleChange('siteshot', url)}
+                  label="站点截图"
+                  namespace="blog/friendlink"
+                  aspectRatio={16 / 9}
+                  previewSize={240}
                 />
               </div>
 

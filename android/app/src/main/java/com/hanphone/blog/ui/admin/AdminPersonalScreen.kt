@@ -409,6 +409,16 @@ private fun PersonItemDialog(
         mutableStateOf((initial.rank?.takeIf { it > 0 } ?: 0L).toString())
     }
 
+    val picPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            vm.uploadPersonImage(uri) { pic ->
+                if (pic != null) picUrl = pic
+            }
+        }
+    }
+    // 与网页表单一致：只有「作品 / 爱好」有配图字段，技能与评价不显示
+    val showPic = vm.tab == PersonalTab.WORK || vm.tab == PersonalTab.HOBBY
+
     AdminFormDialog(
         title = if (initial.id == null) "新增${vm.tab.label}" else "编辑${vm.tab.label}",
         onDismiss = onDismiss,
@@ -430,8 +440,17 @@ private fun PersonItemDialog(
         AdminField(name, { name = it }, "名称")
         AdminField(description, { description = it }, "描述", singleLine = false, minLines = 3)
         AdminField(url, { url = it }, "链接", placeholder = "https://，可留空")
-        AdminField(iconSrc, { iconSrc = it }, "图标 URL", placeholder = "可留空")
-        AdminField(picUrl, { picUrl = it }, "配图 URL", placeholder = "可留空")
+        AdminField(iconSrc, { iconSrc = it }, "图标类型", placeholder = "如 music / video / sport / code，可留空")
+        if (showPic) {
+            AdminImageField(
+                value = picUrl,
+                onValueChange = { picUrl = it },
+                label = "配图",
+                uploading = vm.uploadingPic,
+                onPick = { picPicker.launch("image/*") },
+                aspectRatio = 16f / 9f
+            )
+        }
         AdminField(
             rank,
             { rank = it.filter { c -> c.isDigit() || c == '-' } },

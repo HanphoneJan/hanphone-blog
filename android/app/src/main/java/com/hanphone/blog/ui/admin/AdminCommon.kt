@@ -10,13 +10,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
@@ -36,17 +41,25 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.hanphone.blog.util.UrlRules
+import com.hanphone.blog.util.resolveImageUrl
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.PullRefresh
 import com.hanphone.blog.ui.components.PullRefreshHost
@@ -434,3 +447,179 @@ fun AdminGap(height: Int = 8) {
     Spacer(Modifier.height(height.dp))
 }
 
+
+/**
+ * 统一图片字段：相册上传 + 手填图片 URL。
+ *
+ * 后台所有“需要一张图”的字段都应该用它，不要再出现只能上传或只能填 URL 的表单。
+ * 预览区的点击与「上传」按钮等价；URL 只在合法 http(s) 时才回写，失焦时提示错误。
+ *
+ * @param uploading 由调用方 ViewModel 提供，组件本身不持有上传逻辑
+ * @param onPick    由调用方启动相册选择器（ActivityResult 必须在 Screen 层注册）
+ */
+@Composable
+fun AdminImageField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    uploading: Boolean,
+    onPick: () -> Unit,
+    modifier: Modifier = Modifier,
+    aspectRatio: Float = 16f / 9f,
+    round: Boolean = false,
+    placeholder: String = "https://…（可直接粘贴图片地址）",
+    hint: String? = "可从相册选择，也可直接填图片地址，二者选其一即可。",
+    enabled: Boolean = true
+) {
+    var draft by remember { mutableStateOf(value) }
+    var urlError by remember { mutableStateOf<String?>(null) }
+    var broken by remember { mutableStateOf(false) }
+    var focused by remember { mutableStateOf(false) }
+    // 老数据可能是站内相对路径，别一打开就报「地址无效」；用户改过才校验
+    var urlTouched by remember { mutableStateOf(false) }
+
+    // 上传完成 / 外部重置时同步输入框；用户正在输入的等价内容不打断
+    LaunchedEffect(value) {
+        if (value != draft && UrlRules.normalize(draft) != value) {
+            draft = value
+            urlError = null
+            broken = false
+            urlTouched = false
+        }
+    }
+
+    val preview = if (broken) null else resolveImageUrl(value)
+
+    Column(modifier.fillMaxWidth()) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(6.dp))
+
+        Box(
+            Modifier
+                .then(
+                    if (round) Modifier.size(96.dp)
+                    else Modifier.fillMaxWidth().aspectRatio(aspectRatio)
+                )
+                .clip(if (round) CircleShape else RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(enabled = enabled && !uploading, onClick = onPick),
+            contentAlignment = Alignment.Center
+        ) {
+            if (preview != null) {
+                AsyncImage(
+                    model = preview,
+                    contentDescription = label,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                    onError = { broken = true }
+                )
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        if (broken) "图片无法加载，可重新上传" else "点击从相册选择",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (uploading) {
+                Box(
+                    Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                }
+            }
+
+            if (preview != null && !uploading) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(26.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .clickable {
+                            onValueChange("")
+                            draft = ""
+                            urlError = null
+                            broken = false
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "清除图片",
+                        tint = Color.White,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = draft,
+            onValueChange = { next ->
+                draft = next
+                urlTouched = true
+                urlError = null
+                broken = false
+                if (next.isBlank()) {
+                    onValueChange("")
+                } else if (UrlRules.isHttpUrl(next)) {
+                    onValueChange(UrlRules.normalize(next))
+                }
+            },
+            label = { Text("图片 URL") },
+            placeholder = { Text(placeholder) },
+            isError = urlError != null,
+            singleLine = true,
+            enabled = enabled,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { state ->
+                    if (focused && !state.isFocused) {
+                        val raw = draft.trim()
+                        urlError = if (urlTouched && raw.isNotEmpty() && !UrlRules.isHttpUrl(raw)) {
+                            "请输入 http:// 或 https:// 开头的图片地址"
+                        } else {
+                            null
+                        }
+                    }
+                    focused = state.isFocused
+                }
+        )
+
+        urlError?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        } ?: hint?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}

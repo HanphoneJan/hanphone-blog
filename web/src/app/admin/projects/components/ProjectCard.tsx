@@ -1,10 +1,11 @@
 'use client'
 
-import { Edit2, Save, X, Upload as UploadIcon, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Edit2, Save, X, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Project } from '../types'
 import { PROJECT_TYPES } from '../utils'
+import { ImageField } from '@/components/shared/ImageField'
 import LinkManager from './LinkManager'
 import StatusBadge from './StatusBadge'
 
@@ -19,7 +20,6 @@ interface ProjectCardProps {
   }
   updateRecommendLoading: boolean
   updatePublishedLoading: boolean
-  imageUploadRef: React.RefObject<HTMLInputElement | null>
   onEditTitle: (projectId: number | null) => void
   onSaveTitle: (projectId: number | null) => void
   onCancelEditTitle: (projectId: number | null) => void
@@ -34,7 +34,6 @@ interface ProjectCardProps {
   onCancelEditUrl: (projectId: number | null) => void
   onLocalInputChange: (projectId: number, field: string, value: string) => void
   onTypeChange: (projectId: number | null, type: number) => void
-  onImageFileChange: (e: React.ChangeEvent<HTMLInputElement>, projectId: number | null) => void
   onShowTagInput: (projectId: number | null) => void
   onConfirmTagInput: (project: Project) => void
   onRemoveTag: (index: number, project: Project) => void
@@ -48,7 +47,6 @@ export const ProjectCard = ({
   localValues,
   updateRecommendLoading,
   updatePublishedLoading,
-  imageUploadRef,
   onEditTitle,
   onSaveTitle,
   onCancelEditTitle,
@@ -63,7 +61,6 @@ export const ProjectCard = ({
   onCancelEditUrl,
   onLocalInputChange,
   onTypeChange,
-  onImageFileChange,
   onShowTagInput,
   onConfirmTagInput,
   onRemoveTag,
@@ -85,51 +82,28 @@ export const ProjectCard = ({
             </p>
             {project.editingImage ? (
               <div className="w-full space-y-3">
-                <div className="relative w-full h-32 md:h-36 rounded-lg overflow-hidden">
-                  <Image
-                    src={localValues.imageUrl || project.pic_url}
-                    alt={project.title}
-                    fill
-                    style={{ objectFit: 'cover' }}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <input
-                    value={localValues.imageUrl || ''}
-                    onChange={e => onLocalInputChange(projectId, 'imageUrl', e.target.value)}
-                    className="w-full px-3 py-2 rounded border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))]"
-                    placeholder="图片URL"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => imageUploadRef.current?.click()}
-                      className="flex-1 px-3 py-2 rounded border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors text-sm flex items-center justify-center gap-1"
-                    >
-                      <UploadIcon className="h-4 w-4" />
-                      上传
-                    </button>
-                    <button
-                      onClick={() => onSaveImage(project.id)}
-                      className="px-3 py-2 rounded bg-green-500 text-white hover:bg-green-600 transition-colors text-sm"
-                    >
-                      保存
-                    </button>
-                    <button
-                      onClick={() => onCancelEditImage(project.id)}
-                      className="px-3 py-2 rounded bg-[rgb(var(--muted))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors text-sm"
-                    >
-                      取消
-                    </button>
-                  </div>
-                </div>
-                <input
-                  ref={imageUploadRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={e => onImageFileChange(e, project.id)}
-                  className="hidden"
+                <ImageField
+                  value={localValues.imageUrl || project.pic_url}
+                  onChange={url => onLocalInputChange(projectId, 'imageUrl', url)}
+                  namespace="blog/project"
+                  label="项目封面"
+                  aspectRatio={16 / 9}
+                  hint="上传本地图片或填入图片地址，二者选其一即可。"
                 />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onSaveImage(project.id)}
+                    className="px-3 py-2 rounded bg-green-500 text-white hover:bg-green-600 transition-colors text-sm"
+                  >
+                    保存
+                  </button>
+                  <button
+                    onClick={() => onCancelEditImage(project.id)}
+                    className="px-3 py-2 rounded bg-[rgb(var(--muted))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors text-sm"
+                  >
+                    取消
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="relative group w-full">

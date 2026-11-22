@@ -1,20 +1,27 @@
 package com.hanphone.blog.ui.friendlinks
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,14 +30,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.hanphone.blog.data.api.ApiClient
 import com.hanphone.blog.data.repo.BlogRepository
+import com.hanphone.blog.data.repo.FileRepository
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.imeLiftAboveKeyboard
 import com.hanphone.blog.ui.components.rememberToast
+import com.hanphone.blog.util.MediaPicker
+import com.hanphone.blog.util.UrlRules
+import com.hanphone.blog.util.resolveImageUrl
 import kotlinx.coroutines.launch
 
 /** 申请友链的两种填写方式（对齐网页 ApplyModal 的「表单填写 / 文本粘贴」tab） */
@@ -43,6 +58,9 @@ private enum class ApplyMode { FORM, TEXT }
 @Composable
 fun ApplyFriendLinkScreen(onBack: () -> Unit, onDone: () -> Unit = onBack) {
     val repo = remember { BlogRepository() }
+    // 申请页免登录，图片走公开上传接口（/upload/public-image，字段名 file）
+    val fileRepo = remember { FileRepository() }
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val toast = rememberToast()
 
@@ -57,14 +75,58 @@ fun ApplyFriendLinkScreen(onBack: () -> Unit, onDone: () -> Unit = onBack) {
     var color by remember { mutableStateOf("#1890ff") }
     var applyText by remember { mutableStateOf("") }
     var submitting by remember { mutableStateOf(false) }
+    var uploadingAvatar by remember { mutableStateOf(false) }
+    var uploadingSiteshot by remember { mutableStateOf(false) }
 
     // 幂等 id：失败重试复用同一个，成功后才换新
     var requestId by remember { mutableStateOf(ApiClient.newRequestId()) }
 
     fun blankToNull(value: String): String? = value.trim().ifBlank { null }
 
+    /** 相册图 → MediaPicker 压缩 → 公开上传；临时文件无论成败都清理 */
+    suspend fun uploadPicked(uri: android.net.Uri): String? {
+        val media = runCatching { MediaPicker.prepare(context, uri) }.getOrNull() ?: return null
+        return try {
+            fileRepo.uploadPublicImage(media.file)
+        } finally {
+            MediaPicker.cleanup(media.file)
+        }
+    }
+
+    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null && !uploadingAvatar) {
+            uploadingAvatar = true
+            scope.launch {
+                val url = uploadPicked(uri)
+                uploadingAvatar = false
+                if (url != null) {
+                    avatar = url
+                    toast("头像已上传")
+                } else {
+                    toast("头像上传失败，可稍后重试或手动填写地址")
+                }
+            }
+        }
+    }
+
+    val siteshotPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null && !uploadingSiteshot) {
+            uploadingSiteshot = true
+            scope.launch {
+                val url = uploadPicked(uri)
+                uploadingSiteshot = false
+                if (url != null) {
+                    siteshot = url
+                    toast("截图已上传")
+                } else {
+                    toast("截图上传失败，可稍后重试或手动填写地址")
+                }
+            }
+        }
+    }
+
     fun submit() {
-        if (submitting) return
+        if (submitting || uploadingAvatar || uploadingSiteshot) return
         if (mode == ApplyMode.FORM) {
             if (name.isBlank()) { toast("请填写网站名称"); return }
             val u = url.trim()
@@ -174,6 +236,12 @@ fun ApplyFriendLinkScreen(onBack: () -> Unit, onDone: () -> Unit = onBack) {
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodyMedium
                 )
+                ImageUploadRow(
+                    url = avatar,
+                    uploading = uploadingAvatar,
+                    label = "可从相册上传头像",
+                    onPick = { avatarPicker.launch("image/*") }
+                )
                 OutlinedTextField(
                     value = siteshot,
                     onValueChange = { siteshot = it },
@@ -182,6 +250,12 @@ fun ApplyFriendLinkScreen(onBack: () -> Unit, onDone: () -> Unit = onBack) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodyMedium
+                )
+                ImageUploadRow(
+                    url = siteshot,
+                    uploading = uploadingSiteshot,
+                    label = "可从相册上传站点截图",
+                    onPick = { siteshotPicker.launch("image/*") }
                 )
                 OutlinedTextField(
                     value = rss,
@@ -234,7 +308,7 @@ fun ApplyFriendLinkScreen(onBack: () -> Unit, onDone: () -> Unit = onBack) {
 
             Button(
                 onClick = { submit() },
-                enabled = !submitting,
+                enabled = !submitting && !uploadingAvatar && !uploadingSiteshot,
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
             ) {
                 Text(if (submitting) "提交中…" else "提交申请")
@@ -244,6 +318,52 @@ fun ApplyFriendLinkScreen(onBack: () -> Unit, onDone: () -> Unit = onBack) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+}
+
+/**
+ * 友链表单里的图片地址行：小预览 + 相册上传。上传中禁用按钮并显示进度，
+ * 上传成功后把外链 URL 回填到对应输入框（仍然可手改）。
+ */
+@Composable
+private fun ImageUploadRow(
+    url: String,
+    uploading: Boolean,
+    label: String,
+    onPick: () -> Unit
+) {
+    val trimmed = url.trim()
+    val preview = resolveImageUrl(trimmed)?.takeIf {
+        UrlRules.isHttpUrl(trimmed) || trimmed.startsWith("/")
+    }
+    Row(
+        Modifier.fillMaxWidth().padding(top = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        if (preview != null) {
+            AsyncImage(
+                model = preview,
+                contentDescription = "图片预览",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+        }
+        TextButton(onClick = onPick, enabled = !uploading) {
+            Text(if (uploading) "上传中…" else "从相册选择")
+        }
+        if (uploading) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else if (preview == null) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline
             )
         }
     }

@@ -36,13 +36,33 @@ import javax.inject.Inject
 /** 项目：发布、推荐、增删改 */
 @HiltViewModel
 class AdminProjectsViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val repo: AdminRepository
 ) : AdminListViewModel<Project>(paged = false) {
 
     init { start() }
 
+    /** 封面上传中（由页面上的 [AdminImageField] 显示转圈） */
+    var uploadingPic by mutableStateOf(false)
+        private set
+
     override suspend fun fetchPage(page: Int, keyword: String): AdminPage<Project> =
         AdminPage(repo.projects().data.orEmpty())
+
+    /** 相册选图 → 上传，成功后把 URL 回给表单；失败提示并回 null */
+    fun uploadProjectImage(uri: Uri, onDone: (String?) -> Unit) {
+        if (uploadingPic) return
+        viewModelScope.launch {
+            uploadingPic = true
+            try {
+                val url = repo.uploadImage(appContext, uri, "blog/project")
+                if (url == null) notify("项目封面上传失败")
+                onDone(url)
+            } finally {
+                uploadingPic = false
+            }
+        }
+    }
 
     fun save(project: Project, done: () -> Unit) {
         if (project.title.isBlank()) {

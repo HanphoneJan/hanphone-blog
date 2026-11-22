@@ -76,38 +76,6 @@ export function usePersonal() {
     }
   }
 
-  // 处理头像上传
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const formData = new FormData()
-    formData.append('namespace', 'blog/user')
-    formData.append('file', file)
-
-    try {
-      setLoading(true)
-      const response = await apiClient({
-        url: ENDPOINTS.FILE.UPLOAD,
-        method: 'POST',
-        data: formData,
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-
-      if (response.data.code === API_CODE.SUCCESS) {
-        setImageUrl(response.data.url || ASSETS.DEFAULT_AVATAR)
-      } else {
-        showAlert(ADMIN_PERSONAL_LABELS.AVATAR_UPLOAD_FAIL)
-      }
-    } catch (error) {
-      console.error('上传失败:', error)
-      showAlert(ADMIN_PERSONAL_LABELS.AVATAR_UPLOAD_FAIL)
-    } finally {
-      setLoading(false)
-      e.target.value = ''
-    }
-  }
-
   // 设置头像
   const setAvatar = async () => {
     if (!imageUrl || imageUrl.trim() === '' || !globalUserInfo) {
@@ -153,7 +121,6 @@ export function usePersonal() {
     setLoading,
     handleUserInfoChange,
     changeUserInfo,
-    handleFileUpload,
     setAvatar
   }
 }

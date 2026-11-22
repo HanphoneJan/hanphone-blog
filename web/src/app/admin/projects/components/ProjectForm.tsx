@@ -1,18 +1,16 @@
 'use client'
 
-import { Plus, X, Upload as UploadIcon, Loader2 } from 'lucide-react'
-import Image from 'next/image'
+import { Loader2 } from 'lucide-react'
 import { PROJECT_TYPES } from '../utils'
 import { ProjectFormData } from '../types'
+import { ImageField } from '@/components/shared/ImageField'
 
 interface ProjectFormProps {
   formData: ProjectFormData
   dialogImageUrl: string
   loading: boolean
-  uploadRef: React.RefObject<HTMLInputElement | null>
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onRemoveImage: () => void
+  onImageUrlChange: (url: string) => void
   onSubmit: () => void
 }
 
@@ -20,10 +18,8 @@ export const ProjectForm = ({
   formData,
   dialogImageUrl,
   loading,
-  uploadRef,
   onInputChange,
-  onFileChange,
-  onRemoveImage,
+  onImageUrlChange,
   onSubmit
 }: ProjectFormProps) => {
   return (
@@ -68,54 +64,14 @@ export const ProjectForm = ({
         ></textarea>
       </div>
 
-      <div className="space-y-2">
-        <label className="block text-sm text-[rgb(var(--text))]">项目图片</label>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div
-            className="w-40 h-40 rounded-lg border-2 border-dashed border-[rgb(var(--border))] flex items-center justify-center cursor-pointer hover:border-[rgb(var(--primary))] transition-colors"
-            onClick={() => uploadRef.current?.click()}
-          >
-            {dialogImageUrl ? (
-              <div className="relative w-full h-full rounded-lg overflow-hidden">
-                <Image
-                  src={dialogImageUrl}
-                  alt="项目图片预览"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-              </div>
-            ) : (
-              <div className="text-center">
-                <UploadIcon className="h-8 w-8 mx-auto text-[rgb(var(--text-muted))]" />
-                <p className="mt-2 text-sm text-[rgb(var(--text-muted))]">上传</p>
-              </div>
-            )}
-          </div>
-
-          {dialogImageUrl && (
-            <div className="flex gap-2">
-              <button
-                onClick={onRemoveImage}
-                className="px-3 py-1.5 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] transition-colors text-sm flex items-center gap-1"
-              >
-                <X className="h-3.5 w-3.5" />
-                移除
-              </button>
-            </div>
-          )}
-        </div>
-        <input
-          ref={uploadRef}
-          type="file"
-          accept="image/*"
-          onChange={onFileChange}
-          className="hidden"
-        />
-        <p className="text-xs text-[rgb(var(--text-muted))] mt-1">
-          图片将自动压缩为JPEG格式，最大尺寸1200x1200px，保持原始文件名
-        </p>
-      </div>
+      <ImageField
+        value={dialogImageUrl}
+        onChange={onImageUrlChange}
+        namespace="blog/project"
+        label="项目封面"
+        aspectRatio={16 / 9}
+        hint="上传本地图片或填入图片地址，二者选其一即可。"
+      />
 
       <div className="space-y-2">
         <label className="block text-sm text-[rgb(var(--text))]">技术栈（用英文逗号分隔）</label>

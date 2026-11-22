@@ -15,6 +15,14 @@ interface FileApi {
     @Multipart
     @POST("upload/avatar")
     suspend fun uploadAvatar(@Part("avatar") file: MultipartBody.Part): UploadAvatarResult
+
+    /**
+     * 公共图片上传（申请友链等未登录场景）：字段名固定 `file`。
+     * 与 [uploadAvatar] 分开，避免把用户/站点头像传到 avatar 目录。
+     */
+    @Multipart
+    @POST("upload/public-image")
+    suspend fun uploadPublicImage(@Part("file") file: MultipartBody.Part): UploadAvatarResult
 }
 
 data class UploadAvatarResult(

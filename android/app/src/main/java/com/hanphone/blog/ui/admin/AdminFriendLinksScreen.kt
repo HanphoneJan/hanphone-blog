@@ -1,6 +1,8 @@
 package com.hanphone.blog.ui.admin
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -78,6 +80,7 @@ fun AdminFriendLinksScreen(
     if (creating || editing != null) {
         FriendLinkDialog(
             initial = editing,
+            vm = vm,
             onDismiss = { creating = false; editing = null },
             onSave = { link -> vm.save(link) { creating = false; editing = null } }
         )
@@ -203,6 +206,7 @@ private fun MetaFlow(
 @Composable
 private fun FriendLinkDialog(
     initial: FriendLink?,
+    vm: AdminFriendLinksViewModel,
     onDismiss: () -> Unit,
     onSave: (FriendLink) -> Unit
 ) {
@@ -218,6 +222,21 @@ private fun FriendLinkDialog(
     var nickname by remember { mutableStateOf(initial?.nickname.orEmpty()) }
     var published by remember { mutableStateOf(initial?.published == true) }
     var recommend by remember { mutableStateOf(initial?.recommend ?: false) }
+
+    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            vm.uploadFriendLinkImage(uri, isAvatar = true) { pic ->
+                if (pic != null) avatar = pic
+            }
+        }
+    }
+    val siteshotPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            vm.uploadFriendLinkImage(uri, isAvatar = false) { pic ->
+                if (pic != null) siteshot = pic
+            }
+        }
+    }
 
     val applyText = initial?.applyText
 
@@ -302,8 +321,22 @@ private fun FriendLinkDialog(
         AdminField(url, { url = it }, "链接", placeholder = "https://")
         AdminField(linkUrl, { linkUrl = it }, "回访链接", placeholder = "可留空")
         AdminField(description, { description = it }, "简介", singleLine = false, minLines = 2)
-        AdminField(avatar, { avatar = it }, "头像 URL", placeholder = "可留空")
-        AdminField(siteshot, { siteshot = it }, "截图 URL", placeholder = "可留空")
+        AdminImageField(
+            value = avatar,
+            onValueChange = { avatar = it },
+            label = "头像",
+            uploading = vm.uploadingAvatar,
+            onPick = { avatarPicker.launch("image/*") },
+            round = true
+        )
+        AdminImageField(
+            value = siteshot,
+            onValueChange = { siteshot = it },
+            label = "站点截图",
+            uploading = vm.uploadingSiteshot,
+            onPick = { siteshotPicker.launch("image/*") },
+            aspectRatio = 16f / 9f
+        )
         AdminField(rss, { rss = it }, "RSS 地址", placeholder = "可留空")
         AdminField(nickname, { nickname = it }, "站长昵称", placeholder = "可留空")
         AdminField(color, { color = it }, "主题颜色", placeholder = "可留空，如 #1890ff")
@@ -387,6 +420,7 @@ fun AdminProjectsScreen(
     if (creating || editing != null) {
         ProjectDialog(
             initial = editing,
+            vm = vm,
             onDismiss = { creating = false; editing = null },
             onSave = { vm.save(it) { creating = false; editing = null } }
         )
@@ -407,6 +441,7 @@ fun AdminProjectsScreen(
 @Composable
 private fun ProjectDialog(
     initial: Project?,
+    vm: AdminProjectsViewModel,
     onDismiss: () -> Unit,
     onSave: (Project) -> Unit
 ) {
@@ -418,6 +453,14 @@ private fun ProjectDialog(
     var type by remember { mutableStateOf(initial?.type ?: 1) }
     var published by remember { mutableStateOf(initial?.published != false) }
     var recommend by remember { mutableStateOf(initial?.recommend ?: false) }
+
+    val picPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            vm.uploadProjectImage(uri) { pic ->
+                if (pic != null) picUrl = pic
+            }
+        }
+    }
 
     AdminFormDialog(
         title = if (initial == null) "新增项目" else "编辑项目",
@@ -441,7 +484,14 @@ private fun ProjectDialog(
         AdminField(content, { content = it }, "简介", singleLine = false, minLines = 3)
         AdminField(url, { url = it }, "链接", placeholder = "https://")
         AdminField(techs, { techs = it }, "技术栈", placeholder = "逗号分隔，如：Vue3, Vite")
-        AdminField(picUrl, { picUrl = it }, "封面 URL", placeholder = "可留空")
+        AdminImageField(
+            value = picUrl,
+            onValueChange = { picUrl = it },
+            label = "项目封面",
+            uploading = vm.uploadingPic,
+            onPick = { picPicker.launch("image/*") },
+            aspectRatio = 16f / 9f
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(1 to "完整项目", 2 to "工具箱", 3 to "小游戏", 4 to "小练习").forEach { (v, label) ->
                 AdminChip(label, type == v) { type = v }

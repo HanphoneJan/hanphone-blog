@@ -8,7 +8,6 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useLinks } from './hooks/useLinks'
 import { useLinkFilters } from './hooks/useLinkFilters'
 import { useInlineEdit } from './hooks/useInlineEdit'
-import { useAvatarUpload } from './hooks/useAvatarUpload'
 import { alertSuccess } from '@/lib/Alert'
 import type { FriendLink, ParsedApplyText } from './types'
 
@@ -97,8 +96,6 @@ export default function FriendLinkManagement() {
     updateFriendLink
   })
 
-  const { imageUploadRef, handleImageFileChange } = useAvatarUpload()
-
   const handleDeleteConfirm = useCallback(async () => {
     if (deleteConfirm) {
       await deleteFriendLink(deleteConfirm)
@@ -162,7 +159,6 @@ export default function FriendLinkManagement() {
             updateRecommendLoading={updateRecommendLoading}
             updatePublishedLoading={updatePublishedLoading}
             parsingLoading={parsingLoading}
-            imageUploadRef={imageUploadRef}
             stats={stats}
             onFilterChange={handleFilterChange}
             onResetFilters={resetFilters}
@@ -196,7 +192,6 @@ export default function FriendLinkManagement() {
             onCancelEditLinkUrl={handleCancelEditLinkUrl}
             onTypeChange={handleTypeChange}
             onLocalInputChange={handleLocalInputChange}
-            onImageFileChange={handleImageFileChange}
             onToggleRecommend={toggleRecommend}
             onTogglePublished={togglePublished}
             onParseApplyText={handleParseApplyText}

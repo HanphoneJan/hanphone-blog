@@ -37,13 +37,35 @@ import javax.inject.Inject
 /** 友链：审核（发布）、推荐、增删改 */
 @HiltViewModel
 class AdminFriendLinksViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val repo: AdminRepository
 ) : AdminListViewModel<FriendLink>(paged = false) {
 
     init { start() }
 
+    var uploadingAvatar by mutableStateOf(false)
+        private set
+    var uploadingSiteshot by mutableStateOf(false)
+        private set
+
     override suspend fun fetchPage(page: Int, keyword: String): AdminPage<FriendLink> =
         AdminPage(repo.friendLinks().data.orEmpty().normalized())
+
+    /** 头像 / 站点截图上传：两条链各自独立转圈，避免互相干扰 */
+    fun uploadFriendLinkImage(uri: Uri, isAvatar: Boolean, onDone: (String?) -> Unit) {
+        val busy = if (isAvatar) uploadingAvatar else uploadingSiteshot
+        if (busy) return
+        viewModelScope.launch {
+            if (isAvatar) uploadingAvatar = true else uploadingSiteshot = true
+            try {
+                val url = repo.uploadImage(appContext, uri, "blog/friendlink")
+                if (url == null) notify(if (isAvatar) "头像上传失败" else "截图上传失败")
+                onDone(url)
+            } finally {
+                if (isAvatar) uploadingAvatar = false else uploadingSiteshot = false
+            }
+        }
+    }
 
     fun save(link: FriendLink, done: () -> Unit) {
         if (link.name.isBlank() || link.url.isBlank()) {

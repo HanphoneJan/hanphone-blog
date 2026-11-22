@@ -1,11 +1,13 @@
+import { ImageField } from '@/components/shared'
 import { PersonInfoFormData } from '../../types'
 
 interface WorkFormProps {
   formData: PersonInfoFormData
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  onPicUrlChange: (url: string) => void
 }
 
-export function WorkForm({ formData, onChange }: WorkFormProps) {
+export function WorkForm({ formData, onChange, onPicUrlChange }: WorkFormProps) {
   return (
     <div className="space-y-4">
       <div>
@@ -44,14 +46,12 @@ export function WorkForm({ formData, onChange }: WorkFormProps) {
         />
       </div>
       <div>
-        <label className="block text-sm text-[rgb(var(--text))] mb-1">作品图片URL</label>
-        <input
-          name="pic_url"
-          type="text"
+        <ImageField
           value={formData.pic_url || ''}
-          onChange={onChange}
-          className="w-full px-4 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all"
-          placeholder="输入作品图片URL"
+          onChange={onPicUrlChange}
+          label="作品图片"
+          namespace="blog/personal"
+          aspectRatio={16 / 9}
         />
       </div>
       <div>

@@ -5,25 +5,22 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -36,15 +33,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
-import com.hanphone.blog.util.resolveImageUrl
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
 import com.hanphone.blog.ui.components.ToastMessage
@@ -73,8 +67,37 @@ fun AdminBlogEditScreen(
     // 保存时只有内容真的被改过才写回，避免只改标题/标签就把正文格式静默改坏。
     var richBaseline by remember { mutableStateOf<String?>(null) }
 
+    // 源码模式用 TextFieldValue 才能拿到光标/选区：插图插在光标处而不是文档末尾
+    var sourceValue by remember { mutableStateOf(TextFieldValue(vm.content)) }
+
+    // 切到源码 / 加载完成时同步一次；用户输入期间不重置，避免光标被打回开头
+    LaunchedEffect(mode, vm.loading) {
+        if (mode == BodyMode.SOURCE && !vm.loading) {
+            sourceValue = TextFieldValue(vm.content)
+        }
+    }
+
+    /** 把图片 Markdown 插到当前光标处（富文本走 richeditor 的选区插入） */
+    val insertImageAt: (String) -> Unit = { url ->
+        val snippet = "\n\n![图片]($url)\n\n"
+        if (mode == BodyMode.RICH) {
+            richState.insertMarkdownAfterSelection(snippet)
+        } else {
+            val text = sourceValue.text
+            val start = sourceValue.selection.min.coerceIn(0, text.length)
+            val end = sourceValue.selection.max.coerceIn(0, text.length)
+            val newText = text.substring(0, start) + snippet + text.substring(end)
+            sourceValue = TextFieldValue(newText, TextRange(start + snippet.length))
+            vm.updateContent(newText)
+        }
+    }
+
     val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let(vm::uploadCover)
+    }
+
+    val contentImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { picked -> vm.uploadContentImage(picked) { url -> if (url != null) insertImageAt(url) } }
     }
 
     // 进入富文本模式时把 Markdown 灌进编辑器（切换/首次都走这里）
@@ -153,44 +176,21 @@ fun AdminBlogEditScreen(
                 }
             }
 
-            AdminSectionTitle("封面")
-            if (vm.firstPicture != null) {
-                Box(Modifier.fillMaxWidth()) {
-                    AsyncImage(
-                        model = resolveImageUrl(vm.firstPicture!!),
-                        contentDescription = "封面",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(10.dp))
-                    )
-                    Box(
-                        Modifier.align(Alignment.TopEnd).padding(6.dp)
-                            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(50))
-                            .padding(4.dp)
-                            .clickable { vm.clearCover() }
-                    ) {
-                        Icon(Icons.Filled.Close, "移除封面", tint = Color.White)
-                    }
-                }
-            } else {
-                Box(
-                    Modifier.fillMaxWidth().aspectRatio(16f / 9f)
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
-                        .clickable { coverPicker.launch("image/*") },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        if (vm.uploadingCover) "上传中…" else "点击选择封面图（16:9 自动裁切展示）",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            if (vm.firstPicture != null) {
-                TextButton(onClick = { coverPicker.launch("image/*") }) { Text("更换封面") }
-            }
+            AdminGap(12)
+            AdminImageField(
+                value = vm.firstPicture.orEmpty(),
+                onValueChange = vm::updateCoverUrl,
+                label = "封面",
+                uploading = vm.uploadingCover,
+                onPick = { coverPicker.launch("image/*") }
+            )
 
             AdminSectionTitle("正文")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 AdminChip("富文本", mode == BodyMode.RICH) {
                     if (mode != BodyMode.RICH) mode = BodyMode.RICH
                 }
@@ -201,6 +201,17 @@ fun AdminBlogEditScreen(
                         if (current != richBaseline) vm.updateContent(current)
                     }
                     mode = BodyMode.SOURCE
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(
+                    onClick = { contentImagePicker.launch("image/*") },
+                    enabled = !vm.uploadingContentImage
+                ) {
+                    if (vm.uploadingContentImage) {
+                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("插入图片")
+                    }
                 }
             }
             Text(
@@ -226,8 +237,11 @@ fun AdminBlogEditScreen(
                     )
                 } else {
                     OutlinedTextField(
-                        value = vm.content,
-                        onValueChange = vm::updateContent,
+                        value = sourceValue,
+                        onValueChange = {
+                            sourceValue = it
+                            vm.updateContent(it.text)
+                        },
                         placeholder = { Text("在这里写 Markdown…") },
                         textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                         modifier = Modifier.fillMaxSize()

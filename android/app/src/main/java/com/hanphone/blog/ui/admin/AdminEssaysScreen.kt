@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -29,6 +30,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -205,6 +208,8 @@ fun AdminEssayEditScreen(
     vm: AdminEssayEditViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    // 手填外链附件的输入框草稿（添加成功后才清空）
+    var attachUrl by remember { mutableStateOf("") }
     val mediaPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(9)
     ) { uris -> if (uris.isNotEmpty()) vm.addAttachments(uris) }
@@ -274,6 +279,21 @@ fun AdminEssayEditScreen(
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
                 }) { Text("添加文件") }
             }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = attachUrl,
+                    onValueChange = { attachUrl = it },
+                    label = { Text("附件 URL") },
+                    placeholder = { Text("https://…（外链图片 / 视频 / 文件）") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = { if (vm.addAttachmentUrl(attachUrl)) attachUrl = "" },
+                    enabled = attachUrl.isNotBlank()
+                ) { Text("添加 URL") }
+            }
             vm.uploadingLabel?.let {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
@@ -287,6 +307,11 @@ fun AdminEssayEditScreen(
             AdminGap(8)
             Text(
                 "图片会自动压缩到长边 1600 / JPEG 0.85 后上传；视频保留原片（服务端异步转 HLS）。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                "外链附件没有缩略图，列表会直接加载原图。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

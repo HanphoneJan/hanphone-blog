@@ -39,6 +39,9 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import android.content.Context
+import android.net.Uri
+import com.hanphone.blog.util.MediaPicker
 import com.hanphone.blog.util.md5Hex
 
 /**
@@ -466,6 +469,27 @@ class AdminRepository(
                     mimetype = res.mimetype,
                     originalName = file.name
                 )
+            }
+        }
+
+    /**
+     * 相册选图 → 压缩 → 上传，返回图片 URL；失败返回 null。
+     *
+     * 后台图片字段（分类图、项目封面、友链头像/截图、个人中心配图）统一走这里，
+     * 省得每个 ViewModel 重复写 MediaPicker + 临时文件清理。
+     */
+    suspend fun uploadImage(context: Context, uri: Uri, namespace: String): String? =
+        withContext(Dispatchers.IO) {
+            var temp: File? = null
+            try {
+                val media = MediaPicker.prepare(context, uri)
+                temp = media.file
+                val item = uploadFile(media.file, namespace, media.mimeType)
+                if (item.success) item.url else null
+            } catch (_: Exception) {
+                null
+            } finally {
+                MediaPicker.cleanup(temp)
             }
         }
 

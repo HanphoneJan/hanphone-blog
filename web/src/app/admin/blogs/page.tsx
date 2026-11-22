@@ -12,7 +12,6 @@ import { ADMIN_BLOG_LABELS } from '@/lib/labels'
 import { useBlogs } from './hooks/useBlogs'
 import { useBlogFilters } from './hooks/useBlogFilters'
 import { useTags } from './hooks/useTags'
-import { useImageUpload } from './hooks/useImageUpload'
 import { useScreenWidth } from './utils/blogHelpers'
 
 import { BlogFilters } from './components/BlogFilters'
@@ -99,17 +98,8 @@ export default function BlogManagementPage() {
   // 标签管理
   const [tagList, setTagList] = useState<Tag[]>([])
 
-  // 图片上传
-  const {
-    uploadRef,
-    uploadProgress,
-    isUploading,
-    dialogImageUrl,
-    setDialogImageUrl,
-    handleFileChange,
-    handleRemoveImage,
-    resetImage
-  } = useImageUpload()
+  // 首图弹窗
+  const [dialogImageUrl, setDialogImageUrl] = useState('')
 
   // 模态框状态
   const [editTypeDialogVisible, setEditTypeDialogVisible] = useState(false)
@@ -330,7 +320,7 @@ export default function BlogManagementPage() {
     )
     if (success) {
       setEditPicDialogVisible(false)
-      resetImage()
+      setDialogImageUrl('')
       getBlogList(queryInfo, pagenum, pagesize)
     }
   }
@@ -555,17 +545,11 @@ export default function BlogManagementPage() {
           <CoverDialog
             visible={editPicDialogVisible}
             dialogImageUrl={dialogImageUrl}
-            isUploading={isUploading}
-            uploadProgress={uploadProgress}
-            currentBlog={currentBlog}
-            uploadRef={uploadRef}
             onClose={() => {
               setEditPicDialogVisible(false)
-              resetImage()
+              setDialogImageUrl('')
             }}
-            onUpload={() => uploadRef.current?.click()}
-            onFileChange={handleFileChange}
-            onRemoveImage={handleRemoveImage}
+            onChangeUrl={setDialogImageUrl}
             onSubmit={submitPicChange}
           />
         )}

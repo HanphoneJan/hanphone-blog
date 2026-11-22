@@ -85,6 +85,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 - **PWA**: Serwist v9 service worker (`app/sw.ts`) with offline page
 - **Themes**: 4 themes (light, dark, macaron, cyberpunk) via CSS custom properties + Tailwind variants; theme persisted in cookie set by middleware
 - **Middleware** (`middleware.ts`): Domain redirect (non-www → www), theme cookie, security headers
+- **图片输入约定（2026-11）**：所有图片字段（博客封面、头像、分类图、项目封面、友链头像/截图、关于页配图、随笔附件、正文插图）统一同时支持「本地上传」和「手填 http(s) URL」。Web 用 `web/src/components/shared/ImageField.tsx`（内部 `useImageUpload`，自动带登录 Token）；Android 用 `ui/admin/AdminCommon.kt` 的 `AdminImageField` + `AdminRepository.uploadImage()`。未登录场景（前台申请友链）走 admin-file `POST /upload/public-image`（仅图片、≤10MB、每 IP 每小时 10 次，固定落 `blog/public/`），前端用 `web/src/lib/publicUpload.ts` / Android `FileRepository.uploadPublicImage()`。只接受 http/https，拒绝 `javascript:`/`data:`；后端删除逻辑用 `isManagedFileUrl` 限定 `blog/` 托管文件，外链不会被误删。
 
 ### Backend Architecture (server/src/main/java/com/example/blog/)
 

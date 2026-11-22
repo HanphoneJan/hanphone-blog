@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Star, Trash2, ExternalLink, Loader2, Check, X, Eye, EyeOff, FileText, Wand2, Rss } from 'lucide-react'
 import { ASSETS } from '@/lib/constants'
 import { SkeletonBlock } from '@/components/shared/Skeleton'
+import { ImageField } from '@/components/shared'
 import { LINK_TYPES } from '../types'
 import type { FriendLink, LocalInputValues } from '../types'
 
@@ -14,7 +15,6 @@ interface LinkTableProps {
   updateRecommendLoading: number | null
   updatePublishedLoading: number | null
   parsingLoading: number | null
-  imageUploadRef: React.RefObject<HTMLInputElement | null>
   onEditName: (id: number | null) => void
   onSaveName: (id: number | null) => void
   onCancelEditName: (id: number | null) => void
@@ -44,7 +44,6 @@ interface LinkTableProps {
   onCancelEditLinkUrl: (id: number | null) => void
   onTypeChange: (id: number | null, type: string) => void
   onLocalInputChange: (id: number, field: string, value: string) => void
-  onImageFileChange: (e: React.ChangeEvent<HTMLInputElement>, id: number | null) => void
   onToggleRecommend: (link: FriendLink) => void
   onTogglePublished: (link: FriendLink) => void
   onParseApplyText: (link: FriendLink) => void
@@ -58,7 +57,6 @@ export function LinkTable({
   updateRecommendLoading,
   updatePublishedLoading,
   parsingLoading,
-  imageUploadRef,
   onEditName,
   onSaveName,
   onCancelEditName,
@@ -88,7 +86,6 @@ export function LinkTable({
   onCancelEditLinkUrl,
   onTypeChange,
   onLocalInputChange,
-  onImageFileChange,
   onToggleRecommend,
   onTogglePublished,
   onParseApplyText,
@@ -225,22 +222,27 @@ export function LinkTable({
           {/* 第一行：头像、名称、类型、状态、操作 */}
           <div className="flex items-center gap-3 mb-2">
             {/* 头像（可编辑） */}
-            <div className="flex-shrink-0">
+            <div className={link.editingAvatar ? 'flex-1 min-w-0' : 'flex-shrink-0'}>
               {link.editingAvatar ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1">
+                  <ImageField
                     value={getLocalValue(link.id!, 'avatar')}
-                    onChange={e => onLocalInputChange(link.id!, 'avatar', e.target.value)}
-                    placeholder="头像URL"
-                    className="w-32 px-2 py-1 text-xs rounded border border-[rgb(var(--border))] bg-[rgb(var(--bg))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))]"
+                    onChange={url => onLocalInputChange(link.id!, 'avatar', url)}
+                    label="头像"
+                    namespace="blog/friendlink"
+                    round
+                    previewSize={72}
+                    uploadText="上传头像"
+                    className="flex-1 min-w-0"
                   />
-                  <button onClick={() => onSaveAvatar(link.id)} className="p-1 text-green-500 hover:bg-green-50 rounded">
-                    <Check className="w-3 h-3" />
-                  </button>
-                  <button onClick={() => onCancelEditAvatar(link.id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
-                    <X className="w-3 h-3" />
-                  </button>
+                  <div className="flex items-center gap-1 pt-6 shrink-0">
+                    <button onClick={() => onSaveAvatar(link.id)} className="p-1 text-green-500 hover:bg-green-50 rounded">
+                      <Check className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => onCancelEditAvatar(link.id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div onClick={() => onEditAvatar(link.id)} className="cursor-pointer" title="点击编辑头像">
@@ -458,23 +460,27 @@ export function LinkTable({
             </div>
 
             {/* 站点截图（可编辑） */}
-            <div className="flex items-center gap-1">
-              <span className="text-[rgb(var(--muted))]">截图:</span>
+            <div className={link.editingSiteshot ? 'flex flex-wrap items-start gap-1 w-full' : 'flex items-center gap-1'}>
+              <span className="text-[rgb(var(--muted))] shrink-0">截图:</span>
               {link.editingSiteshot ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1 flex-1 min-w-0">
+                  <ImageField
                     value={getLocalValue(link.id!, 'siteshot')}
-                    onChange={e => onLocalInputChange(link.id!, 'siteshot', e.target.value)}
-                    placeholder="截图URL"
-                    className="w-32 px-2 py-1 text-xs rounded border border-[rgb(var(--border))] bg-[rgb(var(--bg))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--primary))]"
+                    onChange={url => onLocalInputChange(link.id!, 'siteshot', url)}
+                    label="站点截图"
+                    namespace="blog/friendlink"
+                    aspectRatio={16 / 9}
+                    previewSize={160}
+                    className="flex-1 min-w-0"
                   />
-                  <button onClick={() => onSaveSiteshot(link.id)} className="p-1 text-green-500 hover:bg-green-50 rounded">
-                    <Check className="w-3 h-3" />
-                  </button>
-                  <button onClick={() => onCancelEditSiteshot(link.id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
-                    <X className="w-3 h-3" />
-                  </button>
+                  <div className="flex items-center gap-1 pt-6 shrink-0">
+                    <button onClick={() => onSaveSiteshot(link.id)} className="p-1 text-green-500 hover:bg-green-50 rounded">
+                      <Check className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => onCancelEditSiteshot(link.id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div onClick={() => onEditSiteshot(link.id)} className="cursor-pointer" title="点击编辑截图">

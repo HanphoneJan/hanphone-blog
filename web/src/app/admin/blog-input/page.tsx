@@ -7,13 +7,14 @@ import { useTheme } from '@/contexts/ThemeProvider'
 import dynamic from 'next/dynamic'
 import '@uiw/react-md-editor/markdown-editor.css'
 import Image from 'next/image'
-import Compressor from 'compressorjs' // 引入compressor.js
 import { ENDPOINTS } from '@/lib/api'
 import { ADMIN_BLOG_INPUT_LABELS } from '@/lib/labels'
 import apiClient from '@/lib/utils'
 import { showAlert } from '@/lib/Alert'
-import {    STORAGE_KEYS , API_CODE , TIME , IMAGE } from '@/lib/constants'
+import {    STORAGE_KEYS , API_CODE , TIME } from '@/lib/constants'
 import ModalOverlay from '@/components/shared/ModalOverlay'
+import { ImageField } from '@/components/shared/ImageField'
+import { useImageUpload } from '@/hooks/useImageUpload'
 // 引入 lucide 图标
 import {
   FileText,
@@ -24,7 +25,6 @@ import {
   ChevronRight,
   Tag,
   Type,
-  Image as ImageIcon,
   AlertCircle,
   CheckCircle,
   Loader2,
@@ -82,9 +82,17 @@ const BLOG_DRAFT_KEY = 'blog_draft_data'
 
 export default function BlogEditorPage() {
   const router = useRouter()
-  const uploadRef = useRef<HTMLInputElement>(null)
+  const editorWrapRef = useRef<HTMLDivElement>(null)
+  const inlineImageInputRef = useRef<HTMLInputElement>(null)
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const { theme } = useTheme() // 使用 useTheme hook 获取当前主题
+
+  // 正文插图上传
+  const {
+    uploading: inlineUploading,
+    uploadProgress: inlineUploadProgress,
+    uploadImage: uploadInlineImage
+  } = useImageUpload({ namespace: 'blog/blogs' })
 
   const [blog, setBlog] = useState<Blog>({
     id: null,
@@ -159,10 +167,12 @@ export default function BlogEditorPage() {
       const draftJson = localStorage.getItem(BLOG_DRAFT_KEY)
       if (draftJson) {
         const draftData = JSON.parse(draftJson)
-        setBlog(draftData.blog)
+        // dialogImageUrl 与 blog.firstPicture 保持同步（老草稿可能只有其中一个）
+        const cover = draftData.dialogImageUrl || draftData.blog?.firstPicture || ''
+        setBlog({ ...draftData.blog, firstPicture: cover })
         setSelectedTags(draftData.selectedTags || [])
         setSelectedTypeId(draftData.selectedTypeId || null)
-        setDialogImageUrl(draftData.dialogImageUrl || '')
+        setDialogImageUrl(cover)
       }
     } catch (error) {
       console.error('Failed to load draft from localStorage:', error)
@@ -353,80 +363,61 @@ export default function BlogEditorPage() {
     setPublishModalVisible(true)
   }
 
-  // 修改文件上传处理逻辑，添加图片压缩
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
-
-    const file = e.target.files[0]
-    // 检查是否为图片文件
-    if (!file.type.startsWith('image/')) {
-      showAlert(ADMIN_BLOG_INPUT_LABELS.IMAGE_REQUIRED)
+  // 正文插图：插入到编辑器光标处
+  const insertInlineImage = async (url: string, name: string) => {
+    const textarea = editorWrapRef.current?.querySelector('textarea')
+    const snippet = `\n![${name}](${url})\n`
+    if (textarea) {
+      // 动态引入，避免把整个编辑器模块从懒加载里拽回首屏 chunk
+      const { insertTextAtPosition } = await import('@uiw/react-md-editor')
+      insertTextAtPosition(textarea, snippet)
+      // 兜底：个别浏览器走 input.value 回填不会触发 onChange，这里主动同步一次
+      setBlog(prev => (prev.content === textarea.value ? prev : { ...prev, content: textarea.value }))
       return
     }
+    // 极端情况下编辑器尚未挂载文字域，退化为追加到末尾
+    setBlog(prev => ({ ...prev, content: `${prev.content}${snippet}` }))
+  }
 
-    // 保存原始文件名（不含扩展名）和扩展名
-    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
-    const fileExtension = 'jpeg' // 统一使用jpeg扩展名
-    const newFileName = `${originalName}.${fileExtension}`
-
-    try {
-      setLoading(true)
-
-      // 使用Compressor压缩图片
-      new Compressor(file, {
-        quality: 0.8, // 压缩质量，0-1之间
-        maxWidth: IMAGE.MAX_WIDTH,
-        maxHeight: IMAGE.MAX_HEIGHT,
-        mimeType: 'image/jpeg', // 确保MIME类型正确
-        convertSize: 102400, // 小于100KB的图片也进行转换
-        success: async compressedResult => {
-          try {
-            // 将压缩后的blob转换为File对象，并保持原始文件名（修改扩展名为jpeg）
-            const compressedFile = new File([compressedResult], newFileName, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            })
-
-            const formData = new FormData()
-            formData.append('namespace', 'blog/blogs')
-            formData.append('file', compressedFile) // 使用带有原始文件名的压缩文件
-
-            const response = await apiClient({
-              url: ENDPOINTS.FILE.UPLOAD,
-              method: 'POST',
-              data: formData
-            })
-
-            const data = response.data
-
-            if (data.url) {
-              setDialogImageUrl(data.url)
-              setBlog(prev => ({ ...prev, firstPicture: data.url }))
-              showAlert(ADMIN_BLOG_INPUT_LABELS.IMAGE_UPLOAD_SUCCESS)
-            } else {
-              showAlert(ADMIN_BLOG_INPUT_LABELS.IMAGE_UPLOAD_FAIL)
-            }
-          } catch (error) {
-            console.error('图片上传出错:', error)
-            showAlert(ADMIN_BLOG_INPUT_LABELS.IMAGE_UPLOAD_FAIL)
-          } finally {
-            setLoading(false)
-            if (uploadRef.current) uploadRef.current.value = ''
-          }
-        },
-        error: err => {
-          console.error('图片压缩失败:', err)
-          showAlert(ADMIN_BLOG_INPUT_LABELS.IMAGE_COMPRESS_FAIL)
-          setLoading(false)
-          if (uploadRef.current) uploadRef.current.value = ''
-        }
-      })
-    } catch (error) {
-      setLoading(false)
-      console.log('图片处理失败' + error)
-      showAlert(ADMIN_BLOG_INPUT_LABELS.IMAGE_PROCESS_FAIL)
-      if (uploadRef.current) uploadRef.current.value = ''
+  // 正文插图：逐张上传后插入
+  const uploadInlineImages = async (files: File[]) => {
+    for (const file of files) {
+      const name = file.name.replace(/\.[^.]+$/, '') || '图片'
+      const url = await uploadInlineImage(file)
+      if (url) {
+        await insertInlineImage(url, name)
+      } else {
+        showAlert('图片上传失败，请重试')
+      }
     }
+  }
+
+  // 正文插图：点击上传按钮选择文件
+  const handleInlineFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter(file => file.type.startsWith('image/'))
+    e.target.value = ''
+    if (files.length === 0) return
+    await uploadInlineImages(files)
+  }
+
+  // 正文插图：粘贴图片
+  const handleEditorPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const files = Array.from(e.clipboardData?.files || []).filter(file =>
+      file.type.startsWith('image/')
+    )
+    if (files.length === 0) return
+    e.preventDefault()
+    void uploadInlineImages(files)
+  }
+
+  // 正文插图：拖拽图片
+  const handleEditorDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    const files = Array.from(e.dataTransfer?.files || []).filter(file =>
+      file.type.startsWith('image/')
+    )
+    if (files.length === 0) return
+    e.preventDefault()
+    void uploadInlineImages(files)
   }
 
   const publishBlog = async () => {
@@ -455,14 +446,6 @@ export default function BlogEditorPage() {
     } catch (error) {
       console.error('Error publishing blog:', error)
       showAlert(ADMIN_BLOG_INPUT_LABELS.PUBLISH_ERROR)
-    }
-  }
-
-  const handleRemoveImage = () => {
-    setDialogImageUrl('')
-    setBlog(prev => ({ ...prev, firstPicture: '' }))
-    if (uploadRef.current) {
-      uploadRef.current.value = ''
     }
   }
 
@@ -557,7 +540,43 @@ export default function BlogEditorPage() {
           <div className={`mb-1 text-sm`} style={{ color: 'rgb(var(--text-muted))' }}>
             {formErrors.content && <span className="text-red-500 ml-2">{formErrors.content}</span>}
           </div>
-          <div className="border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] overflow-hidden">
+          <div
+            ref={editorWrapRef}
+            onPaste={handleEditorPaste}
+            onDrop={handleEditorDrop}
+            className="border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--card))] overflow-hidden"
+          >
+            <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-[rgb(var(--border))] bg-[rgb(var(--muted))]/60">
+              <button
+                type="button"
+                onClick={() => inlineImageInputRef.current?.click()}
+                disabled={inlineUploading}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] text-[rgb(var(--text))] text-sm hover:bg-[rgb(var(--hover))] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {inlineUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    上传中… {inlineUploadProgress}%
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    上传图片
+                  </>
+                )}
+              </button>
+              <span className="text-xs text-[rgb(var(--text-muted))]">
+                也可直接把图片粘贴或拖拽到编辑器
+              </span>
+              <input
+                ref={inlineImageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleInlineFileChange}
+                className="hidden"
+              />
+            </div>
             <MDEditor
               value={blog.content}
               onChange={val => setBlog(prev => ({ ...prev, content: val || '' }))}
@@ -724,73 +743,18 @@ export default function BlogEditorPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-[rgb(var(--text))] mb-2 flex items-center">
-                        <span className="bg-rose-600/20 p-1 rounded mr-2">
-                          <ImageIcon className="h-4 w-4 text-rose-600" />
-                        </span>
-                        博客首图
-                      </label>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div
-                          className="w-full sm:w-40 h-40 rounded-lg border-2 border-dashed border-[rgb(var(--border))] flex items-center justify-center bg-[rgb(var(--muted))] cursor-pointer hover:border-[rgb(var(--primary))] transition-all duration-300 group relative overflow-hidden"
-                          onClick={() => uploadRef.current?.click()}
-                        >
-                          {dialogImageUrl ? (
-                            <div className="relative w-full h-full rounded-lg overflow-hidden">
-                              <Image
-                                src={dialogImageUrl}
-                                alt="博客首图"
-                                fill
-                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                              />
-                              <div className="absolute inset-0 bg-[rgb(var(--overlay))]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                <span className="text-white text-sm font-medium">更换图片</span>
-                              </div>
-                              <button
-                                onClick={e => {
-                                  e.stopPropagation()
-                                  handleRemoveImage()
-                                }}
-                                className="absolute top-2 right-2 bg-[rgb(var(--overlay))]/70 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors duration-200"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="text-center group-hover:scale-105 transition-transform duration-300">
-                              <Upload className="h-8 w-8 text-[rgb(var(--text-muted))] mx-auto mb-2 group-hover:text-[rgb(var(--primary))] transition-colors" />
-                              <p className="text-sm text-[rgb(var(--text-muted))] group-hover:text-[rgb(var(--text))] transition-colors">
-                                点击上传
-                              </p>
-                              <p className="text-xs text-[rgb(var(--text-muted))] mt-1">JPG, PNG</p>
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          ref={uploadRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                        <div className="flex-1 text-sm text-[rgb(var(--text))] bg-[rgb(var(--muted))] p-4 rounded-lg">
-                          <p className="font-medium text-[rgb(var(--text))] mb-2">图片要求：</p>
-                          <ul className="space-y-1">
-                            <li className="flex items-start">
-                              <span className="text-green-600 mr-2">•</span>
-                              建议尺寸为1200×630像素
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-green-600 mr-2">•</span>
-                              支持JPG、PNG格式（自动转为JPG）
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-green-600 mr-2">•</span>
-                              文件大小不超过5MB
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
+                      <ImageField
+                        value={dialogImageUrl}
+                        onChange={url => {
+                          setDialogImageUrl(url)
+                          setBlog(prev => ({ ...prev, firstPicture: url }))
+                        }}
+                        namespace="blog/blogs"
+                        label="博客首图"
+                        aspectRatio={16 / 9}
+                        previewSize={260}
+                        hint="建议 1200×630，支持 JPG/PNG，自动转 JPG。"
+                      />
                     </div>
                   </div>
                 </div>

@@ -2,16 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import Image from 'next/image'
 import { X, Loader2, Eye, EyeOff, Link, Unlink } from 'lucide-react'
 import md5 from 'md5'
 import { ENDPOINTS } from '@/lib/api'
 import { useUser } from '@/contexts/UserContext'
 import { alertSuccess, alertError } from '@/lib/Alert'
 import ModalOverlay from '@/components/shared/ModalOverlay'
+import { ImageField } from '@/components/shared'
 import { useGoogleAuth } from '@/hooks/useGoogleAuth'
-import Compressor from 'compressorjs'
-import { TIME, VALIDATION, IMAGE, Z_INDEX, API_CODE, USER_TYPE } from '@/lib/constants'
+import { TIME, VALIDATION, Z_INDEX, API_CODE, USER_TYPE } from '@/lib/constants'
 import { AUTH_LABELS } from '@/lib/labels'
 
 // 用户数据类型定义
@@ -54,7 +53,6 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ visible, onClose }) => {
   })
   const [errors, setErrors] = useState<FormErrors>({})
   const [avatarUrl, setAvatarUrl] = useState('')
-  const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [emailChanged, setEmailChanged] = useState(false)
@@ -145,62 +143,6 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ visible, onClose }) => {
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
-
-    const file = e.target.files[0]
-    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
-    const fileExtension = IMAGE.DEFAULT_EXTENSION
-    const newFileName = `${originalName}.${fileExtension}`
-
-    new Compressor(file, {
-      quality: IMAGE.COMPRESS_QUALITY,
-      maxWidth: IMAGE.MAX_WIDTH,
-      maxHeight: IMAGE.MAX_HEIGHT,
-      mimeType: IMAGE.DEFAULT_MIME_TYPE,
-      convertSize: IMAGE.CONVERT_SIZE,
-      success: async compressedResult => {
-        try {
-          setUploading(true)
-          const compressedFile = new File([compressedResult], newFileName, {
-            type: IMAGE.DEFAULT_MIME_TYPE,
-            lastModified: Date.now()
-          })
-
-          const formDataUpload = new FormData()
-          formDataUpload.append('avatar', compressedFile)
-
-          const response = await fetch(ENDPOINTS.FILE.AVATAR_UPLOAD, {
-            method: 'POST',
-            body: formDataUpload
-          })
-
-          const data = await response.json()
-          if (data?.url) {
-            setAvatarUrl(data?.url)
-            alertSuccess(AUTH_LABELS.AVATAR_UPLOAD_SUCCESS)
-          } else {
-            alertError(AUTH_LABELS.AVATAR_UPLOAD_FAIL)
-          }
-        } catch (error) {
-          console.error('上传失败:', error)
-          alertError(AUTH_LABELS.AVATAR_UPLOAD_FAIL)
-        } finally {
-          setUploading(false)
-        }
-      },
-      error: err => {
-        console.error('图片压缩失败:', err)
-        alertError(AUTH_LABELS.AVATAR_COMPRESS_FAIL)
-        setUploading(false)
-      }
-    })
-  }
-
-  const handleRemoveAvatar = () => {
-    setAvatarUrl('')
   }
 
   // 发送验证码
@@ -549,61 +491,16 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ visible, onClose }) => {
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-[rgb(var(--text))] mb-2">
-              头像
-            </label>
-            <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                disabled={uploading || submitting}
-                className="hidden"
-                id="avatar-upload"
-              />
-
-              <label
-                htmlFor="avatar-upload"
-                className={`cursor-pointer ${uploading ? 'opacity-70' : ''}`}
-              >
-                {avatarUrl ? (
-                  <div className="relative w-24 h-24 rounded-md overflow-hidden border border-[rgb(var(--border))]">
-                    <Image
-                      src={avatarUrl}
-                      alt="用户头像"
-                      width={IMAGE.AVATAR_SIZE}
-                      height={IMAGE.AVATAR_SIZE}
-                      className="object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={e => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleRemoveAvatar()
-                      }}
-                      className="absolute top-0 right-0 bg-black/50 text-white p-1 hover:bg-black/70 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 rounded-md border-2 border-dashed flex flex-col items-center justify-center transition-colors border-[rgb(var(--border)/0.4)] text-[rgb(var(--text-muted))] hover:border-[rgb(var(--primary))] hover:text-[rgb(var(--primary))]">
-                    <X className="h-6 w-6 mb-1" />
-                    <span className="text-xs">上传头像</span>
-                  </div>
-                )}
-              </label>
-
-              {uploading && (
-                <div className="absolute top-0 left-0 w-full h-full bg-[rgb(var(--bg)/0.7)] flex items-center justify-center rounded-md">
-                  <Loader2 className="h-5 w-5 animate-spin text-[rgb(var(--primary))]" />
-                </div>
-              )}
-            </div>
-            <p className="mt-1 text-xs text-[rgb(var(--text-muted))]">
-              图片将自动压缩为JPEG格式，最大尺寸{IMAGE.MAX_WIDTH}x{IMAGE.MAX_HEIGHT}px
-            </p>
+            <ImageField
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              label="头像"
+              namespace="blog/user"
+              round
+              previewSize={96}
+              uploadText="更换头像"
+              disabled={submitting}
+            />
           </div>
 
           {/* OAuth 账号绑定 */}
@@ -691,7 +588,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ visible, onClose }) => {
             </button>
             <button
               type="submit"
-              disabled={uploading || submitting}
+              disabled={submitting}
               className="px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--primary)/0.5)] disabled:opacity-50 transition-colors font-semibold text-white bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary)/0.9)]"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin inline mr-2" />}
