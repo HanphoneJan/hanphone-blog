@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -76,7 +78,7 @@ import kotlin.math.roundToInt
 /**
  * 音乐库（原生播放器，替代原先的网页 WebView）。
  *
- * 页面结构：封面 → 歌名/歌手 → 歌词（随播放高亮并自动滚动）→ 进度条 → 播放控制 → 歌单弹层。
+ * 页面结构：封面 → 歌名/歌手 → 歌词（随播放高亮并自动滚动）→ 进度条 → 播放控制（含倍速）→ 歌单弹层。
  * 音频播放由 [MusicViewModel] 用系统 MediaPlayer 完成，离开页面即释放。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,7 +121,6 @@ fun MusicScreen(onBack: () -> Unit, vm: MusicViewModel = hiltViewModel()) {
                 vm = vm,
                 lyricState = lyricState,
                 currentLine = currentLine,
-                onShowPlaylist = { showPlaylist = true }
             )
         }
     }
@@ -181,8 +182,7 @@ fun MusicScreen(onBack: () -> Unit, vm: MusicViewModel = hiltViewModel()) {
 private fun MusicContent(
     vm: MusicViewModel,
     lyricState: androidx.compose.foundation.lazy.LazyListState,
-    currentLine: Int,
-    onShowPlaylist: () -> Unit
+    currentLine: Int
 ) {
     val track = vm.current
     val cover = remember(track?.id) { track?.let { MusicRepository().coverUrl(it) } }
@@ -314,8 +314,31 @@ private fun MusicContent(
             IconButton(onClick = { vm.next() }, modifier = Modifier.size(48.dp)) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "下一首", modifier = Modifier.size(32.dp))
             }
-            IconButton(onClick = onShowPlaylist) {
-                Icon(Icons.Filled.QueueMusic, contentDescription = "播放列表")
+            // 倍速：播放列表已由顶栏按钮负责，这里不重复
+            var speedMenu by remember { mutableStateOf(false) }
+            Box {
+                TextButton(onClick = { speedMenu = true }) {
+                    Text(
+                        formatSpeed(vm.speed),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(expanded = speedMenu, onDismissRequest = { speedMenu = false }) {
+                    listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { value ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    formatSpeed(value) + if (value == 1.0f) "（默认）" else ""
+                                )
+                            },
+                            onClick = {
+                                vm.chooseSpeed(value)
+                                speedMenu = false
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -460,6 +483,12 @@ private fun MusicProgressSlider(
             }
         }
     }
+}
+
+private fun formatSpeed(speed: Float): String {
+    // 整数倍速统一保留一位小数（1.0× / 2.0×），其余按原值（0.75× / 1.25×）
+    val text = if (speed == speed.toInt().toFloat()) String.format(java.util.Locale.US, "%.1f", speed) else speed.toString()
+    return "$text×"
 }
 
 private fun formatTime(ms: Long): String {

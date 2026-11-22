@@ -5,8 +5,10 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.PlaybackParams
 import android.net.Uri
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,6 +67,9 @@ class MusicViewModel @Inject constructor(
     var lyrics by mutableStateOf<List<LyricLine>>(emptyList())
         private set
     var mode by mutableStateOf(PlayMode.LIST)
+        private set
+    /** 播放速度（0.5x ~ 2.0x），切歌后保持 */
+    var speed by mutableFloatStateOf(1.0f)
         private set
 
     val current: MusicTrack? get() = tracks.getOrNull(currentIndex)
@@ -166,6 +171,13 @@ class MusicViewModel @Inject constructor(
         positionMs = target.toInt()
     }
 
+    fun chooseSpeed(value: Float) {
+        val v = value.coerceIn(0.5f, 2.0f)
+        speed = v
+        // 暂停时只记录，等真正播放/准备完成时再应用，避免 setPlaybackParams 意外唤起播放
+        if (playing) applySpeed()
+    }
+
     fun cycleMode() {
         mode = when (mode) {
             PlayMode.LIST -> PlayMode.SINGLE
@@ -244,6 +256,7 @@ class MusicViewModel @Inject constructor(
                 durationMs = mp.duration.coerceAtLeast(0)
                 if (playWhenReady) {
                     requestFocus()
+                    applySpeed()
                     mp.start()
                     playing = true
                     startTicker()
@@ -274,6 +287,7 @@ class MusicViewModel @Inject constructor(
     private fun resume() {
         val p = player ?: return
         requestFocus()
+        applySpeed()
         runCatching { p.start() }
         playing = true
         playWhenReady = true
@@ -313,6 +327,11 @@ class MusicViewModel @Inject constructor(
         var next = Random.nextInt(tracks.size)
         if (next == currentIndex) next = (next + 1) % tracks.size
         return next
+    }
+
+    private fun applySpeed() {
+        val p = player ?: return
+        runCatching { p.playbackParams = p.playbackParams.setSpeed(speed) }
     }
 
     private fun requestFocus() {
