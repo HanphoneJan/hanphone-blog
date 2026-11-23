@@ -16,7 +16,12 @@ data class MusicTrack(
 data class MusicSongUrl(
     val url: String? = null,
     val size: Long? = null,
-    val br: Int? = null
+    /**
+     * 码率。BFF 是按文件大小算出来的**小数**（如 `320.004`，偶尔正好 `320`），
+     * 写成 Int? 会让 Moshi 在 `Expected an int but was 320.004` 抛错，
+     * 表现为点开某些歌就「播放失败」——必须用 Double。
+     */
+    val br: Double? = null
 )
 
 /** /next-api/music?type=lrc 的响应 */

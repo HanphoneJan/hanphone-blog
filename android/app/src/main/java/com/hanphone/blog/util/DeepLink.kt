@@ -14,6 +14,9 @@ sealed interface DeepLinkTarget {
 
     /** 随笔列表（无具体 id 的 /essays 链接） */
     data object Essays : DeepLinkTarget
+
+    /** 音乐库（播放通知/锁屏封面点击：hanphone://music） */
+    data object Music : DeepLinkTarget
 }
 
 /**
@@ -26,6 +29,9 @@ sealed interface DeepLinkTarget {
  * - `https://hanphone.cn/essays/`（无 id）→ [DeepLinkTarget.Essays]
  * - `https://hanphone.cn/docs/...` → [DeepLinkTarget.Docs]
  *
+ * 另外认 App 自己的 scheme：`hanphone://music` → [DeepLinkTarget.Music]
+ * （音乐播放通知/锁屏点封面用，见 playback/MusicPlaybackService）。
+ *
  * query 串一律忽略；http、其他域名、非法 URL、OAuth 回跳地址都返回 null。
  */
 object DeepLink {
@@ -35,6 +41,10 @@ object DeepLink {
     fun parse(raw: String?): DeepLinkTarget? {
         if (raw.isNullOrBlank()) return null
         val uri = runCatching { URI(raw.trim()) }.getOrNull() ?: return null
+
+        if ("hanphone".equals(uri.scheme, ignoreCase = true)) {
+            return if ("music".equals(uri.host, ignoreCase = true)) DeepLinkTarget.Music else null
+        }
 
         if (!"https".equals(uri.scheme, ignoreCase = true)) return null
         if (uri.host?.equals(HOST, ignoreCase = true) != true) return null

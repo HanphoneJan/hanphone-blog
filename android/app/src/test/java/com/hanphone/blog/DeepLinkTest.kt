@@ -78,6 +78,15 @@ class DeepLinkTest {
     }
 
     @Test
+    fun musicSchemeOpensMusicLibrary() {
+        // 播放通知/锁屏封面的点击目标（App 自有 scheme，路径不敏感）
+        assertEquals(DeepLinkTarget.Music, DeepLink.parse("hanphone://music"))
+        assertEquals(DeepLinkTarget.Music, DeepLink.parse("HANPHONE://MUSIC"))
+        assertEquals(DeepLinkTarget.Music, DeepLink.parse("hanphone://music/"))
+        assertNull(DeepLink.parse("hanphone://unknown"))
+    }
+
+    @Test
     fun oauthCallbackIsNotMistakenForDeepLink() {
         // 第三方登录回跳必须先被 OAuthLogin.isCallback 拦下，这里再确认解析器也不会误判
         assertNull(DeepLink.parse("https://hanphone.cn/api/oauth/app/return?code=abc"))

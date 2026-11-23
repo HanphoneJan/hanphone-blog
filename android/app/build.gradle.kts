@@ -23,8 +23,8 @@ android {
         applicationId = "com.hanphone.blog"
         minSdk = 26
         targetSdk = 37
-        versionCode = 35
-        versionName = "1.4.1"
+        versionCode = 36
+        versionName = "1.4.2"
         // 是否放置了 Firebase 配置（android/app/google-services.json）；缺失时 FCM 自动禁用
         buildConfigField("boolean", "FCM_CONFIGURED", file("google-services.json").exists().toString())
     }
@@ -98,6 +98,10 @@ dependencies {
     implementation(libs.exifinterface)
     implementation(libs.datastore.preferences)
     implementation(libs.socketio.client)
+
+    // 音乐库后台播放：ExoPlayer + MediaSession（前台服务、通知栏/锁屏控制）
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
 
     testImplementation(libs.junit)
 

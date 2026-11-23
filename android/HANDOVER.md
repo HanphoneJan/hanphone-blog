@@ -70,7 +70,10 @@ ui/
   settings/SessionsScreen.kt + SessionsViewModel.kt  登录设备（列表 / 下线 / 本机退出）
   admin/AdminFilesScreen.kt + AdminFilesViewModel.kt 文件管理（浏览 / 上传 / 新建目录 / 删除，admin-file）
   admin/AdminPersonalScreen.kt + AdminPersonalViewModel.kt 个人中心（信息/技能/爱好/作品/评价/MCP 密钥，原生）
-  music/MusicScreen.kt + MusicViewModel.kt     音乐库原生播放器（歌单/歌词/进度/倍速）
+  music/MusicScreen.kt + MusicViewModel.kt     音乐库页面（歌单/歌词/进度/倍速；播放器在服务里，页面只是控制器）
+  playback/MusicPlaybackService.kt             后台播放前台服务（ExoPlayer + MediaSession，通知栏/锁屏/耳机按键）
+  playback/MusicQueue.kt                       队列纯逻辑：自定义播放 URI、MediaItem 构造、播放模式映射（JVM 单测）
+  playback/MusicNotifications.kt               播放通知渠道（music_playback，低优先级无声）
   legal/LegalScreen.kt                         隐私政策 / 服务条款（App 版本，原生）
   components/           ArticleCard/Avatar/Skeleton(骨架屏)/Loading/Error/Empty/BottomActionItem
                       SearchField（40dp 紧凑搜索胶囊，替代 M3 OutlinedTextField 56dp）/详情底部栏=细分割线+单行图标文字
@@ -197,6 +200,8 @@ ui/
 - `DeepLink.parse(raw: String?)` 必须保持纯函数（`java.net.URI`），**不要改成 `android.net.Uri`**，
   否则 JVM 单测会报 `Method parse not mocked`。
 - `/essays/#123` 走 fragment；`/docs/*` 只到文库列表（本轮不做具体文件）。
+- 另有 App 自有 scheme `hanphone://music` 打开音乐库（播放通知/锁屏封面点击用，
+  由 `MusicPlaybackService` 的 `setSessionActivity` 发出），不进 App Links 校验。
 
 ## 4. 信息架构与每屏要点（含用户明确要求）
 
@@ -255,12 +260,17 @@ ui/
 - **旧包会被 Service Worker「钉死」（照片墙改动不生效/仍闪空态的真正原因）**：`vite-plugin-pwa` 默认生成 `NavigationRoute`，**匹配所有导航且忽略查询串**，始终返回预缓存里的 `index.html`；旧 SW 没换掉之前，App 一直跑旧 `Atlas.vue`。加上 nginx 未给 `sw.js`/`index.html` 配 `Cache-Control`（被 Cloudflare 按 4h 缓存），发版后旧包可能维持很久。已在 `apps/photo-wall/vite.config.ts` 去掉 `NavigationRoute`、入口 html 不预缓存、导航改 `NetworkFirst`（`atlas-pages`）；SW 文件名带构建版本 + 注册代码内联 `index.html`，绕过 Cloudflare 对 `sw.js`/`registerSW.js` 的 4h 缓存。**排查「网页改了 App 里没变化」先想到旧 SW**。详见 `docs/photo-wall-image-optimization.md`。
 - 「项目」= 独立页：类型筛选 chips（全部/完整项目/工具箱/小游戏/小练习）+ 分组卡片（完整项目=大卡片、其余=双列网格；推荐角标、技术栈标签），数据来自 `GET /projects`（推荐在前、type 分组，与 web ProjectClient 一致）；点击卡片用 **WebView** 内开项目链接（`ui/webview/WebViewScreen.kt`：JS 开启、加载进度条、系统返回先回退 WebView 历史、右上角菜单可在浏览器打开）。
 - 「文库」= 独立页：数据来自 `GET /docs`，按 `docNamespace` 构建文件夹树（`blog/docs/子目录` → 顶层文件夹，对齐 web DocLoader）；文件夹浏览 + 面包屑、名称/路径搜索、类型筛选 pills（Word/PDF/MD/HTML 带计数，对齐 web DocsFilter）；文件行 = 彩色类型徽标 + 名称 + 推荐星 + 日期；打开文件：**HTML → WebView**、**MD → 应用内 Markdown 预览**（`DocMarkdownScreen`，文件服务原文去 frontmatter 后渲染）、**PDF/DOCX → 系统打开/下载**；文件 URL = `https://hanphone.top/{docNamespace}/{文件名}` 逐段 URI 编码（`util/buildDocFileUrl`），打开即上报浏览量 `POST /docs/{docId}/view`。
-- **音乐库（原生，替代 WebView）**：`ui/music/MusicScreen.kt` + `MusicViewModel`。歌单来自站点 BFF
-  `/next-api/music?server=netease&type=playlist&id=2093306814`，按 id 取播放地址与歌词；
-  系统 `MediaPlayer` 播放（**必须带浏览器 User-Agent，网易云 CDN 对 stagefright UA 返回 403**，见坑 45），
-  进度 500ms 轮询、歌词按时间高亮并自动滚动（翻译合并显示）；支持列表循环 / 单曲循环 / 随机、
-  上一首/下一首、拖动进度（气泡显示目标时间、含缓冲段）、**倍速 0.5×–2.0×**（切歌保持）；
-  歌单入口只在顶栏，底部操作栏放倍速，避免两个相同按钮；**离开页面即释放播放器**（不做后台播放与通知栏控制，与网页行为一致）。
+- **音乐库（原生播放器 + 后台播放，2026-11）**：`ui/music/MusicScreen.kt` + `MusicViewModel`（页面控制器），
+  播放器在 `playback/MusicPlaybackService`（前台服务 + Media3 ExoPlayer + MediaSession）。
+  歌单来自站点 BFF `/next-api/music?server=netease&type=playlist&id=2093306814`，歌词按 id 单独拉；
+  队列地址**不落库**：MediaItem 用 `hanphone-music:track/{id}`，服务在 `ResolvingDataSource` 里按 id
+  换真实地址（10 分钟缓存），所以界面销毁后自动下一首、签名 URL 过期都能自愈。
+  进度 500ms 轮询、歌词高亮自动滚动（翻译合并）；支持列表循环 / 单曲循环 / 随机、上一首/下一首、
+  拖动进度（气泡 + 缓冲段）、**倍速 0.5×–2.0×**（切歌保持）；歌单入口在顶栏，底部操作栏放倍速。
+  **离开页面/锁屏/息屏/划掉任务继续播**（前台服务 + WAKE_MODE_NETWORK），通知栏与锁屏显示封面、
+  歌名、上一首/播放暂停/下一首与进度，蓝牙/线控按键可用（`MediaSession`），点通知/封面经
+  `hanphone://music` 深链回到本页；来电等音频焦点丢失自动暂停、恢复即续播，拔耳机自动暂停。
+  重新进页面只回填队列与进度，不打断正在播的歌。
 - 「设置」= 入口列表：**外观**（→子页：主题:跟随系统/白日（浅色）/黑夜（深色）；自定义背景:相册选图→私有目录→全局背景层 + 模糊 0-25 滑块 + 清除）+ **数据管理**（→子页：按功能/页面分项显示占用并一键清除：首页·统计/随笔/留言板·友链/项目/文库/**图片缓存（Coil 磁盘+内存）**/消息聊天；单项清除即时生效、`清除全部` 弹确认框并连图片缓存一起清，仅清本机缓存不影响服务器）+ **登录设备**（仅登录后显示，→子页：`GET /auth/sessions` 当前设备/活跃/已失效 + IP/时间 + 下线二次确认；下线的若是本机则本地立即退出）+ **检查更新**（行内点击检查，副标题显示当前版本号）+ **启动时检查更新开关**（默认开）+ **关于**（App 图标/名称/简介 + 访问博客网站/GitHub + **隐私政策 / 服务条款**（原生页面，内容随 App 版本）+ **关于本站**（App 内 WebView））。外观/数据管理是独立子页（路由 `settings/appearance`、`settings/data`），设置页只放入口避免过长。**账号区已删除**（「我的」页已含登录态/退出/资料编辑）；访客头像上传同步移除（匿名留言不再可配置本地头像）。
 - **资料编辑**（「我的」点头像，对齐网页 UserInfoForm）：昵称 + 头像 + **邮箱**（改邮箱需向新邮箱发通用验证码 `scene=general`，非管理员必填；管理员免验证码）+ **新密码**（可选，≥6 位含字母数字，`md5` 传输）。保存走 `POST /user/current/update`（body 根级带 `captcha`），后端 `UserServiceImpl.updateCurrentUser` 会对 `user.password` 做 bcrypt。
 - 「设置 → 关于」：**博客图标**（`R.drawable.ic_blog`，取自 web PWA icon-512）徽标 + App 名 + 单行简介 + 链接行（**访问博客网站 hanphone.cn / 作者 GitHub**），点击走系统浏览器。版本号只在「检查更新」区显示一次（不重复）。
@@ -535,11 +545,46 @@ adb logcat -d | grep -i "FATAL EXCEPTION"                                   # �
     `KotlinJsonAdapterFactory` 下抛 `JsonDataException`，整个列表变空（坑 35 的又一例）。
     已按可空建模，UI 用 `orEmpty()` / `?: 0` 兜底。
 
-45. **网易云 CDN 会拒绝 MediaPlayer 默认 UA（403）**：`MediaPlayer.setDataSource(url)` 发出的
+45. **网易云 CDN 会拒绝播放器默认 UA（403）**：`MediaPlayer.setDataSource(url)` 发出的
     `stagefright/1.2 (Linux;Android …)` 会被 `*.music.126.net` 直接 403，表现为 `NuCachedSource2: source
     returned error -1`、`prepareAsync` 永不回调、页面一直转圈。修复：用
     `setDataSource(context, Uri.parse(url), mapOf("User-Agent" to <Chrome UA>, "Referer" to "https://music.163.com/"))`。
+    现已换成 ExoPlayer：同一套伪装放在 `DefaultHttpDataSource.Factory().setDefaultRequestProperties(...)`，
+    由 `MusicPlaybackService` 包进 `DefaultDataSource`/`ResolvingDataSource`——**必须加在数据源层**，
+    只在界面里加请求头对后台播放和自动下一首无效。
     排查方法：`curl -A "stagefright/1.2 …" <音频地址>` 对比 `-A "Mozilla/5.0 …"` 的状态码。
+
+46. **后台播放（前台服务 + MediaSession）的四个必踩点（2026-11 真机实测）**：
+    1. **权限/清单**：`FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` + `WAKE_LOCK`；
+       service 必须 `android:foregroundServiceType="mediaPlayback"`、`android:exported="true"` 且带
+       `<intent-filter><action android:name="androidx.media3.session.MediaSessionService"/></intent-filter>`，
+       否则耳机/车机按键连不上、Android 14+ 起前台服务直接崩。
+    2. **队列地址别写死成签名 URL**：网易云地址会过期。MediaItem 用自定义 scheme，服务里用
+       `ResolvingDataSource` 在 `open` 前按 id 请求 BFF 换地址（带短缓存）；
+       否则「划掉任务后自动下一首」拿到的是过期地址，表现为突然报错停止。
+    3. **`onAddMediaItems` 必须放行自定义 URI**：默认实现只认可直接播放的地址，会把整张歌单丢掉
+       （表现为 `setMediaItems` 之后队列为空）。在 `MediaSession.Callback` 里返回原列表。
+    4. **单曲循环下 `seekToNext/Previous` 不会跨曲**：`BasePlayer.getRepeatModeForNavigation()` 把
+       `REPEAT_MODE_ONE` 当 `REPEAT_MODE_OFF` —— 末尾按「下一首」无事发生。手动加「没有下一首就回第 0 首 /
+       没有上一首就回最后一首」的兜底（见 `MusicViewModel.next/prev`）。
+    另：Android 13+ 拒绝 `POST_NOTIFICATIONS` 时仍能后台播，只是没有通知栏控制条；通知渠道用
+    `music_playback`（IMPORTANCE_LOW、无声、无角标）。「划掉任务是否继续播」由
+    `MediaSessionService.onTaskRemoved` 默认行为决定（播放中继续，其余 `pauseAllPlayersAndStopSelf`），
+    **不要**再自己 override 成 `stopSelf`。暂停/停止后通知与前台服务保留约 10 分钟
+    （`DEFAULT_FOREGROUND_SERVICE_TIMEOUT_MS = 600000`）供恢复，之后自动结束；暂停时划掉通知即
+    `COMMAND_STOP`，服务随之结束。
+
+47. **「连点下一首导致播放失败」的两个真凶（2026-11 压测定位）**：
+    1. **`type=song` 的 `br` 是小数**（`320.004`，偶尔正好 `320`）：`MusicSongUrl.br` 写成 `Int?`
+       会让 Moshi 抛 `JsonDataException: Expected an int but was 320.004 at path $.br`，解析整包失败 →
+       报「音频播放失败」。**改成 `Double?`**，回归用例 `MusicSongUrlJsonTest`。
+       排查口诀：先看 `logcat` 里的 `音乐地址解析失败：<id>` 后跟的异常类型；连点只是更容易撞上坏数据，
+       不是「切太快」本身。
+    2. **连点会打出请求风暴**：每切一首都会触发一次 `type=song`（实测连点 15 次 = 16 个 song 请求 +
+       30 个 lrc 请求），上游被打成限流/偶发 `url:null`，最后一首就失败。已在
+       `MusicPlaybackService.resolveSongUrl` 加 **250ms 静置**（被切走的曲目会在 `cancelLoad()` 的
+       interrupt 里结束，根本不发请求）+ 失败重试 2 次（响应类型错误不重试），歌词在 VM 里 300ms 去抖。
+       修后同样连点 15 次只有 2 个 song + 2 个 lrc 请求；压测 5 轮 ×15 次全 PLAYING、0 失败。
 
 ## 8. 路线图
 

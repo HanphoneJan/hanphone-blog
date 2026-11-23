@@ -179,6 +179,8 @@ internal fun MainScaffold() {
                     launchSingleTop = true
                     restoreState = true
                 }
+            DeepLinkTarget.Music ->
+                navController.navigate("music") { launchSingleTop = true }
         }
         DeepLinkBus.consume()
     }

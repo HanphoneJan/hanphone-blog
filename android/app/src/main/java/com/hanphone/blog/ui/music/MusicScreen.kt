@@ -70,6 +70,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.repo.MusicRepository
+import com.hanphone.blog.playback.PlayMode
 import com.hanphone.blog.ui.components.AppBackBar
 import com.hanphone.blog.ui.components.ErrorBox
 import com.hanphone.blog.util.currentLyricIndex
@@ -79,7 +80,8 @@ import kotlin.math.roundToInt
  * 音乐库（原生播放器，替代原先的网页 WebView）。
  *
  * 页面结构：封面 → 歌名/歌手 → 歌词（随播放高亮并自动滚动）→ 进度条 → 播放控制（含倍速）→ 歌单弹层。
- * 音频播放由 [MusicViewModel] 用系统 MediaPlayer 完成，离开页面即释放。
+ * 播放由前台服务 `MusicPlaybackService` 负责（Media3 ExoPlayer + MediaSession）：
+ * 离开页面、锁屏、划掉任务都继续播，通知栏/锁屏/耳机按键可控；重进页面自动回填正在播的歌。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,7 +114,7 @@ fun MusicScreen(onBack: () -> Unit, vm: MusicViewModel = hiltViewModel()) {
                 CircularProgressIndicator()
             }
 
-            vm.error != null && vm.tracks.isEmpty() -> ErrorBox(
+            vm.error != null && vm.tracks.isEmpty() && vm.currentIndex < 0 -> ErrorBox(
                 vm.error.orEmpty(),
                 onRetry = { vm.loadPlaylist() }
             )
@@ -295,7 +297,8 @@ private fun MusicContent(
             FilledIconButton(
                 onClick = { vm.toggle() },
                 modifier = Modifier.size(64.dp),
-                enabled = vm.tracks.isNotEmpty()
+                // 队列在服务里就可能已有歌（页面重进、歌单暂未拉到），按 currentIndex 判断而不是 tracks
+                enabled = vm.currentIndex >= 0
             ) {
                 if (vm.preparing) {
                     CircularProgressIndicator(

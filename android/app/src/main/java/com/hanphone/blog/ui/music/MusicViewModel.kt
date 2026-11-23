@@ -1,43 +1,43 @@
 package com.hanphone.blog.ui.music
 
+import android.content.ComponentName
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.media.PlaybackParams
-import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.C
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
 import com.hanphone.blog.data.model.LyricLine
 import com.hanphone.blog.data.model.MusicTrack
 import com.hanphone.blog.data.repo.MusicRepository
+import com.hanphone.blog.playback.MusicPlaybackService
+import com.hanphone.blog.playback.MusicQueue
+import com.hanphone.blog.playback.PlayMode
 import com.hanphone.blog.util.parseLrc
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 import javax.inject.Inject
 
-/** 播放模式：列表循环 / 单曲循环 / 随机 */
-enum class PlayMode(val label: String) {
-    LIST("列表循环"),
-    SINGLE("单曲循环"),
-    SHUFFLE("随机播放")
-}
-
 /**
- * 音乐库（原生播放器）。
+ * 音乐库（页面侧控制器）。
  *
- * 数据来自站点的 `/next-api/music`（网易云歌单），音频用系统 MediaPlayer 播放，
- * **离开页面即释放**（与网页版一致，不做后台播放/通知栏控制）。
+ * 播放本身在 [MusicPlaybackService]（前台服务 + MediaSession）里：离开页面、锁屏、
+ * 划掉任务都继续播，通知栏/锁屏/耳机按键都能控制。这里只负责
+ * - 连接 MediaController，把播放器状态映射成 Compose 状态（进度、缓冲、倍速、模式…）；
+ * - 首次进入时拉歌单并塞进播放器队列；重进时**只回填状态**，不打断正在播的歌；
+ * - 歌词按当前曲目拉取并缓存。
  */
 @HiltViewModel
 class MusicViewModel @Inject constructor(
@@ -74,47 +74,54 @@ class MusicViewModel @Inject constructor(
 
     val current: MusicTrack? get() = tracks.getOrNull(currentIndex)
 
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-    private var player: MediaPlayer? = null
-    private var prepared = false
-    /** 当前这首「应该播放」——prepare 完成后据此决定是否 start */
-    private var playWhenReady = false
+    private val controllerFuture: ListenableFuture<MediaController>
+    private var controller: MediaController? = null
 
-    private var loadJob: Job? = null
     private var ticker: Job? = null
-    private val urlCache = mutableMapOf<String, String>()
+    private var lyricsJob: Job? = null
+    private var loadingPlaylist = false
+    private var lyricsTrackId: String? = null
+    private val lyricsCache = mutableMapOf<String, List<LyricLine>>()
 
-    private companion object {
-        const val BROWSER_UA =
-            "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/120.0.0.0 Mobile Safari/537.36"
-    }
-
-    private val focusRequest by lazy {
-        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
-            )
-            .setOnAudioFocusChangeListener { change ->
-                if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-                    pause()
-                }
-            }
-            .build()
+    private val playerListener = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) = syncFromPlayer()
     }
 
     init {
-        loadPlaylist()
+        val token = SessionToken(context, ComponentName(context, MusicPlaybackService::class.java))
+        controllerFuture = MediaController.Builder(context, token).buildAsync()
+        controllerFuture.addListener(
+            {
+                val c = runCatching { controllerFuture.get() }.getOrNull()
+                if (c == null) {
+                    error = "播放器启动失败，请重启 App 再试"
+                    loading = false
+                    return@addListener
+                }
+                controller = c
+                c.addListener(playerListener)
+                syncFromPlayer()
+                loadPlaylist()
+            },
+            ContextCompat.getMainExecutor(context)
+        )
     }
 
+    /** 拉歌单：首次进入建队列（不自动播）；已在播则只刷新页面状态 */
     fun loadPlaylist() {
+        if (loadingPlaylist) return
+        val c = controller
+        if (c == null) {
+            error = "播放器启动失败，请重启 App 再试"
+            loading = false
+            return
+        }
+        loadingPlaylist = true
         viewModelScope.launch {
             loading = true
             error = null
             val res = runCatching { repo.playlist() }.getOrNull()
+            loadingPlaylist = false
             if (res.isNullOrEmpty()) {
                 error = "歌单加载失败，请稍后重试"
                 loading = false
@@ -122,235 +129,158 @@ class MusicViewModel @Inject constructor(
             }
             tracks = res
             loading = false
-            // 选中第一首并预加载（不自动播放，避免一进页面就出声）
-            select(0, autoPlay = false)
+            if (c.mediaItemCount == 0) {
+                c.setMediaItems(MusicQueue.items(res) { repo.coverUrl(it) })
+                c.repeatMode = MusicQueue.repeatModeOf(mode)
+                c.shuffleModeEnabled = MusicQueue.shuffleOf(mode)
+                c.setPlaybackSpeed(speed)
+                // 选中第一首并预加载（不自动播放，避免一进页面就出声）
+                select(0, autoPlay = false)
+            } else {
+                syncFromPlayer()
+            }
         }
     }
 
     fun select(index: Int, autoPlay: Boolean = true) {
-        if (tracks.isEmpty()) return
-        val safe = index.coerceIn(0, tracks.lastIndex)
-        currentIndex = safe
+        val c = controller ?: return
+        if (tracks.isEmpty() || c.mediaItemCount == 0) return
+        val safe = index.coerceIn(0, minOf(tracks.lastIndex, c.mediaItemCount - 1))
+        error = null
         positionMs = 0
         durationMs = 0
         bufferPercent = 0
-        lyrics = emptyList()
-        error = null
-        playWhenReady = autoPlay
-        loadTrack(tracks[safe])
+        c.seekTo(safe, 0)
+        c.prepare()
+        if (autoPlay) c.play() else c.pause()
     }
 
     fun toggle() {
-        val track = current ?: return
-        if (prepared) {
-            if (playing) pause() else resume()
+        val c = controller ?: return
+        if (c.mediaItemCount == 0) {
+            loadPlaylist()
             return
         }
-        // 还没准备好（或上一首失败）：重新加载当前曲目
-        playWhenReady = true
-        loadTrack(track)
+        if (c.isPlaying) {
+            c.pause()
+        } else {
+            error = null
+            c.prepare()
+            c.play()
+        }
     }
 
     fun next() {
-        if (tracks.isEmpty()) return
-        val target = if (mode == PlayMode.SHUFFLE) randomIndex() else (currentIndex + 1) % tracks.size
-        select(target)
+        val c = controller ?: return
+        if (c.mediaItemCount == 0) return
+        error = null
+        // 单曲循环时「下一首」按列表导航（repeat ONE 会被当成 OFF），末尾回到第一首
+        if (c.hasNextMediaItem()) c.seekToNextMediaItem() else c.seekTo(0, 0)
+        c.prepare()
+        c.play()
     }
 
     fun prev() {
-        if (tracks.isEmpty()) return
-        val target = if (mode == PlayMode.SHUFFLE) randomIndex() else (currentIndex - 1 + tracks.size) % tracks.size
-        select(target)
+        val c = controller ?: return
+        if (c.mediaItemCount == 0) return
+        error = null
+        // seekToPrevious：当前播放超过 3 秒先回本曲开头；单曲循环在第一首时回到最后一首
+        if (c.currentPosition <= PREV_RESTART_MS && !c.hasPreviousMediaItem()) {
+            c.seekTo(c.mediaItemCount - 1, 0)
+        } else {
+            c.seekToPrevious()
+        }
+        c.prepare()
+        c.play()
     }
 
     fun seekTo(ms: Long) {
-        val p = player ?: return
-        if (!prepared) return
-        val target = ms.coerceIn(0L, durationMs.toLong())
-        runCatching { p.seekTo(target.toInt()) }
+        val c = controller ?: return
+        val max = if (durationMs > 0) durationMs.toLong() else ms.coerceAtLeast(0)
+        val target = ms.coerceIn(0L, max)
+        c.seekTo(target)
         positionMs = target.toInt()
     }
 
     fun chooseSpeed(value: Float) {
         val v = value.coerceIn(0.5f, 2.0f)
         speed = v
-        // 暂停时只记录，等真正播放/准备完成时再应用，避免 setPlaybackParams 意外唤起播放
-        if (playing) applySpeed()
+        runCatching { controller?.setPlaybackSpeed(v) }
     }
 
     fun cycleMode() {
-        mode = when (mode) {
-            PlayMode.LIST -> PlayMode.SINGLE
-            PlayMode.SINGLE -> PlayMode.SHUFFLE
-            PlayMode.SHUFFLE -> PlayMode.LIST
-        }
+        mode = mode.next()
+        val c = controller ?: return
+        c.repeatMode = MusicQueue.repeatModeOf(mode)
+        c.shuffleModeEnabled = MusicQueue.shuffleOf(mode)
     }
 
     // ------------------------------------------------------------------
 
-    private fun loadTrack(track: MusicTrack) {
-        loadJob?.cancel()
-        ticker?.cancel()
-        playing = false
-        prepared = false
-        preparing = true
-        stopPlayer()
+    /** 播放器状态 → 页面状态（Main 线程回调） */
+    private fun syncFromPlayer() {
+        val c = controller ?: return
+        playing = c.isPlaying
+        preparing = c.playbackState == Player.STATE_BUFFERING
+        currentIndex = if (c.mediaItemCount > 0) c.currentMediaItemIndex else -1
+        durationMs = c.duration.takeIf { it != C.TIME_UNSET && it > 0 }?.toInt() ?: 0
+        bufferPercent = c.bufferedPercentage.coerceIn(0, 100)
+        speed = c.playbackParameters.speed
+        mode = MusicQueue.playModeOf(c.repeatMode, c.shuffleModeEnabled)
+        if (c.playerError != null) error = "音频播放失败，请换一首"
+        ensureLyrics(c.currentMediaItem?.mediaId)
 
-        loadJob = viewModelScope.launch {
-            val url = urlCache[track.id] ?: runCatching { repo.songUrl(track.id) }.getOrNull()
-            if (url.isNullOrBlank()) {
-                preparing = false
-                playWhenReady = false
-                error = "《${track.title.ifBlank { "这首歌" }}》暂时无法播放"
-                return@launch
-            }
-            urlCache[track.id] = url
-            if (current?.id != track.id) return@launch
-
-            // 歌词单独拉，失败不影响播放
-            launch {
-                val lrc = runCatching { repo.lyric(track.id) }.getOrNull()
-                if (current?.id == track.id) {
-                    lyrics = parseLrc(lrc?.lyric, lrc?.tlyric)
-                }
-            }
-
-            val mp = ensurePlayer()
-            val ok = runCatching {
-                mp.reset()
-                // 网易云 CDN 会拒绝 stagefright 的默认 UA（403），必须伪装成浏览器
-                mp.setDataSource(
-                    context,
-                    Uri.parse(url),
-                    mapOf(
-                        "User-Agent" to BROWSER_UA,
-                        "Referer" to "https://music.163.com/"
-                    )
-                )
-                mp.prepareAsync()
-            }.isSuccess
-            if (!ok) {
-                preparing = false
-                playWhenReady = false
-                error = "音频加载失败"
-            }
+        if (playing) {
+            startTicker()
+        } else {
+            ticker?.cancel()
+            ticker = null
+            positionMs = c.currentPosition.coerceAtLeast(0).toInt()
         }
     }
 
-    private fun ensurePlayer(): MediaPlayer {
-        player?.let { return it }
-        return MediaPlayer().apply {
-            setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
-            )
-            setOnBufferingUpdateListener { _, percent ->
-                bufferPercent = percent.coerceIn(0, 100)
-            }
-            setOnPreparedListener { mp ->
-                prepared = true
-                preparing = false
-                error = null
-                durationMs = mp.duration.coerceAtLeast(0)
-                if (playWhenReady) {
-                    requestFocus()
-                    applySpeed()
-                    mp.start()
-                    playing = true
-                    startTicker()
-                }
-            }
-            setOnCompletionListener {
-                if (mode == PlayMode.SINGLE) {
-                    runCatching { seekTo(0) }
-                    it.start()
-                    playing = true
-                    startTicker()
-                } else {
-                    next()
-                }
-            }
-            setOnErrorListener { _, _, _ ->
-                preparing = false
-                playing = false
-                playWhenReady = false
-                bufferPercent = 0
-                error = "音频播放失败，请换一首"
-                true
-            }
-            player = this
+    private fun ensureLyrics(trackId: String?) {
+        if (trackId.isNullOrBlank() || trackId == lyricsTrackId) return
+        lyricsTrackId = trackId
+        lyrics = lyricsCache[trackId].orEmpty()
+        // 连点切歌时只给「停下来」的那首拉歌词，避免每切一首就一个 BFF 请求
+        lyricsJob?.cancel()
+        lyricsJob = viewModelScope.launch {
+            delay(LYRICS_DEBOUNCE_MS)
+            val lrc = runCatching { repo.lyric(trackId) }.getOrNull()
+            val parsed = parseLrc(lrc?.lyric, lrc?.tlyric)
+            lyricsCache[trackId] = parsed
+            if (lyricsTrackId == trackId) lyrics = parsed
         }
-    }
-
-    private fun resume() {
-        val p = player ?: return
-        requestFocus()
-        applySpeed()
-        runCatching { p.start() }
-        playing = true
-        playWhenReady = true
-        startTicker()
-    }
-
-    private fun pause() {
-        stopTicker()
-        runCatching { player?.pause() }
-        playing = false
-        playWhenReady = false
-        abandonFocus()
-    }
-
-    private fun stopPlayer() {
-        runCatching { player?.reset() }
-        abandonFocus()
     }
 
     private fun startTicker() {
-        ticker?.cancel()
+        if (ticker?.isActive == true) return
         ticker = viewModelScope.launch {
-            while (true) {
-                positionMs = runCatching { player?.currentPosition ?: 0 }.getOrDefault(0)
+            while (isActive) {
+                positionMs = controller?.currentPosition?.coerceAtLeast(0)?.toInt() ?: positionMs
                 delay(500)
             }
         }
     }
 
-    private fun stopTicker() {
+    override fun onCleared() {
         ticker?.cancel()
         ticker = null
-    }
-
-    private fun randomIndex(): Int {
-        if (tracks.size <= 1) return 0
-        var next = Random.nextInt(tracks.size)
-        if (next == currentIndex) next = (next + 1) % tracks.size
-        return next
-    }
-
-    private fun applySpeed() {
-        val p = player ?: return
-        runCatching { p.playbackParams = p.playbackParams.setSpeed(speed) }
-    }
-
-    private fun requestFocus() {
-        runCatching { audioManager?.requestAudioFocus(focusRequest) }
-    }
-
-    private fun abandonFocus() {
-        runCatching { audioManager?.abandonAudioFocusRequest(focusRequest) }
-    }
-
-    override fun onCleared() {
-        loadJob?.cancel()
-        stopTicker()
-        runCatching {
-            player?.reset()
-            player?.release()
-        }
-        player = null
-        abandonFocus()
+        lyricsJob?.cancel()
+        lyricsJob = null
+        controller?.removeListener(playerListener)
+        controller = null
+        // 只断开控制通道：播放器归服务所有，离开页面继续播
+        MediaController.releaseFuture(controllerFuture)
         super.onCleared()
+    }
+
+    private companion object {
+        /** 与 Player.seekToPrevious 的默认阈值一致：超过 3 秒按「回本曲开头」处理 */
+        const val PREV_RESTART_MS = 3_000L
+
+        /** 切歌静置后才拉歌词（连点时不产生一堆请求） */
+        const val LYRICS_DEBOUNCE_MS = 300L
     }
 }

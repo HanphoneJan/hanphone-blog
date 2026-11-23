@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 应用内更新：下载 APK 后安装（用户仍需在系统里确认安装） -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- 音乐库后台播放：前台服务（媒体播放类型）+ 息屏保持 CPU 唤醒 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name=".BlogApplication"
@@ -55,6 +59,12 @@
                 <data android:scheme="https" android:host="hanphone.cn" android:pathPrefix="/essays" />
                 <data android:scheme="https" android:host="hanphone.cn" android:pathPrefix="/docs" />
             </intent-filter>
+            <!-- 音乐通知/锁屏点封面回到音乐库：hanphone://music（解析见 util/DeepLink.kt） -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="hanphone" android:host="music" />
+            </intent-filter>
         </activity>
 
         <!-- 应用内更新：把缓存里的 APK 通过 content:// 交给系统安装器 -->
@@ -67,6 +77,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- 音乐库后台播放：Media3 前台服务（通知栏/锁屏/蓝牙耳机控制）。
+             exported=true 是媒体按钮与外部控制器（车机/耳机）能连上的前提。 -->
+        <service
+            android:name=".playback.MusicPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
 
         <!-- FCM 推送：前台/数据消息由 onMessageReceived 处理；后台通知消息由系统按默认渠道展示 -->
         <service

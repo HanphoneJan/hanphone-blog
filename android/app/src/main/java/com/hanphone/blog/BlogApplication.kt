@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.hanphone.blog.data.cache.ImageCaches
 import com.hanphone.blog.data.push.PushNotifications
+import com.hanphone.blog.playback.MusicNotifications
 import dagger.hilt.android.HiltAndroidApp
 
 /**
@@ -46,5 +47,7 @@ class BlogApplication : Application() {
         ContentStore.init(this)
         ImageCaches.init(this)
         PushNotifications.init(this)
+        // 音乐播放通知渠道（前台服务通知；服务里也会幂等再建一次）
+        MusicNotifications.ensureChannel(this)
     }
 }
