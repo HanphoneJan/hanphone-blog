@@ -124,6 +124,7 @@ web/src/
 | `/search` | search/page.tsx | 全局搜索结果页（类型筛选、snippet 高亮；noIndex） |
 | `/notifications` | notifications/page.tsx | 站内通知（评论/回复；需登录；noIndex） |
 | `/bookmarks` | bookmarks/page.tsx | 我的收藏（博客/随笔/文档；需登录；noIndex） |
+| `/sessions` | sessions/page.tsx | 登录设备（当前设备高亮、单个下线；需登录；noIndex） |
 
 ### 管理后台 (app/admin/)
 
@@ -177,7 +178,9 @@ web/src/
 
 主题切换管理（亮色 / 暗色 / 马卡龙 / 赛博朋克）。主题以 `html` 上的 class 表示
 （`light` / `dark` / `theme-macaron` / `theme-cyber`），首屏由 `layout.tsx` 的内联脚本
-在绘制前写入，避免闪白。
+在绘制前写入，避免闪白。该脚本会在 React hydration 前修改 `<html>` 的 class，因此根节点
+必须保留 `suppressHydrationWarning`，否则会报 HTML 属性 hydration mismatch（仅 dev 可见，
+但会污染控制台并弹出错误遮罩）。
 
 `globals.css` 同时按主题声明 `color-scheme`（暗色主题为 `dark`），让日期选择器、
 复选框、自动填充底色、滚动条等浏览器原生 UI 跟随主题；新增主题时需要一并补上。
@@ -234,7 +237,7 @@ web/src/
 
 ---
 
-## 搜索 / 站内通知 / 收藏（2026-11）
+## 搜索 / 站内通知 / 收藏 / 登录设备（2026-11）
 
 - **搜索**：Header 下拉仍只展示前 10 条；回车或「查看全部结果」进入 `/search/?q=…&type=…`。
   结果来自 `GET /api/search`，服务端返回 `snippet`（Jsoup 去 HTML 的纯文本）；前端用 React 片段包
@@ -245,7 +248,12 @@ web/src/
   `EssayClient` 的 `hashchange` 定位。
 - **收藏**：`BookmarkButton` 接入博客详情、随笔卡片、文库列表/详情；`/bookmarks/` 按类型分 Tab。
   登录后 `BookmarkContext` 一次拉全集，按钮只读 Context，避免每张卡片发 `status` 请求（N+1）。
-- **预渲染**：`/search` 用 `useSearchParams`，页面必须包 `Suspense`；三个页面均 `noIndex`。
+- **登录设备**：`/sessions/` 走 BFF `/next-api/auth/sessions`，当前设备高亮；下线前弹确认，
+  下线当前设备会直接退出登录。BFF 请求带 15s 超时，避免上游卡住时页面永远停在骨架屏。
+- **页面外壳**：搜索/通知/收藏/设备四页统一用 `components/shared/PageShell.tsx`
+  （`PageShell` 负责 `relative z-10` 与页面底色，`PageHeader` / `LoginRequired` / `ListSkeleton` 复用）。
+  背景遮罩是 `fixed z-[1]`，新增 `(main)` 页面必须位于 `relative z-10` 容器内。
+- **预渲染**：`/search` 用 `useSearchParams`，页面必须包 `Suspense`；四个页面均 `noIndex`。
 
 ## 音乐库（app/(main)/music）
 

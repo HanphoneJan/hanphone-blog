@@ -79,7 +79,8 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 
 - **App Router**: Pages in `app/(main)/` (public) and `app/admin/` (dashboard)
 - **热点聚合页** `/insight`（「分享」菜单 → 热点聚合）：GitHub / HF / AI 要闻 热点流 + 模型榜单（文本 / 代码 / Agent / Embedding / 生图 / 生视频 / 语音）+ 综合对比（能力雷达 / 价格散点 / 明细表，可导出图片与分享链接）。页面为 `force-dynamic` 按请求渲染，服务端经内网 `API_INTERNAL_BASE_URL` 取数；后台 `/admin/insight`（导航「聚合数据」）可异步触发采集并配置 AI 摘要（URL/Key/Model/自定义 Header）。
-- **站内通知 / 收藏 / 搜索**：`/notifications`（评论/回复通知，顶栏铃铛 + 未读轮询 + 通知页）、`/bookmarks`（博客/随笔/文档收藏，`BookmarkContext` 登录后一次拉取 + 乐观更新）、`/search`（独立结果页，类型筛选 + 服务端纯文本 `snippet` 高亮）。三页均 `noIndex`，`robots.ts` 已 Disallow。
+- **站内通知 / 收藏 / 搜索 / 登录设备**：`/notifications`（评论/回复通知，顶栏铃铛 + 未读轮询 + 通知页）、`/bookmarks`（博客/随笔/文档收藏，`BookmarkContext` 登录后一次拉取 + 乐观更新）、`/search`（独立结果页，类型筛选 + 服务端纯文本 `snippet` 高亮）、`/sessions`（登录设备列表，当前设备高亮、可单个下线）。通知/收藏/设备/搜索四页均 `noIndex`，`robots.ts` 已 Disallow。
+- **页面层级（2026-11）**：`BackgroundImage` 的背景图（`fixed z-0`）与遮罩（`fixed z-[1]`，白昼不透明度 90%）会盖住没有定位的正文——表现为「内容能点但看不见」。`PageTransition` 已统一加 `relative z-10` 兜底；页面自定义根容器仍应保留 `relative z-10`（必要时加 `bg-[rgb(var(--bg)/0.8)]` 提升可读性），新增 `(main)` 页面不要裸写静态根节点。通知/收藏/设备/搜索页统一走 `web/src/components/shared/PageShell.tsx`（`PageShell` / `PageHeader` / `LoginRequired` / `ListSkeleton`）。
 - **Static sub-apps**: Gomoku builds to `web/public/games/` and is served by Next.js rewrites at `/games/`. Photo wall (`apps/photo-wall`) builds to its own `atlas/` and is served **by nginx alias** `/home/hanphone/html/atlas` at `/atlas/` (不在 Next.js / `web/public/` 内托管)
 - **类型闸门**：`next.config.ts` 的 `typescript.ignoreBuildErrors` 已为 `false`；CI 另跑 `pnpm exec tsc --noEmit`。`eslint.ignoreDuringBuilds` 仍为 `true`（历史 ESLint 错误较多，不在本轮范围）。
 - **PWA**: Serwist v9 service worker (`app/sw.ts`) with offline page

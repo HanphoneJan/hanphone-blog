@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Bookmark, BookmarkMinus, Loader2 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useBookmarks } from '@/contexts/BookmarkContext'
@@ -16,6 +15,7 @@ import {
 import apiClient from '@/lib/utils'
 import { API_CODE } from '@/lib/constants'
 import { formatRelativeTime } from '@/lib/datetime'
+import { LoginRequired, ListSkeleton, PageHeader, PageShell } from '@/components/shared/PageShell'
 
 type TabValue = BookmarkType | 'ALL'
 
@@ -41,26 +41,32 @@ function itemHref(item: BookmarkItem): string {
 }
 
 export default function BookmarksClient() {
-  const router = useRouter()
-  const { token, userInfo, onShowLogin } = useUser()
+  return (
+    <PageShell>
+      <LoginRequired
+        icon={Bookmark}
+        message="登录后才能查看你的收藏"
+        skeleton={<ListSkeleton rows={3} />}
+      >
+        <BookmarksContent />
+      </LoginRequired>
+    </PageShell>
+  )
+}
+
+function BookmarksContent() {
+  const { token } = useUser()
   const { remove, isPending } = useBookmarks()
 
-  const [mounted, setMounted] = useState(false)
   const [tab, setTab] = useState<TabValue>('ALL')
   const [items, setItems] = useState<BookmarkItem[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionError, setActionError] = useState('')
 
-  const loggedIn = Boolean(token && userInfo)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   const load = useCallback(
     async (value: TabValue) => {
-      if (!token || !userInfo) return
+      if (!token) return
       setLoading(true)
       setError('')
       setActionError('')
@@ -80,12 +86,12 @@ export default function BookmarksClient() {
         setLoading(false)
       }
     },
-    [token, userInfo]
+    [token]
   )
 
   useEffect(() => {
-    if (mounted && loggedIn) void load(tab)
-  }, [mounted, loggedIn, tab, load])
+    void load(tab)
+  }, [tab, load])
 
   const handleRemove = async (item: BookmarkItem) => {
     setActionError('')
@@ -98,49 +104,26 @@ export default function BookmarksClient() {
     setItems(prev => prev.filter(it => !(it.type === item.type && it.key === item.key)))
   }
 
-  const openItem = (item: BookmarkItem) => {
-    router.push(itemHref(item))
-  }
-
-  // 等 localStorage 里的登录态恢复，避免闪一下登录引导
-  if (!mounted) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8" aria-label="加载中">
-        {[0, 1, 2].map(item => (
-          <div
-            key={item}
-            className="mb-3 h-24 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] animate-pulse"
-          />
-        ))}
-      </div>
-    )
-  }
-
-  if (!userInfo) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <Bookmark className="w-12 h-12 mx-auto text-[rgb(var(--text-muted))]/40" />
-        <p className="mt-4 text-sm text-[rgb(var(--text-muted))]">登录后才能查看你的收藏</p>
-        <button
-          type="button"
-          onClick={onShowLogin}
-          className="mt-4 px-4 py-2 rounded-lg bg-[rgb(var(--primary))] text-white text-sm hover:bg-[rgb(var(--primary))]/90"
-        >
-          去登录
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-xl font-semibold text-[rgb(var(--text))]">我的收藏</h1>
-      <p className="mt-1 text-sm text-[rgb(var(--text-muted))]">
-        收藏的博客、随笔与文档都在这里；点一下即可回到原内容。
-      </p>
+    <>
+      <PageHeader
+        icon={Bookmark}
+        title="我的收藏"
+        description={
+          <>
+            收藏的博客、随笔与文档都在这里，点一下即可回到原内容
+            {!loading && !error && items.length > 0 ? (
+              <>
+                {' · '}
+                <span className="tabular-nums">共 {items.length} 条</span>
+              </>
+            ) : null}
+          </>
+        }
+      />
 
       {/* 类型 Tabs */}
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2">
         {TABS.map(t => {
           const active = t.value === tab
           return (
@@ -149,10 +132,10 @@ export default function BookmarksClient() {
               type="button"
               onClick={() => setTab(t.value)}
               aria-pressed={active}
-              className={`px-3 py-1.5 text-sm rounded-full border transition-none ${
+              className={`rounded-full border px-3 py-1.5 text-sm transition-none ${
                 active
-                  ? 'bg-[rgb(var(--primary))] border-[rgb(var(--primary))] text-white'
-                  : 'bg-[rgb(var(--card))] border-[rgb(var(--border))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
+                  ? 'border-[rgb(var(--primary))] bg-[rgb(var(--primary))] text-white'
+                  : 'border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
               }`}
             >
               {t.label}
@@ -168,22 +151,7 @@ export default function BookmarksClient() {
       )}
 
       <div className="mt-5">
-        {loading && (
-          <div className="space-y-3" aria-label="加载中">
-            {[0, 1, 2].map(item => (
-              <div
-                key={item}
-                className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 flex gap-3 animate-pulse"
-              >
-                <div className="w-20 h-14 rounded-lg bg-[rgb(var(--border))]" />
-                <div className="flex-1">
-                  <div className="h-4 w-1/2 rounded bg-[rgb(var(--border))]" />
-                  <div className="mt-3 h-3 w-full rounded bg-[rgb(var(--border))]/70" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {loading && <ListSkeleton rows={3} />}
 
         {!loading && error && (
           <div className="py-12 text-center">
@@ -191,7 +159,7 @@ export default function BookmarksClient() {
             <button
               type="button"
               onClick={() => void load(tab)}
-              className="mt-3 px-3 py-1.5 text-sm rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+              className="mt-3 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
             >
               重试
             </button>
@@ -200,12 +168,13 @@ export default function BookmarksClient() {
 
         {!loading && !error && items.length === 0 && (
           <div className="py-12 text-center">
-            <p className="text-sm text-[rgb(var(--text-muted))]">
+            <Bookmark className="mx-auto h-10 w-10 text-[rgb(var(--text-muted))]/40" />
+            <p className="mt-3 text-sm text-[rgb(var(--text-muted))]">
               {tab === 'ALL' ? '还没有收藏任何内容' : `还没有收藏${TYPE_LABEL[tab]}`}
             </p>
             <Link
               href="/blog/"
-              className="mt-3 inline-block px-3 py-1.5 text-sm rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+              className="mt-3 inline-block rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
             >
               去逛逛博客
             </Link>
@@ -217,27 +186,23 @@ export default function BookmarksClient() {
             {items.map(item => {
               const pending = isPending(item.type, item.key)
               const href = itemHref(item)
+              const title = item.title || '（无标题）'
+
               return (
-                <li key={`${item.type}-${item.key}`}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={event => {
-                      // 点取消收藏按钮时不跳转
-                      if ((event.target as HTMLElement).closest('button')) return
-                      openItem(item)
-                    }}
-                    onKeyDown={event => {
-                      if (event.target !== event.currentTarget) return
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        openItem(item)
-                      }
-                    }}
-                    className="w-full text-left rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 flex items-start gap-3 cursor-pointer transition-none hover:bg-[rgb(var(--hover))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
-                  >
+                <li
+                  key={`${item.type}-${item.key}`}
+                  className="relative rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] transition-none hover:bg-[rgb(var(--hover))] focus-within:ring-2 focus-within:ring-[rgb(var(--primary))]"
+                >
+                  {/* 覆盖整张卡片的链接；正文 pointer-events-none 让点击落到它上面 */}
+                  <Link
+                    href={href}
+                    aria-label={`打开${TYPE_LABEL[item.type] || '内容'}：${title}`}
+                    className="absolute inset-0 rounded-xl focus:outline-none"
+                  />
+
+                  <div className="pointer-events-none relative flex items-start gap-3 p-4">
                     {item.cover && (
-                      <span className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-[rgb(var(--muted))]">
+                      <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--hover))]">
                         <Image
                           src={item.cover}
                           alt=""
@@ -250,16 +215,16 @@ export default function BookmarksClient() {
 
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
-                        <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-[rgb(var(--primary))]/10 text-[rgb(var(--primary))]">
+                        <span className="inline-flex shrink-0 items-center rounded bg-[rgb(var(--primary))]/10 px-1.5 py-0.5 text-[10px] font-medium text-[rgb(var(--primary))]">
                           {TYPE_LABEL[item.type] || item.type}
                         </span>
-                        <span className="text-sm font-medium text-[rgb(var(--text))] line-clamp-1 break-words">
-                          {item.title || '（无标题）'}
+                        <span className="line-clamp-1 break-words text-sm font-medium text-[rgb(var(--text))]">
+                          {title}
                         </span>
                       </span>
 
                       {item.subtitle && (
-                        <span className="mt-1.5 block text-sm text-[rgb(var(--text-muted))] line-clamp-2 break-words">
+                        <span className="mt-1.5 block line-clamp-2 break-words text-sm text-[rgb(var(--text-muted))]">
                           {item.subtitle}
                         </span>
                       )}
@@ -271,20 +236,18 @@ export default function BookmarksClient() {
 
                     <button
                       type="button"
-                      onClick={event => {
-                        event.preventDefault()
-                        event.stopPropagation()
+                      onClick={() => {
                         if (!pending) void handleRemove(item)
                       }}
                       disabled={pending}
-                      aria-label={`取消收藏：${item.title || href}`}
+                      aria-label={`取消收藏：${title}`}
                       title="取消收藏"
-                      className="shrink-0 p-1.5 rounded-lg text-[rgb(var(--text-muted))] hover:text-[rgb(var(--danger))] hover:bg-[rgb(var(--border)/0.4)] transition-none disabled:opacity-50 disabled:cursor-wait"
+                      className="pointer-events-auto relative z-10 shrink-0 rounded-lg p-1.5 text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--border))]/40 hover:text-[rgb(var(--danger))] disabled:cursor-wait disabled:opacity-50"
                     >
                       {pending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <BookmarkMinus className="w-4 h-4" />
+                        <BookmarkMinus className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -294,6 +257,6 @@ export default function BookmarksClient() {
           </ul>
         )}
       </div>
-    </div>
+    </>
   )
 }

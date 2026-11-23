@@ -143,6 +143,7 @@ web/
 │   │   │   ├── search/             # 全局搜索结果页
 │   │   │   ├── notifications/      # 站内通知
 │   │   │   ├── bookmarks/          # 我的收藏
+│   │   │   ├── sessions/           # 登录设备
 │   │   │   ├── projects/           # 项目展示
 │   │   │   ├── privacy/            # 隐私政策
 │   │   │   ├── rss/                # RSS 订阅
@@ -194,6 +195,7 @@ web/
 │   │   │   ├── LoadingBar.tsx
 │   │   │   ├── LoadingSpinner.tsx
 │   │   │   ├── ModalOverlay.tsx
+│   │   │   ├── PageShell.tsx
 │   │   │   ├── PageTransition.tsx
 │   │   │   ├── Pagination.tsx
 │   │   │   ├── SearchInput.tsx

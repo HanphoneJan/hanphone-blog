@@ -140,17 +140,41 @@ function authHeaders(token: string) {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 }
 
+/** BFF 请求兜底超时，避免上游卡住时页面永远停在加载态 */
+async function fetchJsonWithTimeout(
+  input: string,
+  init: RequestInit = {},
+  timeoutMs = 15000
+): Promise<{ res: Response; data: Record<string, unknown> }> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(input, { ...init, signal: controller.signal })
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    return { res, data }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function fetchSessions(token: string): Promise<UserSessionInfo[]> {
-  const res = await fetch('/next-api/auth/sessions/', { headers: authHeaders(token), cache: 'no-store' })
-  const data = await res.json()
-  return (data?.data || []) as UserSessionInfo[]
+  const { res, data } = await fetchJsonWithTimeout('/next-api/auth/sessions/', {
+    headers: authHeaders(token),
+    cache: 'no-store'
+  })
+  if (!res.ok || !data?.flag) {
+    throw new Error(typeof data?.message === 'string' ? data.message : '获取登录设备失败')
+  }
+  return (Array.isArray(data?.data) ? data.data : []) as UserSessionInfo[]
 }
 
 export async function revokeSession(token: string, sid: string): Promise<boolean> {
-  const res = await fetch(`/next-api/auth/sessions/${encodeURIComponent(sid)}/`, {
-    method: 'DELETE',
-    headers: authHeaders(token),
-  })
-  const data = await res.json()
+  const { data } = await fetchJsonWithTimeout(
+    `/next-api/auth/sessions/${encodeURIComponent(sid)}/`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(token)
+    }
+  )
   return Boolean(data?.flag)
 }

@@ -21,12 +21,15 @@ interface PageTransitionProps {
  *    transform/will-change 形成持久 stacking context / containing block
  *    （否则背景遮罩层 z-1 会盖住正文、正文内 fixed 弹层会错位）；
  *  - 因此无论动画正常、被禁用还是被中断，页面都保证可见。
+ *
+ * 另外，`relative z-10` 是必需的：BackgroundImage 的遮罩是 `fixed inset-0 z-[1]`，
+ * 这里统一把整页内容抬到遮罩之上，避免任何页面（尤其是新建页面）漏写 z-index 被盖住。
  */
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
 
   return (
-    <div key={pathname} className="page-transition">
+    <div key={pathname} className="page-transition relative z-10">
       {children}
     </div>
   )

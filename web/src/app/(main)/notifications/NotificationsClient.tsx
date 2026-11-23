@@ -15,6 +15,7 @@ import {
 import apiClient from '@/lib/utils'
 import { API_CODE, ASSETS } from '@/lib/constants'
 import { formatDateTime, formatRelativeTime } from '@/lib/datetime'
+import { LoginRequired, ListSkeleton, PageHeader, PageShell } from '@/components/shared/PageShell'
 
 const PAGE_SIZE = 20
 
@@ -36,29 +37,36 @@ function actionText(item: NotificationItem): string {
 type Filter = 'ALL' | 'UNREAD'
 
 export default function NotificationsClient() {
-  const router = useRouter()
-  const { token, userInfo, onShowLogin } = useUser()
+  return (
+    <PageShell>
+      <LoginRequired
+        icon={Bell}
+        message="登录后才能查看站内通知"
+        skeleton={<ListSkeleton rows={4} />}
+      >
+        <NotificationsContent />
+      </LoginRequired>
+    </PageShell>
+  )
+}
 
-  const [mounted, setMounted] = useState(false)
+function NotificationsContent() {
+  const router = useRouter()
+  const { token } = useUser()
+
   const [items, setItems] = useState<NotificationItem[]>([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [unread, setUnread] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<Filter>('ALL')
   const [busyId, setBusyId] = useState<number | null>(null)
   const [markingAll, setMarkingAll] = useState(false)
 
-  const loggedIn = Boolean(token && userInfo)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   const load = useCallback(
     async (pageNo: number) => {
-      if (!token || !userInfo) return
+      if (!token) return
       setLoading(true)
       setError('')
       try {
@@ -81,14 +89,16 @@ export default function NotificationsClient() {
         setLoading(false)
       }
     },
-    [token, userInfo]
+    [token]
   )
 
   useEffect(() => {
-    if (mounted && loggedIn) void load(1)
-  }, [mounted, loggedIn, load])
+    void load(1)
+  }, [load])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  const pageUnread = useMemo(() => items.filter(item => !item.read).length, [items])
 
   const visibleItems = useMemo(
     () => (filter === 'UNREAD' ? items.filter(item => !item.read) : items),
@@ -138,99 +148,73 @@ export default function NotificationsClient() {
     }
   }
 
-  // 登录态从 localStorage 恢复前先占位，避免已登录用户看到一闪而过的登录引导
-  if (!mounted) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8" aria-label="加载中">
-        {[0, 1, 2].map(item => (
-          <div
-            key={item}
-            className="mb-3 h-20 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] animate-pulse"
-          />
-        ))}
-      </div>
-    )
-  }
-
-  if (!userInfo) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <Bell className="w-12 h-12 mx-auto text-[rgb(var(--text-muted))]/40" />
-        <p className="mt-4 text-sm text-[rgb(var(--text-muted))]">登录后才能查看站内通知</p>
-        <button
-          type="button"
-          onClick={onShowLogin}
-          className="mt-4 px-4 py-2 rounded-lg bg-[rgb(var(--primary))] text-white text-sm hover:bg-[rgb(var(--primary))]/90"
-        >
-          去登录
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-xl font-semibold text-[rgb(var(--text))]">我的通知</h1>
-          <p className="mt-1 text-sm text-[rgb(var(--text-muted))]">
-            有人评论你的博客或随笔时会出现在这里。
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleReadAll}
-          disabled={unread === 0 || markingAll}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {markingAll ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <CheckCheck className="w-4 h-4" />
-          )}
-          全部已读
-        </button>
-      </div>
+    <>
+      <PageHeader
+        icon={Bell}
+        title="我的通知"
+        description={
+          <>
+            有人评论你的博客或随笔时会出现在这里
+            {unread > 0 ? (
+              <>
+                {' · '}
+                <span className="text-[rgb(var(--primary))]">{unread} 条未读</span>
+              </>
+            ) : null}
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => void handleReadAll()}
+            disabled={unread === 0 || markingAll}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {markingAll ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCheck className="h-4 w-4" />
+            )}
+            全部已读
+          </button>
+        }
+      />
 
-      {/* 未读筛选（客户端过滤当前页） */}
-      <div className="mt-4 flex items-center gap-2">
-        {([
-          { value: 'ALL' as Filter, label: '全部' },
-          { value: 'UNREAD' as Filter, label: `未读${unread > 0 ? `（${unread}）` : ''}` }
-        ]).map(tab => {
-          const active = filter === tab.value
-          return (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => setFilter(tab.value)}
-              aria-pressed={active}
-              className={`px-3 py-1.5 text-sm rounded-full border transition-none ${
-                active
-                  ? 'bg-[rgb(var(--primary))] border-[rgb(var(--primary))] text-white'
-                  : 'bg-[rgb(var(--card))] border-[rgb(var(--border))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
-              }`}
-            >
-              {tab.label}
-            </button>
-          )
-        })}
+      {/* 筛选（未读只在当前页内过滤） */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: 'ALL' as Filter, label: '全部' },
+              { value: 'UNREAD' as Filter, label: `本页未读${pageUnread > 0 ? `（${pageUnread}）` : ''}` }
+            ] as const
+          ).map(tab => {
+            const active = filter === tab.value
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setFilter(tab.value)}
+                aria-pressed={active}
+                className={`rounded-full border px-3 py-1.5 text-sm transition-none ${
+                  active
+                    ? 'border-[rgb(var(--primary))] bg-[rgb(var(--primary))] text-white'
+                    : 'border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--hover))] hover:text-[rgb(var(--text))]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+        {total > 0 ? (
+          <span className="text-xs text-[rgb(var(--text-muted))] tabular-nums">共 {total} 条</span>
+        ) : null}
       </div>
 
       <div className="mt-5">
-        {loading && (
-          <div className="space-y-3" aria-label="加载中">
-            {[0, 1, 2, 3].map(item => (
-              <div
-                key={item}
-                className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 animate-pulse"
-              >
-                <div className="h-4 w-1/3 rounded bg-[rgb(var(--border))]" />
-                <div className="mt-3 h-3 w-full rounded bg-[rgb(var(--border))]/70" />
-              </div>
-            ))}
-          </div>
-        )}
+        {loading && <ListSkeleton rows={4} />}
 
         {!loading && error && (
           <div className="py-12 text-center">
@@ -238,7 +222,7 @@ export default function NotificationsClient() {
             <button
               type="button"
               onClick={() => void load(page)}
-              className="mt-3 px-3 py-1.5 text-sm rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+              className="mt-3 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
             >
               重试
             </button>
@@ -246,9 +230,21 @@ export default function NotificationsClient() {
         )}
 
         {!loading && !error && visibleItems.length === 0 && (
-          <p className="py-12 text-center text-sm text-[rgb(var(--text-muted))]">
-            {filter === 'UNREAD' ? '当前页没有未读通知' : '暂无通知'}
-          </p>
+          <div className="py-12 text-center">
+            <Bell className="mx-auto h-10 w-10 text-[rgb(var(--text-muted))]/40" />
+            <p className="mt-3 text-sm text-[rgb(var(--text-muted))]">
+              {filter === 'UNREAD' ? '本页没有未读通知' : '暂无通知'}
+            </p>
+            {filter === 'UNREAD' && items.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setFilter('ALL')}
+                className="mt-3 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))]"
+              >
+                查看全部
+              </button>
+            ) : null}
+          </div>
         )}
 
         {!loading && !error && visibleItems.length > 0 && (
@@ -259,28 +255,28 @@ export default function NotificationsClient() {
                   type="button"
                   onClick={() => void handleOpen(item)}
                   disabled={busyId === item.id}
-                  className={`w-full text-left rounded-xl border p-4 flex items-start gap-3 transition-none hover:bg-[rgb(var(--hover))] ${
+                  className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-none hover:bg-[rgb(var(--hover))] ${
                     item.read
                       ? 'border-[rgb(var(--border))] bg-[rgb(var(--card))]'
                       : 'border-[rgb(var(--primary))]/40 bg-[rgb(var(--primary))]/5'
-                  } ${busyId === item.id ? 'opacity-60 cursor-wait' : ''}`}
+                  } ${busyId === item.id ? 'cursor-wait opacity-60' : ''}`}
                 >
-                  <span className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 bg-[rgb(var(--muted))]">
+                  <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[rgb(var(--hover))]">
                     <Image
                       src={item.actorAvatar || ASSETS.DEFAULT_AVATAR}
                       alt={item.actorName || '用户头像'}
                       width={40}
                       height={40}
-                      className="w-10 h-10 object-cover"
+                      className="h-10 w-10 object-cover"
                     />
                   </span>
 
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-[rgb(var(--primary))]/10 text-[rgb(var(--primary))]">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center rounded bg-[rgb(var(--primary))]/10 px-1.5 py-0.5 text-[10px] font-medium text-[rgb(var(--primary))]">
                         {typeLabel(item.type)}
                       </span>
-                      <span className="text-sm font-medium text-[rgb(var(--text))] break-all">
+                      <span className="break-all text-sm font-medium text-[rgb(var(--text))]">
                         {item.actorName || '有人'}
                       </span>
                       <span className="text-xs text-[rgb(var(--text-muted))]">
@@ -288,17 +284,17 @@ export default function NotificationsClient() {
                       </span>
                       {!item.read && (
                         <span
-                          className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--primary))] shrink-0"
+                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-[rgb(var(--primary))]"
                           aria-label="未读"
                         />
                       )}
-                      <span className="ml-auto text-xs text-[rgb(var(--text-muted))] whitespace-nowrap">
+                      <span className="ml-auto whitespace-nowrap text-xs text-[rgb(var(--text-muted))]">
                         {formatRelativeTime(item.createTime)}
                       </span>
                     </span>
 
                     {item.excerpt && (
-                      <span className="mt-2 block text-sm text-[rgb(var(--text-muted))] line-clamp-2 break-words">
+                      <span className="mt-2 block line-clamp-2 break-words text-sm text-[rgb(var(--text-muted))]">
                         {item.excerpt}
                       </span>
                     )}
@@ -313,33 +309,32 @@ export default function NotificationsClient() {
           </ul>
         )}
 
-        {/* 分页 */}
         {!loading && !error && total > PAGE_SIZE && (
           <div className="mt-6 flex items-center justify-center gap-3 text-sm">
             <button
               type="button"
               onClick={() => goPage(page - 1)}
               disabled={page <= 1}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
               上一页
             </button>
-            <span className="text-[rgb(var(--text-muted))] tabular-nums">
+            <span className="tabular-nums text-[rgb(var(--text-muted))]">
               第 {page} / {totalPages} 页
             </span>
             <button
               type="button"
               onClick={() => goPage(page + 1)}
               disabled={page >= totalPages}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[rgb(var(--border))] text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-[rgb(var(--text))] hover:bg-[rgb(var(--hover))] disabled:cursor-not-allowed disabled:opacity-40"
             >
               下一页
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }

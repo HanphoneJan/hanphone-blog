@@ -85,14 +85,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const theme = 'light'
-  const isDark = false
   const backgroundImageUrl = '/background.webp'
-  
+
   return (
-    <html lang={SITE_CONFIG.language} className={isDark ? 'dark' : ''}>
+    <html lang={SITE_CONFIG.language} suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="light dark" />
+        {/* 防主题闪烁：hydration 前给 <html> 加主题类，属性与 React 期望不同，
+            由 <html suppressHydrationWarning> 抑制这条属性 mismatch 警告。 */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var el=document.documentElement;el.classList.remove('dark','light','theme-macaron','theme-cyber');if(t==='dark')el.classList.add('dark');else if(t==='light')el.classList.add('light');else if(t==='macaron')el.classList.add('theme-macaron');else if(t==='cyber')el.classList.add('theme-cyber');}catch(e){}})();`,

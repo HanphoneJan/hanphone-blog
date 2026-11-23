@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           '/search/',
           '/bookmarks/',
           '/notifications/',
+          '/sessions/',
         ],
       },
       {

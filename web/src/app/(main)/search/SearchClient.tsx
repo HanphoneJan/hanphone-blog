@@ -7,6 +7,7 @@ import { Search as SearchIcon } from 'lucide-react'
 import { buildSearchUrl, type SearchContentType, type SearchResultItem } from '@/lib/api'
 import apiClient from '@/lib/utils'
 import { API_CODE } from '@/lib/constants'
+import { PageHeader, PageShell } from '@/components/shared/PageShell'
 
 interface SearchApiResponse {
   flag: boolean
@@ -194,11 +195,12 @@ export default function SearchClient() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-xl font-semibold text-[rgb(var(--text))]">搜索</h1>
-      <p className="text-sm text-[rgb(var(--text-muted))] mt-1">
-        在博客、随笔、项目与文档中查找内容，最多显示 {SEARCH_LIMIT} 条结果。
-      </p>
+    <PageShell>
+      <PageHeader
+        icon={SearchIcon}
+        title="搜索"
+        description={`在博客、随笔、项目与文档中查找内容，最多显示 ${SEARCH_LIMIT} 条结果。`}
+      />
 
       {/* 搜索框 */}
       <form onSubmit={handleSubmit} className="mt-5">
@@ -354,6 +356,6 @@ export default function SearchClient() {
           </>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }
