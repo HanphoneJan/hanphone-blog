@@ -300,7 +300,7 @@ export default function BlogDetailClient({
           </aside>
 
           {/* 中间：正文 - 独立滚动 */}
-          <div ref={blogContentRef} className="min-w-0 py-6 px-4 sm:px-6 lg:px-6 xl:px-8 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[rgb(var(--border))] scrollbar-track-transparent">
+          <div ref={blogContentRef} className="min-w-0 pt-2 pb-4 px-4 sm:px-6 lg:px-6 xl:px-8 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[rgb(var(--border))] scrollbar-track-transparent">
             <article>
               <motion.header 
                 className="blog-header-prose pb-2 mb-1"
