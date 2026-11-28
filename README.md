@@ -11,7 +11,7 @@
 
 [工具](https://hanphone.cn/tools) · [有趣网页](https://hanphone.cn/play) · [小游戏](https://hanphone.cn/games) · [照片墙](https://hanphone.cn/atlas/) · [热点聚合](https://hanphone.cn/insight/)
 
-采用 **pnpm workspace** 管理多包（Monorepo）：web 前端 + apps（gomoku / photo-wall / chat-client）+ admin-file 文件服务 + photo-wall-server + chat-server 聊天服务 + mcp-server；Android 原生客户端为独立 Gradle 工程（`android/`）。
+采用 **pnpm workspace** 管理多包（Monorepo）：web 前端 + apps（gomoku / photo-wall / chat-client）+ admin-file 文件服务 + photo-wall-server + chat-server 聊天服务 + judge-server 代码评测 + mcp-server；Android 原生客户端为独立 Gradle 工程（`android/`）。
 
 [在线演示](https://hanphone.cn) · [快速开始](#快速开始) · [文档索引](#文档) · [测试指南](#测试)
 
@@ -55,6 +55,7 @@
 - **文件服务**: Express.js 5 + Multer + JWT（独立文件存储服务）
 - **照片墙后端**: Express.js 5 + PostgreSQL（照片墙专属业务）
 - **聊天服务**: Express 4 + Socket.IO + PostgreSQL（`chat-server/`，App 原生直连 `/chat-api`；协议见 `docs/chat/`）
+- **代码评测**: Express 5 + PostgreSQL + go-judge 沙箱（`judge-server/`，`/judge-api`；首期 Python，文档站题解页调用）
 - **小游戏**: Uni-app + Vue 3 + uni-h5
 
 ---
@@ -179,6 +180,7 @@ pnpm build:chat
 | [照片墙后端](photo-wall-server/README.md)    | Express 照片墙后端说明       |
 | [聊天前端](apps/chat-client/README.md)       | React 聊天站开发指南         |
 | [聊天服务](chat-server/README.md)            | 聊天后端源码与运行说明       |
+| [代码评测](judge-server/README.md)           | Python 评测 API、go-judge 沙箱、题目包 |
 | [聊天协议/部署](docs/chat/)                  | android-protocol（App 对接"唯一事实来源"）、DEPLOYMENT、设计文档 |
 | [Android 交接文档](android/HANDOVER.md)      | Android 客户端架构/坑/规矩，接手必读 |
 

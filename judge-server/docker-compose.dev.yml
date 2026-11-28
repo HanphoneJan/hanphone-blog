@@ -1,0 +1,47 @@
+services:
+  go-judge:
+    build:
+      context: .
+      dockerfile: docker/go-judge-python.Dockerfile
+      args:
+        GO_JUDGE_IMAGE: ${GO_JUDGE_IMAGE:-criyle/go-judge:latest}
+    image: hanphone/go-judge-python:dev
+    container_name: hanphone-go-judge
+    restart: unless-stopped
+    privileged: true
+    shm_size: 256m
+    ports:
+      - "127.0.0.1:5050:5050"
+    command:
+      - -http-addr
+      - 0.0.0.0:5050
+      - -parallelism
+      - "1"
+      - -no-fallback
+      - -output-limit
+      - "1048576"
+      - -copy-out-limit
+      - "1048576"
+      - -file-timeout
+      - 10m
+
+  judge-pg:
+    image: postgres:16-alpine
+    container_name: hanphone-judge-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: judge
+      POSTGRES_USER: judge
+      POSTGRES_PASSWORD: judge
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - judge-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge -d judge"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  judge-pg-data:

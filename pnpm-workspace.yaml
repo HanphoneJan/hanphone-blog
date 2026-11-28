@@ -7,3 +7,4 @@ packages:
   - 'photo-wall-server'
   - 'chat-server'
   - 'mcp-server'
+  - 'judge-server'

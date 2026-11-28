@@ -1,0 +1,20 @@
+{
+  "id": "nowcoder-hj80",
+  "title": "整型数组合并",
+  "platform": "NowCoder",
+  "url": "https://www.nowcoder.com/practice/c4f11ea2c886429faf91decfaf6a310b",
+  "mode": "stdin",
+  "languages": [
+    "python"
+  ],
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "compare": "text",
+  "activeTestCount": 2,
+  "fullTestCount": 2,
+  "provenance": {
+    "source": "docs-samples",
+    "note": "题面可见样例；隐藏测试待补",
+    "importedAt": "2026-11-28T16:38:20.631Z"
+  }
+}

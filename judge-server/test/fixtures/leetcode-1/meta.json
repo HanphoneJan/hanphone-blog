@@ -1,0 +1,26 @@
+{
+  "id": "leetcode-1",
+  "title": "1. 两数之和",
+  "platform": "LeetCode",
+  "url": "https://leetcode.cn/problems/two-sum/",
+  "mode": "function",
+  "entry": "twoSum",
+  "languages": [
+    "python"
+  ],
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "compare": "json",
+  "activeTestCount": 25,
+  "fullTestCount": 72,
+  "provenance": {
+    "source": "newfacade/LeetCodeDataset",
+    "version": "v0.3.1",
+    "license": "Apache-2.0 (HF) / MIT (GitHub)",
+    "taskId": "two-sum",
+    "questionId": 1,
+    "url": "https://huggingface.co/datasets/newfacade/LeetCodeDataset",
+    "importedAt": "2026-11-28T16:29:08.630Z",
+    "dropped": 8
+  }
+}

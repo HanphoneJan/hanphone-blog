@@ -35,6 +35,13 @@ pnpm build:photo-wall              # Build photo wall (Vite → apps/photo-wall/
 pnpm build:chat                    # Build chat client (React → apps/chat-client/dist；nginx /chat/ 托管)
 pnpm --filter chat-server dev      # Chat server (port 4010，/chat-api；生产 pm2 hanphone-chat-server)
 
+# === Code judge (judge-server/) ===
+pnpm --filter judge-server dev          # Express API (port 5051，需本地 go-judge + judge-pg)
+pnpm --filter judge-server migrate
+pnpm --filter judge-server import:problems
+pnpm --filter judge-server smoke
+pnpm --filter judge-server test
+
 # === File services ===
 pnpm --filter admin-file start     # Express file service (port 4000)
 # photo-wall-server: node app.js (port 4001)
@@ -57,6 +64,7 @@ cd server && python3 test.py       # 39 security test cases；注册/找回密�
 | `atlas`             | `apps/photo-wall/`   | Vue 3 + Vite + Element Plus + Pinia                     |
 | `chat-client`       | `apps/chat-client/`  | React 18 + Vite + shadcn/ui + socket.io-client（聊天站，nginx `/chat/` 托管，base `/chat/`） |
 | `chat-server`       | `chat-server/`       | Express 4 + socket.io + PostgreSQL（聊天/私信实时服务，`/chat-api`，独立 pm2/DB） |
+| `judge-server`      | `judge-server/`      | Express 5 + PostgreSQL + go-judge（Python 代码评测，`/judge-api`，沙箱见 README/DEPLOYMENT） |
 | `android`           | `android/`           | Kotlin 2.4 + Jetpack Compose (M3) + Retrofit            |
 
 ### Data Flow
