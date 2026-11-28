@@ -91,4 +91,8 @@ docs-samples 包已补 1200+ 个 fuzz 隐藏测试；链表/类 API 另有专用
 
 ## 部署
 
-见 `DEPLOYMENT.md`。
+见 `DEPLOYMENT.md`。当前生产已部署：
+
+- `https://hanphone.cn/judge-api/v1/health`
+- go-judge / judge-server 由 systemd 托管（`127.0.0.1:5050` / `5051`），nginx 反代 `/judge-api/`
+- 服务器 `111.230.155.155`，数据在 `/home/hanphone/server_judge/data/problems`（338 包）
